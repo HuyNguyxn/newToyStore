@@ -6,6 +6,7 @@ import com.example.new_toy_store.order.dto.response.OrderResponse;
 import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.order.repository.OrderRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,15 +20,13 @@ public class OrderService {
         this.orderRepository = orderRepository;
     }
 
+    @Transactional
     public OrderResponse createOrder(OrderRequest request) {
 
-        // 1. DTO → Entity
         Order order = OrderMapper.toEntity(request);
 
-        // 2. save DB
         Order savedOrder = orderRepository.save(order);
 
-        // 3. Entity → DTO
         return OrderMapper.toResponse(savedOrder);
     }
 
