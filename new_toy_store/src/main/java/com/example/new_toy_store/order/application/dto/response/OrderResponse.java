@@ -1,6 +1,4 @@
-package com.example.new_toy_store.order.dto.response;
-
-import com.example.new_toy_store.order.dto.response.OrderItemResponse;
+package com.example.new_toy_store.order.application.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;

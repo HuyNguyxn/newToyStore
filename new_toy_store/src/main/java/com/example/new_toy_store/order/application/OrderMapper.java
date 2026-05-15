@@ -1,11 +1,11 @@
-package com.example.new_toy_store.order.mapper;
+package com.example.new_toy_store.order.application;
 
 import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderItem;
-import com.example.new_toy_store.order.dto.request.OrderItemRequest;
-import com.example.new_toy_store.order.dto.request.OrderRequest;
-import com.example.new_toy_store.order.dto.response.OrderItemResponse;
-import com.example.new_toy_store.order.dto.response.OrderResponse;
+import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
+import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderItemResponse;
+import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;

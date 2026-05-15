@@ -1,10 +1,9 @@
-package com.example.new_toy_store.order.service;
+package com.example.new_toy_store.order.application;
 
 import com.example.new_toy_store.order.domain.Order;
-import com.example.new_toy_store.order.dto.request.OrderRequest;
-import com.example.new_toy_store.order.dto.response.OrderResponse;
-import com.example.new_toy_store.order.mapper.OrderMapper;
-import com.example.new_toy_store.order.repository.OrderRepository;
+import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderResponse;
+import com.example.new_toy_store.order.domain.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

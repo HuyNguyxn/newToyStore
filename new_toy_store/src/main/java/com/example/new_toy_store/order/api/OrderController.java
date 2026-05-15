@@ -1,8 +1,8 @@
-package com.example.new_toy_store.order.controller;
+package com.example.new_toy_store.order.api;
 
-import com.example.new_toy_store.order.dto.request.OrderRequest;
-import com.example.new_toy_store.order.dto.response.OrderResponse;
-import com.example.new_toy_store.order.service.OrderService;
+import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderResponse;
+import com.example.new_toy_store.order.application.OrderService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

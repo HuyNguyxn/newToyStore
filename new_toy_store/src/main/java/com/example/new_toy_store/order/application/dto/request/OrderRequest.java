@@ -1,4 +1,4 @@
-package com.example.new_toy_store.order.dto.request;
+package com.example.new_toy_store.order.application.dto.request;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.example.new_toy_store.order.dto.response;
+package com.example.new_toy_store.order.application.dto.response;
 
 public class OrderItemResponse {
 
