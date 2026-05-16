@@ -1,12 +1,13 @@
 package com.example.new_toy_store.product.domain;
 
+import com.example.new_toy_store.category.domain.Category;
 import jakarta.persistence.*;
 
 import java.security.PublicKey;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="products")
+@Table(name="products", uniqueConstraints = @UniqueConstraint(columnNames = "product_name"))
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +29,7 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     @Column(name="category")
-    private String category;
+    private Category category;
 
     @Column(name="created_at")
     private LocalDateTime createdAt;
@@ -37,13 +38,12 @@ public class Product {
     public Product(){}
 
     public Product(int id, String productName, String description, Double price,
-                   int stock, String category, LocalDateTime createdAt) {
+                   int stock, LocalDateTime createdAt) {
         this.id = id;
         this.productName = productName;
         this.description = description;
         this.price = price;
         this.stock = stock;
-        this.category = category;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -67,7 +67,7 @@ public class Product {
         return stock;
     }
 
-    public String getCategory() {
+    public Category getCategory() {
         return category;
     }
 
