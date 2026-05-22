@@ -12,26 +12,21 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id")
-    private int id;
+    private Integer id;
 
-    @Column(name="product_name")
+    @Column(name="product_name", nullable = false)
     private String productName;
 
-    @Column(name="description")
     private String description;
 
-    @Column(name="price")
     private Double price;
 
-    @Column(name="stock")
     private int stock;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    @Column(name="category")
     private Category category;
 
-    @Column(name="created_at")
     private LocalDateTime createdAt;
 
 
@@ -47,7 +42,7 @@ public class Product {
         this.createdAt = LocalDateTime.now();
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -75,5 +70,29 @@ public class Product {
         return createdAt;
     }
 
+    public void changeCategory(Category newCategory) {
+        if (this.category == newCategory) {
+            return;
+        }
+        if (this.category != null) {
+            this.category.getProducts().remove(this);
+        }
+        this.category = newCategory;
+        if (newCategory != null && !newCategory.getProducts().contains(this)) {
+            newCategory.getProducts().add(this);
+        }
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product other = (Product) o;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

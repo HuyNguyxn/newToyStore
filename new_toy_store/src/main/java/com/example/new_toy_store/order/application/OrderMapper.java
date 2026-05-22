@@ -18,7 +18,6 @@ public class OrderMapper {
         Order order = new Order("NEW");
 
         for (OrderItemRequest itemReq : request.getItems()) {
-
             order.addItem(
                     itemReq.getProductName(),
                     itemReq.getQuantity(),

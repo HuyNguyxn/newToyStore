@@ -2,19 +2,20 @@ package com.example.new_toy_store.order.domain;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "order_items")
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @Column(name = "product_name")
     private String productName;
-    @Column(name = "quantity")
+
     private int quantity;
-    @Column(name = "price")
+
     private double price;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,7 +30,7 @@ public class OrderItem {
         this.price = price;
     }
 
-    public Long getId() { return id; }
+    public Integer getId() { return id; }
 
     public String getProductName() { return productName; }
 
@@ -39,7 +40,27 @@ public class OrderItem {
 
     public Order getOrder() { return order; }
 
-    public void setOrder(Order order) {
-        this.order = order;
+    public void setOrder(Order newOrder) {
+        if (this.order == newOrder) return;
+        if (this.order != null) {
+            this.order.getItems().remove(this);
+        }
+        this.order = newOrder;
+        if (newOrder != null && !newOrder.getItems().contains(this)) {
+            newOrder.getItems().add(this);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OrderItem other = (OrderItem) o;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }
