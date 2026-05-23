@@ -1,94 +1,94 @@
 package com.example.new_toy_store.product.domain;
 
-import com.example.new_toy_store.category.domain.Category;
 import jakarta.persistence.*;
 
-import java.security.PublicKey;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="products", uniqueConstraints = @UniqueConstraint(columnNames = "product_name"))
+@Table(
+        name = "products",
+        uniqueConstraints = @UniqueConstraint(name = "uk_product_name", columnNames = "product_name"),
+        indexes = {
+                @Index(name = "idx_product_category", columnList = "category_id")
+        }
+)
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id")
     private Integer id;
 
-    @Column(name="product_name", nullable = false)
+    @Column(name = "product_name", nullable = false, length = 255)
     private String productName;
 
+    @Column(length = 1000)
     private String description;
 
+    @Column(nullable = false)
     private Double price;
 
+    @Column(nullable = false)
     private int stock;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private Category category;
+    // ❗ loose coupling
+    @Column(name = "category_id", nullable = false)
+    private Integer categoryId;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    protected Product() {}
 
-    public Product(){}
+    public Product(String productName, String description, Double price, int stock, Integer categoryId) {
+        if (productName == null || productName.isBlank())
+            throw new IllegalArgumentException("Invalid name");
 
-    public Product(int id, String productName, String description, Double price,
-                   int stock, LocalDateTime createdAt) {
-        this.id = id;
+        if (price == null || price <= 0)
+            throw new IllegalArgumentException("Invalid price");
+
+        if (categoryId == null)
+            throw new IllegalArgumentException("Category required");
+
         this.productName = productName;
         this.description = description;
         this.price = price;
         this.stock = stock;
+        this.categoryId = categoryId;
         this.createdAt = LocalDateTime.now();
     }
 
-    public Integer getId() {
-        return id;
+    public void changeCategory(Integer newCategoryId) {
+        if (newCategoryId == null) throw new IllegalArgumentException("Invalid category");
+        this.categoryId = newCategoryId;
     }
 
-    public String getProductName() {
-        return productName;
+    public void decreaseStock(int quantity) {
+        if (quantity <= 0) throw new IllegalArgumentException("Invalid quantity");
+        if (stock < quantity) throw new IllegalStateException("Not enough stock");
+        stock -= quantity;
     }
 
-    public String getDescription() {
-        return description;
+    public void increaseStock(int quantity) {
+        if (quantity <= 0) throw new IllegalArgumentException("Invalid quantity");
+        stock += quantity;
     }
 
-    public Double getPrice() {
-        return price;
+    public void changePrice(Double newPrice) {
+        if (newPrice == null || newPrice <= 0)
+            throw new IllegalArgumentException("Invalid price");
+        this.price = newPrice;
     }
 
-    public int getStock() {
-        return stock;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void changeCategory(Category newCategory) {
-        if (this.category == newCategory) {
-            return;
-        }
-        if (this.category != null) {
-            this.category.getProducts().remove(this);
-        }
-        this.category = newCategory;
-        if (newCategory != null && !newCategory.getProducts().contains(this)) {
-            newCategory.getProducts().add(this);
-        }
-    }
+    public Integer getId() { return id; }
+    public String getProductName() { return productName; }
+    public Double getPrice() { return price; }
+    public int getStock() { return stock; }
+    public Integer getCategoryId() { return categoryId; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     @Override
     public boolean equals(Object o) {
-        if(this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Product other = (Product) o;
-        return id != null && id.equals(other.id);
+        return this == o || (o instanceof Product p && id != null && id.equals(p.id));
     }
 
     @Override

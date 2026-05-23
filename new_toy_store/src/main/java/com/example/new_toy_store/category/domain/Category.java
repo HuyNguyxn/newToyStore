@@ -1,54 +1,52 @@
 package com.example.new_toy_store.category.domain;
 
 import com.example.new_toy_store.product.domain.Product;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 @Entity
-@Table(name = "category", uniqueConstraints = @UniqueConstraint(columnNames = "category_name"))
+@Table(
+        name = "categories",
+        uniqueConstraints = @UniqueConstraint(name = "uk_category_name", columnNames = "category_name")
+)
 public class Category {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "category_name", nullable = false)
+    @Column(name = "category_name", nullable = false, length = 255)
     private String categoryName;
 
+    @Column(length = 1000)
     private String description;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private List<Product> products = new ArrayList<>();
-    public Category(){}
 
-    public Category(String description, LocalDateTime createdAt, String categoryName) {
+    protected Category() {}
+
+    public Category(String categoryName, String description) {
+        if (categoryName == null || categoryName.isBlank())
+            throw new IllegalArgumentException("Invalid name");
+
+        this.categoryName = categoryName;
         this.description = description;
         this.createdAt = LocalDateTime.now();
-        this.categoryName = categoryName;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public String getCategoryName() {
-        return categoryName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
     public void rename(String newName) {
+        if (newName == null || newName.isBlank())
+            throw new IllegalArgumentException("Invalid name");
         this.categoryName = newName;
     }
 
@@ -56,27 +54,18 @@ public class Category {
         this.description = description;
     }
 
+    public Integer getId() { return id; }
+    public String getCategoryName() { return categoryName; }
+    public String getDescription() { return description; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public List<Product> getProducts() {
-        return products;
+        return Collections.unmodifiableList(products);
     }
 
-    public void addProduct(Product product) {
-        if (product.getCategory() != this) {
-            product.changeCategory(this);
-        }
-    }
-    public void removeProduct(Product product){
-        if (products.contains(product)){
-            product.changeCategory(null);
-        }
-    }
     @Override
     public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null ||getClass() !=o.getClass() ) return false;
-        Category other = (Category) o;
-        return id != null && id.equals(other.id);
+        return this == o || (o instanceof Category c && id != null && id.equals(c.id));
     }
 
     @Override
