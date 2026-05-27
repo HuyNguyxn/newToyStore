@@ -13,8 +13,6 @@ public class OrderItemResponse {
     }
 
     public String getProductName() { return productName; }
-
     public int getQuantity() { return quantity; }
-
     public double getPrice() { return price; }
 }

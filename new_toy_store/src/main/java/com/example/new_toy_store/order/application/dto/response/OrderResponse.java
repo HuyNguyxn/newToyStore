@@ -18,10 +18,7 @@ public class OrderResponse {
     }
 
     public Integer getId() { return id; }
-
     public String getStatus() { return status; }
-
     public LocalDateTime getCreatedAt() { return createdAt; }
-
     public List<OrderItemResponse> getItems() { return items; }
 }
