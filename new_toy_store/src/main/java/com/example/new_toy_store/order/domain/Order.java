@@ -1,7 +1,7 @@
 package com.example.new_toy_store.order.domain;
 
+import com.example.new_toy_store.order.common.BaseAuditEntity;
 import jakarta.persistence.*;
-import org.aspectj.weaver.ast.Or;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,31 +16,24 @@ import java.util.Objects;
                 @Index(name = "idx_order_created_at", columnList = "created_at")
         }
 )
-public class Order {
+public class Order extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
-    protected Order() {}
+    public Order() {}
 
     public Order(String status) {
-        if (status == null || status.isBlank())
-            throw new IllegalArgumentException("Invalid status");
-
-        this.status = status;
-        this.createdAt = LocalDateTime.now();
+        this.status = OrderStatus.from(status);
     }
-
 
     public void addItem(Integer productId, String productName, int quantity, double price) {
         OrderItem item = new OrderItem(productId, productName, quantity, price);
@@ -55,20 +48,28 @@ public class Order {
     }
 
     public double totalPrice() {
-        return items.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        return items.stream()
+                .mapToDouble(OrderItem::getTotalPrice)
+                .sum();
     }
 
-    public void changeStatus(String status) {
-        if (status == null || status.isBlank())
+
+    public void changeStatus(OrderStatus status) {
+        if (status == null)
             throw new IllegalArgumentException("Invalid status");
+
         this.status = status;
     }
 
-    // ===== GETTER =====
+
+    public void confirm() { status.confirm(this); }
+    public void ship() { status.ship(this); }
+    public void complete() { status.complete(this); }
+    public void cancel() { status.cancel(this); }
+
 
     public Integer getId() { return id; }
-    public String getStatus() { return status; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public OrderStatus getStatus() { return status; }
 
     public List<OrderItem> getItems() {
         return Collections.unmodifiableList(items);

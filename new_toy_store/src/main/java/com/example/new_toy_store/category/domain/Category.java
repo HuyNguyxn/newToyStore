@@ -1,7 +1,9 @@
 package com.example.new_toy_store.category.domain;
 
+import com.example.new_toy_store.order.common.BaseAuditEntity;
 import com.example.new_toy_store.product.domain.Product;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -9,11 +11,12 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
+@Getter
 @Table(
         name = "categories",
         uniqueConstraints = @UniqueConstraint(name = "uk_category_name", columnNames = "category_name")
 )
-public class Category {
+public class Category extends BaseAuditEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,15 +55,6 @@ public class Category {
 
     public void changeDescription(String description) {
         this.description = description;
-    }
-
-    public Integer getId() { return id; }
-    public String getCategoryName() { return categoryName; }
-    public String getDescription() { return description; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-
-    public List<Product> getProducts() {
-        return Collections.unmodifiableList(products);
     }
 
     @Override
