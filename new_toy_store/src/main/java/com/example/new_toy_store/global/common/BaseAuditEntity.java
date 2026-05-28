@@ -1,4 +1,4 @@
-package com.example.new_toy_store.order.common;
+package com.example.new_toy_store.global.common;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

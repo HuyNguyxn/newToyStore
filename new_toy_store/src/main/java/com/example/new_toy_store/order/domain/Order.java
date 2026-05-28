@@ -1,79 +1,116 @@
 package com.example.new_toy_store.order.domain;
 
-import com.example.new_toy_store.order.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 @Entity
 @Table(
         name = "orders",
         indexes = {
-                @Index(name = "idx_order_created_at", columnList = "created_at")
+                @Index(name = "idx_order_created_at", columnList = "created_at"),
+                @Index(name = "idx_order_user_id", columnList = "user_id")
         }
 )
+@SQLRestriction("deleted_at IS NULL")
 public class Order extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(nullable = false)
+    private double totalAmount = 0.0;
+
+    @Column(nullable = false)
+    private String shippingAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
-    public Order() {}
+    protected Order() {}
 
-    public Order(String status) {
-        this.status = OrderStatus.from(status);
+    public Order(Integer userId, String shippingAddress) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+        if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
+            throw new IllegalArgumentException("Shipping address is required");
+        }
+        this.userId = userId;
+        this.shippingAddress = shippingAddress;
+        this.status = OrderStatus.PENDING;
     }
 
     public void addItem(Integer productId, String productName, int quantity, double price) {
         OrderItem item = new OrderItem(productId, productName, quantity, price);
         item.setOrder(this);
         this.items.add(item);
+        recalculateTotal();
     }
 
     public void removeItem(OrderItem item) {
-        if (item == null || item.getOrder() != this) return;
-        item.setOrder(null);
-        this.items.remove(item);
+        if (item != null && this.items.contains(item)) {
+            item.setOrder(null);
+            this.items.remove(item);
+            recalculateTotal();
+        }
     }
 
-    public double totalPrice() {
-        return items.stream()
+    private void recalculateTotal() {
+        this.totalAmount = items.stream()
                 .mapToDouble(OrderItem::getTotalPrice)
                 .sum();
     }
 
-
-    public void changeStatus(OrderStatus status) {
-        if (status == null)
-            throw new IllegalArgumentException("Invalid status");
-
-        this.status = status;
+    public void updateShippingAddress(String newAddress) {
+        if (this.status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Can only update address when order is pending");
+        }
+        if (newAddress != null && !newAddress.trim().isEmpty()) {
+            this.shippingAddress = newAddress;
+        }
     }
 
+    void changeStatus(OrderStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("Invalid status");
+        }
+        this.status = status;
+    }
 
     public void confirm() { status.confirm(this); }
     public void ship() { status.ship(this); }
     public void complete() { status.complete(this); }
     public void cancel() { status.cancel(this); }
 
+    @Override
+    public void delete() {
+        if (!this.status.canBeDeleted()) {
+            throw new IllegalStateException("Cannot delete order in status: " + this.status.name());
+        }
+
+        super.delete();
+        this.items.forEach(BaseAuditEntity::delete);
+    }
 
     public Integer getId() { return id; }
+    public Integer getUserId() { return userId; }
     public OrderStatus getStatus() { return status; }
-
-    public List<OrderItem> getItems() {
-        return Collections.unmodifiableList(items);
-    }
+    public double getTotalAmount() { return totalAmount; }
+    public String getShippingAddress() { return shippingAddress; }
+    public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
 
     @Override
     public boolean equals(Object o) {
@@ -82,6 +119,6 @@ public class Order extends BaseAuditEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id);
+        return getClass().hashCode();
     }
 }

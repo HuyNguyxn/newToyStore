@@ -1,10 +1,8 @@
 package com.example.new_toy_store.order.domain;
 
-import com.example.new_toy_store.order.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-
-import java.util.Objects;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(
@@ -14,6 +12,7 @@ import java.util.Objects;
                 @Index(name = "idx_order_item_product", columnList = "product_id")
         }
 )
+@SQLRestriction("deleted_at IS NULL")
 public class OrderItem extends BaseAuditEntity {
 
     @Id
@@ -39,24 +38,19 @@ public class OrderItem extends BaseAuditEntity {
     protected OrderItem() {}
 
     public OrderItem(Integer productId, String productName, int quantity, double price) {
-
-        if (productId == null)
+        if (productId == null) {
             throw new IllegalArgumentException("Product required");
-
-        if (quantity <= 0)
+        }
+        if (quantity <= 0) {
             throw new IllegalArgumentException("Invalid quantity");
-
-        if (price <= 0)
+        }
+        if (price < 0) {
             throw new IllegalArgumentException("Invalid price");
-
+        }
         this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.price = price;
-    }
-
-    public OrderItem(String productName, int quantity, double price) {
-        super();
     }
 
     void setOrder(Order order) {
@@ -73,7 +67,6 @@ public class OrderItem extends BaseAuditEntity {
     public double getPrice() { return price; }
     public Order getOrder() { return order; }
     public Integer getProductId() { return productId; }
-
 
     @Override
     public boolean equals(Object o) {
