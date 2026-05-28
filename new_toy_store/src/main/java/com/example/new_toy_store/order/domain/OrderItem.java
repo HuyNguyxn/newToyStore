@@ -1,6 +1,8 @@
 package com.example.new_toy_store.order.domain;
 
+import com.example.new_toy_store.order.common.BaseAuditEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.util.Objects;
 
@@ -12,7 +14,7 @@ import java.util.Objects;
                 @Index(name = "idx_order_item_product", columnList = "product_id")
         }
 )
-public class OrderItem {
+public class OrderItem extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +39,7 @@ public class OrderItem {
     protected OrderItem() {}
 
     public OrderItem(Integer productId, String productName, int quantity, double price) {
+
         if (productId == null)
             throw new IllegalArgumentException("Product required");
 
@@ -50,6 +53,10 @@ public class OrderItem {
         this.productName = productName;
         this.quantity = quantity;
         this.price = price;
+    }
+
+    public OrderItem(String productName, int quantity, double price) {
+        super();
     }
 
     void setOrder(Order order) {
@@ -66,6 +73,7 @@ public class OrderItem {
     public double getPrice() { return price; }
     public Order getOrder() { return order; }
     public Integer getProductId() { return productId; }
+
 
     @Override
     public boolean equals(Object o) {

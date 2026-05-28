@@ -1,38 +1,62 @@
 package com.example.new_toy_store.order.application;
 
-import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
+import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service;
 
 @Service
 public class OrderService {
 
-    private final OrderRepository orderRepository;
+    private final OrderRepository repository;
 
-    public OrderService(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    public OrderService(OrderRepository repository) {
+        this.repository = repository;
     }
 
     @Transactional
-    public OrderResponse createOrder(OrderRequest request) {
+    public OrderResponse create(OrderRequest request) {
 
         Order order = OrderMapper.toEntity(request);
 
-        Order savedOrder = orderRepository.save(order);
+        repository.save(order);
 
-        return OrderMapper.toResponse(savedOrder);
+        return OrderMapper.toResponse(order);
     }
 
-    public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll()
-                .stream()
-                .map(OrderMapper::toResponse)
-                .collect(Collectors.toList());
+    @Transactional
+    public OrderResponse confirm(Integer id) {
+        Order order = getOrder(id);
+        order.confirm();
+        return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse ship(Integer id) {
+        Order order = getOrder(id);
+        order.ship();
+        return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse complete(Integer id) {
+        Order order = getOrder(id);
+        order.complete();
+        return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse cancel(Integer id) {
+        Order order = getOrder(id);
+        order.cancel();
+        return OrderMapper.toResponse(order);
+    }
+
+    private Order getOrder(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 }
