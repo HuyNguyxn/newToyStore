@@ -1,10 +1,13 @@
 package com.example.new_toy_store.product.domain;
 
+import com.example.new_toy_store.order.common.BaseAuditEntity;
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
 @Table(
         name = "products",
         uniqueConstraints = @UniqueConstraint(name = "uk_product_name", columnNames = "product_name"),
@@ -12,7 +15,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_product_category", columnList = "category_id")
         }
 )
-public class Product {
+public class Product extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +33,6 @@ public class Product {
     @Column(nullable = false)
     private int stock;
 
-    // ❗ loose coupling
     @Column(name = "category_id", nullable = false)
     private Integer categoryId;
 
@@ -78,14 +80,6 @@ public class Product {
             throw new IllegalArgumentException("Invalid price");
         this.price = newPrice;
     }
-
-    public Integer getId() { return id; }
-    public String getProductName() { return productName; }
-    public Double getPrice() { return price; }
-    public int getStock() { return stock; }
-    public Integer getCategoryId() { return categoryId; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-
     @Override
     public boolean equals(Object o) {
         return this == o || (o instanceof Product p && id != null && id.equals(p.id));
