@@ -39,6 +39,9 @@ public class Order extends BaseAuditEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderHistory> histories = new ArrayList<>();
+
     protected Order() {}
 
     public Order(Integer userId, String shippingAddress) {
@@ -51,6 +54,7 @@ public class Order extends BaseAuditEntity {
         this.userId = userId;
         this.shippingAddress = shippingAddress;
         this.status = OrderStatus.PENDING;
+        this.recordHistory(this.status, "Đơn hàng được tạo mới");
     }
 
     public void addItem(Integer productId, String productName, int quantity, double price) {
@@ -83,17 +87,24 @@ public class Order extends BaseAuditEntity {
         }
     }
 
-    void changeStatus(OrderStatus status) {
+    void changeStatus(OrderStatus status, String note) {
         if (status == null) {
             throw new IllegalArgumentException("Invalid status");
         }
         this.status = status;
+        this.recordHistory(status, note);
     }
 
-    public void confirm() { status.confirm(this); }
-    public void ship() { status.ship(this); }
-    public void complete() { status.complete(this); }
-    public void cancel() { status.cancel(this); }
+    private void recordHistory(OrderStatus status, String note) {
+        OrderHistory history = new OrderHistory(status, note);
+        history.setOrder(this);
+        this.histories.add(history);
+    }
+
+    public void confirm(String note) { status.confirm(this, note); }
+    public void ship(String note) { status.ship(this, note); }
+    public void complete(String note) { status.complete(this, note); }
+    public void cancel(String note) { status.cancel(this, note); }
 
     @Override
     public void delete() {
@@ -103,6 +114,7 @@ public class Order extends BaseAuditEntity {
 
         super.delete();
         this.items.forEach(BaseAuditEntity::delete);
+        this.histories.forEach(BaseAuditEntity::delete);
     }
 
     public Integer getId() { return id; }
@@ -111,6 +123,7 @@ public class Order extends BaseAuditEntity {
     public double getTotalAmount() { return totalAmount; }
     public String getShippingAddress() { return shippingAddress; }
     public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
+    public List<OrderHistory> getHistories() { return Collections.unmodifiableList(histories); }
 
     @Override
     public boolean equals(Object o) {

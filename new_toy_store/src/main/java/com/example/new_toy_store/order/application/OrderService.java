@@ -4,9 +4,10 @@ import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderRepository;
-
-import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -17,42 +18,64 @@ public class OrderService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getUserOrders(Integer userId, Pageable pageable) {
+        return repository.findByUserId(userId, pageable)
+                .map(OrderMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderDetails(Integer id) {
+        Order order = repository.findByIdWithItems(id);
+        if (order == null) {
+            throw new RuntimeException("Order not found");
+        }
+        return OrderMapper.toResponse(order);
+    }
+
     @Transactional
     public OrderResponse create(OrderRequest request) {
-
         Order order = OrderMapper.toEntity(request);
-
         repository.save(order);
-
         return OrderMapper.toResponse(order);
     }
 
     @Transactional
-    public OrderResponse confirm(Integer id) {
+    public OrderResponse confirm(Integer id, String note) {
         Order order = getOrder(id);
-        order.confirm();
+        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Đơn hàng đã được xác nhận";
+        order.confirm(finalNote);
         return OrderMapper.toResponse(order);
     }
 
     @Transactional
-    public OrderResponse ship(Integer id) {
+    public OrderResponse ship(Integer id, String note) {
         Order order = getOrder(id);
-        order.ship();
+        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Đơn hàng đang được giao cho đơn vị vận chuyển";
+        order.ship(finalNote);
         return OrderMapper.toResponse(order);
     }
 
     @Transactional
-    public OrderResponse complete(Integer id) {
+    public OrderResponse complete(Integer id, String note) {
         Order order = getOrder(id);
-        order.complete();
+        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Đơn hàng giao thành công";
+        order.complete(finalNote);
         return OrderMapper.toResponse(order);
     }
 
     @Transactional
-    public OrderResponse cancel(Integer id) {
+    public OrderResponse cancel(Integer id, String note) {
         Order order = getOrder(id);
-        order.cancel();
+        String finalNote = (note != null && !note.trim().isEmpty()) ? note : "Đơn hàng đã bị hủy";
+        order.cancel(finalNote);
         return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public void delete(Integer id) {
+        Order order = getOrder(id);
+        order.delete();
     }
 
     private Order getOrder(Integer id) {

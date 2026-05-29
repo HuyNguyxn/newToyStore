@@ -4,13 +4,13 @@ public enum OrderStatus {
 
     PENDING("Chờ xác nhận") {
         @Override
-        public void confirm(Order order) {
-            order.changeStatus(CONFIRMED);
+        public void confirm(Order order, String note) {
+            order.changeStatus(CONFIRMED, note);
         }
 
         @Override
-        public void cancel(Order order) {
-            order.changeStatus(CANCELLED);
+        public void cancel(Order order, String note) {
+            order.changeStatus(CANCELLED, note);
         }
 
         @Override
@@ -21,20 +21,20 @@ public enum OrderStatus {
 
     CONFIRMED("Đã xác nhận") {
         @Override
-        public void ship(Order order) {
-            order.changeStatus(SHIPPED);
+        public void ship(Order order, String note) {
+            order.changeStatus(SHIPPED, note);
         }
 
         @Override
-        public void cancel(Order order) {
-            order.changeStatus(CANCELLED);
+        public void cancel(Order order, String note) {
+            order.changeStatus(CANCELLED, note);
         }
     },
 
     SHIPPED("Đang giao") {
         @Override
-        public void complete(Order order) {
-            order.changeStatus(COMPLETED);
+        public void complete(Order order, String note) {
+            order.changeStatus(COMPLETED, note);
         }
     },
 
@@ -57,19 +57,19 @@ public enum OrderStatus {
         return displayName;
     }
 
-    public void confirm(Order order) {
+    public void confirm(Order order, String note) {
         throw notAllowed("confirm");
     }
 
-    public void ship(Order order) {
+    public void ship(Order order, String note) {
         throw notAllowed("ship");
     }
 
-    public void complete(Order order) {
+    public void complete(Order order, String note) {
         throw notAllowed("complete");
     }
 
-    public void cancel(Order order) {
+    public void cancel(Order order, String note) {
         throw notAllowed("cancel");
     }
 

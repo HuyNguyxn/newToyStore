@@ -13,8 +13,9 @@ public class OrderResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemResponse> items;
+    private List<OrderHistoryResponse> histories;
 
-    public OrderResponse(Integer id, Integer userId, String status, double totalAmount, String shippingAddress, LocalDateTime createdAt, LocalDateTime updatedAt, List<OrderItemResponse> items) {
+    public OrderResponse(Integer id, Integer userId, String status, double totalAmount, String shippingAddress, LocalDateTime createdAt, LocalDateTime updatedAt, List<OrderItemResponse> items, List<OrderHistoryResponse> histories) {
         this.id = id;
         this.userId = userId;
         this.status = status;
@@ -23,6 +24,7 @@ public class OrderResponse {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.items = items;
+        this.histories = histories;
     }
 
     public Integer getId() { return id; }
@@ -33,4 +35,5 @@ public class OrderResponse {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public List<OrderItemResponse> getItems() { return items; }
+    public List<OrderHistoryResponse> getHistories() { return histories; }
 }
