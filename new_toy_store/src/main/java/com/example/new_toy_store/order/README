@@ -1,0 +1,84 @@
+Module: Order Domain
+
+1. Purpose
+Quản lý quy trình xử lý đơn hàng, theo dõi trạng thái giao hàng
+và đảm bảo tính toàn vẹn của lịch sử giao dịch.
+
+2. Entities
+Order (Aggregate Root):
+Hóa đơn tổng, điểm vào duy nhất để thao tác với đơn hàng.
+OrderItem (Entity):
+Chi tiết hàng hóa. Chứa dữ liệu đóng băng tại thời điểm mua.
+OrderHistory (Entity):
+Lưu vết lịch sử chuyển đổi trạng thái của đơn.
+OrderStatus (Enum):
+Quản lý vòng đời đơn hàng, giới hạn các bước chuyển trạng thái hợp lệ.
+
+3. Relationships
+Order 1 - N OrderItem:
+Liên kết chặt (Cascade ALL). Xóa Order sẽ xóa các Item bên trong.
+Order 1 - N OrderHistory:
+Liên kết chặt (Cascade ALL).
+OrderItem N - 1 Product:
+Liên kết lỏng (Lưu productId).
+OrderItem N - 1 ProductVariant:
+Liên kết lỏng (Lưu variantId).
+
+4. Flow
+Tạo đơn hàng:
+Hứng dữ liệu -> Tìm ProductVariant tương ứng -> Chạy hàm sinh Snapshot thuộc tính
+-> Khởi tạo OrderItem -> Tính tổng tiền -> Lưu Order.
+Cập nhật trạng thái:
+Nhận lệnh -> Kiểm tra State Machine trong OrderStatus
+-> Nếu hợp lệ, đổi trạng thái và ghi log vào OrderHistory -> Lưu DB.
+
+5. Business Rules
+Validation:
+quantity phải > 0.
+price phải >= 0.
+Bắt buộc phải truyền productId và variantId.
+
+Invariant (Bất biến):
+totalAmount luôn phải bằng tổng (price * quantity) của toàn bộ OrderItem có trong đơn.
+
+State Transition:
+Vòng đời bắt buộc: PENDING -> CONFIRMED -> SHIPPED -> COMPLETED.
+Đơn hàng chỉ có thể chuyển sang CANCELLED nếu chưa hoàn tất giao hàng.
+
+Constraints:
+Chỉ được phép cập nhật địa chỉ giao hàng (shippingAddress) khi đơn hàng đang ở trạng thái PENDING.
+Chỉ cho phép xóa mềm đơn hàng nếu trạng thái hiện tại là CANCELLED.
+
+Calculation:
+Logic calculateTotal() được tự động trigger mỗi khi có một OrderItem được thêm hoặc bớt khỏi Order.
+
+Data Strategy:
+Immutability:
+Lưu cứng toàn bộ thuộc tính động vào cột variantAttributesSnapshot để
+đảm bảo hóa đơn không bị biến dạng nếu Admin sửa xóa sản phẩm sau này.
+
+6. APIs
+GET /orders/user/{userId}:
+Lấy lịch sử đơn hàng của User.
+GET /orders/{id}:
+Xem chi tiết hóa đơn.
+POST /orders:
+Tạo mới đơn hàng.
+PUT /orders/{id}/confirm:
+Xác nhận đơn hàng.
+PUT /orders/{id}/ship:
+Bắt đầu giao hàng.
+PUT /orders/{id}/complete:
+Hoàn tất đơn hàng.
+PUT /orders/{id}/cancel:
+Hủy đơn hàng.
+DELETE /orders/{id}:
+Xóa mềm đơn hàng.
+
+7. Notes
+Immutability (Bất biến):
+Không dùng Khóa ngoại (Foreign Key) cứng từ OrderItem sang ProductAttributeValue
+để đề phòng trường hợp Admin xóa thuộc tính làm hỏng hóa đơn cũ.
+Rich Enum:
+Mọi quy tắc chuyển đổi trạng thái đơn hàng nằm gọn trong OrderStatus,
+loại bỏ hoàn toàn các khối if/else dư thừa tại Service.

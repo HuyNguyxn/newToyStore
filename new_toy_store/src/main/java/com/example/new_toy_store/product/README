@@ -1,0 +1,81 @@
+Module: Product Domain
+
+1. Purpose
+Quản lý thông tin đồ chơi, cấu trúc phân loại hàng hóa (biến thể) và kiểm soát số lượng tồn kho.
+
+2. Entities
+Product (Aggregate Root):
+Sản phẩm gốc, điều phối toàn bộ vòng đời của các thực thể con bên trong.
+ProductVariant (Entity):
+Phiên bản cụ thể của sản phẩm.
+ProductImage (Entity):
+Hình ảnh sản phẩm (quản lý Thumbnail).
+Inventory (Entity):
+Tồn kho vật lý, tách biệt để dễ mở rộng logic quản lý kho sau này.
+ProductAttributeValue (Entity):
+Giá trị thuộc tính động, giải quyết bài toán không giới hạn thuộc tính.
+VariantType (Enum):
+Phân loại biến thể, chứa sẵn logic phán xử quyền hạn.
+
+3. Relationships
+Product 1 - N ProductImage:
+Liên kết chặt (Cascade ALL). Xóa Product sẽ xóa toàn bộ ảnh.
+Product 1 - N ProductVariant:
+Liên kết chặt (Cascade ALL). Xóa Product sẽ xóa toàn bộ biến thể.
+ProductVariant 1 - 1 Inventory:
+Liên kết chặt (Cascade ALL). Tồn kho gắn liền với sự tồn tại của biến thể.
+ProductVariant 1 - N ProductAttributeValue:
+Liên kết chặt (Cascade ALL).
+
+4. Flow
+Tạo sản phẩm không phân loại:
+Nhận Request -> Khởi tạo Product -> Sinh tự động 1 ProductVariant loại DEFAULT -> Lưu DB.
+Tạo sản phẩm có phân loại:
+Nhận Request -> Khởi tạo Product -> Tạo các ProductVariant loại MASTER/REGULAR
+-> Đổ dữ liệu vào ProductAttributeValue tương ứng -> Lưu DB.
+
+5. Business Rules
+
+Validation:
+Tên sản phẩm không được để trống.
+basePrice, price, và stockQuantity phải lớn hơn 0.
+
+Invariant (Bất biến):
+Một Product luôn có ít nhất 1 biến thể (hoặc Default, hoặc Master/Regular).
+Nếu sản phẩm có phân loại, luôn phải có đúng 1 biến thể được đánh dấu là MASTER.
+
+State Transition:
+Biến thể REGULAR có thể chuyển thành MASTER (và ngược lại).
+Biến thể DEFAULT bị khóa cứng, không thể chuyển đổi thành các loại khác.
+
+Constraints:
+Không được phép trộn lẫn biến thể DEFAULT và biến thể thật (Master/Regular) trong cùng một sản phẩm.
+Biến thể DEFAULT không được phép thêm thuộc tính động (Attributes).
+
+Data Strategy:
+Áp dụng Soft Delete (deleted_at) qua BaseAuditEntity.
+Sử dụng Pattern EAV (Entity-Attribute-Value) để tránh phình to cột trong Database.
+
+6. APIs
+GET /products:
+Lấy danh sách sản phẩm.
+GET /products/{id}:
+Xem chi tiết sản phẩm.
+POST /products:
+Tạo sản phẩm.
+PUT /products/{id}:
+Cập nhật thông tin gốc.
+PATCH /products/{id}/variants/{variantId}/stock:
+Cập nhật tồn kho.
+PATCH /products/{id}/images/{imageId}/thumbnail:
+Đổi ảnh đại diện.
+DELETE /products/{id}:
+Xóa sản phẩm.
+
+7. Notes
+EAV Pattern:
+Sử dụng ProductAttributeValue để bán bất kỳ loại đồ chơi nào mà không cần thêm cột cứng vào Database.
+Special Case Pattern:
+Tự động sinh biến thể DEFAULT cho các sản phẩm không có phân loại để đồng nhất luồng dữ liệu khi đưa vào Giỏ hàng.
+Rich Enum:
+Gom logic kiểm tra quyền (đổi loại biến thể, thêm thuộc tính) vào trong VariantType.

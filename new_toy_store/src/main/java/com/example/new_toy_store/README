@@ -1,0 +1,40 @@
+NewToyStore - Toy Store API
+
+1. Overview
+Hệ thống API quản lý bán hàng chuyên dụng cho cửa hàng đồ chơi.
+Dự án giải quyết trọn vẹn bài toán mở rộng động thuộc tính hàng hóa và quản lý vòng đời đơn hàng nhất quán, an toàn.
+
+2. Tech Stack
+Java
+Spring Boot 3
+Spring Data JPA (Hibernate)
+MySQL
+
+3. Architecture (Domain)
+Áp dụng Domain-Driven Design (DDD) và Clean Architecture.
+product:
+Quản lý danh mục, hàng hóa, tồn kho và cấu trúc EAV.
+order:
+Khớp nối giao dịch, hóa đơn và State Machine trạng thái.
+
+4. Module Navigation
+Product Domain:
+./src/main/java/com/example/new_toy_store/product/README.md
+Order Domain:
+./src/main/java/com/example/new_toy_store/order/README.md
+
+5. Main Flows
+
+6. Setup & Run
+spring.application.name=new_toy_store
+spring.datasource.url=jdbc:mysql://localhost:3306/new_toy_store
+
+Khởi chạy dự án:
+mvn clean install
+mvn spring-boot:run
+
+7. Future Improvements
+Hoàn thiện module Cart để khép kín luồng mua sắm.
+Hoàn thiện module User tích hợp JWT Authentication.
+Tích hợp cổng thanh toán trực tuyến (VNPAY/Momo).
+Ứng dụng Redis Cache để tăng tốc độ truy xuất trang chủ.

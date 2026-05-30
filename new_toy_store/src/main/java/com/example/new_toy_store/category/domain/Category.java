@@ -1,13 +1,12 @@
 package com.example.new_toy_store.category.domain;
 
-import com.example.new_toy_store.order.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseAuditEntity;
 import com.example.new_toy_store.product.domain.Product;
 import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Entity
