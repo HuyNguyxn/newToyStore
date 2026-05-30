@@ -57,22 +57,22 @@ public class Order extends BaseAuditEntity {
         this.recordHistory(this.status, "Đơn hàng được tạo mới");
     }
 
-    public void addItem(Integer productId, String productName, int quantity, double price) {
-        OrderItem item = new OrderItem(productId, productName, quantity, price);
+    public void addItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
+        OrderItem item = new OrderItem(productId, variantId, productName, variantAttributesSnapshot, quantity, price);
         item.setOrder(this);
         this.items.add(item);
-        recalculateTotal();
+        calculateTotal();
     }
 
     public void removeItem(OrderItem item) {
         if (item != null && this.items.contains(item)) {
             item.setOrder(null);
             this.items.remove(item);
-            recalculateTotal();
+            calculateTotal();
         }
     }
 
-    private void recalculateTotal() {
+    private void calculateTotal() {
         this.totalAmount = items.stream()
                 .mapToDouble(OrderItem::getTotalPrice)
                 .sum();

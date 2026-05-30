@@ -11,18 +11,7 @@ import java.util.stream.Collectors;
 public class OrderMapper {
 
     public static Order toEntity(OrderRequest request) {
-        Order order = new Order(request.getUserId(), request.getShippingAddress());
-
-        request.getItems().forEach(i ->
-                order.addItem(
-                        i.getProductId(),
-                        i.getProductName(),
-                        i.getQuantity(),
-                        i.getPrice()
-                )
-        );
-
-        return order;
+        return new Order(request.getUserId(), request.getShippingAddress());
     }
 
     public static OrderResponse toResponse(Order order) {

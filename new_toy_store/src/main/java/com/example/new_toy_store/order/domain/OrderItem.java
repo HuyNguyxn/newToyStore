@@ -35,11 +35,17 @@ public class OrderItem extends BaseAuditEntity {
     @Column(name = "product_id", nullable = false)
     private Integer productId;
 
+    @Column(name = "variant_id", nullable = false)
+    private Integer variantId;
+
+    @Column(name = "variant_attributes_snapshot", nullable = false)
+    private String variantAttributesSnapshot;
+
     protected OrderItem() {}
 
-    public OrderItem(Integer productId, String productName, int quantity, double price) {
-        if (productId == null) {
-            throw new IllegalArgumentException("Product required");
+    public OrderItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
+        if (productId == null || variantId == null) {
+            throw new IllegalArgumentException("Product and Variant IDs are required");
         }
         if (quantity <= 0) {
             throw new IllegalArgumentException("Invalid quantity");
@@ -48,7 +54,9 @@ public class OrderItem extends BaseAuditEntity {
             throw new IllegalArgumentException("Invalid price");
         }
         this.productId = productId;
+        this.variantId = variantId;
         this.productName = productName;
+        this.variantAttributesSnapshot = variantAttributesSnapshot;
         this.quantity = quantity;
         this.price = price;
     }
@@ -67,6 +75,8 @@ public class OrderItem extends BaseAuditEntity {
     public double getPrice() { return price; }
     public Order getOrder() { return order; }
     public Integer getProductId() { return productId; }
+    public Integer getVariantId() { return variantId; }
+    public String getVariantAttributesSnapshot() { return variantAttributesSnapshot; }
 
     @Override
     public boolean equals(Object o) {
