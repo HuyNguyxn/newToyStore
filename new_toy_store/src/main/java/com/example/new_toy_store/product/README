@@ -6,16 +6,27 @@ Quản lý thông tin đồ chơi, cấu trúc phân loại hàng hóa (biến t
 2. Entities
 Product (Aggregate Root):
 Sản phẩm gốc, điều phối toàn bộ vòng đời của các thực thể con bên trong.
+Các cột: id, name, description, basePrice, categoryId, status, created_at, updated_at, deleted_at.
+
 ProductVariant (Entity):
 Phiên bản cụ thể của sản phẩm.
+Các cột: id, product_id, type, price, created_at, updated_at, deleted_at.
+
 ProductImage (Entity):
-Hình ảnh sản phẩm (quản lý Thumbnail).
+Hình ảnh sản phẩm (quản lý cờ Thumbnail).
+Các cột: id, product_id, image_url, is_thumbnail, created_at, updated_at, deleted_at.
+
 Inventory (Entity):
 Tồn kho vật lý, tách biệt để dễ mở rộng logic quản lý kho sau này.
+Các cột: id, variant_id, stock_quantity, created_at, updated_at, deleted_at.
+
 ProductAttributeValue (Entity):
 Giá trị thuộc tính động, giải quyết bài toán không giới hạn thuộc tính.
+Các cột: id, variant_id, attribute_name, attribute_value.
+
 VariantType (Enum):
 Phân loại biến thể, chứa sẵn logic phán xử quyền hạn.
+Giá trị: DEFAULT, MASTER, REGULAR.
 
 3. Relationships
 Product 1 - N ProductImage:

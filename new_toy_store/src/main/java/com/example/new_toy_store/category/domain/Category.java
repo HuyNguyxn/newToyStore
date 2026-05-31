@@ -1,60 +1,79 @@
 package com.example.new_toy_store.category.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
-import com.example.new_toy_store.product.domain.Product;
 import jakarta.persistence.*;
-import lombok.Getter;
+import org.hibernate.annotations.SQLRestriction;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Getter
-@Table(
-        name = "categories",
-        uniqueConstraints = @UniqueConstraint(name = "uk_category_name", columnNames = "category_name")
-)
-public class Category extends BaseAuditEntity{
+@Table(name = "categories")
+@SQLRestriction("deleted_at IS NULL")
+public class Category extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "category_name", nullable = false, length = 255)
-    private String categoryName;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    @Column(length = 1000)
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    @Column(length = 500)
     private String description;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", insertable = false, updatable = false)
-    private List<Product> products = new ArrayList<>();
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Category> subCategories = new ArrayList<>();
 
     protected Category() {}
 
-    public Category(String categoryName, String description) {
-        if (categoryName == null || categoryName.isBlank())
-            throw new IllegalArgumentException("Invalid name");
-
-        this.categoryName = categoryName;
-        this.description = description;
-        this.createdAt = LocalDateTime.now();
-    }
-
-
-    public void rename(String newName) {
-        if (newName == null || newName.isBlank())
-            throw new IllegalArgumentException("Invalid name");
-        this.categoryName = newName;
-    }
-
-    public void changeDescription(String description) {
+    public Category(String name, String slug, String description) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Category name is required");
+        }
+        if (slug == null || slug.trim().isEmpty()) {
+            throw new IllegalArgumentException("Category slug is required");
+        }
+        this.name = name;
+        this.slug = slug;
         this.description = description;
     }
+
+    public void updateInfo(String name, String slug, String description) {
+        if (name != null && !name.trim().isEmpty()) {
+            this.name = name;
+        }
+        if (slug != null && !slug.trim().isEmpty()) {
+            this.slug = slug;
+        }
+        this.description = description;
+    }
+
+    public void assignParent(Category parentCategory) {
+        if (parentCategory != null && parentCategory.getId().equals(this.id)) {
+            throw new IllegalStateException("A category cannot be its own parent");
+        }
+        this.parent = parentCategory;
+    }
+
+    public void removeParent() {
+        this.parent = null;
+    }
+
+    public Integer getId() { return id; }
+    public String getName() { return name; }
+    public String getSlug() { return slug; }
+    public String getDescription() { return description; }
+    public Category getParent() { return parent; }
+    public List<Category> getSubCategories() { return Collections.unmodifiableList(subCategories); }
 
     @Override
     public boolean equals(Object o) {

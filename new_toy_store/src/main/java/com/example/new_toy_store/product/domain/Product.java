@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 @Entity
+@SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "products",
         indexes = {
                 @Index(name = "idx_product_category", columnList = "category_id")
         }
 )
-@SQLRestriction("deleted_at IS NULL")
 public class Product extends BaseAuditEntity {
 
     @Id

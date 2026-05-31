@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
+@SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "orders",
         indexes = {
@@ -16,7 +17,6 @@ import java.util.List;
                 @Index(name = "idx_order_user_id", columnList = "user_id")
         }
 )
-@SQLRestriction("deleted_at IS NULL")
 public class Order extends BaseAuditEntity {
 
     @Id

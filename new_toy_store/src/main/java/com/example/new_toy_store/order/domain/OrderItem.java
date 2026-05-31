@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
+@SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "order_items",
         indexes = {
@@ -12,7 +13,6 @@ import org.hibernate.annotations.SQLRestriction;
                 @Index(name = "idx_order_item_product", columnList = "product_id")
         }
 )
-@SQLRestriction("deleted_at IS NULL")
 public class OrderItem extends BaseAuditEntity {
 
     @Id

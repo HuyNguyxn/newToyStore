@@ -7,12 +7,19 @@ và đảm bảo tính toàn vẹn của lịch sử giao dịch.
 2. Entities
 Order (Aggregate Root):
 Hóa đơn tổng, điểm vào duy nhất để thao tác với đơn hàng.
-OrderItem (Entity):
+Các cột: id, user_id, total_amount, status, shipping_address, created_at, updated_at, deleted_at.
+
+OrderItem (Entity / Snapshot):
 Chi tiết hàng hóa. Chứa dữ liệu đóng băng tại thời điểm mua.
+Các cột: id, order_id, product_id, variant_id, product_name, variant_attributes_snapshot, quantity, price.
+
 OrderHistory (Entity):
 Lưu vết lịch sử chuyển đổi trạng thái của đơn.
+Các cột: id, order_id, status, note, created_at.
+
 OrderStatus (Enum):
 Quản lý vòng đời đơn hàng, giới hạn các bước chuyển trạng thái hợp lệ.
+Giá trị: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED.
 
 3. Relationships
 Order 1 - N OrderItem:
