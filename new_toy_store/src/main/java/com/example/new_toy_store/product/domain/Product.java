@@ -1,13 +1,11 @@
 package com.example.new_toy_store.product.domain;
 
+import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -29,8 +27,17 @@ public class Product extends BaseAuditEntity {
     @Column(nullable = false)
     private double basePrice;
 
-    @Column(name = "category_id", nullable = false)
-    private Integer categoryId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductStatus status = ProductStatus.ACTIVE;
+
+    @ManyToMany
+    @JoinTable(
+            name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
@@ -40,30 +47,23 @@ public class Product extends BaseAuditEntity {
 
     protected Product() {}
 
-    public Product(String name, double basePrice, Integer categoryId) {
+    public Product(String name, double basePrice) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Product name cannot be empty");
         }
         if (basePrice < 0) {
             throw new IllegalArgumentException("Base price cannot be negative");
         }
-        if (categoryId == null) {
-            throw new IllegalArgumentException("Category ID is required");
-        }
         this.name = name;
         this.basePrice = basePrice;
-        this.categoryId = categoryId;
     }
 
-    public void updateInfo(String name, double basePrice, Integer categoryId) {
+    public void updateInfo(String name, double basePrice) {
         if (name != null && !name.trim().isEmpty()) {
             this.name = name;
         }
         if (basePrice >= 0) {
             this.basePrice = basePrice;
-        }
-        if (categoryId != null) {
-            this.categoryId = categoryId;
         }
     }
 
@@ -145,6 +145,16 @@ public class Product extends BaseAuditEntity {
         if (!found) throw new IllegalArgumentException("Variant not found in this product");
     }
 
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories;
+    }
+
+    public void setStatus(ProductStatus status) {
+        if (status != null) {
+            this.status = status;
+        }
+    }
+
     @Override
     public void delete() {
         super.delete();
@@ -155,7 +165,8 @@ public class Product extends BaseAuditEntity {
     public Integer getId() { return id; }
     public String getName() { return name; }
     public double getBasePrice() { return basePrice; }
-    public Integer getCategoryId() { return categoryId; }
+    public ProductStatus getStatus() { return status; }
+    public Set<Category> getCategories() { return Collections.unmodifiableSet(categories); }
     public List<ProductImage> getImages() { return Collections.unmodifiableList(images); }
     public List<ProductVariant> getVariants() { return Collections.unmodifiableList(variants); }
 

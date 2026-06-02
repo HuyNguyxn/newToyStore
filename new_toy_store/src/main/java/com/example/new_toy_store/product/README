@@ -6,7 +6,9 @@ Quản lý thông tin đồ chơi, cấu trúc phân loại hàng hóa (biến t
 2. Entities
 Product (Aggregate Root):
 Sản phẩm gốc, điều phối toàn bộ vòng đời của các thực thể con bên trong.
-Các cột: id, name, description, basePrice, categoryId, status, created_at, updated_at, deleted_at.
+Các cột: id, name, description, basePrice, status, created_at, updated_at, deleted_at.
+ProductStatus (Enum):
+Quản lý trạng thái hiển thị và kinh doanh của sản phẩm với các giá trị: ACTIVE, INACTIVE, OUT_OF_STOCK.
 
 ProductVariant (Entity):
 Phiên bản cụ thể của sản phẩm.
@@ -30,13 +32,16 @@ Giá trị: DEFAULT, MASTER, REGULAR.
 
 3. Relationships
 Product 1 - N ProductImage:
-Liên kết chặt (Cascade ALL). Xóa Product sẽ xóa toàn bộ ảnh.
+Liên kết chặt. Xóa Product sẽ xóa toàn bộ ảnh.
 Product 1 - N ProductVariant:
-Liên kết chặt (Cascade ALL). Xóa Product sẽ xóa toàn bộ biến thể.
+Liên kết chặt. Xóa Product sẽ xóa toàn bộ biến thể.
 ProductVariant 1 - 1 Inventory:
-Liên kết chặt (Cascade ALL). Tồn kho gắn liền với sự tồn tại của biến thể.
+Liên kết chặt. Tồn kho gắn liền với sự tồn tại của biến thể.
 ProductVariant 1 - N ProductAttributeValue:
-Liên kết chặt (Cascade ALL).
+Liên kết chặt.
+Product N - N Category:
+Liên kết linh hoạt qua bảng trung gian thuần túy product_categories.
+Khi gỡ bỏ danh mục, hệ thống sẽ xóa cứng (Hard Delete) dòng kết nối tại bảng trung gian này.
 
 4. Flow
 Tạo sản phẩm không phân loại:
@@ -49,7 +54,7 @@ Nhận Request -> Khởi tạo Product -> Tạo các ProductVariant loại MASTE
 
 Validation:
 Tên sản phẩm không được để trống.
-basePrice, price, và stockQuantity phải lớn hơn 0.
+basePrice, price, và stockQuantity phải lớn hơn bằng 0.
 
 Invariant (Bất biến):
 Một Product luôn có ít nhất 1 biến thể (hoặc Default, hoặc Master/Regular).
@@ -87,6 +92,10 @@ Xóa sản phẩm.
 EAV Pattern:
 Sử dụng ProductAttributeValue để bán bất kỳ loại đồ chơi nào mà không cần thêm cột cứng vào Database.
 Special Case Pattern:
-Tự động sinh biến thể DEFAULT cho các sản phẩm không có phân loại để đồng nhất luồng dữ liệu khi đưa vào Giỏ hàng.
+Tự động sinh biến thể DEFAULT cho các sản phẩm không có phân loại để đồng nhất luồng dữ liệu
+khi đưa vào Giỏ hàng.
 Rich Enum:
 Gom logic kiểm tra quyền (đổi loại biến thể, thêm thuộc tính) vào trong VariantType.
+Many-to-Many Bridge:
+Ghi nhận quyết định chuyển sang mô hình bảng trung gian để đáp ứng nghiệp vụ thực tế,
+cho phép một mặt hàng đồ chơi có thể nhiều danh mục khác nhau.

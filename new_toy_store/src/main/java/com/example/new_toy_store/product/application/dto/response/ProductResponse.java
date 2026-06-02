@@ -7,20 +7,23 @@ public class ProductResponse {
     private Integer id;
     private String name;
     private double basePrice;
-    private Integer categoryId;
+    private String status;
+    private List<Integer> categoryIds;
     private List<ProductVariantResponse> variants;
 
-    public ProductResponse(Integer id, String name, double basePrice, Integer categoryId, List<ProductVariantResponse> variants) {
+    public ProductResponse(Integer id, String name, double basePrice, String status, List<Integer> categoryIds, List<ProductVariantResponse> variants) {
         this.id = id;
         this.name = name;
         this.basePrice = basePrice;
-        this.categoryId = categoryId;
+        this.status = status;
+        this.categoryIds = categoryIds;
         this.variants = variants;
     }
 
     public Integer getId() { return id; }
     public String getName() { return name; }
     public double getBasePrice() { return basePrice; }
-    public Integer getCategoryId() { return categoryId; }
+    public String getStatus() { return status; }
+    public List<Integer> getCategoryIds() { return categoryIds; }
     public List<ProductVariantResponse> getVariants() { return variants; }
 }
