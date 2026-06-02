@@ -55,7 +55,17 @@ Cập nhật thông tin và cấu trúc cha/con.
 DELETE /categories/{id}:
 Xóa danh mục.
 
-7. Notes / Design Decisions
+7. Algorithms & Data Structures (DSA)
+- Tree / Hierarchical Data Structure:
+Sử dụng cấu trúc dữ liệu Cây (Tree) để biểu diễn danh mục.
+Mối quan hệ Parent - Child đệ quy (Self-referencing) giúp tổ chức dữ liệu theo dạng đồ thị có hướng.
+- Cycle Detection Algorithm :
+Thuật toán ngăn chặn lỗi Infinite Loop (Lặp vô tận) tại hàm `assignParent()`.
+Logic kiểm tra `parentCategory.getId().equals(this.id)` đảm bảo đồ thị danh mục
+luôn là một Directed Acyclic Graph (DAG - Đồ thị có hướng không có chu trình),
+ngăn việc một danh mục tự nhận chính nó làm cha.
+
+8. Notes / Design Decisions
 Self-Referencing Table:
 Sử dụng mô hình Parent-Child trên cùng một bảng categories để tối ưu hóa thiết kế DB thay vì tạo bảng riêng.
 Domain Isolation (Cách ly Domain):

@@ -82,7 +82,22 @@ Hủy đơn hàng.
 DELETE /orders/{id}:
 Xóa mềm đơn hàng.
 
-7. Notes
+7. Algorithms & Data Structures (DSA)
+- Finite State Machine (FSM - Máy trạng thái hữu hạn):
+Sử dụng cấu trúc Rich Enum (`OrderStatus`) để cài đặt FSM.
+Thuật toán này quy định chặt chẽ các đỉnh (State) và các cạnh chuyển tiếp (Transition).
+Mỗi khi có lệnh đổi trạng thái, thuật toán sẽ đối chiếu với ma trận trạng thái nội bộ,
+nếu hợp lệ mới cho phép thực thi, loại bỏ hoàn toàn các cấu trúc if/else cồng kềnh.
+- Map-Reduce (Thuật toán tổng hợp dữ liệu):
+Áp dụng tư duy Map-Reduce qua Java Stream API (`items.stream().mapToDouble(...).sum()`) để tính toán
+`totalAmount`. Bước Map trích xuất và nhân giá tiền với số lượng (O(N)),
+bước Reduce cộng dồn tất cả lại thành tổng doanh thu của đơn hàng.
+- Snapshot Isolation (Cô lập ảnh chụp):
+Thuật toán bảo vệ toàn vẹn dữ liệu kế toán bằng cách Deep Copy (Sao chép sâu)
+các thuộc tính tĩnh (Tên, Giá, Thuộc tính) từ module Product sang thành các bản ghi bất biến (Immutable)
+trên OrderItem tại đúng thời điểm t = 0 (khi user bấm thanh toán).
+
+8. Notes
 Immutability (Bất biến):
 Không dùng Khóa ngoại (Foreign Key) cứng từ OrderItem sang ProductAttributeValue
 để đề phòng trường hợp Admin xóa thuộc tính làm hỏng hóa đơn cũ.

@@ -88,7 +88,16 @@ PATCH /products/{id}/images/{imageId}/thumbnail:
 DELETE /products/{id}:
 Xóa sản phẩm.
 
-7. Notes
+7. Algorithms & Data Structures (DSA)
+- Set deduplication:
+Sử dụng cấu trúc dữ liệu `Set<Category>` kết hợp với thuật toán băm (Hashing) dựa trên `equals()`
+và `hashCode()` của JPA để tự động khử trùng lặp dữ liệu danh mục ở mức O(1),
+ngăn chặn việc lưu thừa các bản ghi trong bảng trung gian Many-to-Many.
+- Special Case Algorithm:
+Sử dụng biến thể DEFAULT để chuẩn hóa đầu ra. Khi sản phẩm không có thuộc tính phân loại,
+thuật toán sẽ ngầm định cấp một Variant tĩnh để toàn bộ luồng chảy dữ liệu (Stream)
+phía sau không bị gãy (NullPointerException) và không cần viết thêm các khối lệnh if/else kiểm tra null.
+8. Notes
 EAV Pattern:
 Sử dụng ProductAttributeValue để bán bất kỳ loại đồ chơi nào mà không cần thêm cột cứng vào Database.
 Special Case Pattern:
