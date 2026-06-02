@@ -9,21 +9,26 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "categories")
 @SQLRestriction("deleted_at IS NULL")
+@Table(
+        name = "categories",
+        indexes = {
+                @Index(name = "idx_category_slug", columnList = "slug"),
+                @Index(name = "idx_category_parent_id", columnList = "parent_id")
+        }
+)
 public class Category extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false, unique = true)
     private String slug;
 
-    @Column(length = 500)
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,17 +42,28 @@ public class Category extends BaseAuditEntity {
 
     public Category(String name, String slug, String description) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Category name is required");
+            throw new IllegalArgumentException("Name is required");
         }
         if (slug == null || slug.trim().isEmpty()) {
-            throw new IllegalArgumentException("Category slug is required");
+            throw new IllegalArgumentException("Slug is required");
         }
         this.name = name;
         this.slug = slug;
         this.description = description;
     }
 
-    public void updateInfo(String name, String slug, String description) {
+    public void assignParent(Category parentCategory) {
+        if (parentCategory != null && parentCategory.getId().equals(this.id)) {
+            throw new IllegalArgumentException("Category cannot be its own parent");
+        }
+        this.parent = parentCategory;
+    }
+
+    public void removeParent() {
+        this.parent = null;
+    }
+
+    public void update(String name, String slug, String description) {
         if (name != null && !name.trim().isEmpty()) {
             this.name = name;
         }
@@ -57,15 +73,10 @@ public class Category extends BaseAuditEntity {
         this.description = description;
     }
 
-    public void assignParent(Category parentCategory) {
-        if (parentCategory != null && parentCategory.getId().equals(this.id)) {
-            throw new IllegalStateException("A category cannot be its own parent");
-        }
-        this.parent = parentCategory;
-    }
-
-    public void removeParent() {
-        this.parent = null;
+    @Override
+    public void delete() {
+        super.delete();
+        this.subCategories.forEach(BaseAuditEntity::delete);
     }
 
     public Integer getId() { return id; }

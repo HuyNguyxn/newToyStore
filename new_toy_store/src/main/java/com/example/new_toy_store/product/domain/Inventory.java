@@ -5,54 +5,59 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(name = "inventories")
 @SQLRestriction("deleted_at IS NULL")
+@Table(
+        name = "inventories",
+        indexes = {
+                @Index(name = "idx_inventory_variant_id", columnList = "variant_id")
+        }
+)
 public class Inventory extends BaseAuditEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "variant_id")
-    private VariantType variant;
-
-    @Column(nullable = false)
+    @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id", nullable = false)
+    private ProductVariant variant;
 
     protected Inventory() {}
 
     public Inventory(int initialStock) {
         if (initialStock < 0) {
-            throw new IllegalArgumentException("Stock cannot be negative");
+            throw new IllegalArgumentException("Initial stock cannot be negative");
         }
         this.stockQuantity = initialStock;
     }
 
-    void setVariant(VariantType variant) {
+    public void setVariant(ProductVariant variant) {
         this.variant = variant;
     }
 
     public void addStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
+            throw new IllegalArgumentException("Amount to add must be greater than zero");
         }
         this.stockQuantity += amount;
     }
 
     public void reduceStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
+            throw new IllegalArgumentException("Amount to reduce must be greater than zero");
         }
         if (this.stockQuantity < amount) {
-            throw new IllegalStateException("Insufficient stock");
+            throw new IllegalStateException("Insufficient stock quantity");
         }
         this.stockQuantity -= amount;
     }
 
     public Integer getId() { return id; }
-    public VariantType getVariant() { return variant; }
     public int getStockQuantity() { return stockQuantity; }
+    public ProductVariant getVariant() { return variant; }
 
     @Override
     public boolean equals(Object o) {

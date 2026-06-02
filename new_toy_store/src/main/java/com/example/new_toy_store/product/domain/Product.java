@@ -5,14 +5,20 @@ import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "products",
         indexes = {
-                @Index(name = "idx_product_category", columnList = "category_id")
+                @Index(name = "idx_product_status", columnList = "status"),
+                @Index(name = "idx_product_created_at", columnList = "created_at")
         }
 )
 public class Product extends BaseAuditEntity {
@@ -67,84 +73,6 @@ public class Product extends BaseAuditEntity {
         }
     }
 
-    public void addImage(String imageUrl, boolean isThumbnail) {
-        ProductImage image = new ProductImage(imageUrl, isThumbnail);
-        if (isThumbnail) {
-            this.images.forEach(ProductImage::removeThumbnail);
-        } else if (this.images.isEmpty()) {
-            image.makeThumbnail();
-        }
-        image.setProduct(this);
-        this.images.add(image);
-    }
-
-    public void setThumbnail(Integer imageId) {
-        boolean found = false;
-        for (ProductImage img : this.images) {
-            if (img.getId().equals(imageId)) {
-                img.makeThumbnail();
-                found = true;
-            } else {
-                img.removeThumbnail();
-            }
-        }
-        if (!found) throw new IllegalArgumentException("Image not found");
-    }
-
-    public void removeImage(ProductImage image) {
-        if (image != null && this.images.contains(image)) {
-            image.setProduct(null);
-            this.images.remove(image);
-        }
-    }
-
-    public void addDefaultPlaceholderVariant(int initialStock, double price) {
-        if (!this.variants.isEmpty()) {
-            throw new IllegalStateException("Cannot add default placeholder if product already has variants");
-        }
-        ProductVariant placeholder = ProductVariant.createDefaultPlaceholder(initialStock, price);
-        placeholder.setProduct(this);
-        this.variants.add(placeholder);
-    }
-
-    public void addRealVariant(Map<String, String> attributeMap, int initialStock, double price, boolean setAsMaster) {
-        if (attributeMap == null || attributeMap.isEmpty()) {
-            throw new IllegalArgumentException("Real variants must have attributes");
-        }
-
-        if (!this.variants.isEmpty() && this.variants.get(0).getType() == VariantType.DEFAULT) {
-            throw new IllegalStateException("Cannot mix real variants with default placeholder");
-        }
-
-        if (setAsMaster) {
-            this.variants.forEach(v -> {
-                if (v.getType() == VariantType.MASTER) {
-                    v.makeRegular();
-                }
-            });
-        } else if (this.variants.isEmpty()) {
-            setAsMaster = true;
-        }
-
-        ProductVariant variant = ProductVariant.createRealVariant(initialStock, price, setAsMaster);
-        attributeMap.forEach(variant::addAttribute);
-        variant.setProduct(this);
-        this.variants.add(variant);
-    }
-
-    public void changeMasterVariant(Integer variantId) {
-        boolean found = false;
-        for (ProductVariant v : this.variants) {
-            if (v.getId().equals(variantId)) {
-                v.makeMaster();
-                found = true;
-            } else if (v.getType() == VariantType.MASTER) {
-                v.makeRegular();
-            }
-        }
-        if (!found) throw new IllegalArgumentException("Variant not found in this product");
-    }
-
     public void setCategories(Set<Category> categories) {
         this.categories = categories;
     }
@@ -153,6 +81,19 @@ public class Product extends BaseAuditEntity {
         if (status != null) {
             this.status = status;
         }
+    }
+
+    public void addDefaultPlaceholderVariant(int initialStock, double price) {
+        ProductVariant variant = ProductVariant.createDefaultPlaceholder(initialStock, price);
+        variant.setProduct(this);
+        this.variants.add(variant);
+    }
+
+    public void addRealVariant(Map<String, String> attributeMap, int initialStock, double price, boolean setAsMaster) {
+        ProductVariant variant = ProductVariant.createRealVariant(initialStock, price, setAsMaster);
+        attributeMap.forEach(variant::addAttribute);
+        variant.setProduct(this);
+        this.variants.add(variant);
     }
 
     @Override

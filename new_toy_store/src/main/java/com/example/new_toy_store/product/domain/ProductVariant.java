@@ -10,8 +10,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "product_variants")
 @SQLRestriction("deleted_at IS NULL")
+@Table(
+        name = "product_variants",
+        indexes = {
+                @Index(name = "idx_variant_product_id", columnList = "product_id")
+        }
+)
 public class ProductVariant extends BaseAuditEntity {
 
     @Id
@@ -73,7 +78,7 @@ public class ProductVariant extends BaseAuditEntity {
 
     private void initInventory(int initialStock) {
         this.inventory = new Inventory(initialStock);
-        this.inventory.setVariant(this.getType());
+        this.inventory.setVariant(this);
     }
 
     public void addAttribute(String name, String value) {
