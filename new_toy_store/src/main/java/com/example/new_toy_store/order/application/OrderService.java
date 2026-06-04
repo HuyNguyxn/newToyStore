@@ -1,5 +1,6 @@
 package com.example.new_toy_store.order.application;
 
+import com.example.new_toy_store.cart.application.CartService;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
@@ -17,10 +18,22 @@ public class OrderService {
 
     private final OrderRepository repository;
     private final ProductService productService;
+    // Bổ sung thuộc tính mới kết nối liên Domain
+    private final CartService cartService;
 
+    /*
+    // Code cũ:
     public OrderService(OrderRepository repository, ProductService productService) {
         this.repository = repository;
         this.productService = productService;
+    }
+    */
+
+    // Code mới: Inject thêm CartService vào Constructor
+    public OrderService(OrderRepository repository, ProductService productService, CartService cartService) {
+        this.repository = repository;
+        this.productService = productService;
+        this.cartService = cartService;
     }
 
     @Transactional(readOnly = true)
@@ -51,6 +64,8 @@ public class OrderService {
 
             String snapshot = variant.generateAttributesSnapshot();
 
+            variant.getInventory().reduceStock(itemRequest.getQuantity());
+
             order.addItem(
                     product.getId(),
                     variant.getId(),
@@ -62,6 +77,9 @@ public class OrderService {
         });
 
         repository.save(order);
+
+        cartService.clearCart(request.getUserId());
+
         return OrderMapper.toResponse(order);
     }
 
