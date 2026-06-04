@@ -53,8 +53,22 @@ public class Category extends BaseAuditEntity {
     }
 
     public void assignParent(Category parentCategory) {
+        /*
+        // Code cũ: Chỉ chặn được trường hợp danh mục tự nhận chính nó làm cha trực tiếp
         if (parentCategory != null && parentCategory.getId().equals(this.id)) {
             throw new IllegalArgumentException("Category cannot be its own parent");
+        }
+        */
+
+        // Code mới: Deep Cycle Detection Algorithm (Ngăn chặn vòng lặp vô tận đồ thị A -> B -> C -> A)
+        if (parentCategory != null) {
+            Category currentAncestor = parentCategory;
+            while (currentAncestor != null) {
+                if (currentAncestor.getId() != null && currentAncestor.getId().equals(this.id)) {
+                    throw new IllegalArgumentException("Detected cyclic dependency in category hierarchy. This category is already an ancestor of the target parent.");
+                }
+                currentAncestor = currentAncestor.getParent();
+            }
         }
         this.parent = parentCategory;
     }

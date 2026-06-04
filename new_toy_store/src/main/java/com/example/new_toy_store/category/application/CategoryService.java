@@ -54,7 +54,7 @@ public class CategoryService {
             throw new IllegalArgumentException("Slug already exists");
         }
 
-        category.updateInfo(request.getName(), request.getSlug(), request.getDescription());
+        category.update(request.getName(), request.getSlug(), request.getDescription());
 
         if (request.getParentId() != null) {
             Category parent = getCategoryEntity(request.getParentId());
