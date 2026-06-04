@@ -18,18 +18,7 @@ public class OrderService {
 
     private final OrderRepository repository;
     private final ProductService productService;
-    // Bổ sung thuộc tính mới kết nối liên Domain
     private final CartService cartService;
-
-    /*
-    // Code cũ:
-    public OrderService(OrderRepository repository, ProductService productService) {
-        this.repository = repository;
-        this.productService = productService;
-    }
-    */
-
-    // Code mới: Inject thêm CartService vào Constructor
     public OrderService(OrderRepository repository, ProductService productService, CartService cartService) {
         this.repository = repository;
         this.productService = productService;
