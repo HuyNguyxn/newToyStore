@@ -24,17 +24,21 @@ Giá trị: PENDING, CONFIRMED, SHIPPED, COMPLETED, CANCELLED.
 3. Relationships
 Order 1 - N OrderItem:
 Liên kết chặt (Cascade ALL). Xóa Order sẽ xóa các Item bên trong.
+
 Order 1 - N OrderHistory:
 Liên kết chặt (Cascade ALL).
+
 OrderItem N - 1 Product:
 Liên kết lỏng (Lưu productId).
+
 OrderItem N - 1 ProductVariant:
 Liên kết lỏng (Lưu variantId).
 
 4. Flow
 Tạo đơn hàng:
-Hứng dữ liệu -> Tìm ProductVariant tương ứng -> Chạy hàm sinh Snapshot thuộc tính
--> Khởi tạo OrderItem -> Tính tổng tiền -> Lưu Order.
+Nhận Request -> Kiểm tra tồn tại Product/Variant -> Trừ số lượng tồn kho thực tế (Deduction)
+-> Snapshot thuộc tính và lưu DB -> Gọi CartService xóa sạch giỏ hàng của User -> Trả về Response.
+
 Cập nhật trạng thái:
 Nhận lệnh -> Kiểm tra State Machine trong OrderStatus
 -> Nếu hợp lệ, đổi trạng thái và ghi log vào OrderHistory -> Lưu DB.
@@ -45,7 +49,7 @@ quantity phải > 0.
 price phải >= 0.
 Bắt buộc phải truyền productId và variantId.
 
-Invariant (Bất biến):
+Invariant:
 totalAmount luôn phải bằng tổng (price * quantity) của toàn bộ OrderItem có trong đơn.
 
 State Transition:
@@ -59,10 +63,16 @@ Chỉ cho phép xóa mềm đơn hàng nếu trạng thái hiện tại là CANC
 Calculation:
 Logic calculateTotal() được tự động trigger mỗi khi có một OrderItem được thêm hoặc bớt khỏi Order.
 
-Data Strategy:
-Immutability:
+Immutability\Snapshot Isolation:
 Lưu cứng toàn bộ thuộc tính động vào cột variantAttributesSnapshot để
 đảm bảo hóa đơn không bị biến dạng nếu Admin sửa xóa sản phẩm sau này.
+
+Stock Deduction:
+Ngay khi đơn hàng được tạo thành công, số lượng hàng hóa tương ứng trong bảng
+Inventory của ProductVariant phải được trừ đi ngay lập tức để chống Overselling.
+
+Cart Clearance:
+Sau khi chuyển hóa thành công từ Giỏ hàng sang Đơn hàng, dữ liệu Giỏ hàng của User đó phải được làm sạch.
 
 6. APIs
 GET /orders/user/{userId}:
@@ -88,19 +98,26 @@ Sử dụng cấu trúc Rich Enum (`OrderStatus`) để cài đặt FSM.
 Thuật toán này quy định chặt chẽ các đỉnh (State) và các cạnh chuyển tiếp (Transition).
 Mỗi khi có lệnh đổi trạng thái, thuật toán sẽ đối chiếu với ma trận trạng thái nội bộ,
 nếu hợp lệ mới cho phép thực thi, loại bỏ hoàn toàn các cấu trúc if/else cồng kềnh.
+
 - Map-Reduce (Thuật toán tổng hợp dữ liệu):
 Áp dụng tư duy Map-Reduce qua Java Stream API (`items.stream().mapToDouble(...).sum()`) để tính toán
 `totalAmount`. Bước Map trích xuất và nhân giá tiền với số lượng (O(N)),
 bước Reduce cộng dồn tất cả lại thành tổng doanh thu của đơn hàng.
+
 - Snapshot Isolation (Cô lập ảnh chụp):
 Thuật toán bảo vệ toàn vẹn dữ liệu kế toán bằng cách Deep Copy (Sao chép sâu)
 các thuộc tính tĩnh (Tên, Giá, Thuộc tính) từ module Product sang thành các bản ghi bất biến (Immutable)
-trên OrderItem tại đúng thời điểm t = 0 (khi user bấm thanh toán).
+trên OrderItem tại đúng thời điểm khi user bấm thanh toán.
 
 8. Notes
 Immutability (Bất biến):
 Không dùng Khóa ngoại (Foreign Key) cứng từ OrderItem sang ProductAttributeValue
 để đề phòng trường hợp Admin xóa thuộc tính làm hỏng hóa đơn cũ.
+
 Rich Enum:
 Mọi quy tắc chuyển đổi trạng thái đơn hàng nằm gọn trong OrderStatus,
 loại bỏ hoàn toàn các khối if/else dư thừa tại Service.
+
+Cross-Domain Communication:
+OrderService tương tác trực tiếp với ProductService và CartService tại tầng Application.
+Thiết kế này giúp điều phối các luồng nghiệp vụ phức tạp trong cùng một Transaction duy nhất.

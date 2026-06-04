@@ -96,6 +96,22 @@ public class Product extends BaseAuditEntity {
         this.variants.add(variant);
     }
 
+    public void setThumbnail(Integer imageId) {
+        boolean imageFound = false;
+        for (ProductImage image : this.images) {
+            if (image.getId() != null && image.getId().equals(imageId)) {
+                image.makeThumbnail();
+                imageFound = true;
+            } else {
+                image.removeThumbnail();
+            }
+        }
+
+        if (!imageFound) {
+            throw new IllegalArgumentException("Image ID " + imageId + " does not belong to this product");
+        }
+    }
+
     @Override
     public void delete() {
         super.delete();

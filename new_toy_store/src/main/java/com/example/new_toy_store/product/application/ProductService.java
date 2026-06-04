@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ProductService {
@@ -105,5 +106,13 @@ public class ProductService {
     public Product getProductEntity(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Product> getProductsByIdsWithDetails(Set<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllByIdsWithDetails(ids);
     }
 }

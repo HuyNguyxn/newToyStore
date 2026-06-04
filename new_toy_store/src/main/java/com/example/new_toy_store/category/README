@@ -29,7 +29,8 @@ name và slug không được để trống.
 slug phải là duy nhất trên toàn hệ thống.
 
 Invariant (Bất biến):
-Một danh mục không bao giờ được phép nhận chính ID của nó làm danh mục cha (tránh lỗi Infinite Loop).
+Cấu trúc phân cấp danh mục phải luôn là Đồ thị có hướng không có chu trình (DAG),
+tránh lỗi Infinite Loop và StackOverflow khi truy xuất dữ liệu.
 
 State Transition:
 Danh mục có thể linh hoạt tháo/lắp khỏi danh mục cha (trở thành danh mục gốc) thông qua hàm removeParent().
@@ -59,11 +60,10 @@ Xóa danh mục.
 - Tree / Hierarchical Data Structure:
 Sử dụng cấu trúc dữ liệu Cây (Tree) để biểu diễn danh mục.
 Mối quan hệ Parent - Child đệ quy (Self-referencing) giúp tổ chức dữ liệu theo dạng đồ thị có hướng.
-- Cycle Detection Algorithm :
-Thuật toán ngăn chặn lỗi Infinite Loop (Lặp vô tận) tại hàm `assignParent()`.
-Logic kiểm tra `parentCategory.getId().equals(this.id)` đảm bảo đồ thị danh mục
-luôn là một Directed Acyclic Graph (DAG - Đồ thị có hướng không có chu trình),
-ngăn việc một danh mục tự nhận chính nó làm cha.
+Deep Cycle Detection Algorithm:
+Thuật toán dò tìm chu trình sâu được áp dụng tại hàm assignParent().
+Khi gán một danh mục cha mới, hệ thống sẽ sử dụng vòng lặp while để duyệt đệ quy ngược theo các danh mục cha.
+Nếu phát hiện sự trùng lặp, thuật toán sẽ ngay lập tức khóa giao dịch và ném ngoại lệ.
 
 8. Notes / Design Decisions
 Self-Referencing Table:
