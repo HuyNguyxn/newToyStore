@@ -1,4 +1,4 @@
-package com.example.new_toy_store.order.application;
+package com.example.new_toy_store.order.mapper;
 
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderHistoryResponse;

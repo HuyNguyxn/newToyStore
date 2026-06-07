@@ -1,4 +1,4 @@
-package com.example.new_toy_store.cart.application;
+package com.example.new_toy_store.cart.mapper;
 
 import com.example.new_toy_store.cart.application.dto.response.CartItemResponse;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;

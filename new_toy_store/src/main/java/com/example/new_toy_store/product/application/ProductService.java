@@ -8,6 +8,7 @@ import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.ProductRepository;
+import com.example.new_toy_store.product.mapper.ProductMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

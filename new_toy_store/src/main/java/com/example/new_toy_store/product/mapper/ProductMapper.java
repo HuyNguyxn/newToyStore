@@ -1,4 +1,4 @@
-package com.example.new_toy_store.product.application;
+package com.example.new_toy_store.product.mapper;
 
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.product.application.dto.request.ProductRequest;
