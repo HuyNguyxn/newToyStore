@@ -4,6 +4,7 @@ import com.example.new_toy_store.category.application.dto.request.CategoryReques
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.category.mapper.CategoryMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

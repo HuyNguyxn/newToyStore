@@ -1,0 +1,60 @@
+Module: Cart Domain
+
+1. Purpose
+Quản lý giỏ hàng tạm thời của người dùng, đóng vai trò trạm trung chuyển hàng hóa trước khi
+tiến hành thanh toán.
+
+2. Entities
+Cart (Aggregate Root):
+Giỏ hàng tổng, định danh duy nhất theo userId.
+Các cột: id, user_id, created_at, updated_at.
+
+CartItem (Entity):
+Chi tiết từng món hàng, chỉ lưu trữ ID tham chiếu và số lượng.
+Các cột: id, cart_id, product_id, variant_id, quantity, created_at, updated_at.
+
+3. Relationships
+Cart 1 - N CartItem:
+- Loại liên kết: Liên kết chặt.
+CartItem N - 1 Product:
+- Loại liên kết: Liên kết lỏng.
+
+4. Flow
+Xem giỏ hàng:
+Nhận Request -> Trích xuất tập hợp productIds từ items -> Gọi ProductService lấy dữ liệu Bulk
+-> Enrich vào Response trả cho Frontend.
+
+Thêm vào giỏ:
+Nhận Request -> Kiểm tra tồn kho Real-time từ ProductService -> Cộng dồn số lượng nếu trùng món
+-> Lưu DB -> Enrich dữ liệu trả về.
+
+5. Business Rules
+Validation:
+quantity phải lớn hơn 0. Các trường productId và variantId không được phép null.
+
+Invariant:
+Một người dùng chỉ có 1 giỏ hàng duy nhất tồn tại.
+Không được phép thêm hàng vào giỏ nếu số lượng yêu cầu vượt quá Inventory hiện tại.
+
+Data Strategy:
+Áp dụng Hard Delete . Dữ liệu giỏ hàng là tạm thời, không có giá trị đối soát.
+ Bảng CartItem ở DB chỉ lưu ID, nhưng khi xuất ra API sẽ được đắp thêm Tên, Giá, Ảnh để Frontend dễ hiển thị.
+
+6. APIs
+- GET /carts/{userId}: Lấy giỏ hàng chi tiết.
+- POST /carts/{userId}/items: Thêm mặt hàng.
+- PUT /carts/{userId}/items/{itemId}: Sửa số lượng.
+- DELETE /carts/{userId}/items/{itemId}: Xóa mặt hàng.
+- DELETE /carts/{userId}: Xóa toàn bộ đồ trong giỏ.
+
+7. Algorithms & Data Structures (DSA)
+N+1 Query Prevention Algorithm :
+Áp dụng kỹ thuật Batch Fetching. Hệ thống trích xuất toàn bộ ProductID thành một cấu trúc Set.
+Sau đó đẩy mảng ID này sang ProductService để dùng câu lệnh IN và JOIN FETCH kéo dữ liệu 1 câu SQL.
+- Hash Map Data Transformation:
+Biến đổi List nhận được thành Map (Key là ProductID) để chuyển chi phí tìm kiếm từ O(N) xuống O(1).
+
+8. Notes / Design Decisions
+Domain Isolation:
+Tôn trọng tuyệt đối tính độc lập. Giỏ hàng tương tác với Product qua interface/hàm gọi nội bộ (Service-to-Service).
+Không dùng trực tiếp qua DB.
