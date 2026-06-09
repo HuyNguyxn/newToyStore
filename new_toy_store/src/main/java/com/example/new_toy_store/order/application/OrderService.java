@@ -47,6 +47,9 @@ public class OrderService {
 
         request.getItems().forEach(itemRequest -> {
             Product product = productService.getProductEntity(itemRequest.getProductId());
+            if (!product.isAvailableForPurchase()) {
+                throw new RuntimeException("Sản phẩm không sẵn sàng để đặt hàng");
+            }
             ProductVariant variant = product.getVariants().stream()
                     .filter(v -> v.getId().equals(itemRequest.getVariantId()))
                     .findFirst()

@@ -1,7 +1,53 @@
 package com.example.new_toy_store.product.domain;
 
 public enum ProductStatus {
-    ACTIVE,
-    INACTIVE,
-    OUT_OF_STOCK
+
+    ACTIVE("Đang kinh doanh") {
+        @Override
+        public boolean canBePurchased() {
+            return true;
+        }
+
+        @Override
+        public boolean isVisible() {
+            return true;
+        }
+    },
+
+    INACTIVE("Ngừng kinh doanh") {
+        @Override
+        public boolean canBePurchased() {
+            return false;
+        }
+
+        @Override
+        public boolean isVisible() {
+            return false;
+        }
+    },
+
+    OUT_OF_STOCK("Hết hàng") {
+        @Override
+        public boolean canBePurchased() {
+            return false;
+        }
+
+        @Override
+        public boolean isVisible() {
+            return true;
+        }
+    };
+
+    private final String displayName;
+
+    ProductStatus(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public abstract boolean canBePurchased();
+    public abstract boolean isVisible();
 }

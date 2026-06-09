@@ -85,6 +85,9 @@ public class CartService {
 
     private void validateStock(Integer productId, Integer variantId, int requestedQuantity, Cart cart) {
         Product product = productService.getProductEntity(productId);
+        if (!product.isAvailableForPurchase()) {
+            throw new RuntimeException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
+        }
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()

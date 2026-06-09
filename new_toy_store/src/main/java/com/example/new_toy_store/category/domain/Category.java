@@ -53,14 +53,6 @@ public class Category extends BaseAuditEntity {
     }
 
     public void assignParent(Category parentCategory) {
-        /*
-        // Code cũ: Chỉ chặn được trường hợp danh mục tự nhận chính nó làm cha trực tiếp
-        if (parentCategory != null && parentCategory.getId().equals(this.id)) {
-            throw new IllegalArgumentException("Category cannot be its own parent");
-        }
-        */
-
-        // Code mới: Deep Cycle Detection Algorithm (Ngăn chặn vòng lặp vô tận đồ thị A -> B -> C -> A)
         if (parentCategory != null) {
             Category currentAncestor = parentCategory;
             while (currentAncestor != null) {
@@ -90,6 +82,7 @@ public class Category extends BaseAuditEntity {
     @Override
     public void delete() {
         super.delete();
+        this.slug = this.slug + "-deleted-" + System.currentTimeMillis();
         this.subCategories.forEach(BaseAuditEntity::delete);
     }
 

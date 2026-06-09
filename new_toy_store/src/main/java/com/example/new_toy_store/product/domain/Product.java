@@ -112,6 +112,14 @@ public class Product extends BaseAuditEntity {
         }
     }
 
+    public boolean isAvailableForPurchase() {
+        return this.status != null && this.status.canBePurchased();
+    }
+
+    public boolean isVisibleToCustomers() {
+        return this.status != null && this.status.isVisible();
+    }
+
     @Override
     public void delete() {
         super.delete();
