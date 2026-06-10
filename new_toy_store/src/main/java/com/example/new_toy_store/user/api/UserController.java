@@ -2,8 +2,11 @@ package com.example.new_toy_store.user.api;
 
 import com.example.new_toy_store.user.application.UserService;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
+import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
+import com.example.new_toy_store.user.application.dto.request.LoginRequest;
 import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +26,16 @@ public class UserController {
         return service.register(request);
     }
 
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return service.login(request);
+    }
+
+    @GetMapping("/verify")
+    public void verifyEmail(@RequestParam String token) {
+        service.verifyEmailToken(token);
+    }
+
     @GetMapping("/{id}/profile")
     public UserResponse getProfile(@PathVariable Integer id) {
         return service.getProfile(id);
@@ -31,6 +44,11 @@ public class UserController {
     @PutMapping("/{id}/profile")
     public UserResponse updateProfile(@PathVariable Integer id, @Valid @RequestBody ProfileUpdateRequest request) {
         return service.updateProfile(id, request);
+    }
+
+    @PutMapping("/{id}/password")
+    public void changePassword(@PathVariable Integer id, @Valid @RequestBody ChangePasswordRequest request) {
+        service.changePassword(id, request);
     }
 
     @PostMapping("/{id}/addresses")

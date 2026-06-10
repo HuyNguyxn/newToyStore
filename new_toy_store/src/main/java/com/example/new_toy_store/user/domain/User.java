@@ -66,10 +66,11 @@ public class User extends BaseAuditEntity {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.role = role != null ? role : UserRole.CUSTOMER;
-        this.status = UserStatus.ACTIVE;
+        this.status = UserStatus.UNVERIFIED;
     }
 
     public void updateProfile(String fullName, String phoneNumber, String avatarUrl) {
+        checkIfModificationIsAllowed();
         if (fullName != null && !fullName.trim().isEmpty()) {
             this.fullName = fullName;
         }
@@ -81,6 +82,13 @@ public class User extends BaseAuditEntity {
         }
     }
 
+    public void activate() {
+        if (this.status != UserStatus.UNVERIFIED) {
+            throw new IllegalStateException("Chỉ tài khoản chưa xác thực mới có thể tiến hành kích hoạt.");
+        }
+        this.status = UserStatus.ACTIVE;
+    }
+
     public void lockAccount() {
         this.status = UserStatus.LOCKED;
     }
@@ -89,7 +97,16 @@ public class User extends BaseAuditEntity {
         this.status = UserStatus.ACTIVE;
     }
 
+    public void updatePassword(String newPassword) {
+        checkIfModificationIsAllowed();
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        this.password = newPassword;
+    }
+
     public void addAddress(Address address) {
+        checkIfModificationIsAllowed();
         if (address != null) {
             if (address.isDefault() || this.addresses.isEmpty()) {
                 clearDefaultAddresses();
@@ -101,11 +118,13 @@ public class User extends BaseAuditEntity {
     }
 
     public void removeAddress(Integer addressId) {
+        checkIfModificationIsAllowed();
         this.addresses.removeIf(a -> a.getId() != null && a.getId().equals(addressId));
         ensureAtLeastOneDefaultAddress();
     }
 
     public void setDefaultAddress(Integer addressId) {
+        checkIfModificationIsAllowed();
         boolean found = false;
         for (Address address : this.addresses) {
             if (address.getId() != null && address.getId().equals(addressId)) {
@@ -117,6 +136,12 @@ public class User extends BaseAuditEntity {
         }
         if (!found) {
             throw new IllegalArgumentException("Address not found");
+        }
+    }
+
+    private void checkIfModificationIsAllowed() {
+        if (this.status == null || !this.status.canModifyData()) {
+            throw new IllegalStateException("Tài khoản đang bị khóa, không thể thực hiện thay đổi dữ liệu.");
         }
     }
 
@@ -138,6 +163,7 @@ public class User extends BaseAuditEntity {
     @Override
     public void delete() {
         super.delete();
+        this.email = this.email + "_deleted_" + System.currentTimeMillis();
         this.addresses.forEach(BaseAuditEntity::delete);
     }
 
