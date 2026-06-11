@@ -1,5 +1,6 @@
 package com.example.new_toy_store.user.application;
 
+import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
@@ -13,6 +14,7 @@ import com.example.new_toy_store.user.domain.UserRepository;
 import com.example.new_toy_store.user.domain.VerificationToken;
 import com.example.new_toy_store.user.domain.VerificationTokenRepository;
 import com.example.new_toy_store.user.mapper.UserMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +25,17 @@ public class UserService {
 
     private final UserRepository repository;
     private final VerificationTokenRepository tokenRepository;
+    private final JwtProvider jwtProvider;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository repository, VerificationTokenRepository tokenRepository) {
+    public UserService(UserRepository repository,
+                       VerificationTokenRepository tokenRepository,
+                       JwtProvider jwtProvider,
+                       PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
+        this.jwtProvider = jwtProvider;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -42,8 +51,8 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        String fakeEncodedPassword = "{bcrypt}" + request.getPassword();
-        User user = UserMapper.toEntity(request, fakeEncodedPassword);
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User user = UserMapper.toEntity(request, encodedPassword);
         repository.save(user);
 
         return UserMapper.toResponse(user);
@@ -58,8 +67,12 @@ public class UserService {
             throw new IllegalStateException("Tài khoản chưa được kích hoạt hoặc đang bị khóa");
         }
 
-        String dummyJwtToken = "jwt-token-tam-thoi-cho-tich-hop-sau";
-        return new AuthResponse(dummyJwtToken, UserMapper.toResponse(user));
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu không chính xác");
+        }
+
+        String token = jwtProvider.generateToken(user);
+        return new AuthResponse(token, UserMapper.toResponse(user));
     }
 
     @Transactional
@@ -80,11 +93,16 @@ public class UserService {
     public void changePassword(Integer userId, ChangePasswordRequest request) {
         User user = getUserEntity(userId);
 
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu cũ không chính xác");
+        }
+
         if (request.getOldPassword().equals(request.getNewPassword())) {
             throw new IllegalArgumentException("Mật khẩu mới không được trùng mật khẩu cũ");
         }
 
-        user.updatePassword(request.getNewPassword());
+        String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+        user.updatePassword(encodedNewPassword);
         repository.save(user);
     }
 
