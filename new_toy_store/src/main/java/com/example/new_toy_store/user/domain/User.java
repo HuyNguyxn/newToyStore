@@ -69,6 +69,12 @@ public class User extends BaseAuditEntity {
         this.status = UserStatus.UNVERIFIED;
     }
 
+    private void checkIfModificationIsAllowed() {
+        if (this.status == null || !this.status.canModifyData()) {
+            throw new IllegalStateException("Tài khoản đang bị khóa, không thể thực hiện thay đổi dữ liệu.");
+        }
+    }
+
     public void updateProfile(String fullName, String phoneNumber, String avatarUrl) {
         checkIfModificationIsAllowed();
         if (fullName != null && !fullName.trim().isEmpty()) {
@@ -80,6 +86,14 @@ public class User extends BaseAuditEntity {
         if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
             this.avatarUrl = avatarUrl;
         }
+    }
+
+    public void updatePassword(String newPassword) {
+        checkIfModificationIsAllowed();
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        this.password = newPassword;
     }
 
     public void activate() {
@@ -97,13 +111,6 @@ public class User extends BaseAuditEntity {
         this.status = UserStatus.ACTIVE;
     }
 
-    public void updatePassword(String newPassword) {
-        checkIfModificationIsAllowed();
-        if (newPassword == null || newPassword.trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
-        }
-        this.password = newPassword;
-    }
 
     public void addAddress(Address address) {
         checkIfModificationIsAllowed();
@@ -136,12 +143,6 @@ public class User extends BaseAuditEntity {
         }
         if (!found) {
             throw new IllegalArgumentException("Address not found");
-        }
-    }
-
-    private void checkIfModificationIsAllowed() {
-        if (this.status == null || !this.status.canModifyData()) {
-            throw new IllegalStateException("Tài khoản đang bị khóa, không thể thực hiện thay đổi dữ liệu.");
         }
     }
 

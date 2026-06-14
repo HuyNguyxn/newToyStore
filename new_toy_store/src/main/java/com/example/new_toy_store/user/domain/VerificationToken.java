@@ -1,26 +1,25 @@
 package com.example.new_toy_store.user.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "verification_tokens")
-public class VerificationToken extends BaseAuditEntity {
+public class VerificationToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "token_value", nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String tokenValue;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "token_type", nullable = false)
-    private TokenType tokenType;
-
-    @Column(name = "expiry_date", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime expiryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "token_type")
+    private TokenType tokenType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -29,16 +28,25 @@ public class VerificationToken extends BaseAuditEntity {
     protected VerificationToken() {}
 
     public VerificationToken(String tokenValue, TokenType tokenType, User user) {
+        if (tokenValue == null || tokenValue.trim().isEmpty()) {
+            throw new IllegalArgumentException("Token value cannot be empty");
+        }
+        if (tokenType == null) {
+            throw new IllegalArgumentException("Token type is required");
+        }
         this.tokenValue = tokenValue;
         this.tokenType = tokenType;
+        this.expiryDate = LocalDateTime.now().plusMinutes(tokenType.getExpirationMinutes());
         this.user = user;
-        this.expiryDate = LocalDateTime.now().plusMinutes(15);
     }
 
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(this.expiryDate);
     }
 
-    public User getUser() { return user; }
+    public Integer getId() { return id; }
+    public String getTokenValue() { return tokenValue; }
+    public LocalDateTime getExpiryDate() { return expiryDate; }
     public TokenType getTokenType() { return tokenType; }
+    public User getUser() { return user; }
 }

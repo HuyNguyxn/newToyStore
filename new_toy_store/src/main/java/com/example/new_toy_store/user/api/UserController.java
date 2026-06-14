@@ -8,7 +8,12 @@ import com.example.new_toy_store.user.application.dto.request.ProfileUpdateReque
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.UserResponse;
+import com.example.new_toy_store.user.domain.User;
+import com.example.new_toy_store.user.domain.UserRepository;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,9 +21,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService service;
+    private final UserRepository userRepository;
 
-    public UserController(UserService service) {
+    public UserController(UserService service, UserRepository userRepository) {
         this.service = service;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
@@ -36,43 +43,56 @@ public class UserController {
         service.verifyEmailToken(token);
     }
 
-    @GetMapping("/{id}/profile")
-    public UserResponse getProfile(@PathVariable Integer id) {
-        return service.getProfile(id);
+    @GetMapping("/me/profile")
+    public UserResponse getProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = getAuthenticatedUser(userDetails);
+        return service.getProfile(user.getId());
     }
 
-    @PutMapping("/{id}/profile")
-    public UserResponse updateProfile(@PathVariable Integer id, @Valid @RequestBody ProfileUpdateRequest request) {
-        return service.updateProfile(id, request);
+    @PutMapping("/me/profile")
+    public UserResponse updateProfile(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody ProfileUpdateRequest request) {
+        User user = getAuthenticatedUser(userDetails);
+        return service.updateProfile(user.getId(), request);
     }
 
-    @PutMapping("/{id}/password")
-    public void changePassword(@PathVariable Integer id, @Valid @RequestBody ChangePasswordRequest request) {
-        service.changePassword(id, request);
+    @PutMapping("/me/password")
+    public void changePassword(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody ChangePasswordRequest request) {
+        User user = getAuthenticatedUser(userDetails);
+        service.changePassword(user.getId(), request);
     }
 
-    @PostMapping("/{id}/addresses")
-    public UserResponse addAddress(@PathVariable Integer id, @Valid @RequestBody AddressRequest request) {
-        return service.addAddress(id, request);
+    @PostMapping("/me/addresses")
+    public UserResponse addAddress(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody AddressRequest request) {
+        User user = getAuthenticatedUser(userDetails);
+        return service.addAddress(user.getId(), request);
     }
 
-    @PatchMapping("/{id}/addresses/{addressId}/default")
-    public UserResponse setDefaultAddress(@PathVariable Integer id, @PathVariable Integer addressId) {
-        return service.setAddressDefault(id, addressId);
+    @PatchMapping("/me/addresses/{addressId}/default")
+    public UserResponse setDefaultAddress(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer addressId) {
+        User user = getAuthenticatedUser(userDetails);
+        return service.setAddressDefault(user.getId(), addressId);
     }
 
-    @DeleteMapping("/{id}/addresses/{addressId}")
-    public UserResponse removeAddress(@PathVariable Integer id, @PathVariable Integer addressId) {
-        return service.removeAddress(id, addressId);
+    @DeleteMapping("/me/addresses/{addressId}")
+    public UserResponse removeAddress(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer addressId) {
+        User user = getAuthenticatedUser(userDetails);
+        return service.removeAddress(user.getId(), addressId);
     }
 
     @PatchMapping("/{id}/lock")
+    @PreAuthorize("hasRole('ADMIN')")
     public void lockAccount(@PathVariable Integer id) {
         service.lockAccount(id);
     }
 
     @PatchMapping("/{id}/unlock")
+    @PreAuthorize("hasRole('ADMIN')")
     public void unlockAccount(@PathVariable Integer id) {
         service.unlockAccount(id);
+    }
+
+    private User getAuthenticatedUser(UserDetails userDetails) {
+        return userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database"));
     }
 }

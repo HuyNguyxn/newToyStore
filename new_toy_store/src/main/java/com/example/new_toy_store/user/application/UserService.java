@@ -1,25 +1,16 @@
 package com.example.new_toy_store.user.application;
 
+import com.example.new_toy_store.cart.application.CartService;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
-import com.example.new_toy_store.user.application.dto.request.AddressRequest;
-import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
-import com.example.new_toy_store.user.application.dto.request.LoginRequest;
-import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
-import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
-import com.example.new_toy_store.user.application.dto.response.AuthResponse;
-import com.example.new_toy_store.user.application.dto.response.UserResponse;
-import com.example.new_toy_store.user.domain.Address;
-import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
-import com.example.new_toy_store.user.domain.VerificationToken;
-import com.example.new_toy_store.user.domain.VerificationTokenRepository;
+import com.example.new_toy_store.user.application.dto.request.*;
+import com.example.new_toy_store.user.application.dto.response.*;
+import com.example.new_toy_store.user.domain.*;
 import com.example.new_toy_store.user.mapper.UserMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 @Service
 public class UserService {
 
@@ -27,15 +18,18 @@ public class UserService {
     private final VerificationTokenRepository tokenRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
+    private final CartService cartService;
 
     public UserService(UserRepository repository,
                        VerificationTokenRepository tokenRepository,
                        JwtProvider jwtProvider,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       CartService cartService) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
         this.jwtProvider = jwtProvider;
         this.passwordEncoder = passwordEncoder;
+        this.cartService = cartService;
     }
 
     @Transactional
@@ -50,10 +44,12 @@ public class UserService {
         if (repository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
-
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = UserMapper.toEntity(request, encodedPassword);
         repository.save(user);
+        String tokenValue = java.util.UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(tokenValue, TokenType.VERIFICATION, user);
+        tokenRepository.save(verificationToken);
 
         return UserMapper.toResponse(user);
     }
@@ -165,6 +161,14 @@ public class UserService {
     public void unlockAccount(Integer userId) {
         User user = getUserEntity(userId);
         user.unlockAccount();
+    }
+
+    @Transactional
+    public void deleteAccount(Integer userId) {
+        User user = getUserEntity(userId);
+        user.delete();
+        repository.save(user);
+        cartService.clearCart(userId);
     }
 
     private User getUserEntity(Integer id) {
