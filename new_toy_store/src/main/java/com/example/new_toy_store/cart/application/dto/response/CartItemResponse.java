@@ -11,7 +11,12 @@ public class CartItemResponse {
     private double price;
     private int quantity;
 
-    public CartItemResponse(Integer id, Integer productId, Integer variantId, String productName, String variantAttributes, String thumbnailUrl, double price, int quantity) {
+    private boolean isAvailable;
+    private String message;
+
+    public CartItemResponse(Integer id, Integer productId, Integer variantId, String productName,
+                            String variantAttributes, String thumbnailUrl, double price, int quantity,
+                            boolean isAvailable, String message) {
         this.id = id;
         this.productId = productId;
         this.variantId = variantId;
@@ -20,6 +25,8 @@ public class CartItemResponse {
         this.thumbnailUrl = thumbnailUrl;
         this.price = price;
         this.quantity = quantity;
+        this.isAvailable = isAvailable;
+        this.message = message;
     }
 
     public Integer getId() { return id; }
@@ -30,4 +37,6 @@ public class CartItemResponse {
     public String getThumbnailUrl() { return thumbnailUrl; }
     public double getPrice() { return price; }
     public int getQuantity() { return quantity; }
+    public boolean isAvailable() { return isAvailable; }
+    public String getMessage() { return message; }
 }

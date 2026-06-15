@@ -20,7 +20,25 @@ public class CartMapper {
                     .filter(v -> v.getId().equals(item.getVariantId()))
                     .findFirst().orElse(null) : null;
 
-            String name = product != null ? product.getName() : "Sản phẩm không tồn tại";
+            boolean isAvailable = true;
+            String message = "Sẵn sàng thanh toán";
+
+            if (product == null) {
+                isAvailable = false;
+                message = "Sản phẩm không còn tồn tại trên hệ thống";
+            } else if (variant == null) {
+                isAvailable = false;
+                message = "Mẫu mã này đã ngừng phân phối";
+            } else if (!product.isAvailableForPurchase()) {
+                isAvailable = false;
+                message = "Sản phẩm đang tạm ngừng kinh doanh";
+            } else if (variant.getInventory() == null || variant.getInventory().getStockQuantity() < item.getQuantity()) {
+                isAvailable = false;
+                message = "Rất tiếc, kho chỉ còn lại " +
+                        (variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0) + " sản phẩm";
+            }
+
+            String name = product != null ? product.getName() : "Sản phẩm không hợp lệ";
             String attributes = variant != null ? variant.generateAttributesSnapshot() : "";
             double price = variant != null ? variant.getPrice() : 0.0;
             String thumbnail = product != null ? product.getImages().stream()
@@ -35,11 +53,17 @@ public class CartMapper {
                     attributes,
                     thumbnail,
                     price,
-                    item.getQuantity()
+                    item.getQuantity(),
+                    isAvailable,
+                    message
             );
         }).collect(Collectors.toList());
 
-        double total = itemResponses.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+
+        double total = itemResponses.stream()
+                .filter(CartItemResponse::isAvailable)
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .sum();
 
         return new CartResponse(cart.getId(), cart.getUserId(), total, itemResponses);
     }
