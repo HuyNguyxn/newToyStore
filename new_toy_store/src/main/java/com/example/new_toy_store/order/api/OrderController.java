@@ -3,9 +3,14 @@ package com.example.new_toy_store.order.api;
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
+import com.example.new_toy_store.user.domain.User;
+import com.example.new_toy_store.user.domain.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,14 +18,18 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService service;
+    private final UserRepository userRepository;
 
-    public OrderController(OrderService service) {
+    public OrderController(OrderService service, UserRepository userRepository) {
         this.service = service;
+        this.userRepository = userRepository;
     }
 
-    @GetMapping("/user/{userId}")
-    public Page<OrderResponse> getUserOrders(@PathVariable Integer userId, Pageable pageable) {
-        return service.getUserOrders(userId, pageable);
+    @GetMapping("/my-orders")
+    public Page<OrderResponse> getUserOrders(@AuthenticationPrincipal UserDetails userDetails, Pageable pageable) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return service.getUserOrders(user.getId(), pageable);
     }
 
     @GetMapping("/{id}")
@@ -29,21 +38,28 @@ public class OrderController {
     }
 
     @PostMapping
-    public OrderResponse create(@Valid @RequestBody OrderRequest request) {
-        return service.create(request);
+    public OrderResponse create(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody OrderRequest request) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        OrderRequest secureRequest = new OrderRequest(user.getId(), request.getShippingAddress(), request.getItems());
+        return service.create(secureRequest);
     }
 
     @PatchMapping("/{id}/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
     public OrderResponse confirm(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.confirm(id, note);
     }
 
     @PatchMapping("/{id}/ship")
+    @PreAuthorize("hasRole('ADMIN')")
     public OrderResponse ship(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.ship(id, note);
     }
 
     @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasRole('ADMIN')")
     public OrderResponse complete(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.complete(id, note);
     }
@@ -54,6 +70,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
     }

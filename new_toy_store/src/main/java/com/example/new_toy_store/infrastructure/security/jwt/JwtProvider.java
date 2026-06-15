@@ -1,5 +1,6 @@
 package com.example.new_toy_store.infrastructure.security.jwt;
 
+import com.example.new_toy_store.user.domain.TokenType;
 import com.example.new_toy_store.user.domain.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -13,18 +14,16 @@ import java.util.Date;
 public class JwtProvider {
 
     private final Key key;
-    private final long jwtExpiration;
-
     public JwtProvider(
-            @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}") String secret,
-            @Value("${jwt.expiration:86400000}") long jwtExpiration) {
+            @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}") String secret) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
-        this.jwtExpiration = jwtExpiration;
     }
 
     public String generateToken(User user) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+
+        long expirationInMillis = TokenType.ACCESS_TOKEN.getExpirationMinutes() * 60L * 1000L;
+        Date expiryDate = new Date(now.getTime() + expirationInMillis);
 
         return Jwts.builder()
                 .setSubject(user.getEmail())
@@ -37,11 +36,7 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
         return claims.getSubject();
     }
 
