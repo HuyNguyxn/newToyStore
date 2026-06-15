@@ -27,23 +27,26 @@ public class OrderController {
 
     @GetMapping("/my-orders")
     public Page<OrderResponse> getUserOrders(@AuthenticationPrincipal UserDetails userDetails, Pageable pageable) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(userDetails);
         return service.getUserOrders(user.getId(), pageable);
     }
 
     @GetMapping("/{id}")
-    public OrderResponse getOrderDetails(@PathVariable Integer id) {
-        return service.getOrderDetails(id);
+    public OrderResponse getOrderDetails(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer id) {
+        User user = getAuthenticatedUser(userDetails);
+        OrderResponse order = service.getOrderDetails(id);
+
+        if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+            throw new RuntimeException("Bạn không có quyền xem đơn hàng của người khác");
+        }
+        return order;
     }
 
     @PostMapping
     public OrderResponse create(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody OrderRequest request) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        OrderRequest secureRequest = new OrderRequest(user.getId(), request.getShippingAddress(), request.getItems());
-        return service.create(secureRequest);
+        User user = getAuthenticatedUser(userDetails);
+        request.setUserId(user.getId());
+        return service.create(request);
     }
 
     @PatchMapping("/{id}/confirm")
@@ -65,7 +68,13 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/cancel")
-    public OrderResponse cancel(@PathVariable Integer id, @RequestParam(required = false) String note) {
+    public OrderResponse cancel(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer id, @RequestParam(required = false) String note) {
+        User user = getAuthenticatedUser(userDetails);
+        OrderResponse order = service.getOrderDetails(id);
+
+        if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng của người khác");
+        }
         return service.cancel(id, note);
     }
 
@@ -73,5 +82,10 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
+    }
+
+    private User getAuthenticatedUser(UserDetails userDetails) {
+        return userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

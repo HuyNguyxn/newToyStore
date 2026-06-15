@@ -9,7 +9,6 @@ import java.util.List;
 
 public class OrderRequest {
 
-    @NotNull(message = "UserId is required")
     private Integer userId;
 
     @NotBlank(message = "Shipping address is required")
@@ -20,6 +19,7 @@ public class OrderRequest {
     private List<OrderItemRequest> items;
 
     public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
     public String getShippingAddress() { return shippingAddress; }
     public List<OrderItemRequest> getItems() { return items; }
 }
