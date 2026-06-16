@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+
 @Service
 public class UserService {
 
@@ -34,19 +36,29 @@ public class UserService {
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        List<Integer> softDeletedUserIds = repository.findSoftDeletedUserIdsByEmailPattern(request.getEmail());
+        Optional<User> existingUser = repository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            if (existingUser.get().getStatus() == UserStatus.LOCKED) {
+                throw new IllegalStateException("Tài khoản này đang bị khóa, không thể đăng ký lại.");
+            }
+            throw new IllegalArgumentException("Email đã được sử dụng.");
+        }
 
+        List<String> oldStatuses = repository.findStatusesOfSoftDeletedUsersByEmailPattern(request.getEmail());
+        if (oldStatuses.contains("LOCKED")) {
+            throw new IllegalStateException("Email này nằm trong danh sách đen của hệ thống. Không thể tạo tài khoản mới!");
+        }
+
+        List<Integer> softDeletedUserIds = repository.findSoftDeletedUserIdsByEmailPattern(request.getEmail());
         if (!softDeletedUserIds.isEmpty()) {
             repository.hardDeleteAddressesByUserIds(softDeletedUserIds);
             repository.hardDeleteUsersByIds(softDeletedUserIds);
         }
 
-        if (repository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
-        }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = UserMapper.toEntity(request, encodedPassword);
         repository.save(user);
+
         String tokenValue = java.util.UUID.randomUUID().toString();
         VerificationToken verificationToken = new VerificationToken(tokenValue, TokenType.VERIFICATION, user);
         tokenRepository.save(verificationToken);
@@ -173,11 +185,11 @@ public class UserService {
 
     private User getUserEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm tháy người dùng."));
     }
 
     private User getUserEntityWithAddresses(Integer id) {
         return repository.findByIdWithAddresses(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng."));
     }
 }

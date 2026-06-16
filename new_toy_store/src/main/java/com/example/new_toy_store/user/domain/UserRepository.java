@@ -17,8 +17,11 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.addresses WHERE u.id = :id")
     Optional<User> findByIdWithAddresses(@Param("id") Integer id);
 
-    @Query(value = "SELECT id FROM users WHERE email LIKE CONCAT(:email, '_deleted_%')", nativeQuery = true)
+    @Query(value = "SELECT id FROM users WHERE email LIKE CONCAT(:email, '\\_deleted\\_%')", nativeQuery = true)
     List<Integer> findSoftDeletedUserIdsByEmailPattern(@Param("email") String email);
+
+    @Query(value = "SELECT status FROM users WHERE email LIKE CONCAT(:email, '\\_deleted\\_%')", nativeQuery = true)
+    List<String> findStatusesOfSoftDeletedUsersByEmailPattern(@Param("email") String email);
 
     @Modifying
     @Query(value = "DELETE FROM addresses WHERE user_id IN :userIds", nativeQuery = true)
