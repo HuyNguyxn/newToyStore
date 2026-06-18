@@ -3,14 +3,19 @@ package com.example.new_toy_store.imports.domain;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(name = "import_notes")
+@Table(
+        name = "import_notes",
+        indexes = {
+                @Index(name = "idx_import_note_supplier_id", columnList = "supplier_id"),
+                @Index(name = "idx_import_note_status", columnList = "status")
+        }
+)
 public class ImportNote extends BaseAuditEntity {
 
     @Id
@@ -46,7 +51,6 @@ public class ImportNote extends BaseAuditEntity {
         if (!this.status.canModifyItems()) {
             throw new IllegalStateException("Không thể thêm sản phẩm vào phiếu nhập đã chốt hoặc đã hủy.");
         }
-
         ImportNoteItem item = new ImportNoteItem(productId, variantId, productName, quantity, importPrice);
         item.setImportNote(this);
         this.items.add(item);
@@ -55,14 +59,14 @@ public class ImportNote extends BaseAuditEntity {
 
     public void complete() {
         if (!this.status.canComplete()) {
-            throw new IllegalStateException("Không thể hoàn thành phiếu nhập ở trạng thái [" + this.status.getDisplayName() + "]");
+            throw new IllegalStateException("Không thể hoàn thành phiếu nhập ở trạng thái này");
         }
         this.status = ImportStatus.COMPLETED;
     }
 
     public void cancel() {
         if (!this.status.canCancel()) {
-            throw new IllegalStateException("Không thể hủy phiếu nhập ở trạng thái [" + this.status.getDisplayName() + "]");
+            throw new IllegalStateException("Không thể hủy phiếu nhập ở trạng thái này");
         }
         this.status = ImportStatus.CANCELLED;
     }

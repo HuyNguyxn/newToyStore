@@ -4,7 +4,13 @@ import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "import_note_items")
+@Table(
+        name = "import_note_items",
+        indexes = {
+                @Index(name = "idx_import_item_note_id", columnList = "import_note_id"),
+                @Index(name = "idx_import_item_variant_id", columnList = "variant_id")
+        }
+)
 public class ImportNoteItem extends BaseAuditEntity {
 
     @Id
