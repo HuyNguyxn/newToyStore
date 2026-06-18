@@ -72,7 +72,6 @@ public class ImportService {
                         ImportNoteItem::getQuantity,
                         Integer::sum
                 ));
-
         productService.addStockFromImport(variantQuantities);
         return ImportNoteMapper.toResponse(note);
     }
