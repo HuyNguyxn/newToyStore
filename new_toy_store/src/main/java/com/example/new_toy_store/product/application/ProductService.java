@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -115,5 +117,30 @@ public class ProductService {
             return List.of();
         }
         return repository.findAllByIdsWithDetails(ids);
+    }
+
+    @Transactional
+    public void addStockFromImport(Map<Integer, Integer> variantQuantities) {
+        if (variantQuantities == null || variantQuantities.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> variantIds = variantQuantities.keySet();
+        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
+
+        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        for (Map.Entry<Integer, Integer> entry : variantQuantities.entrySet()) {
+            Integer targetVariantId = entry.getKey();
+            Integer quantityToAdd = entry.getValue();
+
+            productMap.values().stream()
+                    .flatMap(p -> p.getVariants().stream())
+                    .filter(v -> v.getId().equals(targetVariantId))
+                    .findFirst()
+                    .ifPresent(variant -> variant.getInventory().addStock(quantityToAdd));
+        }
     }
 }

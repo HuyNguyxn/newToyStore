@@ -17,4 +17,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findAllByIdsWithDetails(@Param("ids") Set<Integer> ids);
 
     Page<Product> findByCategoryId(Integer categoryId, Pageable pageable);
+
+    @Query("SELECT DISTINCT p.id FROM Product p JOIN p.variants v WHERE v.id IN :variantIds")
+    Set<Integer> findProductIdsByVariantIds(@Param("variantIds") Set<Integer> variantIds);
 }
