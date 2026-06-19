@@ -30,7 +30,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public CartResponse getCartByUserId(Integer userId) {
         Cart cart = repository.findByUserId(userId).orElse(new Cart(userId));
-        return enrichCartData(cart);
+        return getCartData(cart);
     }
 
     @Transactional
@@ -42,42 +42,42 @@ public class CartService {
         cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity());
         repository.save(cart);
 
-        return enrichCartData(cart);
+        return getCartData(cart);
     }
 
     @Transactional
     public CartResponse updateItemQuantity(Integer userId, Integer itemId, int quantity) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
 
         CartItem item = cart.getItems().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm trong giỏ"));
 
         validateStock(item.getProductId(), item.getVariantId(), quantity, null);
 
         cart.updateItemQuantity(itemId, quantity);
         repository.save(cart);
 
-        return enrichCartData(cart);
+        return getCartData(cart);
     }
 
     @Transactional
     public CartResponse removeItemFromCart(Integer userId, Integer itemId) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
 
         cart.removeItem(itemId);
         repository.save(cart);
 
-        return enrichCartData(cart);
+        return getCartData(cart);
     }
 
     @Transactional
     public void clearCart(Integer userId) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
 
         cart.clearCart();
         repository.save(cart);
@@ -91,7 +91,7 @@ public class CartService {
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Variant not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu mã sản phẩm"));
 
         int currentQuantityInCart = 0;
         if (cart != null) {
@@ -102,11 +102,11 @@ public class CartService {
         }
 
         if (variant.getInventory().getStockQuantity() < (currentQuantityInCart + requestedQuantity)) {
-            throw new RuntimeException("Insufficient stock to add to cart");
+            throw new RuntimeException("Số lượng tồn kho không đủ để thêm vào giỏ hàng");
         }
     }
 
-    private CartResponse enrichCartData(Cart cart) {
+    private CartResponse getCartData(Cart cart) {
         if (cart.getItems().isEmpty()) {
             return CartMapper.toResponse(cart, Map.of());
         }
