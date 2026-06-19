@@ -41,7 +41,7 @@ public class ProductService {
     public ProductResponse getProductDetails(Integer id) {
         Product product = repository.findByIdWithDetails(id);
         if (product == null) {
-            throw new RuntimeException("Product not found");
+            throw new RuntimeException("Không tìm thấy sản phẩm");
         }
         return ProductMapper.toResponse(product);
     }
@@ -53,10 +53,14 @@ public class ProductService {
             product.setStatus(ProductStatus.valueOf(request.getStatus().toUpperCase()));
         }
 
+        if (request.getSupplierId() != null) {
+            product.setSupplierId(request.getSupplierId());
+        }
+
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
             List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
             if (categories.isEmpty()) {
-                throw new RuntimeException("Categories not found");
+                throw new RuntimeException("Không tìm thấy danh mục");
             }
             product.setCategories(new HashSet<>(categories));
         }
@@ -72,6 +76,10 @@ public class ProductService {
 
         if (request.getStatus() != null) {
             product.setStatus(ProductStatus.valueOf(request.getStatus().toUpperCase()));
+        }
+
+        if (request.getSupplierId() != null) {
+            product.setSupplierId(request.getSupplierId());
         }
 
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
@@ -90,7 +98,7 @@ public class ProductService {
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Variant not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu mã sản phẩm"));
         variant.getInventory().addStock(amountToAdd);
     }
 
@@ -108,7 +116,7 @@ public class ProductService {
 
     public Product getProductEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
     }
 
     @Transactional(readOnly = true)

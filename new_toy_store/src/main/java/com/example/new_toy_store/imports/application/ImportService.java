@@ -7,6 +7,12 @@ import com.example.new_toy_store.imports.domain.ImportNoteItem;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
 import com.example.new_toy_store.product.application.ProductService;
+
+// [NÂNG CẤP: IMPORT] Kéo các thành phần từ miền Supplier vào để giao tiếp
+import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
+import com.example.new_toy_store.supplier.domain.SupplierStatus;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,10 +26,11 @@ public class ImportService {
 
     private final ImportNoteRepository repository;
     private final ProductService productService;
-
-    public ImportService(ImportNoteRepository repository, ProductService productService) {
+    private final SupplierService supplierService;
+    public ImportService(ImportNoteRepository repository, ProductService productService, SupplierService supplierService) {
         this.repository = repository;
         this.productService = productService;
+        this.supplierService = supplierService;
     }
 
     @Transactional(readOnly = true)
@@ -42,6 +49,11 @@ public class ImportService {
 
     @Transactional
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
+        SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+        if (!SupplierStatus.valueOf(supplier.getStatus()).canImport()) {
+            throw new IllegalStateException("Không thể lập phiếu nhập. Nhà cung cấp đang ở trạng thái: " + supplier.getStatusDisplayName());
+        }
+
         ImportNote note = new ImportNote(request.getSupplierId(), request.getNote());
         request.getItems().forEach(itemReq -> {
             note.addItem(

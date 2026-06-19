@@ -4,24 +4,25 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class ProductRequest {
 
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "Tên sản phẩm không được để trống")
     private String name;
 
-    @Min(value = 0, message = "Base price must be >= 0")
+    @Min(value = 0, message = "Giá bán không được nhỏ hơn 0")
     private double basePrice;
 
-    @NotEmpty(message = "At least one category is required")
+    @NotEmpty(message = "Cần chọn ít nhất một danh mục")
     private List<Integer> categoryIds;
 
     private String status;
 
-    @Min(value = 0, message = "Initial stock must be >= 0")
+    @Min(value = 0, message = "Số lượng tồn kho ban đầu không được nhỏ hơn 0")
     private int defaultInitialStock;
+
+    private Integer supplierId;
 
     @Valid
     private List<ProductVariantRequest> variants;
@@ -31,5 +32,6 @@ public class ProductRequest {
     public List<Integer> getCategoryIds() { return categoryIds; }
     public String getStatus() { return status; }
     public int getDefaultInitialStock() { return defaultInitialStock; }
+    public Integer getSupplierId() { return supplierId; }
     public List<ProductVariantRequest> getVariants() { return variants; }
 }

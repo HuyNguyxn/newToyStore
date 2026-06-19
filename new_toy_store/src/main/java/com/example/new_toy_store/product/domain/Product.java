@@ -37,6 +37,9 @@ public class Product extends BaseAuditEntity {
     @Column(nullable = false)
     private ProductStatus status = ProductStatus.ACTIVE;
 
+    @Column(name = "supplier_id")
+    private Integer supplierId;
+
     @ManyToMany
     @JoinTable(
             name = "product_categories",
@@ -55,10 +58,10 @@ public class Product extends BaseAuditEntity {
 
     public Product(String name, double basePrice) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Product name cannot be empty");
+            throw new IllegalArgumentException("Tên sản phẩm không được để trống");
         }
         if (basePrice < 0) {
-            throw new IllegalArgumentException("Base price cannot be negative");
+            throw new IllegalArgumentException("Giá bán không được âm");
         }
         this.name = name;
         this.basePrice = basePrice;
@@ -71,6 +74,9 @@ public class Product extends BaseAuditEntity {
         if (basePrice >= 0) {
             this.basePrice = basePrice;
         }
+    }
+    public void setSupplierId(Integer supplierId) {
+        this.supplierId = supplierId;
     }
 
     public void setCategories(Set<Category> categories) {
@@ -108,7 +114,7 @@ public class Product extends BaseAuditEntity {
         }
 
         if (!imageFound) {
-            throw new IllegalArgumentException("Image ID " + imageId + " does not belong to this product");
+            throw new IllegalArgumentException("ID hình ảnh " + imageId + " không thuộc về sản phẩm này");
         }
     }
 
@@ -131,6 +137,8 @@ public class Product extends BaseAuditEntity {
     public String getName() { return name; }
     public double getBasePrice() { return basePrice; }
     public ProductStatus getStatus() { return status; }
+    public Integer getSupplierId() { return supplierId; }
+
     public Set<Category> getCategories() { return Collections.unmodifiableSet(categories); }
     public List<ProductImage> getImages() { return Collections.unmodifiableList(images); }
     public List<ProductVariant> getVariants() { return Collections.unmodifiableList(variants); }

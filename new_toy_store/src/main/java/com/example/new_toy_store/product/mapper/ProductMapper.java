@@ -38,6 +38,7 @@ public class ProductMapper {
                 product.getName(),
                 product.getBasePrice(),
                 product.getStatus().name(),
+                product.getSupplierId(),
                 categoryIds,
                 product.getVariants().stream().map(variant -> new ProductVariantResponse(
                         variant.getId(),
