@@ -55,4 +55,17 @@ public class ImportNoteItem extends BaseAuditEntity {
     public String getProductName() { return productName; }
     public int getQuantity() { return quantity; }
     public double getImportPrice() { return importPrice; }
+
+    @Override
+    public boolean equals(Object o) {
+
+        return this == o || (o instanceof ImportNoteItem u && id != null && id.equals(u.id));
+    }
+
+    @Override
+    public int hashCode() {
+
+        return getClass().hashCode();
+
+    }
 }

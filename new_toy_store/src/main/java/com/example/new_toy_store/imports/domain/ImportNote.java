@@ -77,4 +77,17 @@ public class ImportNote extends BaseAuditEntity {
     public double getTotalAmount() { return totalAmount; }
     public String getNote() { return note; }
     public List<ImportNoteItem> getItems() { return Collections.unmodifiableList(items); }
+
+    @Override
+    public boolean equals(Object o) {
+
+        return this == o || (o instanceof ImportNote u && id != null && id.equals(u.id));
+
+    }
+    @Override
+    public int hashCode() {
+
+        return getClass().hashCode();
+
+    }
 }

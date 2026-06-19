@@ -49,4 +49,14 @@ public class VerificationToken {
     public LocalDateTime getExpiryDate() { return expiryDate; }
     public TokenType getTokenType() { return tokenType; }
     public User getUser() { return user; }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o || (o instanceof VerificationToken u && id != null && id.equals(u.id));
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
