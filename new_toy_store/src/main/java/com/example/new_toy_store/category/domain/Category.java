@@ -14,7 +14,8 @@ import java.util.List;
         name = "categories",
         indexes = {
                 @Index(name = "idx_category_slug", columnList = "slug"),
-                @Index(name = "idx_category_parent_id", columnList = "parent_id")
+                @Index(name = "idx_category_parent_id", columnList = "parent_id"),
+                @Index(name = "idx_category_status", columnList = "status")
         }
 )
 public class Category extends BaseAuditEntity {
@@ -31,6 +32,10 @@ public class Category extends BaseAuditEntity {
 
     @Column(length = 500)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CategoryStatus status = CategoryStatus.VISIBLE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
@@ -51,6 +56,14 @@ public class Category extends BaseAuditEntity {
         this.name = name;
         this.slug = slug;
         this.description = description;
+    }
+
+    public void hide() {
+        this.status = CategoryStatus.HIDDEN;
+    }
+
+    public void show() {
+        this.status = CategoryStatus.VISIBLE;
     }
 
     public void assignParent(Category parentCategory) {
@@ -95,6 +108,7 @@ public class Category extends BaseAuditEntity {
     public String getName() { return name; }
     public String getSlug() { return slug; }
     public String getDescription() { return description; }
+    public CategoryStatus getStatus() { return status; }
     public Category getParent() { return parent; }
     public List<Category> getSubCategories() { return Collections.unmodifiableList(subCategories); }
 

@@ -29,9 +29,16 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryTree() {
+    public List<CategoryResponse> getCategoryTreeForCustomer() {
+        return repository.findVisibleRootCategories().stream()
+                .map(category -> CategoryMapper.toResponse(category, true))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategoryTreeForAdmin() {
         return repository.findAllRootCategories().stream()
-                .map(CategoryMapper::toResponse)
+                .map(category -> CategoryMapper.toResponse(category, false))
                 .collect(Collectors.toList());
     }
 
@@ -75,6 +82,20 @@ public class CategoryService {
         }
 
         return CategoryMapper.toResponse(category);
+    }
+
+    @Transactional
+    public void hideCategory(Integer id) {
+        Category category = getCategoryEntity(id);
+        category.hide();
+        repository.save(category);
+    }
+
+    @Transactional
+    public void showCategory(Integer id) {
+        Category category = getCategoryEntity(id);
+        category.show();
+        repository.save(category);
     }
 
     @Transactional

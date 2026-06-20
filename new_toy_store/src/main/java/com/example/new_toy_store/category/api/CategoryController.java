@@ -26,8 +26,13 @@ public class CategoryController {
     }
 
     @GetMapping("/tree")
-    public List<CategoryResponse> getCategoryTree() {
-        return service.getCategoryTree();
+    public List<CategoryResponse> getCategoryTreeForCustomer() {
+        return service.getCategoryTreeForCustomer();
+    }
+
+    @GetMapping("/admin/tree")
+    public List<CategoryResponse> getCategoryTreeForAdmin() {
+        return service.getCategoryTreeForAdmin();
     }
 
     @GetMapping("/{id}")
@@ -43,6 +48,16 @@ public class CategoryController {
     @PutMapping("/{id}")
     public CategoryResponse update(@PathVariable Integer id, @Valid @RequestBody CategoryRequest request) {
         return service.update(id, request);
+    }
+
+    @PatchMapping("/{id}/hide")
+    public void hideCategory(@PathVariable Integer id) {
+        service.hideCategory(id);
+    }
+
+    @PatchMapping("/{id}/show")
+    public void showCategory(@PathVariable Integer id) {
+        service.showCategory(id);
     }
 
     @DeleteMapping("/{id}")
