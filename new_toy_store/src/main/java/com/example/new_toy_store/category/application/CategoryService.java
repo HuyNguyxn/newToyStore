@@ -10,6 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class CategoryService {
 
@@ -26,6 +29,13 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategoryTree() {
+        return repository.findAllRootCategories().stream()
+                .map(CategoryMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public CategoryResponse getCategory(Integer id) {
         return CategoryMapper.toResponse(getCategoryEntity(id));
     }
@@ -33,7 +43,7 @@ public class CategoryService {
     @Transactional
     public CategoryResponse create(CategoryRequest request) {
         if (repository.existsBySlug(request.getSlug())) {
-            throw new IllegalArgumentException("Slug already exists");
+            throw new IllegalArgumentException("Đường dẫn tĩnh đã tồn tại trong hệ thống");
         }
 
         Category category = CategoryMapper.toEntity(request);
@@ -52,7 +62,7 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
 
         if (!category.getSlug().equals(request.getSlug()) && repository.existsBySlug(request.getSlug())) {
-            throw new IllegalArgumentException("Slug already exists");
+            throw new IllegalArgumentException("Đường dẫn tĩnh đã tồn tại trong hệ thống");
         }
 
         category.update(request.getName(), request.getSlug(), request.getDescription());
@@ -70,11 +80,12 @@ public class CategoryService {
     @Transactional
     public void delete(Integer id) {
         Category category = getCategoryEntity(id);
-        repository.delete(category);
+        category.delete();
+        repository.save(category);
     }
 
     private Category getCategoryEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục yêu cầu"));
     }
 }

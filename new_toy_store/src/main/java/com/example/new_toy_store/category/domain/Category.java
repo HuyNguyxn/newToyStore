@@ -23,12 +23,13 @@ public class Category extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 150)
     private String slug;
 
+    @Column(length = 500)
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,10 +43,10 @@ public class Category extends BaseAuditEntity {
 
     public Category(String name, String slug, String description) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name is required");
+            throw new IllegalArgumentException("Tên danh mục không được để trống");
         }
         if (slug == null || slug.trim().isEmpty()) {
-            throw new IllegalArgumentException("Slug is required");
+            throw new IllegalArgumentException("Đường dẫn tĩnh không được để trống");
         }
         this.name = name;
         this.slug = slug;
@@ -54,10 +55,14 @@ public class Category extends BaseAuditEntity {
 
     public void assignParent(Category parentCategory) {
         if (parentCategory != null) {
+            if (this.equals(parentCategory)) {
+                throw new IllegalArgumentException("Không thể tự nhận chính mình làm danh mục cha");
+            }
+
             Category currentAncestor = parentCategory;
             while (currentAncestor != null) {
-                if (currentAncestor.getId() != null && currentAncestor.getId().equals(this.id)) {
-                    throw new IllegalArgumentException("Detected cyclic dependency in category hierarchy. This category is already an ancestor of the target parent.");
+                if (this.equals(currentAncestor)) {
+                    throw new IllegalArgumentException("Phát hiện lỗi vòng lặp trong cấu trúc. Danh mục này hiện đang là cấp trên của danh mục mục tiêu.");
                 }
                 currentAncestor = currentAncestor.getParent();
             }
@@ -82,7 +87,7 @@ public class Category extends BaseAuditEntity {
     @Override
     public void delete() {
         super.delete();
-        this.slug = this.slug + "-deleted-" + System.currentTimeMillis();
+        this.slug = this.slug + "-da_xoa-" + System.currentTimeMillis();
         this.subCategories.forEach(BaseAuditEntity::delete);
     }
 

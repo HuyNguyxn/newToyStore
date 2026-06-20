@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/categories")
 public class CategoryController {
@@ -21,6 +23,11 @@ public class CategoryController {
     @GetMapping
     public Page<CategoryResponse> getAllCategories(Pageable pageable) {
         return service.getAllCategories(pageable);
+    }
+
+    @GetMapping("/tree")
+    public List<CategoryResponse> getCategoryTree() {
+        return service.getCategoryTree();
     }
 
     @GetMapping("/{id}")

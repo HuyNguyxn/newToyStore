@@ -3,6 +3,7 @@ package com.example.new_toy_store.category.mapper;
 import com.example.new_toy_store.category.application.dto.request.CategoryRequest;
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
+import java.util.stream.Collectors;
 
 public class CategoryMapper {
 
@@ -20,7 +21,10 @@ public class CategoryMapper {
                 category.getName(),
                 category.getSlug(),
                 category.getDescription(),
-                category.getParent() != null ? category.getParent().getId() : null
+                category.getParent() != null ? category.getParent().getId() : null,
+                category.getSubCategories() != null ? category.getSubCategories().stream()
+                        .map(CategoryMapper::toResponse)
+                        .collect(Collectors.toList()) : null
         );
     }
 }
