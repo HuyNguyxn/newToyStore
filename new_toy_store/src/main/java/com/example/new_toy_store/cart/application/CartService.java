@@ -43,6 +43,7 @@ public class CartService {
                 .filter(item -> item.getVariantId().equals(request.getVariantId()))
                 .mapToInt(CartItem::getQuantity)
                 .sum();
+
         int finalTargetQuantity = currentQuantityInCart + request.getQuantity();
 
         checkStockSufficiency(product, request.getVariantId(), finalTargetQuantity);
