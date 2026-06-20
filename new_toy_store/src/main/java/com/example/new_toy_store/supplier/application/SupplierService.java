@@ -11,6 +11,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
 public class SupplierService {
 
@@ -35,6 +39,16 @@ public class SupplierService {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhà cung cấp"));
         return SupplierMapper.toResponse(supplier);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SupplierResponse> getSuppliersByIds(Set<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(ids).stream()
+                .map(SupplierMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional
