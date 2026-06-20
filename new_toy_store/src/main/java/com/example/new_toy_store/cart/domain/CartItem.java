@@ -6,9 +6,13 @@ import jakarta.persistence.*;
 @Entity
 @Table(
         name = "cart_items",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_cart_variant", columnNames = {"cart_id", "variant_id"})
+        },
         indexes = {
                 @Index(name = "idx_cart_item_cart", columnList = "cart_id"),
-                @Index(name = "idx_cart_item_product", columnList = "product_id")
+                @Index(name = "idx_cart_item_product", columnList = "product_id"),
+                @Index(name = "idx_cart_item_variant", columnList = "variant_id")
         }
 )
 public class CartItem extends BaseAuditEntity {

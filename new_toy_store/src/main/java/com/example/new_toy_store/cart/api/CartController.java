@@ -5,10 +5,13 @@ import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
 import com.example.new_toy_store.cart.application.dto.request.CartRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/carts")
+@Validated
 public class CartController {
 
     private final CartService service;
@@ -33,7 +36,11 @@ public class CartController {
     }
 
     @PutMapping("/{userId}/items/{itemId}")
-    public CartResponse updateQuantity(@PathVariable Integer userId, @PathVariable Integer itemId, @RequestParam int quantity) {
+    public CartResponse updateQuantity(
+            @PathVariable Integer userId,
+            @PathVariable Integer itemId,
+            @RequestParam @Min(value = 1, message = "Số lượng cập nhật phải lớn hơn 0") int quantity) {
+
         return service.updateItemQuantity(userId, itemId, quantity);
     }
 
