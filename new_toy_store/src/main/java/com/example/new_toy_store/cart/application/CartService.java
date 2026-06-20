@@ -1,6 +1,7 @@
 package com.example.new_toy_store.cart.application;
 
 import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.CartRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
@@ -120,5 +121,41 @@ public class CartService {
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
         return CartMapper.toResponse(cart, productMap);
+    }
+    @Transactional
+    public CartResponse syncCart(Integer userId, CartRequest request) {
+        Cart cart = repository.findByUserId(userId).orElseGet(() -> new Cart(userId));
+
+        for (CartItemRequest itemReq : request.getItems()) {
+            try {
+                Product product = productService.getProductEntity(itemReq.getProductId());
+                if (!product.isAvailableForPurchase()) {
+                    continue;
+                }
+
+                ProductVariant variant = product.getVariants().stream()
+                        .filter(v -> v.getId().equals(itemReq.getVariantId()))
+                        .findFirst()
+                        .orElse(null);
+                if (variant == null) {
+                    continue;
+                }
+
+                int currentQuantityInCart = cart.getItems().stream()
+                        .filter(i -> i.getVariantId().equals(itemReq.getVariantId()))
+                        .mapToInt(CartItem::getQuantity)
+                        .sum();
+
+                if (variant.getInventory().getStockQuantity() >= (currentQuantityInCart + itemReq.getQuantity())) {
+                    cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity());
+                }
+
+            } catch (Exception e) {
+                continue;
+            }
+        }
+
+        repository.save(cart);
+        return getCartData(cart);
     }
 }

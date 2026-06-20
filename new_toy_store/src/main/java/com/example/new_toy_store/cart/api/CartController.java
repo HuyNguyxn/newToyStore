@@ -2,6 +2,7 @@ package com.example.new_toy_store.cart.api;
 
 import com.example.new_toy_store.cart.application.CartService;
 import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.CartRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,11 @@ public class CartController {
     @PostMapping("/{userId}/items")
     public CartResponse addItem(@PathVariable Integer userId, @Valid @RequestBody CartItemRequest request) {
         return service.addItemToCart(userId, request);
+    }
+
+    @PostMapping("/{userId}/sync")
+    public CartResponse syncCart(@PathVariable Integer userId, @Valid @RequestBody CartRequest request) {
+        return service.syncCart(userId, request);
     }
 
     @PutMapping("/{userId}/items/{itemId}")
