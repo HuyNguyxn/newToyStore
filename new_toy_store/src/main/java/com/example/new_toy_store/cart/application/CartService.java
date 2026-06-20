@@ -37,30 +37,78 @@ public class CartService {
     @Transactional
     public CartResponse addItemToCart(Integer userId, CartItemRequest request) {
         Cart cart = repository.findByUserId(userId).orElseGet(() -> new Cart(userId));
+        Product product = productService.getProductEntity(request.getProductId());
 
-        validateStock(request.getProductId(), request.getVariantId(), request.getQuantity(), cart);
+        int currentQuantityInCart = cart.getItems().stream()
+                .filter(item -> item.getVariantId().equals(request.getVariantId()))
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+        int finalTargetQuantity = currentQuantityInCart + request.getQuantity();
+
+        checkStockSufficiency(product, request.getVariantId(), finalTargetQuantity);
 
         cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity());
         repository.save(cart);
+        return getCartData(cart);
+    }
 
+    @Transactional
+    public CartResponse syncCart(Integer userId, CartRequest request) {
+        Cart cart = repository.findByUserId(userId).orElseGet(() -> new Cart(userId));
+
+        for (CartItemRequest itemReq : request.getItems()) {
+            try {
+                Product product = productService.getProductEntity(itemReq.getProductId());
+
+                if (!product.isAvailableForPurchase()) {
+                    continue;
+                }
+
+                ProductVariant variant = product.getVariants().stream()
+                        .filter(v -> v.getId().equals(itemReq.getVariantId()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (variant == null) {
+                    continue;
+                }
+
+                int currentQuantityInCart = cart.getItems().stream()
+                        .filter(i -> i.getVariantId().equals(itemReq.getVariantId()))
+                        .mapToInt(CartItem::getQuantity)
+                        .sum();
+
+                int finalTargetQuantity = currentQuantityInCart + itemReq.getQuantity();
+
+                if (variant.getInventory().getStockQuantity() >= finalTargetQuantity) {
+                    cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity());
+                }
+
+            } catch (Exception e) {
+                continue;
+            }
+        }
+
+        repository.save(cart);
         return getCartData(cart);
     }
 
     @Transactional
     public CartResponse updateItemQuantity(Integer userId, Integer itemId, int quantity) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng của người dùng"));
 
         CartItem item = cart.getItems().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm trong giỏ"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm này trong giỏ hàng"));
 
-        validateStock(item.getProductId(), item.getVariantId(), quantity, null);
+        Product product = productService.getProductEntity(item.getProductId());
+
+        checkStockSufficiency(product, item.getVariantId(), quantity);
 
         cart.updateItemQuantity(itemId, quantity);
         repository.save(cart);
-
         return getCartData(cart);
     }
 
@@ -68,42 +116,32 @@ public class CartService {
     public CartResponse removeItemFromCart(Integer userId, Integer itemId) {
         Cart cart = repository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
-
         cart.removeItem(itemId);
         repository.save(cart);
-
         return getCartData(cart);
     }
 
     @Transactional
     public void clearCart(Integer userId) {
-        Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
-
-        cart.clearCart();
-        repository.save(cart);
+        Cart cart = repository.findByUserId(userId).orElse(null);
+        if (cart != null) {
+            cart.clearCart();
+            repository.save(cart);
+        }
     }
 
-    private void validateStock(Integer productId, Integer variantId, int requestedQuantity, Cart cart) {
-        Product product = productService.getProductEntity(productId);
+    private void checkStockSufficiency(Product product, Integer variantId, int finalTargetQuantity) {
         if (!product.isAvailableForPurchase()) {
-            throw new RuntimeException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
+            throw new IllegalStateException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
         }
+
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu mã sản phẩm"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm tương ứng"));
 
-        int currentQuantityInCart = 0;
-        if (cart != null) {
-            currentQuantityInCart = cart.getItems().stream()
-                    .filter(i -> i.getVariantId().equals(variantId))
-                    .mapToInt(CartItem::getQuantity)
-                    .sum();
-        }
-
-        if (variant.getInventory().getStockQuantity() < (currentQuantityInCart + requestedQuantity)) {
-            throw new RuntimeException("Số lượng tồn kho không đủ để thêm vào giỏ hàng");
+        if (variant.getInventory().getStockQuantity() < finalTargetQuantity) {
+            throw new IllegalStateException("Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu");
         }
     }
 
@@ -121,41 +159,5 @@ public class CartService {
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
         return CartMapper.toResponse(cart, productMap);
-    }
-    @Transactional
-    public CartResponse syncCart(Integer userId, CartRequest request) {
-        Cart cart = repository.findByUserId(userId).orElseGet(() -> new Cart(userId));
-
-        for (CartItemRequest itemReq : request.getItems()) {
-            try {
-                Product product = productService.getProductEntity(itemReq.getProductId());
-                if (!product.isAvailableForPurchase()) {
-                    continue;
-                }
-
-                ProductVariant variant = product.getVariants().stream()
-                        .filter(v -> v.getId().equals(itemReq.getVariantId()))
-                        .findFirst()
-                        .orElse(null);
-                if (variant == null) {
-                    continue;
-                }
-
-                int currentQuantityInCart = cart.getItems().stream()
-                        .filter(i -> i.getVariantId().equals(itemReq.getVariantId()))
-                        .mapToInt(CartItem::getQuantity)
-                        .sum();
-
-                if (variant.getInventory().getStockQuantity() >= (currentQuantityInCart + itemReq.getQuantity())) {
-                    cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity());
-                }
-
-            } catch (Exception e) {
-                continue;
-            }
-        }
-
-        repository.save(cart);
-        return getCartData(cart);
     }
 }

@@ -5,13 +5,13 @@ import jakarta.validation.constraints.NotNull;
 
 public class CartItemRequest {
 
-    @NotNull(message = "ProductId is required")
+    @NotNull(message = "ID sản phẩm không được để trống")
     private Integer productId;
 
-    @NotNull(message = "VariantId is required")
+    @NotNull(message = "ID biến thể không được để trống")
     private Integer variantId;
 
-    @Min(value = 1, message = "Quantity must be > 0")
+    @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private int quantity;
 
     public Integer getProductId() { return productId; }
