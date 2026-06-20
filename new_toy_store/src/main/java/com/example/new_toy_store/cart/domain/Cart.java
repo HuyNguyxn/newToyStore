@@ -1,7 +1,7 @@
 package com.example.new_toy_store.cart.domain;
 
+import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +14,9 @@ import java.util.Optional;
                 @Index(name = "idx_cart_user_id", columnList = "user_id")
         }
 )
-public class Cart {
+public class Cart extends BaseAuditEntity {
+
+    public static final int MAX_CART_ITEMS = 50;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,30 +28,13 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     protected Cart() {}
 
     public Cart(Integer userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("User ID is required");
+            throw new IllegalArgumentException("ID người dùng không được để trống");
         }
         this.userId = userId;
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void addItem(Integer productId, Integer variantId, int quantity) {
@@ -60,6 +45,10 @@ public class Cart {
         if (existingItem.isPresent()) {
             existingItem.get().addQuantity(quantity);
         } else {
+            if (this.items.size() >= MAX_CART_ITEMS) {
+                throw new IllegalStateException("Giỏ hàng đã đạt giới hạn tối đa " + MAX_CART_ITEMS + " loại mặt hàng khác nhau. Vui lòng thanh toán bớt sản phẩm trước khi thêm mới.");
+            }
+
             CartItem newItem = new CartItem(productId, variantId, quantity);
             newItem.setCart(this);
             items.add(newItem);
@@ -70,7 +59,7 @@ public class Cart {
         CartItem item = items.stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Item not found in cart"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong giỏ hàng"));
         item.updateQuantity(newQuantity);
     }
 
@@ -85,8 +74,6 @@ public class Cart {
     public Integer getId() { return id; }
     public Integer getUserId() { return userId; }
     public List<CartItem> getItems() { return Collections.unmodifiableList(items); }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     @Override
     public boolean equals(Object o) {

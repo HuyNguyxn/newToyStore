@@ -1,7 +1,7 @@
 package com.example.new_toy_store.cart.domain;
 
+import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_cart_item_product", columnList = "product_id")
         }
 )
-public class CartItem {
+public class CartItem extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,35 +30,15 @@ public class CartItem {
     @Column(nullable = false)
     private int quantity;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     protected CartItem() {}
 
     public CartItem(Integer productId, Integer variantId, int quantity) {
         if (productId == null || variantId == null) {
-            throw new IllegalArgumentException("Product and Variant IDs are required");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new IllegalArgumentException("ID sản phẩm và ID biến thể không được để trống");
         }
         this.productId = productId;
         this.variantId = variantId;
         this.quantity = quantity;
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
     }
 
     void setCart(Cart cart) {
@@ -67,14 +47,14 @@ public class CartItem {
 
     public void addQuantity(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than zero");
+            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
         }
         this.quantity += amount;
     }
 
     public void updateQuantity(int newQuantity) {
         if (newQuantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new IllegalArgumentException("Số lượng cập nhật phải lớn hơn 0");
         }
         this.quantity = newQuantity;
     }
@@ -84,8 +64,6 @@ public class CartItem {
     public Integer getProductId() { return productId; }
     public Integer getVariantId() { return variantId; }
     public int getQuantity() { return quantity; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     @Override
     public boolean equals(Object o) {
