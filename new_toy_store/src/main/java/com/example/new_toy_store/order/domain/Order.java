@@ -33,7 +33,7 @@ public class Order extends BaseAuditEntity {
     @Column(nullable = false)
     private double totalAmount = 0.0;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String shippingAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,10 +46,10 @@ public class Order extends BaseAuditEntity {
 
     public Order(Integer userId, String shippingAddress) {
         if (userId == null) {
-            throw new IllegalArgumentException("User ID is required");
+            throw new IllegalArgumentException("ID khách hàng không được để trống");
         }
         if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
-            throw new IllegalArgumentException("Shipping address is required");
+            throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
         }
         this.userId = userId;
         this.shippingAddress = shippingAddress;
@@ -73,14 +73,15 @@ public class Order extends BaseAuditEntity {
     }
 
     private void calculateTotal() {
-        this.totalAmount = items.stream()
+        double rawTotal = items.stream()
                 .mapToDouble(OrderItem::getTotalPrice)
                 .sum();
+        this.totalAmount = Math.round(rawTotal * 100.0) / 100.0;
     }
 
     public void updateShippingAddress(String newAddress) {
         if (this.status != OrderStatus.PENDING) {
-            throw new IllegalStateException("Can only update address when order is pending");
+            throw new IllegalStateException("Chỉ có thể cập nhật địa chỉ khi đơn hàng đang chờ xác nhận");
         }
         if (newAddress != null && !newAddress.trim().isEmpty()) {
             this.shippingAddress = newAddress;
@@ -89,7 +90,7 @@ public class Order extends BaseAuditEntity {
 
     void changeStatus(OrderStatus status, String note) {
         if (status == null) {
-            throw new IllegalArgumentException("Invalid status");
+            throw new IllegalArgumentException("Trạng thái không hợp lệ");
         }
         this.status = status;
         this.recordHistory(status, note);
@@ -109,7 +110,7 @@ public class Order extends BaseAuditEntity {
     @Override
     public void delete() {
         if (!this.status.canBeDeleted()) {
-            throw new IllegalStateException("Cannot delete order in status: " + this.status.name());
+            throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + this.status.getDisplayName());
         }
 
         super.delete();

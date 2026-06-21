@@ -47,7 +47,7 @@ public class OrderService {
     public OrderResponse getOrderDetails(Integer id) {
         Order order = repository.findByIdWithItems(id);
         if (order == null) {
-            throw new RuntimeException("Order not found");
+            throw new IllegalArgumentException("Không tìm thấy đơn hàng");
         }
         return OrderMapper.toResponse(order);
     }
@@ -55,7 +55,7 @@ public class OrderService {
     @Transactional
     public OrderResponse create(OrderRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin khách hàng"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin khách hàng"));
 
         if (!user.getStatus().canPlaceOrder()) {
             throw new IllegalStateException("Tài khoản của bạn hiện không đủ điều kiện để đặt hàng tại hệ thống.");
@@ -75,13 +75,13 @@ public class OrderService {
             Product product = productMap.get(itemRequest.getProductId());
 
             if (product == null || !product.isAvailableForPurchase()) {
-                throw new RuntimeException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
+                throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
             }
 
             ProductVariant variant = product.getVariants().stream()
                     .filter(v -> v.getId().equals(itemRequest.getVariantId()))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu mã sản phẩm này"));
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm này"));
 
             String snapshot = variant.generateAttributesSnapshot();
             variant.getInventory().reduceStock(itemRequest.getQuantity());
@@ -162,6 +162,6 @@ public class OrderService {
 
     private Order getOrder(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
     }
 }
