@@ -11,10 +11,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/orders")
+@Validated
 public class OrderController {
 
     private final OrderService service;
@@ -37,7 +39,7 @@ public class OrderController {
         OrderResponse order = service.getOrderDetails(id);
 
         if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Bạn không có quyền xem đơn hàng của người khác");
+            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng của người khác");
         }
         return order;
     }
@@ -73,7 +75,7 @@ public class OrderController {
         OrderResponse order = service.getOrderDetails(id);
 
         if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
-            throw new RuntimeException("Bạn không có quyền hủy đơn hàng của người khác");
+            throw new IllegalArgumentException("Bạn không có quyền hủy đơn hàng của người khác");
         }
         return service.cancel(id, note);
     }
@@ -86,6 +88,6 @@ public class OrderController {
 
     private User getAuthenticatedUser(UserDetails userDetails) {
         return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng"));
     }
 }
