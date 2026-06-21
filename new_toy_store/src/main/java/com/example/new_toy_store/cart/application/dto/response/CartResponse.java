@@ -19,5 +19,5 @@ public class CartResponse {
     public Integer getId() { return id; }
     public Integer getUserId() { return userId; }
     public double getCartTotal() { return cartTotal; }
-    public List<com.example.new_toy_store.cart.application.dto.response.CartItemResponse> getItems() { return items; }
+    public List<CartItemResponse> getItems() { return items; }
 }
