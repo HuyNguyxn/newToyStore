@@ -8,6 +8,9 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "order_items",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_order_variant", columnNames = {"order_id", "variant_id"})
+        },
         indexes = {
                 @Index(name = "idx_order_item_order", columnList = "order_id"),
                 @Index(name = "idx_order_item_product", columnList = "product_id")
@@ -45,13 +48,13 @@ public class OrderItem extends BaseAuditEntity {
 
     public OrderItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
         if (productId == null || variantId == null) {
-            throw new IllegalArgumentException("Product and Variant IDs are required");
+            throw new IllegalArgumentException("ID sản phẩm và biến thể không được để trống");
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Invalid quantity");
+            throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
         }
         if (price < 0) {
-            throw new IllegalArgumentException("Invalid price");
+            throw new IllegalArgumentException("Giá không hợp lệ");
         }
         this.productId = productId;
         this.variantId = variantId;
