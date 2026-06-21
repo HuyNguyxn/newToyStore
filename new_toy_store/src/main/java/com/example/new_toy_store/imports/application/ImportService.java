@@ -41,6 +41,10 @@ public class ImportService {
                 .map(ImportNote::getSupplierId)
                 .collect(Collectors.toSet());
 
+        if (supplierIds.isEmpty()) {
+            return notes.map(note -> ImportNoteMapper.toResponse(note, null));
+        }
+
         Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
                 .stream()
                 .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
