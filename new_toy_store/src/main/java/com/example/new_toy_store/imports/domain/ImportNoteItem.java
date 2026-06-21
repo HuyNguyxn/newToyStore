@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 @Entity
 @Table(
         name = "import_note_items",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_import_note_variant", columnNames = {"import_note_id", "variant_id"})
+        },
         indexes = {
                 @Index(name = "idx_import_item_note_id", columnList = "import_note_id"),
                 @Index(name = "idx_import_item_variant_id", columnList = "variant_id")
