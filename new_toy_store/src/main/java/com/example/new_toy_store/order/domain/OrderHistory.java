@@ -33,10 +33,10 @@ public class OrderHistory extends BaseAuditEntity {
 
     public OrderHistory(OrderStatus status, String note) {
         if (status == null) {
-            throw new IllegalArgumentException("Status is required");
+            throw new IllegalArgumentException("Trạng thái không được để trống");
         }
         if (note == null || note.trim().isEmpty()) {
-            throw new IllegalArgumentException("Note is required");
+            throw new IllegalArgumentException("Ghi chú không được để trống");
         }
         this.status = status;
         this.note = note;

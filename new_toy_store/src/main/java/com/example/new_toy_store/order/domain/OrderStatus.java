@@ -58,19 +58,19 @@ public enum OrderStatus {
     }
 
     public void confirm(Order order, String note) {
-        throw notAllowed("confirm");
+        throw notAllowed("Xác nhận");
     }
 
     public void ship(Order order, String note) {
-        throw notAllowed("ship");
+        throw notAllowed("Giao hàng");
     }
 
     public void complete(Order order, String note) {
-        throw notAllowed("complete");
+        throw notAllowed("Hoàn thành");
     }
 
     public void cancel(Order order, String note) {
-        throw notAllowed("cancel");
+        throw notAllowed("Hủy");
     }
 
     public boolean canBeDeleted() {
@@ -78,14 +78,14 @@ public enum OrderStatus {
     }
 
     private RuntimeException notAllowed(String action) {
-        return new RuntimeException("Cannot " + action + " from " + this.name());
+        return new IllegalStateException("Không thể thực hiện thao tác '" + action + "' khi đơn hàng đang ở trạng thái: " + this.displayName);
     }
 
     public static OrderStatus from(String value) {
         try {
             return OrderStatus.valueOf(value.trim().toUpperCase());
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid status: " + value);
+            throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ: " + value);
         }
     }
 }
