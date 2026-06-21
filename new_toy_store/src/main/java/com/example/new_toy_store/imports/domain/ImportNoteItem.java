@@ -30,7 +30,7 @@ public class ImportNoteItem extends BaseAuditEntity {
     @Column(nullable = false)
     private Integer variantId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String productName;
 
     @Column(nullable = false)
@@ -42,6 +42,15 @@ public class ImportNoteItem extends BaseAuditEntity {
     protected ImportNoteItem() {}
 
     public ImportNoteItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice) {
+        if (productId == null || variantId == null) {
+            throw new IllegalArgumentException("ID sản phẩm và biến thể không được để trống");
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng nhập phải lớn hơn 0");
+        }
+        if (importPrice < 0) {
+            throw new IllegalArgumentException("Giá nhập không được âm");
+        }
         this.productId = productId;
         this.variantId = variantId;
         this.productName = productName;
@@ -50,6 +59,14 @@ public class ImportNoteItem extends BaseAuditEntity {
     }
 
     void setImportNote(ImportNote importNote) { this.importNote = importNote; }
+
+    public void addQuantity(int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
+        }
+        this.quantity += amount;
+    }
+
     public double getTotalPrice() { return this.quantity * this.importPrice; }
 
     public Integer getId() { return id; }
@@ -61,14 +78,11 @@ public class ImportNoteItem extends BaseAuditEntity {
 
     @Override
     public boolean equals(Object o) {
-
         return this == o || (o instanceof ImportNoteItem u && id != null && id.equals(u.id));
     }
 
     @Override
     public int hashCode() {
-
         return getClass().hashCode();
-
     }
 }

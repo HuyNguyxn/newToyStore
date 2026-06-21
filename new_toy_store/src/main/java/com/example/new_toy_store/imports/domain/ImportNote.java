@@ -6,6 +6,7 @@ import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -32,6 +33,7 @@ public class ImportNote extends BaseAuditEntity {
     @Column(nullable = false)
     private double totalAmount = 0.0;
 
+    @Column(length = 500)
     private String note;
 
     @OneToMany(mappedBy = "importNote", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -51,15 +53,29 @@ public class ImportNote extends BaseAuditEntity {
         if (!this.status.canModifyItems()) {
             throw new IllegalStateException("Không thể thêm sản phẩm vào phiếu nhập đã chốt hoặc đã hủy.");
         }
-        ImportNoteItem item = new ImportNoteItem(productId, variantId, productName, quantity, importPrice);
-        item.setImportNote(this);
-        this.items.add(item);
-        this.totalAmount += item.getTotalPrice();
+
+        Optional<ImportNoteItem> existingItem = items.stream()
+                .filter(item -> item.getVariantId().equals(variantId))
+                .findFirst();
+
+        if (existingItem.isPresent()) {
+            existingItem.get().addQuantity(quantity);
+        } else {
+            ImportNoteItem item = new ImportNoteItem(productId, variantId, productName, quantity, importPrice);
+            item.setImportNote(this);
+            this.items.add(item);
+        }
+
+        double additionalAmount = quantity * importPrice;
+        this.totalAmount = Math.round((this.totalAmount + additionalAmount) * 100.0) / 100.0;
     }
 
     public void complete() {
         if (!this.status.canComplete()) {
             throw new IllegalStateException("Không thể hoàn thành phiếu nhập ở trạng thái này");
+        }
+        if (this.items.isEmpty()) {
+            throw new IllegalStateException("Không thể hoàn thành phiếu nhập khi không có sản phẩm nào");
         }
         this.status = ImportStatus.COMPLETED;
     }
@@ -80,14 +96,11 @@ public class ImportNote extends BaseAuditEntity {
 
     @Override
     public boolean equals(Object o) {
-
         return this == o || (o instanceof ImportNote u && id != null && id.equals(u.id));
-
     }
+
     @Override
     public int hashCode() {
-
         return getClass().hashCode();
-
     }
 }
