@@ -5,7 +5,12 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(name = "product_attribute_values")
+@Table(
+        name = "product_attribute_values",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_variant_attribute", columnNames = {"variant_id", "attribute_name"})
+        }
+)
 @SQLRestriction("deleted_at IS NULL")
 public class ProductAttributeValue extends BaseAuditEntity {
 
@@ -13,7 +18,7 @@ public class ProductAttributeValue extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(name = "attribute_name", nullable = false)
     private String attributeName;
 
     @Column(nullable = false)
@@ -27,10 +32,10 @@ public class ProductAttributeValue extends BaseAuditEntity {
 
     public ProductAttributeValue(String attributeName, String attributeValue) {
         if (attributeName == null || attributeName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Attribute name is required");
+            throw new IllegalArgumentException("Tên thuộc tính không được để trống");
         }
         if (attributeValue == null || attributeValue.trim().isEmpty()) {
-            throw new IllegalArgumentException("Attribute value is required");
+            throw new IllegalArgumentException("Giá trị thuộc tính không được để trống");
         }
         this.attributeName = attributeName;
         this.attributeValue = attributeValue;
