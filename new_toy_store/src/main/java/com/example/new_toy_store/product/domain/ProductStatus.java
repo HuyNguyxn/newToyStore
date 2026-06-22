@@ -50,4 +50,12 @@ public enum ProductStatus {
 
     public abstract boolean canBePurchased();
     public abstract boolean isVisible();
+
+    public static ProductStatus from(String value) {
+        try {
+            return ProductStatus.valueOf(value.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Trạng thái sản phẩm không hợp lệ: " + value);
+        }
+    }
 }

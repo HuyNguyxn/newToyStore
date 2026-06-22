@@ -49,8 +49,9 @@ public class ProductService {
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Product product = ProductMapper.toEntity(request);
-        if (request.getStatus() != null) {
-            product.setStatus(ProductStatus.valueOf(request.getStatus().toUpperCase()));
+
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            product.setStatus(ProductStatus.from(request.getStatus()));
         }
 
         if (request.getSupplierId() != null) {
@@ -74,8 +75,8 @@ public class ProductService {
         Product product = getProductEntity(id);
         product.updateInfo(request.getName(), request.getBasePrice());
 
-        if (request.getStatus() != null) {
-            product.setStatus(ProductStatus.valueOf(request.getStatus().toUpperCase()));
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            product.setStatus(ProductStatus.from(request.getStatus()));
         }
 
         if (request.getSupplierId() != null) {
