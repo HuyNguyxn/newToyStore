@@ -45,10 +45,10 @@ public class Supplier extends BaseAuditEntity {
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
             throw new IllegalArgumentException("Số điện thoại không được để trống");
         }
-        this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.email = email;
-        this.address = address;
+        this.name= name;
+        this.phoneNumber= phoneNumber;
+        this.email= email;
+        this.address= address;
     }
 
     public void updateInfo(String name, String phoneNumber, String email, String address) {
@@ -58,8 +58,8 @@ public class Supplier extends BaseAuditEntity {
         if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
             this.phoneNumber = phoneNumber;
         }
-        this.email = email;
-        this.address = address;
+        this.email= email;
+        this.address= address;
     }
 
     public void setStatus(SupplierStatus status) {
