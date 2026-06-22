@@ -37,7 +37,7 @@ public class SupplierService {
     @Transactional(readOnly = true)
     public SupplierResponse getSupplierDetails(Integer id) {
         Supplier supplier = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhà cung cấp"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
         return SupplierMapper.toResponse(supplier);
     }
 
@@ -64,7 +64,7 @@ public class SupplierService {
     @Transactional
     public SupplierResponse update(Integer id, SupplierRequest request) {
         Supplier supplier = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhà cung cấp"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
 
         repository.findByPhoneNumber(request.getPhoneNumber())
                 .ifPresent(existing -> {
@@ -81,7 +81,7 @@ public class SupplierService {
         );
 
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            supplier.setStatus(SupplierStatus.valueOf(request.getStatus().toUpperCase()));
+            supplier.setStatus(SupplierStatus.from(request.getStatus()));
         }
 
         repository.save(supplier);
@@ -91,7 +91,7 @@ public class SupplierService {
     @Transactional
     public void delete(Integer id) {
         Supplier supplier = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhà cung cấp"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
         supplier.delete();
         repository.save(supplier);
     }

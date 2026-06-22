@@ -23,6 +23,14 @@ public enum SupplierStatus {
         }
     };
 
+    public static SupplierStatus from(String value) {
+        try {
+            return SupplierStatus.valueOf(value.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Trạng thái nhà cung cấp không hợp lệ: " + value);
+        }
+    }
+
     private final String displayName;
 
     SupplierStatus(String displayName) {
