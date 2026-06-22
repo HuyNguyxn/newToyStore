@@ -37,12 +37,12 @@ public class ProductMapper {
                 product.getId(),
                 product.getName(),
                 product.getBasePrice(),
-                product.getStatus().name(),
+                product.getStatus().getDisplayName(),
                 product.getSupplierId(),
                 categoryIds,
                 product.getVariants().stream().map(variant -> new ProductVariantResponse(
                         variant.getId(),
-                        variant.getType().name(),
+                        variant.getType().getDisplayName(),
                         variant.getPrice(),
                         variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0,
                         variant.getAttributes().stream().collect(Collectors.toMap(

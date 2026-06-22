@@ -2,7 +2,7 @@ package com.example.new_toy_store.product.domain;
 
 public enum VariantType {
 
-    DEFAULT {
+    DEFAULT("Mặc định") {
         @Override
         public boolean canAddAttributes() {
             return false;
@@ -14,7 +14,7 @@ public enum VariantType {
         }
     },
 
-    MASTER {
+    MASTER("Bản chính") {
         @Override
         public boolean canAddAttributes() {
             return true;
@@ -26,7 +26,7 @@ public enum VariantType {
         }
     },
 
-    REGULAR {
+    REGULAR("Bản thường") {
         @Override
         public boolean canAddAttributes() {
             return true;
@@ -37,6 +37,16 @@ public enum VariantType {
             return newType == MASTER;
         }
     };
+
+    private final String displayName;
+
+    VariantType(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 
     public abstract boolean canAddAttributes();
     public abstract boolean canChangeTo(VariantType newType);

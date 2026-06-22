@@ -29,7 +29,7 @@ public class Inventory extends BaseAuditEntity {
 
     public Inventory(int initialStock) {
         if (initialStock < 0) {
-            throw new IllegalArgumentException("Initial stock cannot be negative");
+            throw new IllegalArgumentException("Số lượng tồn kho ban đầu không được âm");
         }
         this.stockQuantity = initialStock;
     }
@@ -40,17 +40,17 @@ public class Inventory extends BaseAuditEntity {
 
     public void addStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Amount to add must be greater than zero");
+            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
         }
         this.stockQuantity += amount;
     }
 
     public void reduceStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Amount to reduce must be greater than zero");
+            throw new IllegalArgumentException("Số lượng giảm đi phải lớn hơn 0");
         }
         if (this.stockQuantity < amount) {
-            throw new IllegalStateException("Insufficient stock quantity");
+            throw new IllegalStateException("Số lượng tồn kho không đủ để thực hiện giao dịch");
         }
         this.stockQuantity -= amount;
     }

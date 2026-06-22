@@ -32,7 +32,7 @@ public class ProductImage extends BaseAuditEntity {
 
     public ProductImage(String imageUrl, boolean isThumbnail) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            throw new IllegalArgumentException("Image URL is required");
+            throw new IllegalArgumentException("Đường dẫn hình ảnh không được để trống");
         }
         this.imageUrl = imageUrl;
         this.isThumbnail = isThumbnail;

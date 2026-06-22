@@ -64,14 +64,14 @@ public class ProductVariant extends BaseAuditEntity {
 
     public void makeMaster() {
         if (!this.type.canChangeTo(VariantType.MASTER)) {
-            throw new IllegalStateException("Cannot change from " + this.type.name() + " to MASTER");
+            throw new IllegalStateException("Không thể chuyển từ " + this.type.getDisplayName() + " sang " + VariantType.MASTER.getDisplayName());
         }
         this.type = VariantType.MASTER;
     }
 
     public void makeRegular() {
         if (!this.type.canChangeTo(VariantType.REGULAR)) {
-            throw new IllegalStateException("Cannot change from " + this.type.name() + " to REGULAR");
+            throw new IllegalStateException("Không thể chuyển từ " + this.type.getDisplayName() + " sang " + VariantType.REGULAR.getDisplayName());
         }
         this.type = VariantType.REGULAR;
     }
@@ -83,7 +83,7 @@ public class ProductVariant extends BaseAuditEntity {
 
     public void addAttribute(String name, String value) {
         if (!this.type.canAddAttributes()) {
-            throw new IllegalStateException("Cannot add attributes to a " + this.type.name() + " variant");
+            throw new IllegalStateException("Không thể thêm thuộc tính vào biến thể loại " + this.type.getDisplayName());
         }
         ProductAttributeValue attribute = new ProductAttributeValue(name, value);
         attribute.setVariant(this);

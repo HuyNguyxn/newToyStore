@@ -41,7 +41,7 @@ public class ProductService {
     public ProductResponse getProductDetails(Integer id) {
         Product product = repository.findByIdWithDetails(id);
         if (product == null) {
-            throw new RuntimeException("Không tìm thấy sản phẩm");
+            throw new IllegalArgumentException("Không tìm thấy sản phẩm");
         }
         return ProductMapper.toResponse(product);
     }
@@ -60,7 +60,7 @@ public class ProductService {
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
             List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
             if (categories.isEmpty()) {
-                throw new RuntimeException("Không tìm thấy danh mục");
+                throw new IllegalArgumentException("Không tìm thấy danh mục");
             }
             product.setCategories(new HashSet<>(categories));
         }
@@ -98,7 +98,7 @@ public class ProductService {
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu mã sản phẩm"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm"));
         variant.getInventory().addStock(amountToAdd);
     }
 
@@ -116,7 +116,7 @@ public class ProductService {
 
     public Product getProductEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
     }
 
     @Transactional(readOnly = true)

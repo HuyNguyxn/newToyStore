@@ -6,13 +6,13 @@ import java.util.Map;
 
 public class ProductVariantRequest {
 
-    @NotEmpty(message = "Attributes map is required")
+    @NotEmpty(message = "Danh sách thuộc tính không được để trống")
     private Map<String, String> attributes;
 
-    @Min(value = 0, message = "Initial stock must be >= 0")
+    @Min(value = 0, message = "Số lượng tồn kho ban đầu phải lớn hơn hoặc bằng 0")
     private int initialStock;
 
-    @Min(value = 0, message = "Price must be >= 0")
+    @Min(value = 0, message = "Giá bán phải lớn hơn hoặc bằng 0")
     private double price;
 
     private boolean isMaster = false;
