@@ -20,13 +20,16 @@ public class Supplier extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 150)
     private String name;
 
-    @Column(name = "phone_number", nullable = false)
+    @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
+    @Column(length = 150)
     private String email;
+
+    @Column(length = 500)
     private String address;
 
     @Enumerated(EnumType.STRING)
@@ -36,6 +39,12 @@ public class Supplier extends BaseAuditEntity {
     protected Supplier() {}
 
     public Supplier(String name, String phoneNumber, String email, String address) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên nhà cung cấp không được để trống");
+        }
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống");
+        }
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.email = email;
@@ -43,14 +52,20 @@ public class Supplier extends BaseAuditEntity {
     }
 
     public void updateInfo(String name, String phoneNumber, String email, String address) {
-        this.name = name;
-        this.phoneNumber = phoneNumber;
+        if (name != null && !name.trim().isEmpty()) {
+            this.name = name;
+        }
+        if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            this.phoneNumber = phoneNumber;
+        }
         this.email = email;
         this.address = address;
     }
 
     public void setStatus(SupplierStatus status) {
-        this.status = status;
+        if (status != null) {
+            this.status = status;
+        }
     }
 
     public Integer getId() { return id; }
