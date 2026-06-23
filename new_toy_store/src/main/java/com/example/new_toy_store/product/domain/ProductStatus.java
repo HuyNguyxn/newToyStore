@@ -52,9 +52,12 @@ public enum ProductStatus {
     public abstract boolean isVisible();
 
     public static ProductStatus from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Trạng thái sản phẩm không được để trống");
+        }
         try {
             return ProductStatus.valueOf(value.trim().toUpperCase());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Trạng thái sản phẩm không hợp lệ: " + value);
         }
     }

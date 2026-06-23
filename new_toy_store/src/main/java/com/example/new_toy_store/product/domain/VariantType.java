@@ -50,4 +50,15 @@ public enum VariantType {
 
     public abstract boolean canAddAttributes();
     public abstract boolean canChangeTo(VariantType newType);
+
+    public static VariantType from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Loại biến thể không được để trống");
+        }
+        try {
+            return VariantType.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại biến thể không hợp lệ: " + value);
+        }
+    }
 }
