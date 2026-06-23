@@ -11,6 +11,7 @@ import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
+import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
 import org.springframework.data.domain.Page;
@@ -29,13 +30,16 @@ public class OrderService {
     private final ProductService productService;
     private final CartService cartService;
     private final UserRepository userRepository;
+    private final PromotionService promotionService;
 
     public OrderService(OrderRepository repository, ProductService productService,
-                        CartService cartService, UserRepository userRepository) {
+                        CartService cartService, UserRepository userRepository,
+                        PromotionService promotionService) {
         this.repository = repository;
         this.productService = productService;
         this.cartService = cartService;
         this.userRepository = userRepository;
+        this.promotionService = promotionService;
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +98,18 @@ public class OrderService {
                     itemRequest.getQuantity(),
                     variant.getPrice()
             );
+        }
+
+        if (request.getPromoCode() != null && !request.getPromoCode().trim().isEmpty()) {
+            try {
+                double rawTotal = order.getTotalAmount();
+                double discount = promotionService.calculateOrderDiscount(request.getPromoCode(), rawTotal);
+                if (discount > 0) {
+                    order.applyPromoCode(request.getPromoCode().toUpperCase().trim(), discount);
+                }
+            } catch (RuntimeException ex) {
+                throw new IllegalArgumentException("Lỗi mã khuyến mãi: " + ex.getMessage());
+            }
         }
 
         repository.save(order);
