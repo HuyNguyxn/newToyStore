@@ -36,6 +36,12 @@ public class Order extends BaseAuditEntity {
     @Column(nullable = false, length = 255)
     private String shippingAddress;
 
+    @Column(name = "promo_code", length = 50)
+    private String promoCode;
+
+    @Column(name = "discount_amount", nullable = false)
+    private double discountAmount = 0.0;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -45,9 +51,7 @@ public class Order extends BaseAuditEntity {
     protected Order() {}
 
     public Order(Integer userId, String shippingAddress) {
-        if (userId == null) {
-            throw new IllegalArgumentException("ID khách hàng không được để trống");
-        }
+        if (userId == null) throw new IllegalArgumentException("ID người dùng không được để trống");
         if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
             throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
         }
@@ -64,36 +68,24 @@ public class Order extends BaseAuditEntity {
         calculateTotal();
     }
 
-    public void removeItem(OrderItem item) {
-        if (item != null && this.items.contains(item)) {
-            item.setOrder(null);
-            this.items.remove(item);
-            calculateTotal();
-        }
+    public void applyPromoCode(String promoCode, double discountAmount) {
+        this.promoCode = promoCode;
+        this.discountAmount = Math.max(0, discountAmount);
+        calculateTotal();
     }
 
     private void calculateTotal() {
         double rawTotal = items.stream()
                 .mapToDouble(OrderItem::getTotalPrice)
                 .sum();
-        this.totalAmount = Math.round(rawTotal * 100.0) / 100.0;
+        double finalTotal = rawTotal - this.discountAmount;
+
+        this.totalAmount = Math.max(0.0, Math.round(finalTotal * 100.0) / 100.0);
     }
 
-    public void updateShippingAddress(String newAddress) {
-        if (this.status != OrderStatus.PENDING) {
-            throw new IllegalStateException("Chỉ có thể cập nhật địa chỉ khi đơn hàng đang chờ xác nhận");
-        }
-        if (newAddress != null && !newAddress.trim().isEmpty()) {
-            this.shippingAddress = newAddress;
-        }
-    }
-
-    void changeStatus(OrderStatus status, String note) {
-        if (status == null) {
-            throw new IllegalArgumentException("Trạng thái không hợp lệ");
-        }
-        this.status = status;
-        this.recordHistory(status, note);
+    public void changeStatus(OrderStatus newStatus, String note) {
+        this.status = newStatus;
+        recordHistory(this.status, note != null && !note.trim().isEmpty() ? note : "Cập nhật trạng thái: " + newStatus.getDisplayName());
     }
 
     private void recordHistory(OrderStatus status, String note) {
@@ -112,7 +104,6 @@ public class Order extends BaseAuditEntity {
         if (!this.status.canBeDeleted()) {
             throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + this.status.getDisplayName());
         }
-
         super.delete();
         this.items.forEach(BaseAuditEntity::delete);
         this.histories.forEach(BaseAuditEntity::delete);
@@ -123,6 +114,8 @@ public class Order extends BaseAuditEntity {
     public OrderStatus getStatus() { return status; }
     public double getTotalAmount() { return totalAmount; }
     public String getShippingAddress() { return shippingAddress; }
+    public String getPromoCode() { return promoCode; }
+    public double getDiscountAmount() { return discountAmount; }
     public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
     public List<OrderHistory> getHistories() { return Collections.unmodifiableList(histories); }
 

@@ -82,9 +82,12 @@ public enum OrderStatus {
     }
 
     public static OrderStatus from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Trạng thái đơn hàng không được để trống");
+        }
         try {
             return OrderStatus.valueOf(value.trim().toUpperCase());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ: " + value);
         }
     }
