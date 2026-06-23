@@ -1,10 +1,8 @@
 package com.example.new_toy_store.product.application.dto.request;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
 import java.util.List;
 
 public class ProductRequest {
@@ -24,6 +22,7 @@ public class ProductRequest {
     @Min(value = 0, message = "Số lượng tồn kho ban đầu không được nhỏ hơn 0")
     private int defaultInitialStock;
 
+    @NotNull
     private Integer supplierId;
 
     @Valid
