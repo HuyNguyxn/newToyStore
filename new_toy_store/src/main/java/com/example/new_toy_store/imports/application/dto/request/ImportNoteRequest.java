@@ -6,11 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class ImportNoteRequest {
-    @NotNull(message = "Supplier ID is required")
+    @NotNull(message = "Mã nhà cung cấp không được để trống")
     private Integer supplierId;
+
     private String note;
 
-    @NotEmpty(message = "Items cannot be empty")
+    @NotEmpty(message = "Danh sách sản phẩm nhập không được để trống")
     @Valid
     private List<ImportNoteItemRequest> items;
 
