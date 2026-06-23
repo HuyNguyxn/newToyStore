@@ -1,5 +1,6 @@
 package com.example.new_toy_store.imports.application;
 
+import com.example.new_toy_store.imports.application.dto.request.ImportNoteItemRequest;
 import com.example.new_toy_store.imports.application.dto.request.ImportNoteRequest;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
 import com.example.new_toy_store.imports.domain.ImportNote;
@@ -7,6 +8,7 @@ import com.example.new_toy_store.imports.domain.ImportNoteItem;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
 import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
@@ -65,13 +67,32 @@ public class ImportService {
     @Transactional
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
         SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+        if (!"ACTIVE".equals(supplier.getStatus())) {
+            throw new IllegalStateException("Nhà cung cấp hiện đang " + supplier.getStatusDisplayName() + ". Không thể tạo phiếu nhập.");
+        }
 
-        if (!SupplierStatus.from(supplier.getStatus()).canImport()) {
-            throw new IllegalStateException("Không thể lập phiếu nhập. Nhà cung cấp đang ở trạng thái: " + supplier.getStatusDisplayName());
+        Set<Integer> productIds = request.getItems().stream()
+                .map(ImportNoteItemRequest::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        if (productMap.size() != productIds.size()) {
+            throw new IllegalArgumentException("Một hoặc nhiều ID sản phẩm không tồn tại trong hệ thống");
         }
 
         ImportNote note = new ImportNote(request.getSupplierId(), request.getNote());
-        request.getItems().forEach(itemReq -> {
+
+        for (ImportNoteItemRequest itemReq : request.getItems()) {
+            Product product = productMap.get(itemReq.getProductId());
+            boolean isValidVariant = product.getVariants().stream()
+                    .anyMatch(v -> v.getId().equals(itemReq.getVariantId()));
+
+            if (!isValidVariant) {
+                throw new IllegalArgumentException("Mã mẫu mã (variantId: " + itemReq.getVariantId() + ") không thuộc về sản phẩm: " + product.getName());
+            }
             note.addItem(
                     itemReq.getProductId(),
                     itemReq.getVariantId(),
@@ -79,7 +100,8 @@ public class ImportService {
                     itemReq.getQuantity(),
                     itemReq.getImportPrice()
             );
-        });
+        }
+
         repository.save(note);
         return ImportNoteMapper.toResponse(note, supplier);
     }
