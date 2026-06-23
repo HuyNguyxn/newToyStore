@@ -1,0 +1,46 @@
+package com.example.new_toy_store.promotion.application.dto.request;
+
+import jakarta.validation.constraints.*;
+import java.time.LocalDateTime;
+
+public class PromotionRequest {
+
+    @NotBlank(message = "Mã khuyến mãi không được để trống")
+    @Pattern(regexp = "^[A-Z0-9_]+$", message = "Mã khuyến mãi chỉ chứa chữ hoa, số và dấu gạch dưới")
+    private String code;
+
+    @NotBlank(message = "Tên chương trình không được để trống")
+    private String name;
+
+    @NotBlank(message = "Loại khuyến mãi không được để trống")
+    private String type;
+
+    @NotBlank(message = "Phạm vi áp dụng không được để trống")
+    private String scope;
+
+    @NotNull(message = "Giá trị giảm giá không được để trống")
+    @Min(value = 0, message = "Giá trị giảm không được âm")
+    private Double discountValue;
+
+    private Double maxDiscountAmount;
+    private Double minOrderValue;
+    private Integer targetProductId;
+
+    @NotNull(message = "Ngày bắt đầu không được để trống")
+    private LocalDateTime startDate;
+
+    @NotNull(message = "Ngày kết thúc không được để trống")
+    @Future(message = "Ngày kết thúc phải ở trong tương lai")
+    private LocalDateTime endDate;
+
+    public String getCode() { return code; }
+    public String getName() { return name; }
+    public String getType() { return type; }
+    public String getScope() { return scope; }
+    public Double getDiscountValue() { return discountValue; }
+    public Double getMaxDiscountAmount() { return maxDiscountAmount; }
+    public Double getMinOrderValue() { return minOrderValue; }
+    public Integer getTargetProductId() { return targetProductId; }
+    public LocalDateTime getStartDate() { return startDate; }
+    public LocalDateTime getEndDate() { return endDate; }
+}
