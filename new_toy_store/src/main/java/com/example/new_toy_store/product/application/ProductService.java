@@ -9,6 +9,8 @@ import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.ProductRepository;
 import com.example.new_toy_store.product.mapper.ProductMapper;
+import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,12 @@ public class ProductService {
 
     private final ProductRepository repository;
     private final CategoryRepository categoryRepository;
+    private final SupplierService supplierService;
 
-    public ProductService(ProductRepository repository, CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository repository, CategoryRepository categoryRepository, SupplierService supplierService) {
         this.repository = repository;
         this.categoryRepository = categoryRepository;
+        this.supplierService = supplierService;
     }
 
     @Transactional(readOnly = true)
@@ -48,22 +52,27 @@ public class ProductService {
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
+        if (request.getSupplierId() != null) {
+            SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            if (!"ACTIVE".equals(supplier.getStatus())) {
+                throw new IllegalStateException("Nhà cung cấp hiện đang ở trạng thái: " + supplier.getStatusDisplayName() + ". Không thể liên kết sản phẩm mới.");
+            }
+        }
+
+        Set<Category> categories = new HashSet<>();
+        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+            categories = new HashSet<>(categoryRepository.findAllById(request.getCategoryIds()));
+            if (categories.size() != request.getCategoryIds().size()) {
+                throw new IllegalArgumentException("Một hoặc nhiều ID danh mục không tồn tại trong hệ thống");
+            }
+        }
+
         Product product = ProductMapper.toEntity(request);
+        product.assignSupplier(request.getSupplierId());
+        categories.forEach(product::addCategory);
 
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            product.setStatus(ProductStatus.from(request.getStatus()));
-        }
-
-        if (request.getSupplierId() != null) {
-            product.setSupplierId(request.getSupplierId());
-        }
-
-        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
-            List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
-            if (categories.isEmpty()) {
-                throw new IllegalArgumentException("Không tìm thấy danh mục");
-            }
-            product.setCategories(new HashSet<>(categories));
+            product.changeStatus(ProductStatus.from(request.getStatus()));
         }
 
         repository.save(product);
@@ -73,23 +82,27 @@ public class ProductService {
     @Transactional
     public ProductResponse updateInfo(Integer id, ProductRequest request) {
         Product product = getProductEntity(id);
+        if (request.getSupplierId() != null && !request.getSupplierId().equals(product.getSupplierId())) {
+            SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            if (!"ACTIVE".equals(supplier.getStatus())) {
+                throw new IllegalStateException("Nhà cung cấp mới đang ở trạng thái: " + supplier.getStatusDisplayName() + ". Không thể cập nhật.");
+            }
+            product.assignSupplier(request.getSupplierId());
+        }
+
         product.updateInfo(request.getName(), request.getBasePrice());
 
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            product.setStatus(ProductStatus.from(request.getStatus()));
+            product.changeStatus(ProductStatus.from(request.getStatus()));
         }
 
-        if (request.getSupplierId() != null) {
-            product.setSupplierId(request.getSupplierId());
-        }
-
-        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
-            List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
-            product.setCategories(new HashSet<>(categories));
-        } else {
+        if (request.getCategoryIds() != null) {
             product.getCategories().clear();
+            List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
+            categories.forEach(product::addCategory);
         }
 
+        repository.save(product);
         return ProductMapper.toResponse(product);
     }
 

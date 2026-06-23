@@ -18,7 +18,8 @@ import java.util.Set;
         name = "products",
         indexes = {
                 @Index(name = "idx_product_status", columnList = "status"),
-                @Index(name = "idx_product_created_at", columnList = "created_at")
+                @Index(name = "idx_product_created_at", columnList = "created_at"),
+                @Index(name = "idx_product_supplier_id", columnList = "supplier_id")
         }
 )
 public class Product extends BaseAuditEntity {
@@ -67,12 +68,22 @@ public class Product extends BaseAuditEntity {
         this.basePrice = basePrice;
     }
 
+    public void assignSupplier(Integer supplierId) {
+        this.supplierId = supplierId;
+    }
+
     public void updateInfo(String name, double basePrice) {
         if (name != null && !name.trim().isEmpty()) {
             this.name = name;
         }
         if (basePrice >= 0) {
             this.basePrice = basePrice;
+        }
+    }
+
+    public void changeStatus(ProductStatus newStatus) {
+        if (newStatus != null) {
+            this.status = newStatus;
         }
     }
     public void setSupplierId(Integer supplierId) {
