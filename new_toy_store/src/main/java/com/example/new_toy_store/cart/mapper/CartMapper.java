@@ -65,6 +65,8 @@ public class CartMapper {
                 .mapToDouble(i -> i.getPrice() * i.getQuantity())
                 .sum();
 
+        total = Math.round(total * 100.0) / 100.0;
+
         return new CartResponse(cart.getId(), cart.getUserId(), total, itemResponses);
     }
 }
