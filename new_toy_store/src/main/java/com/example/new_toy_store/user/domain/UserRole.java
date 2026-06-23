@@ -38,4 +38,15 @@ public enum UserRole {
 
     public abstract boolean canManageProducts();
     public abstract boolean canManageOrders();
+
+    public static UserRole from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vai trò không được để trống");
+        }
+        try {
+            return UserRole.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Vai trò không hợp lệ: " + value);
+        }
+    }
 }
