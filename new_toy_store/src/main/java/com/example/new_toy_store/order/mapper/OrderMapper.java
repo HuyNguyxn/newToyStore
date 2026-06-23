@@ -21,6 +21,8 @@ public class OrderMapper {
                 order.getStatus().name(),
                 order.getTotalAmount(),
                 order.getShippingAddress(),
+                order.getPromoCode(),
+                order.getDiscountAmount(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 order.getItems().stream()
