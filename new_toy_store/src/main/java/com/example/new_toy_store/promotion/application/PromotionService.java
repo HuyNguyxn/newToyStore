@@ -34,7 +34,7 @@ public class PromotionService {
     @Transactional
     public void deactivatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
         promotion.deactivate();
         repository.save(promotion);
     }
@@ -60,10 +60,10 @@ public class PromotionService {
         }
 
         Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
-                .orElseThrow(() -> new RuntimeException("Mã khuyến mãi không hợp lệ"));
+                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không hợp lệ"));
 
         if (!promotion.isApplicableForOrder(cartTotal)) {
-            throw new IllegalArgumentException("Đơn hàng chưa đạt điều kiện áp dụng mã khuyến mãi này");
+            throw new IllegalStateException("Đơn hàng chưa đạt điều kiện áp dụng mã khuyến mãi này");
         }
 
         return promotion.applyDiscount(cartTotal);

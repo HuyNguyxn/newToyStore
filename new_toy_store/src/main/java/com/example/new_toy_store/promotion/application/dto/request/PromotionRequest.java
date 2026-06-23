@@ -7,9 +7,11 @@ public class PromotionRequest {
 
     @NotBlank(message = "Mã khuyến mãi không được để trống")
     @Pattern(regexp = "^[A-Z0-9_]+$", message = "Mã khuyến mãi chỉ chứa chữ hoa, số và dấu gạch dưới")
+    @Size(max = 50, message = "Mã khuyến mãi không được vượt quá 50 ký tự")
     private String code;
 
     @NotBlank(message = "Tên chương trình không được để trống")
+    @Size(max = 255, message = "Tên chương trình không được vượt quá 255 ký tự")
     private String name;
 
     @NotBlank(message = "Loại khuyến mãi không được để trống")

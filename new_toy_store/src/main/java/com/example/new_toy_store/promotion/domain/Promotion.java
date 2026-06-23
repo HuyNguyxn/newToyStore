@@ -24,7 +24,7 @@ public class Promotion extends BaseAuditEntity {
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String name;
 
     @Enumerated(EnumType.STRING)
@@ -59,6 +59,16 @@ public class Promotion extends BaseAuditEntity {
     protected Promotion() {}
 
     public Promotion(String code, String name, PromotionType type, PromotionScope scope, double discountValue, LocalDateTime startDate, LocalDateTime endDate) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên chương trình không được để trống");
+        }
+        if (type == null || scope == null) {
+            throw new IllegalArgumentException("Loại và phạm vi khuyến mãi không được để trống");
+        }
+
         this.code = code.toUpperCase().trim();
         this.name = name;
         this.type = type;
