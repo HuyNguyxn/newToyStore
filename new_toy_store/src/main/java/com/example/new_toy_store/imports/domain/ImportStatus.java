@@ -66,4 +66,15 @@ public enum ImportStatus {
     public abstract boolean canComplete();
     public abstract boolean canCancel();
     public abstract boolean canModifyItems();
+
+    public static ImportStatus from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Trạng thái phiếu nhập không được để trống");
+        }
+        try {
+            return ImportStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái phiếu nhập không hợp lệ: " + value);
+        }
+    }
 }

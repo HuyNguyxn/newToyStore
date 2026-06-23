@@ -67,7 +67,7 @@ public class ImportNote extends BaseAuditEntity {
         }
 
         double additionalAmount = quantity * importPrice;
-        this.totalAmount = Math.round((this.totalAmount + additionalAmount) * 100.0) / 100.0;
+        this.totalAmount = Math.max(0.0, Math.round((this.totalAmount + additionalAmount) * 100.0) / 100.0);
     }
 
     public void complete() {
