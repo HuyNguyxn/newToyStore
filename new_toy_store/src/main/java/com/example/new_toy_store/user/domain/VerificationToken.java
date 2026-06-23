@@ -4,7 +4,12 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "verification_tokens")
+@Table(
+        name = "verification_tokens",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_verification_token", columnNames = {"tokenValue"})
+        }
+)
 public class VerificationToken {
 
     @Id
