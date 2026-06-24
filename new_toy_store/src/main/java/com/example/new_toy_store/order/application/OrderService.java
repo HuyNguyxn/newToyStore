@@ -62,7 +62,8 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin khách hàng"));
 
         if (!user.getStatus().canPlaceOrder()) {
-            throw new IllegalStateException("Tài khoản của bạn hiện không đủ điều kiện để đặt hàng tại hệ thống.");
+            throw new IllegalStateException("Thao tác bị từ chối. Tài khoản của bạn hiện đang ở trạng thái: '"
+                    + user.getStatus().getDisplayName() + "'. Không đủ điều kiện để đặt hàng.");
         }
 
         Set<Integer> productIds = request.getItems().stream()
