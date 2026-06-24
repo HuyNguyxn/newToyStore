@@ -3,14 +3,13 @@ package com.example.new_toy_store.user.application.dto.request;
 import jakarta.validation.constraints.NotBlank;
 
 public class AddressRequest {
-
-    @NotBlank(message = "Receiver name is required")
+    @NotBlank(message = "Tên người nhận không được để trống")
     private String receiverName;
 
-    @NotBlank(message = "Receiver phone is required")
+    @NotBlank(message = "Số điện thoại người nhận không được để trống")
     private String receiverPhone;
 
-    @NotBlank(message = "Detail address is required")
+    @NotBlank(message = "Địa chỉ chi tiết không được để trống")
     private String detailAddress;
 
     private boolean isDefault;

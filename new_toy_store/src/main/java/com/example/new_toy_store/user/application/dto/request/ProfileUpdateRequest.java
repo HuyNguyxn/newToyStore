@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public class ProfileUpdateRequest {
 
-    @NotBlank(message = "Full name is required")
+    @NotBlank(message = "Họ và tên không được để trống")
     private String fullName;
 
     private String phoneNumber;
