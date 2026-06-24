@@ -8,6 +8,10 @@ import java.time.LocalDateTime;
         name = "verification_tokens",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_verification_token", columnNames = {"tokenValue"})
+        },
+        indexes = {
+                @Index(name = "idx_token_value", columnList = "tokenValue", unique = true),
+                @Index(name = "idx_token_user_id", columnList = "user_id")
         }
 )
 public class VerificationToken {
