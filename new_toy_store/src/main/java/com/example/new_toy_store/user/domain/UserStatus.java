@@ -66,4 +66,15 @@ public enum UserStatus {
     public abstract boolean canLogin();
     public abstract boolean canPlaceOrder();
     public abstract boolean canModifyData();
+
+    public static UserStatus from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Trạng thái người dùng không được để trống");
+        }
+        try {
+            return UserStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái người dùng không hợp lệ: " + value);
+        }
+    }
 }

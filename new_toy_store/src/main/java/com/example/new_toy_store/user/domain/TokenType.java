@@ -21,4 +21,15 @@ public enum TokenType {
     public int getExpirationMinutes() {
         return expirationMinutes;
     }
+
+    public static TokenType from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Loại token không được để trống");
+        }
+        try {
+            return TokenType.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Loại token không hợp lệ: " + value);
+        }
+    }
 }
