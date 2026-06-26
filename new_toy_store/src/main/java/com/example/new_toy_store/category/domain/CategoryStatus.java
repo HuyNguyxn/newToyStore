@@ -27,4 +27,15 @@ public enum CategoryStatus {
     }
 
     public abstract boolean isVisibleToCustomers();
+
+    public static CategoryStatus from(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Trạng thái danh mục không được để trống");
+        }
+        try {
+            return CategoryStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái danh mục không hợp lệ: " + value);
+        }
+    }
 }
