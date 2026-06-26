@@ -181,4 +181,9 @@ public class OrderService {
         return repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
     }
+
+    @Transactional(readOnly = true)
+    public boolean hasCompletedOrder(Integer userId, Integer productId) {
+        return repository.existsCompletedOrderByUserAndProduct(userId, productId);
+    }
 }
