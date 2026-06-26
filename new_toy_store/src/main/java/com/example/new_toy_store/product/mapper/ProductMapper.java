@@ -6,6 +6,7 @@ import com.example.new_toy_store.product.application.dto.response.ProductRespons
 import com.example.new_toy_store.product.application.dto.response.ProductVariantResponse;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductAttributeValue;
+import com.example.new_toy_store.promotion.application.PromotionService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,10 +30,11 @@ public class ProductMapper {
         return product;
     }
 
-    public static ProductResponse toResponse(Product product) {
+    public static ProductResponse toResponse(Product product, PromotionService promotionService) {
         List<Integer> categoryIds = product.getCategories().stream()
                 .map(Category::getId)
                 .collect(Collectors.toList());
+
         return new ProductResponse(
                 product.getId(),
                 product.getName(),
@@ -40,16 +42,26 @@ public class ProductMapper {
                 product.getStatus().getDisplayName(),
                 product.getSupplierId(),
                 categoryIds,
-                product.getVariants().stream().map(variant -> new ProductVariantResponse(
-                        variant.getId(),
-                        variant.getType().getDisplayName(),
-                        variant.getPrice(),
-                        variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0,
-                        variant.getAttributes().stream().collect(Collectors.toMap(
-                                ProductAttributeValue::getAttributeName,
-                                ProductAttributeValue::getAttributeValue
-                        ))
-                )).collect(Collectors.toList())
+                product.getAverageRating(),
+                product.getReviewCount(),
+                product.getVariants().stream().map(variant -> {
+                    double originalPrice = variant.getPrice();
+                    double discountAmount = promotionService != null ?
+                            promotionService.calculateProductDiscount(product.getId(), originalPrice) : 0.0;
+                    double discountedPrice = Math.max(0.0, Math.round((originalPrice - discountAmount) * 100.0) / 100.0);
+
+                    return new ProductVariantResponse(
+                            variant.getId(),
+                            variant.getType().getDisplayName(),
+                            originalPrice,
+                            discountedPrice,
+                            variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0,
+                            variant.getAttributes().stream().collect(Collectors.toMap(
+                                    ProductAttributeValue::getAttributeName,
+                                    ProductAttributeValue::getAttributeValue
+                            ))
+                    );
+                }).collect(Collectors.toList())
         );
     }
 }
