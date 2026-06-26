@@ -123,6 +123,15 @@ public class ProductService {
     }
 
     @Transactional
+    public void updateProductRating(Integer productId, double averageRating, int reviewCount) {
+        Product product = repository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dữ liệu sản phẩm trên hệ thống"));
+
+        product.updateRatingMetrics(averageRating, reviewCount);
+        repository.save(product);
+    }
+
+    @Transactional
     public void delete(Integer id) {
         Product product = getProductEntity(id);
         product.delete();

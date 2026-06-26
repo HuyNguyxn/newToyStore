@@ -41,6 +41,12 @@ public class Product extends BaseAuditEntity {
     @Column(name = "supplier_id")
     private Integer supplierId;
 
+    @Column(name = "average_rating", nullable = false)
+    private double averageRating = 0.0;
+
+    @Column(name = "review_count", nullable = false)
+    private int reviewCount = 0;
+
     @ManyToMany
     @JoinTable(
             name = "product_categories",
@@ -86,17 +92,16 @@ public class Product extends BaseAuditEntity {
             this.status = newStatus;
         }
     }
-    public void setSupplierId(Integer supplierId) {
-        this.supplierId = supplierId;
+
+    public void addCategory(Category category) {
+        if (category != null) {
+            this.categories.add(category);
+        }
     }
 
-    public void setCategories(Set<Category> categories) {
-        this.categories = categories;
-    }
-
-    public void setStatus(ProductStatus status) {
-        if (status != null) {
-            this.status = status;
+    public void removeCategory(Category category) {
+        if (category != null) {
+            this.categories.remove(category);
         }
     }
 
@@ -129,6 +134,15 @@ public class Product extends BaseAuditEntity {
         }
     }
 
+    public void updateRatingMetrics(double averageRating, int reviewCount) {
+        this.averageRating = Math.max(0.0, averageRating);
+        this.reviewCount = Math.max(0, reviewCount);
+    }
+
+    public double getAverageRating() { return averageRating; }
+
+    public int getReviewCount() { return reviewCount; }
+
     public boolean isAvailableForPurchase() {
         return this.status != null && this.status.canBePurchased();
     }
@@ -145,13 +159,19 @@ public class Product extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+
     public String getName() { return name; }
+
     public double getBasePrice() { return basePrice; }
+
     public ProductStatus getStatus() { return status; }
+
     public Integer getSupplierId() { return supplierId; }
 
     public Set<Category> getCategories() { return Collections.unmodifiableSet(categories); }
+
     public List<ProductImage> getImages() { return Collections.unmodifiableList(images); }
+
     public List<ProductVariant> getVariants() { return Collections.unmodifiableList(variants); }
 
     @Override
