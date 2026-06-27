@@ -3,9 +3,11 @@ package com.example.new_toy_store.cart.mapper;
 import com.example.new_toy_store.cart.application.dto.response.CartItemResponse;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
+import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
+import com.example.new_toy_store.promotion.application.PromotionService;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class CartMapper {
 
-    public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap) {
+    public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap, PromotionService promotionService) {
         List<CartItemResponse> itemResponses = cart.getItems().stream().map(item -> {
             Product product = productMap.get(item.getProductId());
             ProductVariant variant = product != null ? product.getVariants().stream()
@@ -40,7 +42,12 @@ public class CartMapper {
 
             String name = product != null ? product.getName() : "Sản phẩm không hợp lệ";
             String attributes = variant != null ? variant.generateAttributesSnapshot() : "";
-            double price = variant != null ? variant.getPrice() : 0.0;
+            double originalPrice = variant != null ? variant.getPrice() : 0.0;
+            double discountAmount = (promotionService != null && product != null) ?
+                    promotionService.calculateProductDiscount(product.getId(), originalPrice) : 0.0;
+
+            double finalPrice = Math.max(0.0, Math.round((originalPrice - discountAmount) * 100.0) / 100.0);
+
             String thumbnail = product != null ? product.getImages().stream()
                     .filter(ProductImage::isThumbnail).map(ProductImage::getImageUrl)
                     .findFirst().orElse(null) : null;
@@ -52,17 +59,17 @@ public class CartMapper {
                     name,
                     attributes,
                     thumbnail,
-                    price,
+                    originalPrice,
+                    finalPrice,
                     item.getQuantity(),
                     isAvailable,
                     message
             );
         }).collect(Collectors.toList());
 
-
         double total = itemResponses.stream()
                 .filter(CartItemResponse::isAvailable)
-                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .mapToDouble(i -> i.getFinalPrice() * i.getQuantity())
                 .sum();
 
         total = Math.round(total * 100.0) / 100.0;
