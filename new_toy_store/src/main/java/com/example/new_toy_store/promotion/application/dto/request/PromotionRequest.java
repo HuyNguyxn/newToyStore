@@ -28,10 +28,8 @@ public class PromotionRequest {
     private Double minOrderValue;
     private Integer targetProductId;
 
-    @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDateTime startDate;
 
-    @NotNull(message = "Ngày kết thúc không được để trống")
     @Future(message = "Ngày kết thúc phải ở trong tương lai")
     private LocalDateTime endDate;
 

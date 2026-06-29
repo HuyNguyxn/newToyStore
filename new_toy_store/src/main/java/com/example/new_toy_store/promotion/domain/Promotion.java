@@ -47,10 +47,10 @@ public class Promotion extends BaseAuditEntity {
     @Column(name = "target_product_id")
     private Integer targetProductId;
 
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date")
     private LocalDateTime startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")
     private LocalDateTime endDate;
 
     @Column(name = "is_active", nullable = false)
@@ -99,8 +99,15 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public boolean isCurrentlyValid() {
+        if (!this.isActive) {
+            return false;
+        }
+
         LocalDateTime now = LocalDateTime.now();
-        return this.isActive && startDate != null && endDate != null && !now.isBefore(startDate) && !now.isAfter(endDate);
+        boolean isStarted = (this.startDate == null || !now.isBefore(this.startDate));
+        boolean isNotExpired = (this.endDate == null || !now.isAfter(this.endDate));
+
+        return isStarted && isNotExpired;
     }
 
     public boolean isApplicableForOrder(double currentOrderTotal) {
