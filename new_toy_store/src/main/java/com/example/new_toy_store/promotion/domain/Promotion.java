@@ -93,7 +93,6 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
-        this.scope.validateSetup(minOrderValue, targetProductId);
         this.minOrderValue = minOrderValue;
         this.maxDiscountAmount = maxDiscountAmount;
         this.targetProductId = targetProductId;
@@ -105,7 +104,7 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public boolean isApplicableForOrder(double currentOrderTotal) {
-        if (!isCurrentlyValid() || this.scope != PromotionScope.ORDER) {
+        if (!isCurrentlyValid()) {
             return false;
         }
         return this.minOrderValue == null || currentOrderTotal >= this.minOrderValue;

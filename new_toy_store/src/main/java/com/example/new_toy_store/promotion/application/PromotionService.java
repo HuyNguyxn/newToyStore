@@ -48,6 +48,7 @@ public class PromotionService {
         }
 
         return activePromos.stream()
+                .filter(Promotion::isCurrentlyValid)
                 .map(promo -> promo.applyDiscount(originalPrice))
                 .max(Double::compareTo)
                 .orElse(0.0);
@@ -67,5 +68,27 @@ public class PromotionService {
         }
 
         return promotion.applyDiscount(cartTotal);
+    }
+
+    @Transactional
+    public void usePromotion(String promoCode) {
+        if (promoCode == null || promoCode.trim().isEmpty()) return;
+
+        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không tồn tại"));
+
+        promotion.recordUsage();
+        repository.save(promotion);
+    }
+
+    @Transactional
+    public void refundPromotion(String promoCode) {
+        if (promoCode == null || promoCode.trim().isEmpty()) return;
+
+        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim()).orElse(null);
+        if (promotion != null) {
+            promotion.refundUsage();
+            repository.save(promotion);
+        }
     }
 }
