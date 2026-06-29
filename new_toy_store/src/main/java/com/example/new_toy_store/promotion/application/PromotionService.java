@@ -4,6 +4,7 @@ import com.example.new_toy_store.promotion.application.dto.request.PromotionRequ
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 import com.example.new_toy_store.promotion.domain.Promotion;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
+import com.example.new_toy_store.promotion.domain.PromotionScope;
 import com.example.new_toy_store.promotion.mapper.PromotionMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class PromotionService {
         }
 
         return activePromos.stream()
+                .filter(promo -> promo.getScope() == PromotionScope.PRODUCT)
                 .filter(Promotion::isCurrentlyValid)
                 .map(promo -> promo.applyDiscount(originalPrice))
                 .max(Double::compareTo)
@@ -61,34 +63,36 @@ public class PromotionService {
         }
 
         Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
-                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không hợp lệ"));
+                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không hợp lệ hoặc đã hết hạn"));
+
+        if (promotion.getScope() != PromotionScope.ORDER) {
+            return 0.0;
+        }
 
         if (!promotion.isApplicableForOrder(cartTotal)) {
-            throw new IllegalStateException("Đơn hàng chưa đạt điều kiện áp dụng mã khuyến mãi này");
+            throw new IllegalStateException("Đơn hàng chưa đạt điều kiện tối thiểu để áp dụng mã này");
         }
 
         return promotion.applyDiscount(cartTotal);
     }
 
-    @Transactional
-    public void usePromotion(String promoCode) {
-        if (promoCode == null || promoCode.trim().isEmpty()) return;
+    @Transactional(readOnly = true)
+    public double calculateShippingDiscount(String promoCode, double currentShippingFee, double cartTotal) {
+        if (promoCode == null || promoCode.trim().isEmpty()) {
+            return 0.0;
+        }
 
         Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
-                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không tồn tại"));
+                .orElse(null);
 
-        promotion.recordUsage();
-        repository.save(promotion);
-    }
-
-    @Transactional
-    public void refundPromotion(String promoCode) {
-        if (promoCode == null || promoCode.trim().isEmpty()) return;
-
-        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim()).orElse(null);
-        if (promotion != null) {
-            promotion.refundUsage();
-            repository.save(promotion);
+        if (promotion == null || !promotion.isCurrentlyValid() || promotion.getScope() != PromotionScope.SHIPPING) {
+            return 0.0;
         }
+
+        if (promotion.getMinOrderValue() != null && cartTotal < promotion.getMinOrderValue()) {
+            return 0.0;
+        }
+
+        return promotion.applyDiscount(currentShippingFee);
     }
 }

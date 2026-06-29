@@ -16,6 +16,14 @@ public enum PromotionScope {
                 throw new IllegalArgumentException("Khuyến mãi cấp đơn hàng không được gắn với một sản phẩm cụ thể");
             }
         }
+    },
+    SHIPPING("Khuyến mãi phí vận chuyển") {
+        @Override
+        public void validateSetup(Double minOrderValue, Integer targetProductId) {
+            if (targetProductId != null) {
+                throw new IllegalArgumentException("Khuyến mãi phí vận chuyển không được gắn với một sản phẩm cụ thể");
+            }
+        }
     };
 
     private final String description;
