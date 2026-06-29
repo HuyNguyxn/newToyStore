@@ -7,6 +7,7 @@ import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.order.domain.OrderRepository;
+import com.example.new_toy_store.order.domain.OrderStatus;
 import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
@@ -66,6 +67,16 @@ public class OrderService {
                     + user.getStatus().getDisplayName() + "'. Không đủ điều kiện để đặt hàng.");
         }
 
+        if (request.getPromoCode() != null && !request.getPromoCode().trim().isEmpty()) {
+            String sanitizedCode = request.getPromoCode().toUpperCase().trim();
+            boolean isPromoUsed = repository.existsByUserIdAndPromoCodeAndStatusNot(
+                    request.getUserId(), sanitizedCode, OrderStatus.CANCELLED);
+
+            if (isPromoUsed) {
+                throw new IllegalStateException("Bạn đã sử dụng mã khuyến mãi '" + sanitizedCode + "' cho một đơn hàng khác.");
+            }
+        }
+
         Set<Integer> productIds = request.getItems().stream()
                 .map(OrderItemRequest::getProductId)
                 .collect(Collectors.toSet());
@@ -74,11 +85,8 @@ public class OrderService {
                 .stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        Order order = OrderMapper.toEntity(request);
-
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
-
             if (product == null || !product.isAvailableForPurchase()) {
                 throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
             }
@@ -87,6 +95,21 @@ public class OrderService {
                     .filter(v -> v.getId().equals(itemRequest.getVariantId()))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm này"));
+
+            if (variant.getInventory().getStockQuantity() < itemRequest.getQuantity()) {
+                throw new IllegalStateException("Rất tiếc! Sản phẩm '" + product.getName() + "' (Phiên bản: "
+                        + variant.generateAttributesSnapshot() + ") chỉ còn "
+                        + variant.getInventory().getStockQuantity() + " chiếc trong kho. Vui lòng điều chỉnh lại giỏ hàng.");
+            }
+        }
+
+        Order order = OrderMapper.toEntity(request);
+
+        for (OrderItemRequest itemRequest : request.getItems()) {
+            Product product = productMap.get(itemRequest.getProductId());
+            ProductVariant variant = product.getVariants().stream()
+                    .filter(v -> v.getId().equals(itemRequest.getVariantId()))
+                    .findFirst().get();
 
             String snapshot = variant.generateAttributesSnapshot();
             variant.getInventory().reduceStock(itemRequest.getQuantity());
