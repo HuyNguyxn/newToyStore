@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PromotionService {
@@ -94,5 +96,14 @@ public class PromotionService {
         }
 
         return promotion.applyDiscount(currentShippingFee);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Promotion> getActivePromotionsForProducts(Set<Integer> productIds) {
+        if (productIds == null || productIds.isEmpty()) return List.of();
+        return repository.findByScopeAndTargetProductIdIn(PromotionScope.PRODUCT, productIds)
+                .stream()
+                .filter(Promotion::isCurrentlyValid)
+                .collect(Collectors.toList());
     }
 }

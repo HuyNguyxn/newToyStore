@@ -11,9 +11,11 @@ import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
+import com.example.new_toy_store.promotion.domain.Promotion;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -128,7 +130,7 @@ public class CartService {
 
     private CartResponse getCartData(Cart cart) {
         if (cart.getItems().isEmpty()) {
-            return CartMapper.toResponse(cart, Map.of(), promotionService);
+            return CartMapper.toResponse(cart, Map.of(), List.of());
         }
 
         Set<Integer> productIds = cart.getItems().stream()
@@ -139,6 +141,8 @@ public class CartService {
                 .stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        return CartMapper.toResponse(cart, productMap, promotionService);
+        List<Promotion> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
+
+        return CartMapper.toResponse(cart, productMap, activePromotions);
     }
 }
