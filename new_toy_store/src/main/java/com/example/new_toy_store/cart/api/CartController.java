@@ -21,8 +21,10 @@ public class CartController {
     }
 
     @GetMapping("/{userId}")
-    public CartResponse getCart(@PathVariable Integer userId) {
-        return service.getCartByUserId(userId);
+    public CartResponse getCart(
+            @PathVariable Integer userId,
+            @RequestParam(required = false) String promoCode) {
+        return service.getCartByUserId(userId, promoCode);
     }
 
     @PostMapping("/{userId}/items")
@@ -40,7 +42,6 @@ public class CartController {
             @PathVariable Integer userId,
             @PathVariable Integer itemId,
             @RequestParam @Min(value = 1, message = "Số lượng cập nhật phải lớn hơn 0") int quantity) {
-
         return service.updateItemQuantity(userId, itemId, quantity);
     }
 

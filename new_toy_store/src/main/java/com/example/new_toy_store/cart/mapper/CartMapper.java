@@ -6,6 +6,7 @@ import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
+import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.promotion.domain.Promotion;
 
 import java.util.List;
@@ -14,7 +15,10 @@ import java.util.stream.Collectors;
 
 public class CartMapper {
 
-    public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap, List<Promotion> activePromotions) {
+    public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap,
+                                          List<Promotion> activePromotions,
+                                          String promoCode, PromotionService promotionService) {
+
         List<CartItemResponse> itemResponses = cart.getItems().stream().map(item -> {
             Product product = productMap.get(item.getProductId());
             ProductVariant variant = product != null ? product.getVariants().stream()
@@ -73,13 +77,42 @@ public class CartMapper {
             );
         }).collect(Collectors.toList());
 
-        double total = itemResponses.stream()
+        double cartTotal = itemResponses.stream()
                 .filter(CartItemResponse::isAvailable)
                 .mapToDouble(i -> i.getFinalPrice() * i.getQuantity())
                 .sum();
 
-        total = Math.round(total * 100.0) / 100.0;
+        cartTotal = Math.round(cartTotal * 100.0) / 100.0;
 
-        return new CartResponse(cart.getId(), cart.getUserId(), total, itemResponses);
+        double orderDiscountAmount = 0.0;
+        String appliedPromoCode = null;
+        String promoMessage = null;
+
+        if (promoCode != null && !promoCode.trim().isEmpty() && promotionService != null) {
+            try {
+                orderDiscountAmount = promotionService.calculateOrderDiscount(promoCode, cartTotal);
+                if (orderDiscountAmount > 0) {
+                    appliedPromoCode = promoCode.toUpperCase().trim();
+                    promoMessage = "Áp dụng mã giảm giá thành công";
+                } else {
+                    promoMessage = "Mã giảm giá không mang lại ưu đãi cho đơn hàng này";
+                }
+            } catch (RuntimeException ex) {
+                promoMessage = ex.getMessage();
+            }
+        }
+
+        double finalTotal = Math.max(0.0, Math.round((cartTotal - orderDiscountAmount) * 100.0) / 100.0);
+
+        return new CartResponse(
+                cart.getId(),
+                cart.getUserId(),
+                cartTotal,
+                appliedPromoCode,
+                orderDiscountAmount,
+                finalTotal,
+                promoMessage,
+                itemResponses
+        );
     }
 }

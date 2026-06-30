@@ -34,10 +34,10 @@ public class CartService {
     }
 
     @Transactional(readOnly = true)
-    public CartResponse getCartByUserId(Integer userId) {
+    public CartResponse getCartByUserId(Integer userId, String promoCode) {
         Cart cart = repository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng của người dùng yêu cầu"));
-        return getCartData(cart);
+        return getCartData(cart, promoCode);
     }
 
     @Transactional
@@ -56,7 +56,7 @@ public class CartService {
 
         cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity());
         repository.save(cart);
-        return getCartData(cart);
+        return getCartData(cart, null);
     }
 
     @Transactional
@@ -73,7 +73,7 @@ public class CartService {
         }
 
         repository.save(cart);
-        return getCartData(cart);
+        return getCartData(cart, null);
     }
 
     @Transactional
@@ -91,7 +91,7 @@ public class CartService {
 
         cart.updateItemQuantity(itemId, quantity);
         repository.save(cart);
-        return getCartData(cart);
+        return getCartData(cart, null);
     }
 
     @Transactional
@@ -101,7 +101,7 @@ public class CartService {
 
         cart.removeItem(itemId);
         repository.save(cart);
-        return getCartData(cart);
+        return getCartData(cart, null);
     }
 
     @Transactional
@@ -128,9 +128,9 @@ public class CartService {
         }
     }
 
-    private CartResponse getCartData(Cart cart) {
+    private CartResponse getCartData(Cart cart, String promoCode) {
         if (cart.getItems().isEmpty()) {
-            return CartMapper.toResponse(cart, Map.of(), List.of());
+            return CartMapper.toResponse(cart, Map.of(), List.of(), promoCode, promotionService);
         }
 
         Set<Integer> productIds = cart.getItems().stream()
@@ -143,6 +143,6 @@ public class CartService {
 
         List<Promotion> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
 
-        return CartMapper.toResponse(cart, productMap, activePromotions);
+        return CartMapper.toResponse(cart, productMap, activePromotions, promoCode, promotionService);
     }
 }
