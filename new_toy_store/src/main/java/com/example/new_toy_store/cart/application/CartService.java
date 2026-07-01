@@ -6,6 +6,8 @@ import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.cart.domain.CartRepository;
+import com.example.new_toy_store.cart.domain.exception.CartItemNotFoundException;
+import com.example.new_toy_store.cart.domain.exception.CartNotFoundException;
 import com.example.new_toy_store.cart.mapper.CartMapper;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
@@ -36,7 +38,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public CartResponse getCartByUserId(Integer userId, String promoCode) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng của người dùng yêu cầu"));
+                .orElseThrow(() -> new CartNotFoundException(userId));
         return getCartData(cart, promoCode);
     }
 
@@ -79,12 +81,12 @@ public class CartService {
     @Transactional
     public CartResponse updateItemQuantity(Integer userId, Integer itemId, int quantity) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng tương ứng"));
+                .orElseThrow(() -> new CartNotFoundException(userId));
 
         CartItem targetItem = cart.getItems().stream()
                 .filter(item -> item.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không có trong giỏ hàng"));
+                .orElseThrow(() -> new CartItemNotFoundException(itemId));
 
         Product product = productService.getProductEntity(targetItem.getProductId());
         checkStockSufficiency(product, targetItem.getVariantId(), quantity);
@@ -97,7 +99,7 @@ public class CartService {
     @Transactional
     public CartResponse removeItemFromCart(Integer userId, Integer itemId) {
         Cart cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giỏ hàng tương ứng"));
+                .orElseThrow(() -> new CartNotFoundException(userId));
 
         cart.removeItem(itemId);
         repository.save(cart);
