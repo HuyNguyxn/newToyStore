@@ -1,5 +1,6 @@
 package com.example.new_toy_store.cart.domain;
 
+import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 
@@ -38,7 +39,7 @@ public class CartItem extends BaseAuditEntity {
 
     public CartItem(Integer productId, Integer variantId, int quantity) {
         if (productId == null || variantId == null) {
-            throw new IllegalArgumentException("ID sản phẩm và ID biến thể không được để trống");
+            throw InvalidCartOperationException.nullProductOrVariant();
         }
         this.productId = productId;
         this.variantId = variantId;
@@ -51,14 +52,14 @@ public class CartItem extends BaseAuditEntity {
 
     public void addQuantity(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
+            throw InvalidCartOperationException.invalidQuantity(amount);
         }
         this.quantity += amount;
     }
 
     public void updateQuantity(int newQuantity) {
         if (newQuantity <= 0) {
-            throw new IllegalArgumentException("Số lượng cập nhật phải lớn hơn 0");
+            throw InvalidCartOperationException.invalidQuantity(newQuantity);
         }
         this.quantity = newQuantity;
     }

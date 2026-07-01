@@ -1,5 +1,7 @@
 package com.example.new_toy_store.cart.domain;
 
+import com.example.new_toy_store.cart.domain.exception.CartItemNotFoundException;
+import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public class Cart extends BaseAuditEntity {
 
     public Cart(Integer userId) {
         if (userId == null) {
-            throw new IllegalArgumentException("ID người dùng không được để trống");
+            throw InvalidCartOperationException.nullUserId();
         }
         this.userId = userId;
     }
@@ -46,7 +48,7 @@ public class Cart extends BaseAuditEntity {
             existingItem.get().addQuantity(quantity);
         } else {
             if (this.items.size() >= MAX_CART_ITEMS) {
-                throw new IllegalStateException("Giỏ hàng đã đạt giới hạn tối đa " + MAX_CART_ITEMS + " loại mặt hàng khác nhau. Vui lòng thanh toán bớt sản phẩm trước khi thêm mới.");
+                throw InvalidCartOperationException.maxItemsExceeded(MAX_CART_ITEMS);
             }
 
             CartItem newItem = new CartItem(productId, variantId, quantity);
@@ -59,7 +61,7 @@ public class Cart extends BaseAuditEntity {
         CartItem item = items.stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong giỏ hàng"));
+                .orElseThrow(() -> new CartItemNotFoundException(itemId));
         item.updateQuantity(newQuantity);
     }
 
