@@ -4,6 +4,7 @@ import com.example.new_toy_store.category.application.dto.request.CategoryReques
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryStatus;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class CategoryMapper {
@@ -28,10 +29,12 @@ public class CategoryMapper {
                 category.getDescription(),
                 category.getStatus().getDisplayName(),
                 category.getParent() != null ? category.getParent().getId() : null,
-                category.getSubCategories() != null ? category.getSubCategories().stream()
-                        .filter(sub -> !onlyVisible || sub.getStatus() == CategoryStatus.VISIBLE)
-                        .map(sub -> toResponse(sub, onlyVisible))
-                        .collect(Collectors.toList()) : null
+                category.getSubCategories() != null && !category.getSubCategories().isEmpty() ?
+                        category.getSubCategories().stream()
+                                .filter(sub -> !onlyVisible || sub.getStatus() == CategoryStatus.VISIBLE)
+                                .map(sub -> toResponse(sub, onlyVisible))
+                                .collect(Collectors.toList())
+                        : Collections.emptyList()
         );
     }
 }
