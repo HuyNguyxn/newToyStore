@@ -4,12 +4,15 @@ import com.example.new_toy_store.category.application.dto.request.CategoryReques
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
+import com.example.new_toy_store.category.domain.exception.DuplicateCategorySlugException;
 import com.example.new_toy_store.category.mapper.CategoryMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,10 +50,25 @@ public class CategoryService {
         return CategoryMapper.toResponse(getCategoryEntity(id));
     }
 
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategoryBreadcrumb(Integer categoryId) {
+        Category current = getCategoryEntity(categoryId);
+        List<Category> breadcrumb = new ArrayList<>();
+
+        while (current != null) {
+            breadcrumb.add(0, current);
+            current = current.getParent();
+        }
+
+        return breadcrumb.stream()
+                .map(CategoryMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public CategoryResponse create(CategoryRequest request) {
         if (repository.existsBySlug(request.getSlug())) {
-            throw new IllegalArgumentException("Đường dẫn tĩnh đã tồn tại trong hệ thống");
+            throw new DuplicateCategorySlugException(request.getSlug());
         }
 
         Category category = CategoryMapper.toEntity(request);
@@ -69,7 +87,7 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
 
         if (!category.getSlug().equals(request.getSlug()) && repository.existsBySlug(request.getSlug())) {
-            throw new IllegalArgumentException("Đường dẫn tĩnh đã tồn tại trong hệ thống");
+            throw new DuplicateCategorySlugException(request.getSlug());
         }
 
         category.update(request.getName(), request.getSlug(), request.getDescription());
@@ -107,6 +125,6 @@ public class CategoryService {
 
     private Category getCategoryEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục yêu cầu"));
+                .orElseThrow(() -> new CategoryNotFoundException(id));
     }
 }
