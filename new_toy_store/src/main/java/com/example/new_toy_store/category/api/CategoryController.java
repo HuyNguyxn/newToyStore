@@ -21,8 +21,11 @@ public class CategoryController {
     }
 
     @GetMapping
-    public Page<CategoryResponse> getAllCategories(Pageable pageable) {
-        return service.getAllCategories(pageable);
+    public Page<CategoryResponse> searchCategories(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        return service.searchCategories(keyword, status, pageable);
     }
 
     @GetMapping("/tree")

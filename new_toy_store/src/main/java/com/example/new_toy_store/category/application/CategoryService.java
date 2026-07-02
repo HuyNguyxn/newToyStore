@@ -4,6 +4,7 @@ import com.example.new_toy_store.category.application.dto.request.CategoryReques
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.category.domain.CategoryStatus;
 import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
 import com.example.new_toy_store.category.domain.exception.DuplicateCategorySlugException;
 import com.example.new_toy_store.category.mapper.CategoryMapper;
@@ -26,9 +27,14 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CategoryResponse> getAllCategories(Pageable pageable) {
-        return repository.findAll(pageable)
-                .map(CategoryMapper::toResponse);
+    public Page<CategoryResponse> searchCategories(String keyword, String statusValue, Pageable pageable) {
+        CategoryStatus status = null;
+        if (statusValue != null && !statusValue.trim().isEmpty()) {
+            status = CategoryStatus.from(statusValue);
+        }
+
+        return repository.searchCategories(keyword, status, pageable)
+                .map(CategoryMapper::toFlatResponse);
     }
 
     @Transactional(readOnly = true)
