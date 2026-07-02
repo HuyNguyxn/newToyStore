@@ -24,6 +24,9 @@ public class ImportNote extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    private Long version;
+
     @Column(name = "supplier_id", nullable = false)
     private Integer supplierId;
 
@@ -89,6 +92,7 @@ public class ImportNote extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+    public Long getVersion() { return version; }
     public Integer getSupplierId() { return supplierId; }
     public ImportStatus getStatus() { return status; }
     public double getTotalAmount() { return totalAmount; }
