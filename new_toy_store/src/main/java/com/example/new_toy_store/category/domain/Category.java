@@ -99,7 +99,7 @@ public class Category extends BaseAuditEntity {
     public void delete() {
         super.delete();
         this.slug = this.slug + "-da_xoa-" + System.currentTimeMillis();
-        this.subCategories.forEach(BaseAuditEntity::delete);
+        this.subCategories.forEach(Category::delete);
     }
 
     public Integer getId() { return id; }
