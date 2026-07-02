@@ -6,6 +6,7 @@ import com.example.new_toy_store.imports.application.dto.response.ImportNoteResp
 import com.example.new_toy_store.imports.domain.ImportNote;
 import com.example.new_toy_store.imports.domain.ImportNoteItem;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
+import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundException;
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
@@ -37,22 +38,27 @@ public class ImportService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ImportNoteResponse> getAllImportNotes(Pageable pageable) {
-        Page<ImportNote> notes = repository.findAll(pageable);
+    public Page<ImportNoteResponse> searchImportNotes(Integer supplierId, String statusValue, Pageable pageable) {
+        ImportStatus status = null;
+        if (statusValue != null && !statusValue.trim().isEmpty()) {
+            status = ImportStatus.from(statusValue);
+        }
+
+        Page<ImportNote> notes = repository.searchImports(supplierId, status, pageable);
 
         Set<Integer> supplierIds = notes.stream()
                 .map(ImportNote::getSupplierId)
                 .collect(Collectors.toSet());
 
         if (supplierIds.isEmpty()) {
-            return notes.map(note -> ImportNoteMapper.toResponse(note, null));
+            return notes.map(note -> ImportNoteMapper.toFlatResponse(note, null));
         }
 
         Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
                 .stream()
                 .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
 
-        return notes.map(note -> ImportNoteMapper.toResponse(note, supplierMap.get(note.getSupplierId())));
+        return notes.map(note -> ImportNoteMapper.toFlatResponse(note, supplierMap.get(note.getSupplierId())));
     }
 
     @Transactional(readOnly = true)

@@ -22,8 +22,11 @@ public class ImportController {
     }
 
     @GetMapping
-    public Page<ImportNoteResponse> getAll(Pageable pageable) {
-        return service.getAllImportNotes(pageable);
+    public Page<ImportNoteResponse> search(
+            @RequestParam(required = false) Integer supplierId,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        return service.searchImportNotes(supplierId, status, pageable);
     }
 
     @GetMapping("/{id}")
