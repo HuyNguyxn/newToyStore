@@ -6,6 +6,18 @@ public class InvalidImportOperationException extends RuntimeException {
         super(message);
     }
 
+    public static InvalidImportOperationException supplierInactive(String statusName) {
+        return new InvalidImportOperationException("Nhà cung cấp hiện đang " + statusName + ". Không thể tạo phiếu nhập.");
+    }
+
+    public static InvalidImportOperationException invalidProducts() {
+        return new InvalidImportOperationException("Một hoặc nhiều ID sản phẩm không tồn tại trong hệ thống.");
+    }
+
+    public static InvalidImportOperationException invalidVariant(Integer variantId, String productName) {
+        return new InvalidImportOperationException("Mã mẫu mã (ID: " + variantId + ") không thuộc về sản phẩm: " + productName);
+    }
+
     public static InvalidImportOperationException invalidStatusTransition(String action) {
         return new InvalidImportOperationException("Không thể " + action + " phiếu nhập ở trạng thái hiện tại.");
     }

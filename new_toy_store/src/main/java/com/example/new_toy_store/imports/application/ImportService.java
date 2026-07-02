@@ -6,12 +6,13 @@ import com.example.new_toy_store.imports.application.dto.response.ImportNoteResp
 import com.example.new_toy_store.imports.domain.ImportNote;
 import com.example.new_toy_store.imports.domain.ImportNoteItem;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
+import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundException;
+import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
-import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,7 +59,7 @@ public class ImportService {
     public ImportNoteResponse getImportNoteDetails(Integer id) {
         ImportNote note = repository.findByIdWithItems(id);
         if (note == null) {
-            throw new RuntimeException("Không tìm thấy phiếu nhập kho");
+            throw new ImportNoteNotFoundException(id);
         }
         SupplierResponse supplier = supplierService.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
@@ -68,7 +69,7 @@ public class ImportService {
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
         SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
         if (!"ACTIVE".equals(supplier.getStatus())) {
-            throw new IllegalStateException("Nhà cung cấp hiện đang " + supplier.getStatusDisplayName() + ". Không thể tạo phiếu nhập.");
+            throw InvalidImportOperationException.supplierInactive(supplier.getStatusDisplayName());
         }
 
         Set<Integer> productIds = request.getItems().stream()
@@ -80,7 +81,7 @@ public class ImportService {
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
         if (productMap.size() != productIds.size()) {
-            throw new IllegalArgumentException("Một hoặc nhiều ID sản phẩm không tồn tại trong hệ thống");
+            throw InvalidImportOperationException.invalidProducts();
         }
 
         ImportNote note = new ImportNote(request.getSupplierId(), request.getNote());
@@ -91,7 +92,7 @@ public class ImportService {
                     .anyMatch(v -> v.getId().equals(itemReq.getVariantId()));
 
             if (!isValidVariant) {
-                throw new IllegalArgumentException("Mã mẫu mã (variantId: " + itemReq.getVariantId() + ") không thuộc về sản phẩm: " + product.getName());
+                throw InvalidImportOperationException.invalidVariant(itemReq.getVariantId(), product.getName());
             }
             note.addItem(
                     itemReq.getProductId(),
@@ -110,7 +111,7 @@ public class ImportService {
     public ImportNoteResponse completeImportNote(Integer noteId) {
         ImportNote note = repository.findByIdWithItems(noteId);
         if (note == null) {
-            throw new RuntimeException("Không tìm thấy phiếu nhập kho");
+            throw new ImportNoteNotFoundException(noteId);
         }
 
         note.complete();
@@ -131,7 +132,7 @@ public class ImportService {
     @Transactional
     public ImportNoteResponse cancelImportNote(Integer noteId) {
         ImportNote note = repository.findById(noteId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiếu nhập kho"));
+                .orElseThrow(() -> new ImportNoteNotFoundException(noteId));
         note.cancel();
         repository.save(note);
 
