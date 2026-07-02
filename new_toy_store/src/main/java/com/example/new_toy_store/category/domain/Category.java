@@ -1,5 +1,6 @@
 package com.example.new_toy_store.category.domain;
 
+import com.example.new_toy_store.category.domain.exception.InvalidCategoryOperationException;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -47,11 +48,8 @@ public class Category extends BaseAuditEntity {
     protected Category() {}
 
     public Category(String name, String slug, String description) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên danh mục không được để trống");
-        }
-        if (slug == null || slug.trim().isEmpty()) {
-            throw new IllegalArgumentException("Đường dẫn tĩnh không được để trống");
+        if (name == null || name.trim().isEmpty() || slug == null || slug.trim().isEmpty()) {
+            throw InvalidCategoryOperationException.emptyNameOrSlug();
         }
         this.name = name;
         this.slug = slug;
@@ -69,13 +67,13 @@ public class Category extends BaseAuditEntity {
     public void assignParent(Category parentCategory) {
         if (parentCategory != null) {
             if (this.equals(parentCategory)) {
-                throw new IllegalArgumentException("Không thể tự nhận chính mình làm danh mục cha");
+                throw InvalidCategoryOperationException.selfParenting(this.id);
             }
 
             Category currentAncestor = parentCategory;
             while (currentAncestor != null) {
                 if (this.equals(currentAncestor)) {
-                    throw new IllegalArgumentException("Phát hiện lỗi vòng lặp trong cấu trúc. Danh mục này hiện đang là cấp trên của danh mục mục tiêu.");
+                    throw InvalidCategoryOperationException.circularReference(this.id, parentCategory.getId());
                 }
                 currentAncestor = currentAncestor.getParent();
             }

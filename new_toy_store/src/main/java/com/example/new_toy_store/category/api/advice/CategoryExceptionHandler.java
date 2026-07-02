@@ -43,4 +43,18 @@ public class CategoryExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
+
+    @ExceptionHandler(InvalidCategoryOperationException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOperation(
+            InvalidCategoryOperationException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Cấu trúc danh mục không hợp lệ",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }
