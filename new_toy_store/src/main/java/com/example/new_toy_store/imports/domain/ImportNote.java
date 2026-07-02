@@ -1,6 +1,7 @@
 package com.example.new_toy_store.imports.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class ImportNote extends BaseAuditEntity {
 
     public void addItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice) {
         if (!this.status.canModifyItems()) {
-            throw new IllegalStateException("Không thể thêm sản phẩm vào phiếu nhập đã chốt hoặc đã hủy.");
+            throw InvalidImportOperationException.invalidStatusTransition("thêm sản phẩm vào");
         }
 
         Optional<ImportNoteItem> existingItem = items.stream()
@@ -72,17 +73,17 @@ public class ImportNote extends BaseAuditEntity {
 
     public void complete() {
         if (!this.status.canComplete()) {
-            throw new IllegalStateException("Không thể hoàn thành phiếu nhập ở trạng thái này");
+            throw InvalidImportOperationException.invalidStatusTransition("hoàn thành");
         }
         if (this.items.isEmpty()) {
-            throw new IllegalStateException("Không thể hoàn thành phiếu nhập khi không có sản phẩm nào");
+            throw InvalidImportOperationException.emptyItems();
         }
         this.status = ImportStatus.COMPLETED;
     }
 
     public void cancel() {
         if (!this.status.canCancel()) {
-            throw new IllegalStateException("Không thể hủy phiếu nhập ở trạng thái này");
+            throw InvalidImportOperationException.invalidStatusTransition("hủy");
         }
         this.status = ImportStatus.CANCELLED;
     }

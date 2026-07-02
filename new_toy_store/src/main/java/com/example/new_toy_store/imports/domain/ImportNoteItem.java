@@ -1,6 +1,7 @@
 package com.example.new_toy_store.imports.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import jakarta.persistence.*;
 
 @Entity
@@ -43,13 +44,13 @@ public class ImportNoteItem extends BaseAuditEntity {
 
     public ImportNoteItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice) {
         if (productId == null || variantId == null) {
-            throw new IllegalArgumentException("ID sản phẩm và biến thể không được để trống");
+            throw InvalidImportOperationException.missingItemIds();
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Số lượng nhập phải lớn hơn 0");
+            throw InvalidImportOperationException.invalidQuantity();
         }
         if (importPrice < 0) {
-            throw new IllegalArgumentException("Giá nhập không được âm");
+            throw InvalidImportOperationException.negativePrice();
         }
         this.productId = productId;
         this.variantId = variantId;
@@ -62,7 +63,7 @@ public class ImportNoteItem extends BaseAuditEntity {
 
     public void addQuantity(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
+            throw InvalidImportOperationException.invalidQuantity();
         }
         this.quantity += amount;
     }
