@@ -67,7 +67,9 @@ public class ImportNoteItem extends BaseAuditEntity {
         this.quantity += amount;
     }
 
-    public double getTotalPrice() { return this.quantity * this.importPrice; }
+    public double getTotalPrice() {
+        return Math.max(0.0, Math.round((this.quantity * this.importPrice) * 100.0) / 100.0);
+    }
 
     public Integer getId() { return id; }
     public Integer getProductId() { return productId; }
