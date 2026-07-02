@@ -51,16 +51,16 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryBreadcrumb(Integer categoryId) {
+    public List<CategoryResponse> getCategoryPath(Integer categoryId) {
         Category current = getCategoryEntity(categoryId);
-        List<Category> breadcrumb = new ArrayList<>();
+        List<Category> path = new ArrayList<>();
 
         while (current != null) {
-            breadcrumb.add(0, current);
+            path.add(0, current);
             current = current.getParent();
         }
 
-        return breadcrumb.stream()
+        return path.stream()
                 .map(CategoryMapper::toResponse)
                 .collect(Collectors.toList());
     }

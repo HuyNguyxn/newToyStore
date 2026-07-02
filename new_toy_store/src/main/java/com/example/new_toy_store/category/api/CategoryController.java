@@ -40,6 +40,11 @@ public class CategoryController {
         return service.getCategory(id);
     }
 
+    @GetMapping("/{id}/path")
+    public List<CategoryResponse> getCategoryPath(@PathVariable Integer id) {
+        return service.getCategoryPath(id);
+    }
+
     @PostMapping
     public CategoryResponse create(@Valid @RequestBody CategoryRequest request) {
         return service.create(request);
