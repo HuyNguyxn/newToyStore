@@ -61,7 +61,7 @@ public class CategoryService {
         }
 
         return path.stream()
-                .map(CategoryMapper::toResponse)
+                .map(CategoryMapper::toFlatResponse)
                 .collect(Collectors.toList());
     }
 

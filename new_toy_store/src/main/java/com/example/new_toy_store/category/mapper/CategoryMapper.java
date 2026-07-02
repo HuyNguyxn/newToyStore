@@ -37,4 +37,16 @@ public class CategoryMapper {
                         : Collections.emptyList()
         );
     }
+
+    public static CategoryResponse toFlatResponse(Category category) {
+        return new CategoryResponse(
+                category.getId(),
+                category.getName(),
+                category.getSlug(),
+                category.getDescription(),
+                category.getStatus().getDisplayName(),
+                category.getParent() != null ? category.getParent().getId() : null,
+                Collections.emptyList()
+        );
+    }
 }
