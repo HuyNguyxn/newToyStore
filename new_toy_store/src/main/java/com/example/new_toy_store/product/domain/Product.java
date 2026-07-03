@@ -28,6 +28,9 @@ public class Product extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private String name;
 
@@ -159,6 +162,8 @@ public class Product extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+
+    public Long getVersion() { return version; }
 
     public String getName() { return name; }
 

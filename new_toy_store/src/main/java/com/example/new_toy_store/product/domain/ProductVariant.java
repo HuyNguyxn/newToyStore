@@ -23,12 +23,18 @@ public class ProductVariant extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    private Long version;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VariantType type;
 
     @Column(nullable = false)
     private double price;
+
+    @Column(name = "cost_price", nullable = false)
+    private double costPrice = 0.0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
@@ -90,6 +96,29 @@ public class ProductVariant extends BaseAuditEntity {
         this.attributes.add(attribute);
     }
 
+    public void importStock(int addedQuantity, double importPrice) {
+        if (addedQuantity <= 0 || importPrice < 0) {
+            throw new IllegalArgumentException("Số lượng và giá nhập kho phải hợp lệ");
+        }
+
+        int currentStock = this.inventory != null ? this.inventory.getStockQuantity() : 0;
+
+        if (currentStock <= 0) {
+            this.costPrice = Math.max(0.0, Math.round(importPrice * 100.0) / 100.0);
+        } else {
+            double totalOldValue = (double) currentStock * this.costPrice;
+            double totalNewValue = (double) addedQuantity * importPrice;
+            int totalNewStock = currentStock + addedQuantity;
+
+            double mac = (totalOldValue + totalNewValue) / totalNewStock;
+            this.costPrice = Math.max(0.0, Math.round(mac * 100.0) / 100.0);
+        }
+
+        if (this.inventory != null) {
+            this.inventory.addStock(addedQuantity);
+        }
+    }
+
     @Override
     public void delete() {
         super.delete();
@@ -109,8 +138,10 @@ public class ProductVariant extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+    public Long getVersion() { return version; }
     public VariantType getType() { return type; }
     public double getPrice() { return price; }
+    public double getCostPrice() { return costPrice; }
     public Product getProduct() { return product; }
     public Inventory getInventory() { return inventory; }
     public List<ProductAttributeValue> getAttributes() { return Collections.unmodifiableList(attributes); }

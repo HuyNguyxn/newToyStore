@@ -153,13 +153,31 @@ public class ProductService {
 
     @Transactional
     public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
-        Map<Integer, Integer> variantQuantities = stockUpdates.stream()
-                .collect(Collectors.toMap(
-                        ImportedStockRequest::getVariantId,
-                        ImportedStockRequest::getQuantity,
-                        Integer::sum
-                ));
-        this.addStockFromImport(variantQuantities);
+        if (stockUpdates == null || stockUpdates.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> variantIds = stockUpdates.stream()
+                .map(ImportedStockRequest::getVariantId)
+                .collect(Collectors.toSet());
+
+        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
+
+        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        for (ImportedStockRequest req : stockUpdates) {
+            Integer targetVariantId = req.getVariantId();
+            int quantityToAdd = req.getQuantity();
+            double importPrice = req.getImportPrice();
+
+            productMap.values().stream()
+                    .flatMap(p -> p.getVariants().stream())
+                    .filter(v -> v.getId().equals(targetVariantId))
+                    .findFirst()
+                    .ifPresent(variant -> variant.importStock(quantityToAdd, importPrice));
+        }
     }
 
     @Transactional
