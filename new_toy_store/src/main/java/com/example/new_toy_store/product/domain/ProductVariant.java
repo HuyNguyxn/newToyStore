@@ -1,6 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -70,14 +71,14 @@ public class ProductVariant extends BaseAuditEntity {
 
     public void makeMaster() {
         if (!this.type.canChangeTo(VariantType.MASTER)) {
-            throw new IllegalStateException("Không thể chuyển từ " + this.type.getDisplayName() + " sang " + VariantType.MASTER.getDisplayName());
+            throw InvalidProductOperationException.invalidVariantTransition(this.type.getDisplayName(), VariantType.MASTER.getDisplayName());
         }
         this.type = VariantType.MASTER;
     }
 
     public void makeRegular() {
         if (!this.type.canChangeTo(VariantType.REGULAR)) {
-            throw new IllegalStateException("Không thể chuyển từ " + this.type.getDisplayName() + " sang " + VariantType.REGULAR.getDisplayName());
+            throw InvalidProductOperationException.invalidVariantTransition(this.type.getDisplayName(), VariantType.REGULAR.getDisplayName());
         }
         this.type = VariantType.REGULAR;
     }
@@ -89,7 +90,7 @@ public class ProductVariant extends BaseAuditEntity {
 
     public void addAttribute(String name, String value) {
         if (!this.type.canAddAttributes()) {
-            throw new IllegalStateException("Không thể thêm thuộc tính vào biến thể loại " + this.type.getDisplayName());
+            throw InvalidProductOperationException.cannotAddAttributes(this.type.getDisplayName());
         }
         ProductAttributeValue attribute = new ProductAttributeValue(name, value);
         attribute.setVariant(this);
@@ -98,7 +99,7 @@ public class ProductVariant extends BaseAuditEntity {
 
     public void importStock(int addedQuantity, double importPrice) {
         if (addedQuantity <= 0 || importPrice < 0) {
-            throw new IllegalArgumentException("Số lượng và giá nhập kho phải hợp lệ");
+            throw InvalidProductOperationException.invalidImportData();
         }
 
         int currentStock = this.inventory != null ? this.inventory.getStockQuantity() : 0;

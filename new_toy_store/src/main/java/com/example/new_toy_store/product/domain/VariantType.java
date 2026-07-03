@@ -1,5 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
+
 public enum VariantType {
 
     DEFAULT("Mặc định") {
@@ -53,12 +55,12 @@ public enum VariantType {
 
     public static VariantType from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Loại biến thể không được để trống");
+            throw InvalidProductOperationException.emptyVariantType();
         }
         try {
             return VariantType.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại biến thể không hợp lệ: " + value);
+            throw InvalidProductOperationException.invalidVariantType(value);
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
+
 public enum ProductStatus {
 
     ACTIVE("Đang kinh doanh") {
@@ -53,12 +55,12 @@ public enum ProductStatus {
 
     public static ProductStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái sản phẩm không được để trống");
+            throw InvalidProductOperationException.emptyStatus();
         }
         try {
             return ProductStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái sản phẩm không hợp lệ: " + value);
+            throw InvalidProductOperationException.invalidStatus(value);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -33,7 +34,7 @@ public class Inventory extends BaseAuditEntity {
 
     public Inventory(int initialStock) {
         if (initialStock < 0) {
-            throw new IllegalArgumentException("Số lượng tồn kho ban đầu không được âm");
+            throw InvalidProductOperationException.negativeInitialStock();
         }
         this.stockQuantity = initialStock;
     }
@@ -44,17 +45,17 @@ public class Inventory extends BaseAuditEntity {
 
     public void addStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Số lượng thêm vào phải lớn hơn 0");
+            throw InvalidProductOperationException.invalidStockAmount();
         }
         this.stockQuantity += amount;
     }
 
     public void reduceStock(int amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Số lượng giảm đi phải lớn hơn 0");
+            throw InvalidProductOperationException.invalidStockAmount();
         }
         if (this.stockQuantity < amount) {
-            throw new IllegalStateException("Số lượng tồn kho không đủ để thực hiện giao dịch");
+            throw InvalidProductOperationException.insufficientStock();
         }
         this.stockQuantity -= amount;
     }

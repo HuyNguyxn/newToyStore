@@ -2,6 +2,7 @@ package com.example.new_toy_store.product.domain;
 
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -68,10 +69,10 @@ public class Product extends BaseAuditEntity {
 
     public Product(String name, double basePrice) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên sản phẩm không được để trống");
+            throw InvalidProductOperationException.emptyName();
         }
         if (basePrice < 0) {
-            throw new IllegalArgumentException("Giá bán không được âm");
+            throw InvalidProductOperationException.negativePrice();
         }
         this.name = name;
         this.basePrice = basePrice;
@@ -133,7 +134,7 @@ public class Product extends BaseAuditEntity {
         }
 
         if (!imageFound) {
-            throw new IllegalArgumentException("ID hình ảnh " + imageId + " không thuộc về sản phẩm này");
+            throw InvalidProductOperationException.invalidImage(imageId);
         }
     }
 
@@ -162,21 +163,13 @@ public class Product extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
-
     public Long getVersion() { return version; }
-
     public String getName() { return name; }
-
     public double getBasePrice() { return basePrice; }
-
     public ProductStatus getStatus() { return status; }
-
     public Integer getSupplierId() { return supplierId; }
-
     public Set<Category> getCategories() { return Collections.unmodifiableSet(categories); }
-
     public List<ProductImage> getImages() { return Collections.unmodifiableList(images); }
-
     public List<ProductVariant> getVariants() { return Collections.unmodifiableList(variants); }
 
     @Override

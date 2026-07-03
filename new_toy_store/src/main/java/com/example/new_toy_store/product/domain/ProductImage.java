@@ -1,6 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -32,7 +33,7 @@ public class ProductImage extends BaseAuditEntity {
 
     public ProductImage(String imageUrl, boolean isThumbnail) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            throw new IllegalArgumentException("Đường dẫn hình ảnh không được để trống");
+            throw InvalidProductOperationException.emptyImageUrl();
         }
         this.imageUrl = imageUrl;
         this.isThumbnail = isThumbnail;

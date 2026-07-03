@@ -1,6 +1,7 @@
 package com.example.new_toy_store.product.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -32,10 +33,10 @@ public class ProductAttributeValue extends BaseAuditEntity {
 
     public ProductAttributeValue(String attributeName, String attributeValue) {
         if (attributeName == null || attributeName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên thuộc tính không được để trống");
+            throw InvalidProductOperationException.emptyAttributeName();
         }
         if (attributeValue == null || attributeValue.trim().isEmpty()) {
-            throw new IllegalArgumentException("Giá trị thuộc tính không được để trống");
+            throw InvalidProductOperationException.emptyAttributeValue();
         }
         this.attributeName = attributeName;
         this.attributeValue = attributeValue;
