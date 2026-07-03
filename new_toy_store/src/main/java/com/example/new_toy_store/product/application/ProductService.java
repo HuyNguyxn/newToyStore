@@ -9,6 +9,8 @@ import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.ProductRepository;
+import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
+import com.example.new_toy_store.product.domain.exception.ProductNotFoundException;
 import com.example.new_toy_store.product.mapper.ProductMapper;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
@@ -46,7 +48,7 @@ public class ProductService {
     public ProductResponse getProductDetails(Integer id) {
         Product product = repository.findByIdWithDetails(id);
         if (product == null) {
-            throw new IllegalArgumentException("Không tìm thấy sản phẩm");
+            throw new ProductNotFoundException(id);
         }
         return ProductMapper.toResponse(product);
     }
@@ -56,7 +58,7 @@ public class ProductService {
         if (request.getSupplierId() != null) {
             SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
             if (!"ACTIVE".equals(supplier.getStatus())) {
-                throw new IllegalStateException("Nhà cung cấp hiện đang ở trạng thái: " + supplier.getStatusDisplayName() + ". Không thể liên kết sản phẩm mới.");
+                throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
         }
 
@@ -64,7 +66,7 @@ public class ProductService {
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
             categories = new HashSet<>(categoryRepository.findAllById(request.getCategoryIds()));
             if (categories.size() != request.getCategoryIds().size()) {
-                throw new IllegalArgumentException("Một hoặc nhiều ID danh mục không tồn tại trong hệ thống");
+                throw InvalidProductOperationException.invalidCategories();
             }
         }
 
@@ -86,7 +88,7 @@ public class ProductService {
         if (request.getSupplierId() != null && !request.getSupplierId().equals(product.getSupplierId())) {
             SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
             if (!"ACTIVE".equals(supplier.getStatus())) {
-                throw new IllegalStateException("Nhà cung cấp mới đang ở trạng thái: " + supplier.getStatusDisplayName() + ". Không thể cập nhật.");
+                throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
             product.assignSupplier(request.getSupplierId());
         }
@@ -113,7 +115,7 @@ public class ProductService {
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm"));
+                .orElseThrow(InvalidProductOperationException::variantNotFound);
         variant.getInventory().addStock(amountToAdd);
     }
 
@@ -126,7 +128,7 @@ public class ProductService {
     @Transactional
     public void updateProductRating(Integer productId, double averageRating, int reviewCount) {
         Product product = repository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dữ liệu sản phẩm trên hệ thống"));
+                .orElseThrow(() -> new ProductNotFoundException(productId));
 
         product.updateRatingMetrics(averageRating, reviewCount);
         repository.save(product);
@@ -140,7 +142,7 @@ public class ProductService {
 
     public Product getProductEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm"));
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
