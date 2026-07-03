@@ -2,6 +2,7 @@ package com.example.new_toy_store.product.application;
 
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.application.dto.request.ProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
@@ -148,6 +149,17 @@ public class ProductService {
             return List.of();
         }
         return repository.findAllByIdsWithDetails(ids);
+    }
+
+    @Transactional
+    public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
+        Map<Integer, Integer> variantQuantities = stockUpdates.stream()
+                .collect(Collectors.toMap(
+                        ImportedStockRequest::getVariantId,
+                        ImportedStockRequest::getQuantity,
+                        Integer::sum
+                ));
+        this.addStockFromImport(variantQuantities);
     }
 
     @Transactional

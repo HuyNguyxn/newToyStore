@@ -30,6 +30,10 @@ public class ProductMapper {
         return product;
     }
 
+    public static ProductResponse toResponse(Product product) {
+        return toResponse(product, null);
+    }
+
     public static ProductResponse toResponse(Product product, PromotionService promotionService) {
         List<Integer> categoryIds = product.getCategories().stream()
                 .map(Category::getId)

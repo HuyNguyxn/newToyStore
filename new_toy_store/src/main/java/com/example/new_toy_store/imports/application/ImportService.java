@@ -11,6 +11,7 @@ import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundExce
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
 import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -123,13 +125,15 @@ public class ImportService {
         note.complete();
         repository.save(note);
 
-        Map<Integer, Integer> variantQuantities = note.getItems().stream()
-                .collect(Collectors.toMap(
-                        ImportNoteItem::getVariantId,
-                        ImportNoteItem::getQuantity,
-                        Integer::sum
-                ));
-        productService.addStockFromImport(variantQuantities);
+        List<ImportedStockRequest> stockUpdates = note.getItems().stream()
+                .map(item -> new ImportedStockRequest(
+                        item.getVariantId(),
+                        item.getQuantity(),
+                        item.getImportPrice()
+                ))
+                .collect(Collectors.toList());
+
+        productService.processImportedStock(stockUpdates);
 
         SupplierResponse supplier = supplierService.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
