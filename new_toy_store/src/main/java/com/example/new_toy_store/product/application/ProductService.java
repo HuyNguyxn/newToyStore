@@ -206,4 +206,20 @@ public class ProductService {
                     .ifPresent(variant -> variant.getInventory().addStock(quantityToAdd));
         }
     }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getProductsByCategory(Integer categoryId, Pageable pageable) {
+        return repository.findByCategories_Id(categoryId, pageable)
+                .map(ProductMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchActiveProducts(String keyword, Pageable pageable) {
+        return repository.findByNameContainingIgnoreCaseAndStatus(
+                        keyword != null ? keyword.trim() : "",
+                        ProductStatus.ACTIVE,
+                        pageable
+                )
+                .map(ProductMapper::toResponse);
+    }
 }

@@ -10,13 +10,18 @@ import java.util.Set;
 
 public interface ProductRepository extends JpaRepository<Product, Integer> {
 
+    @Override
+    Page<Product> findAll(Pageable pageable);
+
+    Page<Product> findByCategories_Id(Integer categoryId, Pageable pageable);
+
+    Page<Product> findByNameContainingIgnoreCaseAndStatus(String keyword, ProductStatus status, Pageable pageable);
+
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images LEFT JOIN FETCH p.variants WHERE p.id = :id")
     Product findByIdWithDetails(@Param("id") Integer id);
 
     @Query("SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.images LEFT JOIN FETCH p.variants WHERE p.id IN :ids")
     List<Product> findAllByIdsWithDetails(@Param("ids") Set<Integer> ids);
-
-    Page<Product> findByCategoryId(Integer categoryId, Pageable pageable);
 
     @Query("SELECT DISTINCT p.id FROM Product p JOIN p.variants v WHERE v.id IN :variantIds")
     Set<Integer> findProductIdsByVariantIds(@Param("variantIds") Set<Integer> variantIds);
