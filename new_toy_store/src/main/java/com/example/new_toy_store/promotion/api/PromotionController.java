@@ -6,6 +6,7 @@ import com.example.new_toy_store.promotion.application.dto.response.PromotionRes
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +17,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/promotions")
@@ -77,6 +80,22 @@ public class PromotionController {
             @RequestParam @Min(value = 0, message = "Tổng tiền giỏ hàng không được âm") double cartTotal) {
         double discount = promotionService.calculateOrderDiscount(promoCode, cartTotal);
         return ResponseEntity.ok(discount);
+    }
+
+    @GetMapping("/calculate-shipping")
+    public ResponseEntity<Double> calculateShippingDiscount(
+            @RequestParam @NotBlank(message = "Mã khuyến mãi không được để trống") String promoCode,
+            @RequestParam @Min(value = 0, message = "Phí vận chuyển hiện tại không được âm") double currentShippingFee,
+            @RequestParam @Min(value = 0, message = "Tổng tiền giỏ hàng không được âm") double cartTotal) {
+        double discount = promotionService.calculateShippingDiscount(promoCode, currentShippingFee, cartTotal);
+        return ResponseEntity.ok(discount);
+    }
+
+    @PostMapping("/active-for-products")
+    public ResponseEntity<List<PromotionResponse>> getActivePromotionsForProducts(
+            @RequestBody @NotEmpty(message = "Danh sách ID sản phẩm không được để trống") Set<Integer> productIds) {
+        List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
+        return ResponseEntity.ok(activePromotions);
     }
 
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})

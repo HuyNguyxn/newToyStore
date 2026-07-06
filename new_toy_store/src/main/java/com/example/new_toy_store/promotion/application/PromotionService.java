@@ -140,11 +140,14 @@ public class PromotionService {
     }
 
     @Transactional(readOnly = true)
-    public List<Promotion> getActivePromotionsForProducts(Set<Integer> productIds) {
-        if (productIds == null || productIds.isEmpty()) return List.of();
+    public List<PromotionResponse> getActivePromotionsForProducts(Set<Integer> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
         return repository.findByScopeAndTargetProductIdIn(PromotionScope.PRODUCT, productIds)
                 .stream()
                 .filter(Promotion::isCurrentlyValid)
+                .map(PromotionMapper::toResponse)
                 .collect(Collectors.toList());
     }
 }
