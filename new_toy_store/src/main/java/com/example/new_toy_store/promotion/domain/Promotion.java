@@ -88,11 +88,12 @@ public class Promotion extends BaseAuditEntity {
             throw new IllegalStateException("Giá trị giảm giá không được âm");
         }
         if (type == PromotionType.PERCENTAGE && discountValue > 100) {
-            throw new IllegalStateException("Giảm giá phần trăm không được vượt quá 100%");
+            throw new IllegalStateException("Giảm giá phần trưng không được vượt quá 100%");
         }
     }
 
     public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
+        this.scope.validateSetup(minOrderValue, targetProductId);
         this.minOrderValue = minOrderValue;
         this.maxDiscountAmount = maxDiscountAmount;
         this.targetProductId = targetProductId;
