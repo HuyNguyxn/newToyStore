@@ -6,6 +6,8 @@ import com.example.new_toy_store.promotion.domain.Promotion;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.promotion.domain.PromotionScope;
 import com.example.new_toy_store.promotion.mapper.PromotionMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,25 @@ public class PromotionService {
     }
 
     @Transactional
+    public PromotionResponse updatePromotion(Integer id, PromotionRequest request) {
+        Promotion promotion = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+
+        promotion.updateDetails(
+                request.getName(),
+                request.getDiscountValue(),
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getMinOrderValue(),
+                request.getMaxDiscountAmount(),
+                request.getTargetProductId()
+        );
+
+        repository.save(promotion);
+        return PromotionMapper.toResponse(promotion);
+    }
+
+    @Transactional
     public void deactivatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
@@ -43,7 +64,27 @@ public class PromotionService {
     }
 
     @Transactional(readOnly = true)
+    public PromotionResponse getPromotionById(Integer id) {
+        return repository.findById(id)
+                .map(PromotionMapper::toResponse)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PromotionResponse> getPromotions(String scopeStr, Boolean isActive, Pageable pageable) {
+        PromotionScope scope = null;
+        if (scopeStr != null && !scopeStr.trim().isEmpty()) {
+            scope = PromotionScope.from(scopeStr);
+        }
+        return repository.findAllWithFilters(scope, isActive, pageable)
+                .map(PromotionMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public double calculateProductDiscount(Integer productId, double originalPrice) {
+        if (originalPrice <= 0 || productId == null) {
+            return 0.0;
+        }
         List<Promotion> activePromos = repository.findActivePromotionsForProduct(productId, LocalDateTime.now());
 
         if (activePromos.isEmpty()) {
@@ -60,7 +101,7 @@ public class PromotionService {
 
     @Transactional(readOnly = true)
     public double calculateOrderDiscount(String promoCode, double cartTotal) {
-        if (promoCode == null || promoCode.trim().isEmpty()) {
+        if (promoCode == null || promoCode.trim().isEmpty() || cartTotal <= 0) {
             return 0.0;
         }
 
@@ -80,7 +121,7 @@ public class PromotionService {
 
     @Transactional(readOnly = true)
     public double calculateShippingDiscount(String promoCode, double currentShippingFee, double cartTotal) {
-        if (promoCode == null || promoCode.trim().isEmpty()) {
+        if (promoCode == null || promoCode.trim().isEmpty() || currentShippingFee <= 0) {
             return 0.0;
         }
 

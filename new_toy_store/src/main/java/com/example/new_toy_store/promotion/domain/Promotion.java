@@ -104,6 +104,16 @@ public class Promotion extends BaseAuditEntity {
         this.targetProductId = targetProductId;
     }
 
+    public void updateDetails(String name, double discountValue, LocalDateTime startDate, LocalDateTime endDate, Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
+        if (name != null && !name.trim().isEmpty()) {
+            this.name = name;
+        }
+        this.discountValue = Math.max(0.0, discountValue);
+        this.startDate = startDate;
+        this.endDate = endDate;
+        setupConditions(minOrderValue, maxDiscountAmount, targetProductId);
+    }
+
     public boolean isCurrentlyValid() {
         if (!this.isActive) {
             return false;

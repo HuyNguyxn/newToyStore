@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -30,6 +33,27 @@ public class PromotionController {
     public ResponseEntity<PromotionResponse> createPromotion(@Valid @RequestBody PromotionRequest request) {
         PromotionResponse response = promotionService.createPromotion(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PromotionResponse> updatePromotion(
+            @PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id,
+            @Valid @RequestBody PromotionRequest request) {
+        PromotionResponse response = promotionService.updatePromotion(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PromotionResponse> getPromotion(@PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id) {
+        return ResponseEntity.ok(promotionService.getPromotionById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<PromotionResponse>> getPromotions(
+            @RequestParam(required = false) String scope,
+            @RequestParam(required = false) Boolean active,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(promotionService.getPromotions(scope, active, pageable));
     }
 
     @PatchMapping("/{id}/deactivate")
