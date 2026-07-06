@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
         name = "promotions",
         indexes = {
                 @Index(name = "idx_promo_code", columnList = "code", unique = true),
-                @Index(name = "idx_promo_time_status", columnList = "is_active, start_date, end_date")
+                @Index(name = "idx_promo_time_status", columnList = "is_active, start_date, end_date"),
+                @Index(name = "idx_promo_scope_target", columnList = "scope, target_product_id")
         }
 )
 public class Promotion extends BaseAuditEntity {
