@@ -232,4 +232,60 @@ public class ProductService {
         return repository.findByBasePriceBetweenAndStatus(validMinPrice, validMaxPrice, targetStatus, pageable)
                 .map(ProductMapper::toResponse);
     }
+
+    @Transactional
+    public void deductStockForOrder(Map<Integer, Integer> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> variantIds = orderItems.keySet();
+        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
+
+        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
+            Integer targetVariantId = entry.getKey();
+            Integer quantityToDeduct = entry.getValue();
+
+            ProductVariant targetVariant = productMap.values().stream()
+                    .flatMap(p -> p.getVariants().stream())
+                    .filter(v -> v.getId().equals(targetVariantId))
+                    .findFirst()
+                    .orElseThrow(InvalidProductOperationException::variantNotFound);
+
+            if (!targetVariant.getProduct().isAvailableForPurchase()) {
+                throw InvalidProductOperationException.invalidStatus(targetVariant.getProduct().getStatus().getDisplayName());
+            }
+
+            targetVariant.getInventory().reduceStock(quantityToDeduct);
+        }
+    }
+
+    @Transactional
+    public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> variantIds = orderItems.keySet();
+        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
+
+        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
+            Integer targetVariantId = entry.getKey();
+            Integer quantityToRestore = entry.getValue();
+
+            productMap.values().stream()
+                    .flatMap(p -> p.getVariants().stream())
+                    .filter(v -> v.getId().equals(targetVariantId))
+                    .findFirst()
+                    .ifPresent(variant -> variant.getInventory().addStock(quantityToRestore));
+        }
+    }
 }
