@@ -13,7 +13,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Override
     Page<Product> findAll(Pageable pageable);
 
-    Page<Product> findByCategories_Id(Integer categoryId, Pageable pageable);
+    Page<Product> findByCategoriesId(Integer categoryId, Pageable pageable);
 
     Page<Product> findByNameContainingIgnoreCaseAndStatus(String keyword, ProductStatus status, Pageable pageable);
 
@@ -25,4 +25,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Query("SELECT DISTINCT p.id FROM Product p JOIN p.variants v WHERE v.id IN :variantIds")
     Set<Integer> findProductIdsByVariantIds(@Param("variantIds") Set<Integer> variantIds);
+
+    Page<Product> findByBasePriceBetweenAndStatus(double minPrice, double maxPrice, ProductStatus status, Pageable pageable);
+
+    Page<Product> findByCategoriesIdAndBasePriceBetweenAndStatus(Integer categoryId, double minPrice, double maxPrice, ProductStatus status, Pageable pageable);
 }

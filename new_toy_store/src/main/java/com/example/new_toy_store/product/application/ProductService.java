@@ -209,7 +209,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> getProductsByCategory(Integer categoryId, Pageable pageable) {
-        return repository.findByCategories_Id(categoryId, pageable)
+        return repository.findByCategoriesId(categoryId, pageable)
                 .map(ProductMapper::toResponse);
     }
 
@@ -220,6 +220,16 @@ public class ProductService {
                         ProductStatus.ACTIVE,
                         pageable
                 )
+                .map(ProductMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
+        double validMinPrice = (minPrice != null && minPrice >= 0) ? minPrice : 0.0;
+        double validMaxPrice = (maxPrice != null && maxPrice >= validMinPrice) ? maxPrice : Double.MAX_VALUE;
+        ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : ProductStatus.ACTIVE;
+
+        return repository.findByBasePriceBetweenAndStatus(validMinPrice, validMaxPrice, targetStatus, pageable)
                 .map(ProductMapper::toResponse);
     }
 }

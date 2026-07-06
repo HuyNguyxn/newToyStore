@@ -25,6 +25,25 @@ public class ProductController {
         return service.getAllProducts(pageable);
     }
 
+    @GetMapping("/category/{categoryId}")
+    public Page<ProductResponse> getProductsByCategory(@PathVariable Integer categoryId, Pageable pageable) {
+        return service.getProductsByCategory(categoryId, pageable);
+    }
+
+    @GetMapping("/search")
+    public Page<ProductResponse> searchProducts(@RequestParam String keyword, Pageable pageable) {
+        return service.searchActiveProducts(keyword, pageable);
+    }
+
+    @GetMapping("/filter")
+    public Page<ProductResponse> filterProducts(
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        return service.filterProductsByPriceAndStatus(minPrice, maxPrice, status, pageable);
+    }
+
     @GetMapping("/{id}")
     public ProductResponse getProductDetails(@PathVariable Integer id) {
         return service.getProductDetails(id);
