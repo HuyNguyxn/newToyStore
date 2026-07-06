@@ -1,5 +1,7 @@
 package com.example.new_toy_store.imports.domain;
 
+import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
+
 public enum ImportStatus {
 
     PENDING("Chờ kiểm đếm") {
@@ -69,12 +71,12 @@ public enum ImportStatus {
 
     public static ImportStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái phiếu nhập không được để trống");
+            throw InvalidImportOperationException.emptyStatus();
         }
         try {
             return ImportStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái phiếu nhập không hợp lệ: " + value);
+            throw InvalidImportOperationException.invalidStatus(value);
         }
     }
 }

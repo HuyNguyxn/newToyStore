@@ -37,4 +37,12 @@ public class InvalidImportOperationException extends RuntimeException {
     public static InvalidImportOperationException negativePrice() {
         return new InvalidImportOperationException("Giá nhập không được âm.");
     }
+
+    public static InvalidImportOperationException emptyStatus() {
+        return new InvalidImportOperationException("Trạng thái phiếu nhập không được để trống.");
+    }
+
+    public static InvalidImportOperationException invalidStatus(String value) {
+        return new InvalidImportOperationException("Trạng thái phiếu nhập không hợp lệ: " + value);
+    }
 }
