@@ -1,5 +1,7 @@
 package com.example.new_toy_store.category.domain;
 
+import com.example.new_toy_store.category.domain.exception.InvalidCategoryOperationException;
+
 public enum CategoryStatus {
 
     VISIBLE("Đang hiển thị") {
@@ -30,12 +32,12 @@ public enum CategoryStatus {
 
     public static CategoryStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái danh mục không được để trống");
+            throw InvalidCategoryOperationException.emptyStatus();
         }
         try {
             return CategoryStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái danh mục không hợp lệ: " + value);
+            throw InvalidCategoryOperationException.invalidStatus(value);
         }
     }
 }

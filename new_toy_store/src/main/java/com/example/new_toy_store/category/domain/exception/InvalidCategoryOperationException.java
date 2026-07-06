@@ -37,6 +37,22 @@ public class InvalidCategoryOperationException extends RuntimeException {
         );
     }
 
+    public static InvalidCategoryOperationException emptyStatus() {
+        return new InvalidCategoryOperationException(
+                "Trạng thái danh mục không được để trống.",
+                "PARSE_STATUS",
+                null
+        );
+    }
+
+    public static InvalidCategoryOperationException invalidStatus(String value) {
+        return new InvalidCategoryOperationException(
+                "Trạng thái danh mục không hợp lệ: " + value,
+                "PARSE_STATUS",
+                value
+        );
+    }
+
     public String getOperation() { return operation; }
     public Object getInvalidValue() { return invalidValue; }
 }
