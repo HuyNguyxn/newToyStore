@@ -21,6 +21,10 @@ public class Promotion extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
@@ -73,7 +77,7 @@ public class Promotion extends BaseAuditEntity {
         this.name = name;
         this.type = type;
         this.scope = scope;
-        this.discountValue = discountValue;
+        this.discountValue = Math.max(0.0, discountValue);
         this.startDate = startDate;
         this.endDate = endDate;
     }
@@ -88,14 +92,14 @@ public class Promotion extends BaseAuditEntity {
             throw new IllegalStateException("Giá trị giảm giá không được âm");
         }
         if (type == PromotionType.PERCENTAGE && discountValue > 100) {
-            throw new IllegalStateException("Giảm giá phần trưng không được vượt quá 100%");
+            throw new IllegalStateException("Giảm giá phần trăm không được vượt quá 100%");
         }
     }
 
     public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
         this.scope.validateSetup(minOrderValue, targetProductId);
-        this.minOrderValue = minOrderValue;
-        this.maxDiscountAmount = maxDiscountAmount;
+        this.minOrderValue = minOrderValue != null ? Math.max(0.0, minOrderValue) : null;
+        this.maxDiscountAmount = maxDiscountAmount != null ? Math.max(0.0, maxDiscountAmount) : null;
         this.targetProductId = targetProductId;
     }
 
@@ -119,11 +123,10 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public double applyDiscount(double originalAmount) {
-        if (!isCurrentlyValid()) {
+        if (!isCurrentlyValid() || originalAmount <= 0) {
             return 0.0;
         }
-        double discount = this.type.calculateDiscount(originalAmount, this.discountValue, this.maxDiscountAmount);
-        return discount > originalAmount ? originalAmount : discount;
+        return this.type.calculateDiscount(originalAmount, this.discountValue, this.maxDiscountAmount);
     }
 
     public void deactivate() {
@@ -131,6 +134,7 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+    public Long getVersion() { return version; }
     public String getCode() { return code; }
     public String getName() { return name; }
     public PromotionType getType() { return type; }

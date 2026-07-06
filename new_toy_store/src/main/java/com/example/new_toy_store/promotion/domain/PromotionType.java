@@ -4,17 +4,24 @@ public enum PromotionType {
     PERCENTAGE("Giảm theo phần trăm (%)") {
         @Override
         public double calculateDiscount(double amount, double discountValue, Double maxDiscountAmount) {
-            double calculated = Math.round(amount * (discountValue / 100.0));
-            if (maxDiscountAmount != null && calculated > maxDiscountAmount) {
-                return Math.round(maxDiscountAmount);
+            if (amount <= 0 || discountValue <= 0) {
+                return 0.0;
             }
-            return calculated;
+            double calculated = Math.round(amount * (discountValue / 100.0));
+            if (maxDiscountAmount != null && maxDiscountAmount > 0) {
+                calculated = Math.min(calculated, Math.round(maxDiscountAmount));
+            }
+            return Math.max(0.0, Math.min(amount, calculated));
         }
     },
     FIXED_AMOUNT("Giảm số tiền cố định") {
         @Override
         public double calculateDiscount(double amount, double discountValue, Double maxDiscountAmount) {
-            return Math.round(discountValue);
+            if (amount <= 0 || discountValue <= 0) {
+                return 0.0;
+            }
+            double calculated = Math.round(discountValue);
+            return Math.max(0.0, Math.min(amount, calculated));
         }
     };
 
