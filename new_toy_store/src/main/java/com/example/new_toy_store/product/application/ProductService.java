@@ -288,4 +288,30 @@ public class ProductService {
                     .ifPresent(variant -> variant.getInventory().addStock(quantityToRestore));
         }
     }
+
+    @Transactional
+    public ProductResponse addImage(Integer productId, String imageUrl, boolean isThumbnail) {
+        Product product = getProductEntity(productId);
+        product.addImage(imageUrl, isThumbnail);
+        repository.save(product);
+        return ProductMapper.toResponse(product);
+    }
+
+    @Transactional
+    public void removeImage(Integer productId, Integer imageId) {
+        Product product = getProductEntity(productId);
+        product.removeImage(imageId);
+        repository.save(product);
+    }
+
+    @Transactional
+    public void updateVariantPrice(Integer productId, Integer variantId, double newPrice) {
+        Product product = getProductEntity(productId);
+        ProductVariant variant = product.getVariants().stream()
+                .filter(v -> v.getId().equals(variantId))
+                .findFirst()
+                .orElseThrow(InvalidProductOperationException::variantNotFound);
+        variant.updatePrice(newPrice);
+        repository.save(product);
+    }
 }

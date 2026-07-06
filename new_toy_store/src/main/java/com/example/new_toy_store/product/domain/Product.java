@@ -155,6 +155,26 @@ public class Product extends BaseAuditEntity {
         return this.status != null && this.status.isVisible();
     }
 
+    public void addImage(String imageUrl, boolean isThumbnail) {
+        ProductImage image = new ProductImage(imageUrl, isThumbnail);
+        if (isThumbnail || this.images.isEmpty()) {
+            this.images.forEach(ProductImage::removeThumbnail);
+            image.makeThumbnail();
+        }
+        image.setProduct(this);
+        this.images.add(image);
+    }
+
+    public void removeImage(Integer imageId) {
+        boolean removed = this.images.removeIf(img -> img.getId() != null && img.getId().equals(imageId));
+        if (!removed) {
+            throw InvalidProductOperationException.invalidImage(imageId);
+        }
+        if (!this.images.isEmpty() && this.images.stream().noneMatch(ProductImage::isThumbnail)) {
+            this.images.get(0).makeThumbnail();
+        }
+    }
+
     @Override
     public void delete() {
         super.delete();

@@ -120,6 +120,13 @@ public class ProductVariant extends BaseAuditEntity {
         }
     }
 
+    public void updatePrice(double newPrice) {
+        if (newPrice < 0) {
+            throw InvalidProductOperationException.negativePrice();
+        }
+        this.price = newPrice;
+    }
+
     @Override
     public void delete() {
         super.delete();

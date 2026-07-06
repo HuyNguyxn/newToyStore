@@ -59,6 +59,27 @@ public class ProductController {
         return service.updateInfo(id, request);
     }
 
+    @PostMapping("/{id}/images")
+    public ProductResponse addImage(
+            @PathVariable Integer id,
+            @RequestParam String imageUrl,
+            @RequestParam(defaultValue = "false") boolean isThumbnail) {
+        return service.addImage(id, imageUrl, isThumbnail);
+    }
+
+    @DeleteMapping("/{id}/images/{imageId}")
+    public void removeImage(@PathVariable Integer id, @PathVariable Integer imageId) {
+        service.removeImage(id, imageId);
+    }
+
+    @PatchMapping("/{productId}/variants/{variantId}/price")
+    public void updateVariantPrice(
+            @PathVariable Integer productId,
+            @PathVariable Integer variantId,
+            @RequestParam double price) {
+        service.updateVariantPrice(productId, variantId, price);
+    }
+
     @PatchMapping("/{productId}/variants/{variantId}/stock")
     public void addStock(@PathVariable Integer productId, @PathVariable Integer variantId, @RequestParam int amount) {
         service.updateStock(productId, variantId, amount);
