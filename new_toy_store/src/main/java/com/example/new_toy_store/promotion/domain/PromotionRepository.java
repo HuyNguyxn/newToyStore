@@ -21,6 +21,6 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
     @Query("SELECT p FROM Promotion p WHERE p.scope = :scope AND p.targetProductId IN :targetProductIds AND p.isActive = true AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
     List<Promotion> findByScopeAndTargetProductIdIn(@Param("scope") PromotionScope scope, @Param("targetProductIds") Set<Integer> targetProductIds);
 
-    @Query("SELECT p FROM Promotion p WHERE (:scope IS NULL OR p.scope = :scope) AND (:isActive IS NULL OR p.isActive = :isActive)")
-    Page<Promotion> findAllWithFilters(@Param("scope") PromotionScope scope, @Param("isActive") Boolean isActive, Pageable pageable);
+    @Query("SELECT p FROM Promotion p WHERE (:scope IS NULL OR p.scope = :scope) AND (:isActive IS NULL OR p.isActive = :isActive) AND (:keyword IS NULL OR LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Promotion> findAllWithFilters(@Param("scope") PromotionScope scope, @Param("isActive") Boolean isActive, @Param("keyword") String keyword, Pageable pageable);
 }

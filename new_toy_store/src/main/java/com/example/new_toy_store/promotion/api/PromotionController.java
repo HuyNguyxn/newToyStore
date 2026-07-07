@@ -55,8 +55,16 @@ public class PromotionController {
     public ResponseEntity<Page<PromotionResponse>> getPromotions(
             @RequestParam(required = false) String scope,
             @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String keyword,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(promotionService.getPromotions(scope, active, pageable));
+        return ResponseEntity.ok(promotionService.getPromotions(scope, active, keyword, pageable));
+    }
+
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Void> activatePromotion(
+            @PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id) {
+        promotionService.activatePromotion(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")

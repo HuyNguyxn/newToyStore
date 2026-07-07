@@ -57,6 +57,14 @@ public class PromotionService {
     }
 
     @Transactional
+    public void activatePromotion(Integer id) {
+        Promotion promotion = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+        promotion.activate();
+        repository.save(promotion);
+    }
+
+    @Transactional
     public void deactivatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
@@ -94,12 +102,13 @@ public class PromotionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PromotionResponse> getPromotions(String scopeStr, Boolean isActive, Pageable pageable) {
+    public Page<PromotionResponse> getPromotions(String scopeStr, Boolean isActive, String keyword, Pageable pageable) {
         PromotionScope scope = null;
         if (scopeStr != null && !scopeStr.trim().isEmpty()) {
             scope = PromotionScope.from(scopeStr);
         }
-        return repository.findAllWithFilters(scope, isActive, pageable)
+        String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        return repository.findAllWithFilters(scope, isActive, cleanKeyword, pageable)
                 .map(PromotionMapper::toResponse);
     }
 
