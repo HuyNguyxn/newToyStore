@@ -24,9 +24,17 @@ public class PromotionRequest {
     @Min(value = 0, message = "Giá trị giảm không được âm")
     private Double discountValue;
 
+    @Min(value = 0, message = "Số tiền giảm tối đa không được âm")
     private Double maxDiscountAmount;
+
+    @Min(value = 0, message = "Giá trị đơn hàng tối thiểu không được âm")
     private Double minOrderValue;
+
+    @Min(value = 1, message = "ID sản phẩm không hợp lệ")
     private Integer targetProductId;
+
+    @Min(value = 1, message = "Giới hạn lượt sử dụng tối thiểu phải từ 1 lượt trở lên")
+    private Integer usageLimit;
 
     private LocalDateTime startDate;
 
@@ -41,6 +49,7 @@ public class PromotionRequest {
     public Double getMaxDiscountAmount() { return maxDiscountAmount; }
     public Double getMinOrderValue() { return minOrderValue; }
     public Integer getTargetProductId() { return targetProductId; }
+    public Integer getUsageLimit() { return usageLimit; }
     public LocalDateTime getStartDate() { return startDate; }
     public LocalDateTime getEndDate() { return endDate; }
 }

@@ -48,7 +48,8 @@ public class PromotionService {
                 request.getEndDate(),
                 request.getMinOrderValue(),
                 request.getMaxDiscountAmount(),
-                request.getTargetProductId()
+                request.getTargetProductId(),
+                request.getUsageLimit()
         );
 
         repository.save(promotion);
@@ -60,6 +61,28 @@ public class PromotionService {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
         promotion.deactivate();
+        repository.save(promotion);
+    }
+
+    @Transactional
+    public void consumePromotion(String promoCode) {
+        if (promoCode == null || promoCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+        }
+        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi: " + promoCode));
+        promotion.incrementUsedCount();
+        repository.save(promotion);
+    }
+
+    @Transactional
+    public void releasePromotion(String promoCode) {
+        if (promoCode == null || promoCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+        }
+        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi: " + promoCode));
+        promotion.decrementUsedCount();
         repository.save(promotion);
     }
 

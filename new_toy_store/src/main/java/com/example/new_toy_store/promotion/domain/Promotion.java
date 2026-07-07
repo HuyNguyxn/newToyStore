@@ -52,6 +52,12 @@ public class Promotion extends BaseAuditEntity {
     @Column(name = "target_product_id")
     private Integer targetProductId;
 
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "used_count", nullable = false)
+    private Integer usedCount = 0;
+
     @Column(name = "start_date")
     private LocalDateTime startDate;
 
@@ -95,27 +101,38 @@ public class Promotion extends BaseAuditEntity {
         if (type == PromotionType.PERCENTAGE && discountValue > 100) {
             throw new IllegalStateException("Giảm giá phần trăm không được vượt quá 100%");
         }
+        if (usedCount < 0) {
+            throw new IllegalStateException("Số lượt sử dụng không được âm");
+        }
     }
 
-    public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
+    public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId, Integer usageLimit) {
         this.scope.validateSetup(minOrderValue, targetProductId);
+        if (usageLimit != null && usageLimit < this.usedCount) {
+            throw new IllegalStateException("Giới hạn lượt sử dụng không được nhỏ hơn số lượt đã được áp dụng (" + this.usedCount + ")");
+        }
         this.minOrderValue = minOrderValue != null ? Math.max(0.0, minOrderValue) : null;
         this.maxDiscountAmount = maxDiscountAmount != null ? Math.max(0.0, maxDiscountAmount) : null;
         this.targetProductId = targetProductId;
+        this.usageLimit = usageLimit != null ? Math.max(1, usageLimit) : null;
     }
 
-    public void updateDetails(String name, double discountValue, LocalDateTime startDate, LocalDateTime endDate, Double minOrderValue, Double maxDiscountAmount, Integer targetProductId) {
+    public void updateDetails(String name, double discountValue, LocalDateTime startDate, LocalDateTime endDate, Double minOrderValue, Double maxDiscountAmount, Integer targetProductId, Integer usageLimit) {
         if (name != null && !name.trim().isEmpty()) {
             this.name = name;
         }
         this.discountValue = Math.max(0.0, discountValue);
         this.startDate = startDate;
         this.endDate = endDate;
-        setupConditions(minOrderValue, maxDiscountAmount, targetProductId);
+        setupConditions(minOrderValue, maxDiscountAmount, targetProductId, usageLimit);
+    }
+
+    public boolean hasAvailableUsages() {
+        return this.usageLimit == null || this.usedCount < this.usageLimit;
     }
 
     public boolean isCurrentlyValid() {
-        if (!this.isActive) {
+        if (!this.isActive || !hasAvailableUsages()) {
             return false;
         }
 
@@ -140,6 +157,20 @@ public class Promotion extends BaseAuditEntity {
         return this.type.calculateDiscount(originalAmount, this.discountValue, this.maxDiscountAmount);
     }
 
+    public void incrementUsedCount() {
+        if (!isCurrentlyValid()) {
+            throw new IllegalStateException("Chương trình khuyến mãi đã hết hiệu lực hoặc đã đạt giới hạn lượt sử dụng tối đa");
+        }
+        this.usedCount++;
+    }
+
+    public void decrementUsedCount() {
+        if (this.usedCount <= 0) {
+            throw new IllegalStateException("Số lượt sử dụng đã bằng 0, không thể hoàn trả thêm");
+        }
+        this.usedCount--;
+    }
+
     public void deactivate() {
         this.isActive = false;
     }
@@ -154,6 +185,8 @@ public class Promotion extends BaseAuditEntity {
     public Double getMaxDiscountAmount() { return maxDiscountAmount; }
     public Double getMinOrderValue() { return minOrderValue; }
     public Integer getTargetProductId() { return targetProductId; }
+    public Integer getUsageLimit() { return usageLimit; }
+    public Integer getUsedCount() { return usedCount; }
     public LocalDateTime getStartDate() { return startDate; }
     public LocalDateTime getEndDate() { return endDate; }
     public boolean isActive() { return isActive; }

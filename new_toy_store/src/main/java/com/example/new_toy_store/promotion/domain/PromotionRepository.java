@@ -15,10 +15,11 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
 
     Optional<Promotion> findByCode(String code);
 
-    @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND (p.startDate IS NULL OR p.startDate <= :now) AND (p.endDate IS NULL OR p.endDate >= :now) AND p.scope = 'PRODUCT' AND p.targetProductId = :productId")
+    @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND (p.startDate IS NULL OR p.startDate <= :now) AND (p.endDate IS NULL OR p.endDate >= :now) AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit) AND p.scope = 'PRODUCT' AND p.targetProductId = :productId")
     List<Promotion> findActivePromotionsForProduct(@Param("productId") Integer productId, @Param("now") LocalDateTime now);
 
-    List<Promotion> findByScopeAndTargetProductIdIn(PromotionScope scope, Set<Integer> targetProductIds);
+    @Query("SELECT p FROM Promotion p WHERE p.scope = :scope AND p.targetProductId IN :targetProductIds AND p.isActive = true AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
+    List<Promotion> findByScopeAndTargetProductIdIn(@Param("scope") PromotionScope scope, @Param("targetProductIds") Set<Integer> targetProductIds);
 
     @Query("SELECT p FROM Promotion p WHERE (:scope IS NULL OR p.scope = :scope) AND (:isActive IS NULL OR p.isActive = :isActive)")
     Page<Promotion> findAllWithFilters(@Param("scope") PromotionScope scope, @Param("isActive") Boolean isActive, Pageable pageable);

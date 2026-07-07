@@ -8,6 +8,8 @@ import com.example.new_toy_store.promotion.domain.PromotionType;
 
 public class PromotionMapper {
 
+    private PromotionMapper() {}
+
     public static Promotion toEntity(PromotionRequest request) {
         Promotion promotion = new Promotion(
                 request.getCode(),
@@ -19,7 +21,12 @@ public class PromotionMapper {
                 request.getEndDate()
         );
 
-        promotion.setupConditions(request.getMinOrderValue(), request.getMaxDiscountAmount(), request.getTargetProductId());
+        promotion.setupConditions(
+                request.getMinOrderValue(),
+                request.getMaxDiscountAmount(),
+                request.getTargetProductId(),
+                request.getUsageLimit()
+        );
 
         return promotion;
     }
@@ -27,6 +34,7 @@ public class PromotionMapper {
     public static PromotionResponse toResponse(Promotion promotion) {
         return new PromotionResponse(
                 promotion.getId(),
+                promotion.getVersion(),
                 promotion.getCode(),
                 promotion.getName(),
                 promotion.getType().name(),
@@ -37,6 +45,8 @@ public class PromotionMapper {
                 promotion.getMaxDiscountAmount(),
                 promotion.getMinOrderValue(),
                 promotion.getTargetProductId(),
+                promotion.getUsageLimit(),
+                promotion.getUsedCount(),
                 promotion.getStartDate(),
                 promotion.getEndDate(),
                 promotion.isActive()

@@ -66,6 +66,18 @@ public class PromotionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/consume")
+    public ResponseEntity<Void> consumePromotion(@RequestParam @NotBlank(message = "Mã khuyến mãi không được để trống") String promoCode) {
+        promotionService.consumePromotion(promoCode);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/release")
+    public ResponseEntity<Void> releasePromotion(@RequestParam @NotBlank(message = "Mã khuyến mãi không được để trống") String promoCode) {
+        promotionService.releasePromotion(promoCode);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/calculate-product")
     public ResponseEntity<Double> calculateProductDiscount(
             @RequestParam @NotNull(message = "ID sản phẩm không được để trống") Integer productId,
