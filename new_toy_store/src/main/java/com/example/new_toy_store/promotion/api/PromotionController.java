@@ -51,6 +51,12 @@ public class PromotionController {
         return ResponseEntity.ok(promotionService.getPromotionById(id));
     }
 
+    @GetMapping("/code/{code}")
+    public ResponseEntity<PromotionResponse> getPromotionByCode(
+            @PathVariable @NotBlank(message = "Mã khuyến mãi không được để trống") String code) {
+        return ResponseEntity.ok(promotionService.getPromotionByCode(code));
+    }
+
     @GetMapping
     public ResponseEntity<Page<PromotionResponse>> getPromotions(
             @RequestParam(required = false) String scope,
@@ -71,6 +77,13 @@ public class PromotionController {
     public ResponseEntity<Void> deactivatePromotion(
             @PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id) {
         promotionService.deactivatePromotion(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePromotion(
+            @PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id) {
+        promotionService.deletePromotion(id);
         return ResponseEntity.noContent().build();
     }
 

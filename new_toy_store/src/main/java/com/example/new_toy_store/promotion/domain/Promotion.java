@@ -171,6 +171,12 @@ public class Promotion extends BaseAuditEntity {
         this.usedCount--;
     }
 
+    @Override
+    public void delete() {
+        super.delete();
+        this.isActive = false;
+    }
+
     public void activate() {
         this.isActive = true;
     }
