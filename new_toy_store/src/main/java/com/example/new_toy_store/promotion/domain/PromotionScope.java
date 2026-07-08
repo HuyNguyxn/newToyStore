@@ -1,11 +1,13 @@
 package com.example.new_toy_store.promotion.domain;
 
+import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
+
 public enum PromotionScope {
     PRODUCT("Khuyến mãi trên từng sản phẩm") {
         @Override
         public void validateSetup(Double minOrderValue, Integer targetProductId) {
             if (targetProductId == null) {
-                throw new IllegalArgumentException("Khuyến mãi cấp sản phẩm bắt buộc phải có ID sản phẩm mục tiêu");
+                throw InvalidPromotionOperationException.missingTargetProduct();
             }
         }
     },
@@ -13,7 +15,7 @@ public enum PromotionScope {
         @Override
         public void validateSetup(Double minOrderValue, Integer targetProductId) {
             if (targetProductId != null) {
-                throw new IllegalArgumentException("Khuyến mãi cấp đơn hàng không được gắn với một sản phẩm cụ thể");
+                throw InvalidPromotionOperationException.invalidTargetProductForOrder();
             }
         }
     },
@@ -21,7 +23,7 @@ public enum PromotionScope {
         @Override
         public void validateSetup(Double minOrderValue, Integer targetProductId) {
             if (targetProductId != null) {
-                throw new IllegalArgumentException("Khuyến mãi phí vận chuyển không được gắn với một sản phẩm cụ thể");
+                throw InvalidPromotionOperationException.invalidTargetProductForShipping();
             }
         }
     };
@@ -40,12 +42,13 @@ public enum PromotionScope {
 
     public static PromotionScope from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Phạm vi khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullScope();
         }
-        try {
-            return PromotionScope.valueOf(value.toUpperCase().trim());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Phạm vi không hợp lệ: " + value);
+        for (PromotionScope scope : values()) {
+            if (scope.name().equalsIgnoreCase(value.trim())) {
+                return scope;
+            }
         }
+        throw InvalidPromotionOperationException.invalidScope(value);
     }
 }

@@ -5,6 +5,8 @@ import com.example.new_toy_store.promotion.application.dto.response.PromotionRes
 import com.example.new_toy_store.promotion.domain.Promotion;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.promotion.domain.PromotionScope;
+import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
+import com.example.new_toy_store.promotion.domain.exception.PromotionNotFoundException;
 import com.example.new_toy_store.promotion.mapper.PromotionMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +31,7 @@ public class PromotionService {
     public PromotionResponse createPromotion(PromotionRequest request) {
         String cleanCode = request.getCode().toUpperCase().trim();
         if (repository.findByCode(cleanCode).isPresent()) {
-            throw new IllegalArgumentException("Mã khuyến mãi đã tồn tại");
+            throw InvalidPromotionOperationException.codeExists(cleanCode);
         }
 
         Promotion promotion = PromotionMapper.toEntity(request);
@@ -40,7 +42,7 @@ public class PromotionService {
     @Transactional
     public PromotionResponse updatePromotion(Integer id, PromotionRequest request) {
         Promotion promotion = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new PromotionNotFoundException(id));
 
         promotion.updateDetails(
                 request.getName(),
@@ -60,7 +62,7 @@ public class PromotionService {
     @Transactional
     public void activatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new PromotionNotFoundException(id));
         promotion.activate();
         repository.save(promotion);
     }
@@ -68,7 +70,7 @@ public class PromotionService {
     @Transactional
     public void deactivatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new PromotionNotFoundException(id));
         promotion.deactivate();
         repository.save(promotion);
     }
@@ -76,7 +78,7 @@ public class PromotionService {
     @Transactional
     public void deletePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new PromotionNotFoundException(id));
         promotion.delete();
         repository.save(promotion);
     }
@@ -84,11 +86,11 @@ public class PromotionService {
     @Transactional
     public void consumePromotion(String promoCode) {
         if (promoCode == null || promoCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullPromoCode();
         }
         String cleanCode = promoCode.toUpperCase().trim();
         Promotion promotion = repository.findByCode(cleanCode)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi: " + cleanCode));
+                .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
         promotion.incrementUsedCount();
         repository.save(promotion);
     }
@@ -96,11 +98,11 @@ public class PromotionService {
     @Transactional
     public void releasePromotion(String promoCode) {
         if (promoCode == null || promoCode.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullPromoCode();
         }
         String cleanCode = promoCode.toUpperCase().trim();
         Promotion promotion = repository.findByCode(cleanCode)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi: " + cleanCode));
+                .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
         promotion.decrementUsedCount();
         repository.save(promotion);
     }
@@ -109,18 +111,18 @@ public class PromotionService {
     public PromotionResponse getPromotionById(Integer id) {
         return repository.findById(id)
                 .map(PromotionMapper::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi"));
+                .orElseThrow(() -> new PromotionNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
     public PromotionResponse getPromotionByCode(String code) {
         if (code == null || code.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullPromoCode();
         }
         String cleanCode = code.toUpperCase().trim();
         return repository.findByCode(cleanCode)
                 .map(PromotionMapper::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi với mã này"));
+                .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
     }
 
     @Transactional(readOnly = true)
@@ -159,15 +161,16 @@ public class PromotionService {
             return 0.0;
         }
 
-        Promotion promotion = repository.findByCode(promoCode.toUpperCase().trim())
-                .orElseThrow(() -> new IllegalArgumentException("Mã khuyến mãi không hợp lệ hoặc đã hết hạn"));
+        String cleanCode = promoCode.toUpperCase().trim();
+        Promotion promotion = repository.findByCode(cleanCode)
+                .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
 
         if (promotion.getScope() != PromotionScope.ORDER) {
-            return 0.0;
+            throw InvalidPromotionOperationException.scopeMismatch();
         }
 
         if (!promotion.isApplicableForOrder(cartTotal)) {
-            throw new IllegalStateException("Đơn hàng chưa đạt điều kiện tối thiểu để áp dụng mã này");
+            throw InvalidPromotionOperationException.minOrderNotMet();
         }
 
         return promotion.applyDiscount(cartTotal);

@@ -1,5 +1,7 @@
 package com.example.new_toy_store.promotion.domain;
 
+import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
+
 public enum PromotionType {
     PERCENTAGE("Giảm theo phần trăm (%)") {
         @Override
@@ -39,12 +41,13 @@ public enum PromotionType {
 
     public static PromotionType from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Loại khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullType();
         }
-        try {
-            return PromotionType.valueOf(value.toUpperCase().trim());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại khuyến mãi không hợp lệ: " + value);
+        for (PromotionType type : values()) {
+            if (type.name().equalsIgnoreCase(value.trim())) {
+                return type;
+            }
         }
+        throw InvalidPromotionOperationException.invalidType(value);
     }
 }

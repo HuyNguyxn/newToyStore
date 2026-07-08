@@ -1,6 +1,7 @@
 package com.example.new_toy_store.promotion.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -71,13 +72,13 @@ public class Promotion extends BaseAuditEntity {
 
     public Promotion(String code, String name, PromotionType type, PromotionScope scope, double discountValue, LocalDateTime startDate, LocalDateTime endDate) {
         if (code == null || code.trim().isEmpty()) {
-            throw new IllegalArgumentException("Mã khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullPromoCode();
         }
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên chương trình không được để trống");
+            throw InvalidPromotionOperationException.nullPromoName();
         }
         if (type == null || scope == null) {
-            throw new IllegalArgumentException("Loại và phạm vi khuyến mãi không được để trống");
+            throw InvalidPromotionOperationException.nullPromoTypeOrScope();
         }
 
         this.code = code.toUpperCase().trim();
@@ -93,23 +94,23 @@ public class Promotion extends BaseAuditEntity {
     @PreUpdate
     private void validateEntityState() {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-            throw new IllegalStateException("Ngày bắt đầu không được vượt quá ngày kết thúc");
+            throw InvalidPromotionOperationException.invalidDateRange();
         }
         if (discountValue < 0) {
-            throw new IllegalStateException("Giá trị giảm giá không được âm");
+            throw InvalidPromotionOperationException.negativeDiscountValue(discountValue);
         }
         if (type == PromotionType.PERCENTAGE && discountValue > 100) {
-            throw new IllegalStateException("Giảm giá phần trăm không được vượt quá 100%");
+            throw InvalidPromotionOperationException.percentageExceeded(discountValue);
         }
         if (usedCount < 0) {
-            throw new IllegalStateException("Số lượt sử dụng không được âm");
+            throw InvalidPromotionOperationException.negativeUsedCount(usedCount);
         }
     }
 
     public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId, Integer usageLimit) {
         this.scope.validateSetup(minOrderValue, targetProductId);
         if (usageLimit != null && usageLimit < this.usedCount) {
-            throw new IllegalStateException("Giới hạn lượt sử dụng không được nhỏ hơn số lượt đã được áp dụng (" + this.usedCount + ")");
+            throw InvalidPromotionOperationException.invalidUsageLimit(this.usedCount);
         }
         this.minOrderValue = minOrderValue != null ? Math.max(0.0, minOrderValue) : null;
         this.maxDiscountAmount = maxDiscountAmount != null ? Math.max(0.0, maxDiscountAmount) : null;
@@ -159,14 +160,14 @@ public class Promotion extends BaseAuditEntity {
 
     public void incrementUsedCount() {
         if (!isCurrentlyValid()) {
-            throw new IllegalStateException("Chương trình khuyến mãi đã hết hiệu lực hoặc đã đạt giới hạn lượt sử dụng tối đa");
+            throw InvalidPromotionOperationException.quotaExceeded();
         }
         this.usedCount++;
     }
 
     public void decrementUsedCount() {
         if (this.usedCount <= 0) {
-            throw new IllegalStateException("Số lượt sử dụng đã bằng 0, không thể hoàn trả thêm");
+            throw InvalidPromotionOperationException.quotaZero();
         }
         this.usedCount--;
     }
