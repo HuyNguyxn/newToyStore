@@ -234,4 +234,10 @@ public class OrderService {
         order.updateShippingAddress(request.getNewAddress(), request.getNote());
         return OrderMapper.toResponse(order);
     }
+
+    @Transactional(readOnly = true)
+    public OrderItem getCompletedOrderItemForReview(Integer orderItemId, Integer userId) {
+        return repository.findCompletedOrderItem(orderItemId, userId)
+                .orElseThrow(() -> new IllegalStateException("Thao tác bị từ chối: Sản phẩm này chưa được giao thành công hoặc không thuộc về đơn hàng của bạn."));
+    }
 }

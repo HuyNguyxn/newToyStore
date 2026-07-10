@@ -1,6 +1,7 @@
 package com.example.new_toy_store.review.application;
 
 import com.example.new_toy_store.order.application.OrderService;
+import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
@@ -43,18 +44,24 @@ public class ReviewService {
     public ReviewResponse createReview(Integer userId, ReviewCreateRequest request) {
         User user = validateUser(userId);
 
-        if (repository.findByUserIdAndProductId(userId, request.getProductId()).isPresent()) {
-            throw new IllegalStateException("Bạn đã đánh giá sản phẩm này rồi. Vui lòng sử dụng tính năng chỉnh sửa.");
+        OrderItem orderItem = orderService.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
+
+        if (repository.findByOrderItemId(request.getOrderItemId()).isPresent()) {
+            throw new IllegalStateException("Bạn đã đánh giá sản phẩm này trong đơn hàng rồi. Vui lòng sử dụng tính năng chỉnh sửa.");
         }
 
-        if (!orderService.hasCompletedOrder(userId, request.getProductId())) {
-            throw new IllegalStateException("Bạn chỉ có quyền đánh giá sản phẩm này sau khi đã đặt mua và nhận hàng thành công.");
-        }
 
-        Review review = new Review(userId, request.getProductId(), request.getRating(), request.getComment());
+        Review review = new Review(
+                userId,
+                orderItem.getProductId(),
+                orderItem.getId(),
+                orderItem.getVariantAttributesSnapshot(),
+                request.getRating(),
+                request.getComment()
+        );
         repository.save(review);
 
-        syncProductRating(request.getProductId());
+        syncProductRating(orderItem.getProductId());
         return ReviewMapper.toResponse(review, user);
     }
 
@@ -88,7 +95,6 @@ public class ReviewService {
         syncProductRating(review.getProductId());
     }
 
-    // 🔥 FIX N+1 QUERY: Đã áp dụng Batch Fetching
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMyReviews(Integer userId, Pageable pageable) {
         Page<Review> reviewPage = repository.findByUserId(userId, pageable);
@@ -152,11 +158,14 @@ public class ReviewService {
         if (reviewPage.isEmpty()) {
             return reviewPage.map(review -> ReviewMapper.toResponse(review, null));
         }
+
         Set<Integer> userIds = reviewPage.getContent().stream()
                 .map(Review::getUserId)
                 .collect(Collectors.toSet());
+
         Map<Integer, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
+
         return reviewPage.map(review -> ReviewMapper.toResponse(review, userMap.get(review.getUserId())));
     }
 

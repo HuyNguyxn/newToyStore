@@ -1,5 +1,6 @@
 package com.example.new_toy_store.review.domain;
 
+import com.example.new_toy_store.order.domain.OrderItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,8 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.productId = :productId AND r.status = 'PUBLISHED' GROUP BY r.rating")
     List<Object[]> countReviewsByRatingGroup(@Param("productId") Integer productId);
+
+    Optional<Review> findByOrderItemId(Integer orderItemId);
+
+    Optional<OrderItem> findCompletedOrderItem(@Param("orderItemId") Integer orderItemId, @Param("userId") Integer userId);
 }

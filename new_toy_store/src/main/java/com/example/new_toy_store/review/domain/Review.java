@@ -9,7 +9,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Table(
         name = "reviews",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_user_product_review", columnNames = {"user_id", "product_id"})
+                @UniqueConstraint(name = "uk_review_order_item", columnNames = {"order_item_id"})
         },
         indexes = {
                 @Index(name = "idx_review_product_id", columnList = "product_id"),
@@ -29,6 +29,12 @@ public class Review extends BaseAuditEntity {
     @Column(name = "product_id", nullable = false)
     private Integer productId;
 
+    @Column(name = "order_item_id", nullable = false)
+    private Integer orderItemId;
+
+    @Column(name = "variant_attributes_snapshot", nullable = false)
+    private String variantAttributesSnapshot;
+
     @Column(nullable = false)
     private int rating;
 
@@ -43,14 +49,16 @@ public class Review extends BaseAuditEntity {
     private ReviewStatus status = ReviewStatus.PUBLISHED;
 
     protected Review() {}
-
-    public Review(Integer userId, Integer productId, int rating, String comment) {
+    public Review(Integer userId, Integer productId, Integer orderItemId, String variantAttributesSnapshot, int rating, String comment) {
         if (userId == null) throw new IllegalArgumentException("Mã khách hàng không được để trống");
         if (productId == null) throw new IllegalArgumentException("Mã sản phẩm không được để trống");
+        if (orderItemId == null) throw new IllegalArgumentException("Mã chi tiết đơn hàng không được để trống");
         if (rating < 1 || rating > 5) throw new IllegalArgumentException("Điểm số đánh giá phải nằm trong khoảng từ 1 đến 5 sao");
 
         this.userId = userId;
         this.productId = productId;
+        this.orderItemId = orderItemId;
+        this.variantAttributesSnapshot = variantAttributesSnapshot != null ? variantAttributesSnapshot : "Mặc định";
         this.rating = rating;
         this.comment = comment;
     }
@@ -77,6 +85,8 @@ public class Review extends BaseAuditEntity {
     public Integer getId() { return id; }
     public Integer getUserId() { return userId; }
     public Integer getProductId() { return productId; }
+    public Integer getOrderItemId() { return orderItemId; }
+    public String getVariantAttributesSnapshot() { return variantAttributesSnapshot; }
     public int getRating() { return rating; }
     public String getComment() { return comment; }
     public String getAdminReply() { return adminReply; }
