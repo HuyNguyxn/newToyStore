@@ -1,16 +1,30 @@
 package com.example.new_toy_store.review.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public enum ReviewStatus {
     PUBLISHED("Đã hiển thị") {
         @Override
         public boolean isVisibleToPublic() {
             return true;
         }
+        @Override
+        public List<ReviewStatus> getNextValidStates() {
+            return Collections.singletonList(HIDDEN);
+        }
     },
     HIDDEN("Bị ẩn bởi Admin") {
         @Override
         public boolean isVisibleToPublic() {
             return false;
+        }
+
+        @Override
+        public List<ReviewStatus> getNextValidStates() {
+            return Collections.singletonList(PUBLISHED);
         }
     };
 
@@ -26,6 +40,9 @@ public enum ReviewStatus {
 
     public abstract boolean isVisibleToPublic();
 
+    public abstract List<ReviewStatus> getNextValidStates();
+
+    @JsonCreator
     public static ReviewStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Trạng thái đánh giá không được để trống");
@@ -33,7 +50,7 @@ public enum ReviewStatus {
         try {
             return ReviewStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái đánh giá không hợp lệ: " + value + ". Chỉ chấp nhận PUBLISHED hoặc HIDDEN.");
+            throw new IllegalArgumentException("Trạng thái đánh giá không hợp lệ: '" + value + "'. Chỉ chấp nhận: " + Arrays.toString(ReviewStatus.values()));
         }
     }
 }

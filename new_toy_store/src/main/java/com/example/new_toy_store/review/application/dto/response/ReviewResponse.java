@@ -1,6 +1,7 @@
 package com.example.new_toy_store.review.application.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ReviewResponse {
     private Integer id;
@@ -14,6 +15,7 @@ public class ReviewResponse {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<String> availableActions;
 
     public ReviewResponse(Integer id, Integer userId, String userFullName, String userAvatar, Integer productId, int rating, String comment, String adminReply, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
@@ -40,4 +42,6 @@ public class ReviewResponse {
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public List<String> getAvailableActions() { return availableActions; }
+    public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
 }
