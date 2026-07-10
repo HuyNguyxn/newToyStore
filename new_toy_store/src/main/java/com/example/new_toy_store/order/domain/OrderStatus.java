@@ -1,9 +1,13 @@
 package com.example.new_toy_store.order.domain;
 
+import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
+import com.example.new_toy_store.order.domain.exception.InvalidOrderStatusException;
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public enum OrderStatus {
 
@@ -79,7 +83,7 @@ public enum OrderStatus {
     public abstract List<OrderStatus> getNextValidStates();
 
     private RuntimeException notAllowed(String action) {
-        return new IllegalStateException("Không thể thực hiện thao tác '" + action + "' khi đơn hàng đang ở trạng thái: " + this.displayName);
+        return new InvalidOrderOperationException(this.displayName, action);
     }
 
     @JsonCreator
@@ -90,7 +94,8 @@ public enum OrderStatus {
         try {
             return OrderStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ: '" + value + "'. Các trạng thái hợp lệ gồm: " + Arrays.toString(OrderStatus.values()));
+            List<String> allowed = Arrays.stream(OrderStatus.values()).map(Enum::name).collect(Collectors.toList());
+            throw new InvalidOrderStatusException(value, allowed);
         }
     }
 }

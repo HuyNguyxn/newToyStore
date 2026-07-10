@@ -11,6 +11,7 @@ import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.order.domain.OrderRepository;
 import com.example.new_toy_store.order.domain.OrderStatus;
+import com.example.new_toy_store.order.domain.exception.*;
 import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
@@ -56,7 +57,7 @@ public class OrderService {
     public OrderResponse getOrderDetails(Integer id) {
         Order order = repository.findByIdWithItems(id);
         if (order == null) {
-            throw new IllegalArgumentException("Không tìm thấy đơn hàng");
+            throw new OrderNotFoundException(id);
         }
         return OrderMapper.toResponse(order);
     }
@@ -64,11 +65,10 @@ public class OrderService {
     @Transactional
     public OrderResponse create(OrderRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin khách hàng"));
+                .orElseThrow(() -> new InvalidOrderDataException("userId", "Không tìm thấy thông tin khách hàng"));
 
         if (!user.getStatus().canPlaceOrder()) {
-            throw new IllegalStateException("Thao tác bị từ chối. Tài khoản của bạn hiện đang ở trạng thái: '"
-                    + user.getStatus().getDisplayName() + "'. Không đủ điều kiện để đặt hàng.");
+            throw new InvalidOrderOperationException(user.getStatus().getDisplayName(), "Tạo đơn hàng");
         }
 
         if (request.getPromoCode() != null && !request.getPromoCode().trim().isEmpty()) {
@@ -77,7 +77,7 @@ public class OrderService {
                     request.getUserId(), sanitizedCode, OrderStatus.CANCELLED);
 
             if (isPromoUsed) {
-                throw new IllegalStateException("Bạn đã sử dụng mã khuyến mãi '" + sanitizedCode + "' cho một đơn hàng khác.");
+                throw new InvalidOrderDataException("promoCode", "Bạn đã sử dụng mã khuyến mãi '" + sanitizedCode + "' cho một đơn hàng khác.");
             }
         }
 
@@ -92,18 +92,21 @@ public class OrderService {
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
             if (product == null || !product.isAvailableForPurchase()) {
-                throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
+                throw new InvalidOrderDataException("productId", "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
             }
 
             ProductVariant variant = product.getVariants().stream()
                     .filter(v -> v.getId().equals(itemRequest.getVariantId()))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm này"));
+                    .orElseThrow(() -> new InvalidOrderDataException("variantId", "Không tìm thấy mẫu mã sản phẩm này"));
 
             if (variant.getInventory().getStockQuantity() < itemRequest.getQuantity()) {
-                throw new IllegalStateException("Rất tiếc! Sản phẩm '" + product.getName() + "' (Phiên bản: "
-                        + variant.generateAttributesSnapshot() + ") chỉ còn "
-                        + variant.getInventory().getStockQuantity() + " chiếc trong kho. Vui lòng điều chỉnh lại giỏ hàng.");
+                throw new InsufficientStockException(
+                        product.getId(),
+                        product.getName(),
+                        itemRequest.getQuantity(),
+                        variant.getInventory().getStockQuantity()
+                );
             }
         }
 
@@ -136,7 +139,7 @@ public class OrderService {
                     order.applyPromoCode(request.getPromoCode().toUpperCase().trim(), discount);
                 }
             } catch (RuntimeException ex) {
-                throw new IllegalArgumentException("Lỗi mã khuyến mãi: " + ex.getMessage());
+                throw new InvalidOrderDataException("promoCode", "Lỗi mã khuyến mãi: " + ex.getMessage());
             }
         }
 
@@ -206,7 +209,7 @@ public class OrderService {
 
     private Order getOrder(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new OrderNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
@@ -223,9 +226,11 @@ public class OrderService {
     @Transactional
     public OrderResponse updateShippingAddress(Integer id, UpdateShippingRequest request, Integer currentUserId, boolean isAdmin) {
         Order order = getOrder(id);
+
         if (!order.getUserId().equals(currentUserId) && !isAdmin) {
-            throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa đơn hàng của người khác");
+            throw new OrderAccessDeniedException(id, currentUserId, "chỉnh sửa địa chỉ giao hàng của");
         }
+
         order.updateShippingAddress(request.getNewAddress(), request.getNote());
         return OrderMapper.toResponse(order);
     }

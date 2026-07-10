@@ -1,7 +1,9 @@
 package com.example.new_toy_store.order.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -33,10 +35,10 @@ public class OrderHistory extends BaseAuditEntity {
 
     public OrderHistory(OrderStatus status, String note) {
         if (status == null) {
-            throw new IllegalArgumentException("Trạng thái không được để trống");
+            throw new InvalidOrderDataException("status", "Trạng thái không được để trống");
         }
         if (note == null || note.trim().isEmpty()) {
-            throw new IllegalArgumentException("Ghi chú không được để trống");
+            throw new InvalidOrderDataException("note", "Ghi chú không được để trống");
         }
         this.status = status;
         this.note = note;

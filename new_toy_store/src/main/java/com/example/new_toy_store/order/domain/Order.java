@@ -1,6 +1,8 @@
 package com.example.new_toy_store.order.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
+import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -57,10 +59,10 @@ public class Order extends BaseAuditEntity {
 
     public Order(Integer userId, String shippingAddress) {
         if (userId == null) {
-            throw new IllegalArgumentException("ID người dùng không được để trống");
+            throw new InvalidOrderDataException("userId", "ID người dùng không được để trống");
         }
         if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
-            throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
+            throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng không được để trống");
         }
         this.userId = userId;
         this.shippingAddress = shippingAddress;
@@ -91,11 +93,11 @@ public class Order extends BaseAuditEntity {
 
     public void updateShippingAddress(String newAddress, String note) {
         if (newAddress == null || newAddress.trim().isEmpty()) {
-            throw new IllegalArgumentException("Địa chỉ giao hàng mới không được để trống");
+            throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng mới không được để trống");
         }
 
         if (!this.status.canModifyShippingInfo()) {
-            throw new IllegalStateException("Không thể chỉnh sửa địa chỉ giao hàng khi đơn hàng đang ở trạng thái: " + this.status.getDisplayName());
+            throw new InvalidOrderOperationException(this.status.getDisplayName(), "Cập nhật địa chỉ giao hàng");
         }
 
         String oldAddress = this.shippingAddress;
@@ -125,7 +127,7 @@ public class Order extends BaseAuditEntity {
     @Override
     public void delete() {
         if (!this.status.canBeDeleted()) {
-            throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + this.status.getDisplayName());
+            throw new InvalidOrderOperationException(this.status.getDisplayName(), "Xóa đơn hàng");
         }
         super.delete();
         this.items.forEach(BaseAuditEntity::delete);

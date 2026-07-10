@@ -1,6 +1,7 @@
 package com.example.new_toy_store.order.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -47,14 +48,17 @@ public class OrderItem extends BaseAuditEntity {
     protected OrderItem() {}
 
     public OrderItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
-        if (productId == null || variantId == null) {
-            throw new IllegalArgumentException("ID sản phẩm và biến thể không được để trống");
+        if (productId == null) {
+            throw new InvalidOrderDataException("productId", "ID sản phẩm không được để trống");
+        }
+        if (variantId == null) {
+            throw new InvalidOrderDataException("variantId", "ID biến thể không được để trống");
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+            throw new InvalidOrderDataException("quantity", "Số lượng phải lớn hơn 0");
         }
         if (price < 0) {
-            throw new IllegalArgumentException("Giá không hợp lệ");
+            throw new InvalidOrderDataException("price", "Giá không hợp lệ");
         }
         this.productId = productId;
         this.variantId = variantId;
@@ -69,7 +73,7 @@ public class OrderItem extends BaseAuditEntity {
     }
 
     public double getTotalPrice() {
-        return price * quantity;
+        return Math.max(0.0, Math.round((price * quantity) * 100.0) / 100.0);
     }
 
     public Integer getId() { return id; }
