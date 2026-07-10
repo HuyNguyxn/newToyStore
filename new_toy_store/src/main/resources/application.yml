@@ -35,6 +35,11 @@ spring:
 
   app:
     cart:
-      maintenance:
+      cleanup:
         cron: "0 0 0 * * ?"
         zone: "Asia/Ho_Chi_Minh"
+    order:
+      timeout:
+        cron: "0 */15 * * * *"
+        zone: "Asia/Ho_Chi_Minh"
+        expiration-minutes: 30

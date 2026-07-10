@@ -1,8 +1,11 @@
 package com.example.new_toy_store.order.application;
 
 import com.example.new_toy_store.cart.application.CartService;
+import com.example.new_toy_store.infrastructure.specification.OrderSpecification;
+import com.example.new_toy_store.order.application.dto.request.OrderFilterRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderItem;
@@ -17,6 +20,7 @@ import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -208,5 +212,21 @@ public class OrderService {
     @Transactional(readOnly = true)
     public boolean hasCompletedOrder(Integer userId, Integer productId) {
         return repository.existsCompletedOrderByUserAndProduct(userId, productId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> filterOrders(OrderFilterRequest filterRequest, Pageable pageable) {
+        Specification<Order> spec = OrderSpecification.filter(filterRequest);
+        return repository.findAll(spec, pageable).map(OrderMapper::toResponse);
+    }
+
+    @Transactional
+    public OrderResponse updateShippingAddress(Integer id, UpdateShippingRequest request, Integer currentUserId, boolean isAdmin) {
+        Order order = getOrder(id);
+        if (!order.getUserId().equals(currentUserId) && !isAdmin) {
+            throw new IllegalArgumentException("Bạn không có quyền chỉnh sửa đơn hàng của người khác");
+        }
+        order.updateShippingAddress(request.getNewAddress(), request.getNote());
+        return OrderMapper.toResponse(order);
     }
 }

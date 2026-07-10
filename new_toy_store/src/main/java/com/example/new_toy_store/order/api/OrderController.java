@@ -1,7 +1,9 @@
 package com.example.new_toy_store.order.api;
 
 import com.example.new_toy_store.order.application.OrderService;
+import com.example.new_toy_store.order.application.dto.request.OrderFilterRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
@@ -89,5 +91,21 @@ public class OrderController {
     private User getAuthenticatedUser(UserDetails userDetails) {
         return userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng"));
+    }
+
+    @GetMapping("/admin/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<OrderResponse> filterOrders(OrderFilterRequest filterRequest, Pageable pageable) {
+        return service.filterOrders(filterRequest, pageable);
+    }
+
+    @PatchMapping("/{id}/shipping-address")
+    public OrderResponse updateShippingAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateShippingRequest request) {
+        User user = getAuthenticatedUser(userDetails);
+        boolean isAdmin = user.getRole().name().equals("ADMIN");
+        return service.updateShippingAddress(id, request, user.getId(), isAdmin);
     }
 }

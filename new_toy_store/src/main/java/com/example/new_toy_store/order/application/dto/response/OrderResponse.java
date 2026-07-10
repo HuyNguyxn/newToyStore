@@ -12,7 +12,6 @@ public class OrderResponse {
     private String shippingAddress;
     private String promoCode;
     private double discountAmount;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderItemResponse> items;

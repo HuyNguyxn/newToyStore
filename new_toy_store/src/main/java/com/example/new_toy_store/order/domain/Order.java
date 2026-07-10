@@ -14,7 +14,8 @@ import java.util.List;
         name = "orders",
         indexes = {
                 @Index(name = "idx_order_created_at", columnList = "created_at"),
-                @Index(name = "idx_order_user_id", columnList = "user_id")
+                @Index(name = "idx_order_user_id", columnList = "user_id"),
+                @Index(name = "idx_order_status", columnList = "status")
         }
 )
 public class Order extends BaseAuditEntity {
@@ -23,11 +24,15 @@ public class Order extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private OrderStatus status;
 
     @Column(nullable = false)
@@ -51,7 +56,9 @@ public class Order extends BaseAuditEntity {
     protected Order() {}
 
     public Order(Integer userId, String shippingAddress) {
-        if (userId == null) throw new IllegalArgumentException("ID người dùng không được để trống");
+        if (userId == null) {
+            throw new IllegalArgumentException("ID người dùng không được để trống");
+        }
         if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
             throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
         }
@@ -70,7 +77,7 @@ public class Order extends BaseAuditEntity {
 
     public void applyPromoCode(String promoCode, double discountAmount) {
         this.promoCode = promoCode;
-        this.discountAmount = Math.max(0, discountAmount);
+        this.discountAmount = Math.max(0.0, Math.round(discountAmount * 100.0) / 100.0);
         calculateTotal();
     }
 
@@ -79,8 +86,24 @@ public class Order extends BaseAuditEntity {
                 .mapToDouble(OrderItem::getTotalPrice)
                 .sum();
         double finalTotal = rawTotal - this.discountAmount;
-
         this.totalAmount = Math.max(0.0, Math.round(finalTotal * 100.0) / 100.0);
+    }
+
+    public void updateShippingAddress(String newAddress, String note) {
+        if (newAddress == null || newAddress.trim().isEmpty()) {
+            throw new IllegalArgumentException("Địa chỉ giao hàng mới không được để trống");
+        }
+
+        if (!this.status.canModifyShippingInfo()) {
+            throw new IllegalStateException("Không thể chỉnh sửa địa chỉ giao hàng khi đơn hàng đang ở trạng thái: " + this.status.getDisplayName());
+        }
+
+        String oldAddress = this.shippingAddress;
+        this.shippingAddress = newAddress.trim();
+        String historyNote = note != null && !note.trim().isEmpty()
+                ? note
+                : "Cập nhật địa chỉ từ [" + oldAddress + "] thành [" + this.shippingAddress + "]";
+        recordHistory(this.status, historyNote);
     }
 
     public void changeStatus(OrderStatus newStatus, String note) {
@@ -110,6 +133,7 @@ public class Order extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
+    public Long getVersion() { return version; }
     public Integer getUserId() { return userId; }
     public OrderStatus getStatus() { return status; }
     public double getTotalAmount() { return totalAmount; }
