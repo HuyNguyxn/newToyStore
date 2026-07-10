@@ -8,7 +8,9 @@ public class ReviewResponse {
     private Integer userId;
     private String userFullName;
     private String userAvatar;
+
     private Integer productId;
+    private String productName;
     private Integer orderItemId;
     private String variantAttributesSnapshot;
 
@@ -20,12 +22,14 @@ public class ReviewResponse {
     private LocalDateTime updatedAt;
 
     private List<String> availableActions;
-    public ReviewResponse(Integer id, Integer userId, String userFullName, String userAvatar, Integer productId, Integer orderItemId, String variantAttributesSnapshot, int rating, String comment, String adminReply, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+
+    public ReviewResponse(Integer id, Integer userId, String userFullName, String userAvatar, Integer productId, String productName, Integer orderItemId, String variantAttributesSnapshot, int rating, String comment, String adminReply, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.userId = userId;
         this.userFullName = userFullName;
         this.userAvatar = userAvatar;
         this.productId = productId;
+        this.productName = productName;
         this.orderItemId = orderItemId;
         this.variantAttributesSnapshot = variantAttributesSnapshot;
         this.rating = rating;
@@ -41,6 +45,7 @@ public class ReviewResponse {
     public String getUserFullName() { return userFullName; }
     public String getUserAvatar() { return userAvatar; }
     public Integer getProductId() { return productId; }
+    public String getProductName() { return productName; } // 🔥 [SỰ THAY ĐỔI]
     public Integer getOrderItemId() { return orderItemId; }
     public String getVariantAttributesSnapshot() { return variantAttributesSnapshot; }
     public int getRating() { return rating; }
@@ -51,5 +56,5 @@ public class ReviewResponse {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     public List<String> getAvailableActions() { return availableActions; }
-    public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; } // 🔥 Thêm
+    public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
 }

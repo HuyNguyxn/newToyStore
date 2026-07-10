@@ -3,6 +3,7 @@ package com.example.new_toy_store.review.application;
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.domain.Product; // 🔥 [SỰ THAY ĐỔI]: Nhớ import Product
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewUpdateRequest;
@@ -50,7 +51,6 @@ public class ReviewService {
             throw new IllegalStateException("Bạn đã đánh giá sản phẩm này trong đơn hàng rồi. Vui lòng sử dụng tính năng chỉnh sửa.");
         }
 
-
         Review review = new Review(
                 userId,
                 orderItem.getProductId(),
@@ -62,7 +62,7 @@ public class ReviewService {
         repository.save(review);
 
         syncProductRating(orderItem.getProductId());
-        return ReviewMapper.toResponse(review, user);
+        return ReviewMapper.toResponse(review, user, null);
     }
 
     @Transactional
@@ -78,7 +78,7 @@ public class ReviewService {
         repository.save(review);
 
         syncProductRating(review.getProductId());
-        return ReviewMapper.toResponse(review, user);
+        return ReviewMapper.toResponse(review, user, null);
     }
 
     @Transactional
@@ -98,7 +98,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMyReviews(Integer userId, Pageable pageable) {
         Page<Review> reviewPage = repository.findByUserId(userId, pageable);
-        return mapReviewsToResponsesWithBatchUsers(reviewPage);
+        return mapReviewsToResponsesWithBatchData(reviewPage); // 🔥 [SỰ THAY ĐỔI]
     }
 
     @Transactional(readOnly = true)
@@ -129,13 +129,19 @@ public class ReviewService {
             throw new IllegalArgumentException("Bộ lọc sao chỉ chấp nhận giá trị từ 1 đến 5");
         }
         Page<Review> reviewPage = repository.findPublicReviewsWithFilter(productId, ratingFilter, pageable);
-        return mapReviewsToResponsesWithBatchUsers(reviewPage);
+        return mapReviewsToResponsesWithBatchData(reviewPage);
     }
 
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getAllReviewsForAdmin(Integer productId, Pageable pageable) {
         Page<Review> reviewPage = repository.findByProductId(productId, pageable);
-        return mapReviewsToResponsesWithBatchUsers(reviewPage);
+        return mapReviewsToResponsesWithBatchData(reviewPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> getGlobalReviewsForAdmin(Pageable pageable) {
+        Page<Review> reviewPage = repository.findAll(pageable);
+        return mapReviewsToResponsesWithBatchData(reviewPage);
     }
 
     @Transactional
@@ -154,19 +160,30 @@ public class ReviewService {
         repository.save(review);
     }
 
-    private Page<ReviewResponse> mapReviewsToResponsesWithBatchUsers(Page<Review> reviewPage) {
+    private Page<ReviewResponse> mapReviewsToResponsesWithBatchData(Page<Review> reviewPage) {
         if (reviewPage.isEmpty()) {
-            return reviewPage.map(review -> ReviewMapper.toResponse(review, null));
+            return reviewPage.map(review -> ReviewMapper.toResponse(review, null, null));
         }
 
         Set<Integer> userIds = reviewPage.getContent().stream()
                 .map(Review::getUserId)
                 .collect(Collectors.toSet());
 
+        Set<Integer> productIds = reviewPage.getContent().stream()
+                .map(Review::getProductId)
+                .collect(Collectors.toSet());
+
         Map<Integer, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
 
-        return reviewPage.map(review -> ReviewMapper.toResponse(review, userMap.get(review.getUserId())));
+        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        return reviewPage.map(review -> ReviewMapper.toResponse(
+                review,
+                userMap.get(review.getUserId()),
+                productMap.get(review.getProductId())
+        ));
     }
 
     private void syncProductRating(Integer productId) {

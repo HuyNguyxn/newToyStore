@@ -69,6 +69,12 @@ public class ReviewController {
         return service.getAllReviewsForAdmin(productId, pageable);
     }
 
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<ReviewResponse> getGlobalReviewsForAdmin(Pageable pageable) {
+        return service.getGlobalReviewsForAdmin(pageable);
+    }
+
     @PatchMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public void changeStatus(@PathVariable Integer id, @RequestParam String status) {
