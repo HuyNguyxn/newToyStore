@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ReviewService {
@@ -86,13 +88,11 @@ public class ReviewService {
         syncProductRating(review.getProductId());
     }
 
+    // 🔥 FIX N+1 QUERY: Đã áp dụng Batch Fetching
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMyReviews(Integer userId, Pageable pageable) {
-        return repository.findByUserId(userId, pageable)
-                .map(review -> {
-                    User user = userRepository.findById(review.getUserId()).orElse(null);
-                    return ReviewMapper.toResponse(review, user);
-                });
+        Page<Review> reviewPage = repository.findByUserId(userId, pageable);
+        return mapReviewsToResponsesWithBatchUsers(reviewPage);
     }
 
     @Transactional(readOnly = true)
@@ -122,20 +122,14 @@ public class ReviewService {
         if (ratingFilter != null && (ratingFilter < 1 || ratingFilter > 5)) {
             throw new IllegalArgumentException("Bộ lọc sao chỉ chấp nhận giá trị từ 1 đến 5");
         }
-        return repository.findPublicReviewsWithFilter(productId, ratingFilter, pageable)
-                .map(review -> {
-                    User user = userRepository.findById(review.getUserId()).orElse(null);
-                    return ReviewMapper.toResponse(review, user);
-                });
+        Page<Review> reviewPage = repository.findPublicReviewsWithFilter(productId, ratingFilter, pageable);
+        return mapReviewsToResponsesWithBatchUsers(reviewPage);
     }
 
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getAllReviewsForAdmin(Integer productId, Pageable pageable) {
-        return repository.findByProductId(productId, pageable)
-                .map(review -> {
-                    User user = userRepository.findById(review.getUserId()).orElse(null);
-                    return ReviewMapper.toResponse(review, user);
-                });
+        Page<Review> reviewPage = repository.findByProductId(productId, pageable);
+        return mapReviewsToResponsesWithBatchUsers(reviewPage);
     }
 
     @Transactional
@@ -152,6 +146,18 @@ public class ReviewService {
         Review review = getReviewEntity(id);
         review.replyByAdmin(request.getReply());
         repository.save(review);
+    }
+
+    private Page<ReviewResponse> mapReviewsToResponsesWithBatchUsers(Page<Review> reviewPage) {
+        if (reviewPage.isEmpty()) {
+            return reviewPage.map(review -> ReviewMapper.toResponse(review, null));
+        }
+        Set<Integer> userIds = reviewPage.getContent().stream()
+                .map(Review::getUserId)
+                .collect(Collectors.toSet());
+        Map<Integer, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        return reviewPage.map(review -> ReviewMapper.toResponse(review, userMap.get(review.getUserId())));
     }
 
     private void syncProductRating(Integer productId) {
