@@ -26,10 +26,6 @@ public class Order extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Version
-    @Column(name = "version")
-    private Long version;
-
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
@@ -135,7 +131,6 @@ public class Order extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
-    public Long getVersion() { return version; }
     public Integer getUserId() { return userId; }
     public OrderStatus getStatus() { return status; }
     public double getTotalAmount() { return totalAmount; }

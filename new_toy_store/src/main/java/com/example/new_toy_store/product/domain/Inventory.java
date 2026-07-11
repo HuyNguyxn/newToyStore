@@ -19,10 +19,6 @@ public class Inventory extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Version
-    @Column(name = "version", nullable = false)
-    private Long version;
-
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
 
@@ -61,7 +57,6 @@ public class Inventory extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
-    public Long getVersion() { return version; }
     public int getStockQuantity() { return stockQuantity; }
     public ProductVariant getVariant() { return variant; }
 

@@ -23,10 +23,6 @@ public class Promotion extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Version
-    @Column(name = "version", nullable = false)
-    private Long version;
-
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
@@ -187,7 +183,6 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
-    public Long getVersion() { return version; }
     public String getCode() { return code; }
     public String getName() { return name; }
     public PromotionType getType() { return type; }

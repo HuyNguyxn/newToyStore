@@ -24,9 +24,6 @@ public class ProductVariant extends BaseAuditEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Version
-    private Long version;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VariantType type;
@@ -146,7 +143,6 @@ public class ProductVariant extends BaseAuditEntity {
     }
 
     public Integer getId() { return id; }
-    public Long getVersion() { return version; }
     public VariantType getType() { return type; }
     public double getPrice() { return price; }
     public double getCostPrice() { return costPrice; }

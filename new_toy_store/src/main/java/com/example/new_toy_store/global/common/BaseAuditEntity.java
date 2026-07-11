@@ -15,6 +15,10 @@ public abstract class BaseAuditEntity {
     @Column(name = "deleted_at")
     protected LocalDateTime deletedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -43,4 +47,5 @@ public abstract class BaseAuditEntity {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public LocalDateTime getDeletedAt() { return deletedAt; }
+    public Long getVersion() { return version; }
 }
