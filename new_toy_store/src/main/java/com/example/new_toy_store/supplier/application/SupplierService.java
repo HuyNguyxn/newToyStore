@@ -1,10 +1,12 @@
 package com.example.new_toy_store.supplier.application;
 
+import com.example.new_toy_store.supplier.application.dto.request.SupplierFilterRequest;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.Supplier;
 import com.example.new_toy_store.supplier.domain.SupplierRepository;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
+import com.example.new_toy_store.supplier.infrastructure.specification.SupplierSpecification;
 import com.example.new_toy_store.supplier.mapper.SupplierMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,15 +26,10 @@ public class SupplierService {
     public SupplierService(SupplierRepository repository) {
         this.repository = repository;
     }
-
     @Transactional(readOnly = true)
-    public Page<SupplierResponse> getAllSuppliers(Pageable pageable) {
-        return repository.findAll(pageable).map(SupplierMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<SupplierResponse> searchSuppliersByName(String name, Pageable pageable) {
-        return repository.findByNameContainingIgnoreCase(name, pageable).map(SupplierMapper::toResponse);
+    public Page<SupplierResponse> filterSuppliers(SupplierFilterRequest filterRequest, Pageable pageable) {
+        return repository.findAll(SupplierSpecification.filter(filterRequest), pageable)
+                .map(SupplierMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -53,9 +51,14 @@ public class SupplierService {
 
     @Transactional
     public SupplierResponse create(SupplierRequest request) {
-        if (repository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new IllegalArgumentException("Số điện thoại nhà cung cấp đã tồn tại");
+        Optional<Supplier> existing = repository.findByPhoneNumberIncludingDeleted(request.getPhoneNumber());
+        if (existing.isPresent()) {
+            if (existing.get().isDeleted()) {
+                throw new IllegalStateException("Số điện thoại này thuộc về một nhà cung cấp đã bị xóa. Vui lòng khôi phục lại dữ liệu cũ thay vì tạo mới.");
+            }
+            throw new IllegalArgumentException("Số điện thoại nhà cung cấp đã tồn tại trong hệ thống.");
         }
+
         Supplier supplier = SupplierMapper.toEntity(request);
         repository.save(supplier);
         return SupplierMapper.toResponse(supplier);
@@ -65,11 +68,10 @@ public class SupplierService {
     public SupplierResponse update(Integer id, SupplierRequest request) {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
-
-        repository.findByPhoneNumber(request.getPhoneNumber())
+        repository.findByPhoneNumberIncludingDeleted(request.getPhoneNumber())
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
-                        throw new IllegalArgumentException("Số điện thoại đã được sử dụng bởi nhà cung cấp khác");
+                        throw new IllegalArgumentException("Số điện thoại đã được sử dụng bởi nhà cung cấp khác (bao gồm cả dữ liệu đã xóa)");
                     }
                 });
 
@@ -93,6 +95,26 @@ public class SupplierService {
         Supplier supplier = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
         supplier.delete();
+        repository.save(supplier);
+    }
+
+    @Transactional
+    public void changeStatus(Integer id, String statusStr) {
+        Supplier supplier = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
+        supplier.setStatus(SupplierStatus.from(statusStr));
+        repository.save(supplier);
+    }
+
+    @Transactional
+    public void restore(Integer id) {
+        Supplier supplier = repository.findByIdIncludingDeleted(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà cung cấp"));
+
+        if (!supplier.isDeleted()) {
+            throw new IllegalStateException("Nhà cung cấp này vẫn đang hoạt động.");
+        }
+        supplier.restore();
         repository.save(supplier);
     }
 }

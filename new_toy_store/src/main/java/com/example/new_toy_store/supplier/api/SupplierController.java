@@ -1,6 +1,7 @@
 package com.example.new_toy_store.supplier.api;
 
 import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierFilterRequest;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import jakarta.validation.Valid;
@@ -24,12 +25,9 @@ public class SupplierController {
 
     @GetMapping
     public Page<SupplierResponse> getAll(
-            @RequestParam(required = false) String name,
+            @ModelAttribute SupplierFilterRequest filterRequest,
             Pageable pageable) {
-        if (name != null && !name.trim().isEmpty()) {
-            return service.searchSuppliersByName(name.trim(), pageable);
-        }
-        return service.getAllSuppliers(pageable);
+        return service.filterSuppliers(filterRequest, pageable);
     }
 
     @GetMapping("/{id}")
@@ -50,5 +48,15 @@ public class SupplierController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
+    }
+
+    @PatchMapping("/{id}/status")
+    public void changeStatus(@PathVariable Integer id, @RequestParam String status) {
+        service.changeStatus(id, status);
+    }
+
+    @PatchMapping("/{id}/restore")
+    public void restore(@PathVariable Integer id) {
+        service.restore(id);
     }
 }
