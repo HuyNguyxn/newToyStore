@@ -1,6 +1,7 @@
 package com.example.new_toy_store.review.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.promotion.domain.Promotion;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -91,4 +92,14 @@ public class Review extends BaseAuditEntity {
     public String getComment() { return comment; }
     public String getAdminReply() { return adminReply; }
     public ReviewStatus getStatus() { return status; }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o || (o instanceof Review p && id != null && id.equals(p.id));
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
