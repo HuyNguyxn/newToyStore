@@ -4,7 +4,7 @@ import com.example.new_toy_store.infrastructure.specification.ReviewSpecificatio
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.ProductService;
-import com.example.new_toy_store.product.domain.Product; // 🔥 [SỰ THAY ĐỔI]: Nhớ import Product
+import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewFilterRequest;
@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReviewService {
+
+    private static final int REVIEW_TIME_WINDOW_DAYS = 7;
 
     private final ReviewRepository repository;
     private final OrderService orderService;
@@ -49,6 +52,10 @@ public class ReviewService {
         User user = validateUser(userId);
 
         OrderItem orderItem = orderService.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
+
+        if (orderItem.getUpdatedAt() != null && orderItem.getUpdatedAt().plusDays(REVIEW_TIME_WINDOW_DAYS).isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Đã quá thời hạn " + REVIEW_TIME_WINDOW_DAYS + " ngày để đánh giá sản phẩm này kể từ khi nhận hàng.");
+        }
 
         if (repository.findByOrderItemId(request.getOrderItemId()).isPresent()) {
             throw new IllegalStateException("Bạn đã đánh giá sản phẩm này trong đơn hàng rồi. Vui lòng sử dụng tính năng chỉnh sửa.");
