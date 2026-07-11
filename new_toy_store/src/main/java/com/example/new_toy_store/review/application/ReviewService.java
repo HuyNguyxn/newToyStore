@@ -15,6 +15,10 @@ import com.example.new_toy_store.review.application.dto.response.ReviewSummaryRe
 import com.example.new_toy_store.review.domain.Review;
 import com.example.new_toy_store.review.domain.ReviewRepository;
 import com.example.new_toy_store.review.domain.ReviewStatus;
+import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
+import com.example.new_toy_store.review.domain.exception.ReviewAccessDeniedException;
+import com.example.new_toy_store.review.domain.exception.ReviewConflictException;
+import com.example.new_toy_store.review.domain.exception.ReviewNotFoundException;
 import com.example.new_toy_store.review.mapper.ReviewMapper;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
@@ -57,6 +61,7 @@ public class ReviewService {
     @Transactional
     public ReviewResponse createReview(Integer userId, ReviewCreateRequest request) {
         User user = validateUser(userId);
+
         if (blacklistWordService.containsBadWord(request.getComment())) {
             throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
         }
@@ -64,11 +69,11 @@ public class ReviewService {
         OrderItem orderItem = orderService.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
 
         if (orderItem.getUpdatedAt() != null && orderItem.getUpdatedAt().plusDays(REVIEW_TIME_WINDOW_DAYS).isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException("Đã quá thời hạn " + REVIEW_TIME_WINDOW_DAYS + " ngày để đánh giá sản phẩm này kể từ khi nhận hàng.");
+            throw InvalidReviewOperationException.timeWindowExpired(REVIEW_TIME_WINDOW_DAYS);
         }
 
         if (repository.findByOrderItemId(request.getOrderItemId()).isPresent()) {
-            throw new IllegalStateException("Bạn đã đánh giá sản phẩm này trong đơn hàng rồi. Vui lòng sử dụng tính năng chỉnh sửa.");
+            throw ReviewConflictException.duplicateReview(request.getOrderItemId());
         }
 
         Review review = new Review(
@@ -88,6 +93,7 @@ public class ReviewService {
     @Transactional
     public ReviewResponse updateReview(Integer userId, Integer reviewId, ReviewUpdateRequest request) {
         User user = validateUser(userId);
+
         if (blacklistWordService.containsBadWord(request.getComment())) {
             throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
         }
@@ -95,7 +101,7 @@ public class ReviewService {
         Review review = getReviewEntity(reviewId);
 
         if (!review.getUserId().equals(userId)) {
-            throw new IllegalStateException("Bạn không có quyền chỉnh sửa đánh giá của người khác");
+            throw ReviewAccessDeniedException.notOwner(userId);
         }
 
         review.updateByUser(request.getRating(), request.getComment());
@@ -111,7 +117,7 @@ public class ReviewService {
         Review review = getReviewEntity(reviewId);
 
         if (!review.getUserId().equals(userId)) {
-            throw new IllegalStateException("Bạn không có quyền xóa đánh giá của người khác");
+            throw ReviewAccessDeniedException.notOwner(userId);
         }
 
         review.delete();
@@ -150,7 +156,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getPublicReviewsForProduct(Integer productId, Integer ratingFilter, Pageable pageable) {
         if (ratingFilter != null && (ratingFilter < 1 || ratingFilter > 5)) {
-            throw new IllegalArgumentException("Bộ lọc sao chỉ chấp nhận giá trị từ 1 đến 5");
+            throw InvalidReviewOperationException.invalidRating(ratingFilter);
         }
         Page<Review> reviewPage = repository.findPublicReviewsWithFilter(productId, ratingFilter, pageable);
         return mapReviewsToResponsesWithBatchData(reviewPage);
@@ -222,15 +228,15 @@ public class ReviewService {
 
     private User validateUser(Integer userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin khách hàng trên hệ thống"));
+                .orElseThrow(() -> ReviewAccessDeniedException.userNotFound(userId));
         if (!user.getStatus().canModifyData()) {
-            throw new IllegalStateException("Thao tác bị từ chối. Tài khoản của bạn hiện đang ở trạng thái: " + user.getStatus().getDisplayName());
+            throw ReviewAccessDeniedException.userAccountLocked(userId, user.getStatus().getDisplayName());
         }
         return user;
     }
 
     private Review getReviewEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy dữ liệu đánh giá"));
+                .orElseThrow(() -> new ReviewNotFoundException(id));
     }
 }

@@ -1,5 +1,6 @@
 package com.example.new_toy_store.review.domain;
 
+import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,12 +46,13 @@ public enum ReviewStatus {
     @JsonCreator
     public static ReviewStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái đánh giá không được để trống");
+            throw InvalidReviewOperationException.missingRequirement("status");
         }
         try {
             return ReviewStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái đánh giá không hợp lệ: '" + value + "'. Chỉ chấp nhận: " + Arrays.toString(ReviewStatus.values()));
+            String acceptedValues = Arrays.toString(ReviewStatus.values());
+            throw InvalidReviewOperationException.invalidStatus(value, acceptedValues);
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.example.new_toy_store.review.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
-import com.example.new_toy_store.promotion.domain.Promotion;
+import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -50,11 +50,12 @@ public class Review extends BaseAuditEntity {
     private ReviewStatus status = ReviewStatus.PUBLISHED;
 
     protected Review() {}
+
     public Review(Integer userId, Integer productId, Integer orderItemId, String variantAttributesSnapshot, int rating, String comment) {
-        if (userId == null) throw new IllegalArgumentException("Mã khách hàng không được để trống");
-        if (productId == null) throw new IllegalArgumentException("Mã sản phẩm không được để trống");
-        if (orderItemId == null) throw new IllegalArgumentException("Mã chi tiết đơn hàng không được để trống");
-        if (rating < 1 || rating > 5) throw new IllegalArgumentException("Điểm số đánh giá phải nằm trong khoảng từ 1 đến 5 sao");
+        if (userId == null) throw InvalidReviewOperationException.missingRequirement("userId");
+        if (productId == null) throw InvalidReviewOperationException.missingRequirement("productId");
+        if (orderItemId == null) throw InvalidReviewOperationException.missingRequirement("orderItemId");
+        if (rating < 1 || rating > 5) throw InvalidReviewOperationException.invalidRating(rating);
 
         this.userId = userId;
         this.productId = productId;
@@ -65,7 +66,7 @@ public class Review extends BaseAuditEntity {
     }
 
     public void updateByUser(int rating, String comment) {
-        if (rating < 1 || rating > 5) throw new IllegalArgumentException("Điểm số đánh giá phải nằm trong khoảng từ 1 đến 5 sao");
+        if (rating < 1 || rating > 5) throw InvalidReviewOperationException.invalidRating(rating);
         this.rating = rating;
         this.comment = comment;
         this.adminReply = null;
@@ -73,7 +74,7 @@ public class Review extends BaseAuditEntity {
     }
 
     public void replyByAdmin(String reply) {
-        if (reply == null || reply.trim().isEmpty()) throw new IllegalArgumentException("Nội dung phản hồi không được để trống");
+        if (reply == null || reply.trim().isEmpty()) throw InvalidReviewOperationException.emptyReply();
         this.adminReply = reply;
     }
 
