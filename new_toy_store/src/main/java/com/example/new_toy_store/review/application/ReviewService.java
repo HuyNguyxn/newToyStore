@@ -1,6 +1,7 @@
 package com.example.new_toy_store.review.application;
 
 import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
+import com.example.new_toy_store.moderation.application.BlacklistWordService;
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.ProductService;
@@ -39,17 +40,26 @@ public class ReviewService {
     private final OrderService orderService;
     private final ProductService productService;
     private final UserRepository userRepository;
+    private final BlacklistWordService blacklistWordService;
 
-    public ReviewService(ReviewRepository repository, OrderService orderService, ProductService productService, UserRepository userRepository) {
+    public ReviewService(ReviewRepository repository,
+                         OrderService orderService,
+                         ProductService productService,
+                         UserRepository userRepository,
+                         BlacklistWordService blacklistWordService) {
         this.repository = repository;
         this.orderService = orderService;
         this.productService = productService;
         this.userRepository = userRepository;
+        this.blacklistWordService = blacklistWordService;
     }
 
     @Transactional
     public ReviewResponse createReview(Integer userId, ReviewCreateRequest request) {
         User user = validateUser(userId);
+        if (blacklistWordService.containsBadWord(request.getComment())) {
+            throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
+        }
 
         OrderItem orderItem = orderService.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
 
@@ -78,6 +88,10 @@ public class ReviewService {
     @Transactional
     public ReviewResponse updateReview(Integer userId, Integer reviewId, ReviewUpdateRequest request) {
         User user = validateUser(userId);
+        if (blacklistWordService.containsBadWord(request.getComment())) {
+            throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
+        }
+
         Review review = getReviewEntity(reviewId);
 
         if (!review.getUserId().equals(userId)) {
