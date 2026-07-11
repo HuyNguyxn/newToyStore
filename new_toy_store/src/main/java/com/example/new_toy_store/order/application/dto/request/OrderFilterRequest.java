@@ -1,6 +1,8 @@
 package com.example.new_toy_store.order.application.dto.request;
 
 import com.example.new_toy_store.order.domain.OrderStatus;
+import jakarta.validation.constraints.Min;
+
 import java.time.LocalDateTime;
 
 public class OrderFilterRequest {
@@ -8,7 +10,11 @@ public class OrderFilterRequest {
     private OrderStatus status;
     private LocalDateTime fromDate;
     private LocalDateTime toDate;
+
+    @Min(value = 0, message = "Số tiền lọc tối thiểu không được âm")
     private Double minAmount;
+
+    @Min(value = 0, message = "Số tiền lọc tối đa không được âm")
     private Double maxAmount;
 
     public Integer getUserId() { return userId; }

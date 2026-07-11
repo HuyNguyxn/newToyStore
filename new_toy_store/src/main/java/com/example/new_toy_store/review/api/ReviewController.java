@@ -3,6 +3,7 @@ package com.example.new_toy_store.review.api;
 import com.example.new_toy_store.review.application.ReviewService;
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
+import com.example.new_toy_store.review.application.dto.request.ReviewFilterRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewUpdateRequest;
 import com.example.new_toy_store.review.application.dto.response.ReviewResponse;
 import com.example.new_toy_store.review.application.dto.response.ReviewSummaryResponse;
@@ -71,8 +72,10 @@ public class ReviewController {
 
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
-    public Page<ReviewResponse> getGlobalReviewsForAdmin(Pageable pageable) {
-        return service.getGlobalReviewsForAdmin(pageable);
+    public Page<ReviewResponse> getGlobalReviewsForAdmin(
+            @Valid @ModelAttribute ReviewFilterRequest filterRequest,
+            Pageable pageable) {
+        return service.filterGlobalReviewsForAdmin(filterRequest, pageable);
     }
 
     @PatchMapping("/admin/{id}/status")

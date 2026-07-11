@@ -1,20 +1,16 @@
 package com.example.new_toy_store.review.domain;
 
-import com.example.new_toy_store.order.domain.OrderItem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface ReviewRepository extends JpaRepository<Review, Integer> {
-
-    Optional<Review> findByUserIdAndProductId(Integer userId, Integer productId);
-
-    Page<Review> findByUserId(Integer userId, Pageable pageable);
+public interface ReviewRepository extends JpaRepository<Review, Integer>, JpaSpecificationExecutor<Review> {
 
     @Query("SELECT r FROM Review r WHERE r.productId = :productId AND r.status = 'PUBLISHED' AND (:rating IS NULL OR r.rating = :rating)")
     Page<Review> findPublicReviewsWithFilter(@Param("productId") Integer productId, @Param("rating") Integer rating, Pageable pageable);
@@ -32,5 +28,5 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     Optional<Review> findByOrderItemId(Integer orderItemId);
 
-    Optional<OrderItem> findCompletedOrderItem(@Param("orderItemId") Integer orderItemId, @Param("userId") Integer userId);
+    Page<Review> findByUserId(Integer userId, Pageable pageable);
 }

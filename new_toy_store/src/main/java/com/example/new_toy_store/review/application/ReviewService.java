@@ -1,11 +1,13 @@
 package com.example.new_toy_store.review.application;
 
+import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product; // 🔥 [SỰ THAY ĐỔI]: Nhớ import Product
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
+import com.example.new_toy_store.review.application.dto.request.ReviewFilterRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewUpdateRequest;
 import com.example.new_toy_store.review.application.dto.response.ReviewResponse;
 import com.example.new_toy_store.review.application.dto.response.ReviewSummaryResponse;
@@ -17,6 +19,7 @@ import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,7 +101,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMyReviews(Integer userId, Pageable pageable) {
         Page<Review> reviewPage = repository.findByUserId(userId, pageable);
-        return mapReviewsToResponsesWithBatchData(reviewPage); // 🔥 [SỰ THAY ĐỔI]
+        return mapReviewsToResponsesWithBatchData(reviewPage);
     }
 
     @Transactional(readOnly = true)
@@ -139,8 +142,9 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReviewResponse> getGlobalReviewsForAdmin(Pageable pageable) {
-        Page<Review> reviewPage = repository.findAll(pageable);
+    public Page<ReviewResponse> filterGlobalReviewsForAdmin(ReviewFilterRequest filterRequest, Pageable pageable) {
+        Specification<Review> spec = ReviewSpecification.filter(filterRequest);
+        Page<Review> reviewPage = repository.findAll(spec, pageable);
         return mapReviewsToResponsesWithBatchData(reviewPage);
     }
 
