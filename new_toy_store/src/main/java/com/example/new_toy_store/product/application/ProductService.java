@@ -14,8 +14,6 @@ import com.example.new_toy_store.product.domain.exception.ProductNotFoundExcepti
 import com.example.new_toy_store.product.mapper.ProductMapper;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
-
-// [ADD] Import Enum
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import org.springframework.data.domain.Page;
@@ -87,7 +85,7 @@ public class ProductService {
 
         return productPage.map(product -> {
             SupplierResponse supplier = supplierMap.get(product.getSupplierId());
-            return ProductMapper.toResponse(product, supplier);
+            return ProductMapper.toResponseWithSupplier(product, supplier);
         });
     }
 
@@ -101,13 +99,15 @@ public class ProductService {
         if (product.getSupplierId() != null) {
             supplier = supplierService.getSupplierDetails(product.getSupplierId());
         }
-        return ProductMapper.toResponse(product, supplier);
+        return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
+        SupplierResponse supplier = null;
+
         if (request.getSupplierId() != null) {
-            SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            supplier = supplierService.getSupplierDetails(request.getSupplierId());
             if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
                 throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
@@ -130,18 +130,24 @@ public class ProductService {
         }
 
         repository.save(product);
-        return ProductMapper.toResponse(product, null);
+        return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
     @Transactional
     public ProductResponse updateInfo(Integer id, ProductRequest request) {
         Product product = getProductEntity(id);
-        if (request.getSupplierId() != null && !request.getSupplierId().equals(product.getSupplierId())) {
-            SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
-            if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
-                throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
+        SupplierResponse supplier = null;
+
+        if (request.getSupplierId() != null) {
+            supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            if (!request.getSupplierId().equals(product.getSupplierId())) {
+                if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
+                    throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
+                }
+                product.assignSupplier(request.getSupplierId());
             }
-            product.assignSupplier(request.getSupplierId());
+        } else if (product.getSupplierId() != null) {
+            supplier = supplierService.getSupplierDetails(product.getSupplierId());
         }
 
         product.updateInfo(request.getName(), request.getBasePrice());
@@ -157,7 +163,7 @@ public class ProductService {
         }
 
         repository.save(product);
-        return ProductMapper.toResponse(product, null);
+        return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
     @Transactional
@@ -198,13 +204,17 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<Product> getProductsByIdsWithDetails(Set<Integer> ids) {
-        if (ids == null || ids.isEmpty()) return List.of();
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
         return repository.findAllByIdsWithDetails(ids);
     }
 
     @Transactional
     public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
-        if (stockUpdates == null || stockUpdates.isEmpty()) return;
+        if (stockUpdates == null || stockUpdates.isEmpty()) {
+            return;
+        }
 
         Set<Integer> variantIds = stockUpdates.stream()
                 .map(ImportedStockRequest::getVariantId)
@@ -231,7 +241,9 @@ public class ProductService {
 
     @Transactional
     public void addStockFromImport(Map<Integer, Integer> variantQuantities) {
-        if (variantQuantities == null || variantQuantities.isEmpty()) return;
+        if (variantQuantities == null || variantQuantities.isEmpty()) {
+            return;
+        }
 
         Set<Integer> variantIds = variantQuantities.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -254,7 +266,9 @@ public class ProductService {
 
     @Transactional
     public void deductStockForOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) return;
+        if (orderItems == null || orderItems.isEmpty()) {
+            return;
+        }
 
         Set<Integer> variantIds = orderItems.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -283,7 +297,9 @@ public class ProductService {
 
     @Transactional
     public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) return;
+        if (orderItems == null || orderItems.isEmpty()) {
+            return;
+        }
 
         Set<Integer> variantIds = orderItems.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -309,7 +325,10 @@ public class ProductService {
         Product product = getProductEntity(productId);
         product.addImage(imageUrl, isThumbnail);
         repository.save(product);
-        return ProductMapper.toResponse(product, null);
+
+        SupplierResponse supplier = product.getSupplierId() != null ?
+                supplierService.getSupplierDetails(product.getSupplierId()) : null;
+        return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
     @Transactional

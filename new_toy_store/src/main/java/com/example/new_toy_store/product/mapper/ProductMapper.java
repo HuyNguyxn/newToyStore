@@ -7,6 +7,7 @@ import com.example.new_toy_store.product.application.dto.response.ProductVariant
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductAttributeValue;
 import com.example.new_toy_store.promotion.application.PromotionService;
+import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,15 +32,27 @@ public class ProductMapper {
     }
 
     public static ProductResponse toResponse(Product product) {
-        return toResponse(product, null);
+        return buildResponse(product, null, null);
     }
 
-    public static ProductResponse toResponse(Product product, PromotionService promotionService) {
+    public static ProductResponse toResponseWithSupplier(Product product, SupplierResponse supplier) {
+        return buildResponse(product, null, supplier);
+    }
+
+    public static ProductResponse toResponseWithPromotion(Product product, PromotionService promotionService) {
+        return buildResponse(product, promotionService, null);
+    }
+
+    public static ProductResponse toFullResponse(Product product, PromotionService promotionService, SupplierResponse supplier) {
+        return buildResponse(product, promotionService, supplier);
+    }
+
+    private static ProductResponse buildResponse(Product product, PromotionService promotionService, SupplierResponse supplier) {
         List<Integer> categoryIds = product.getCategories().stream()
                 .map(Category::getId)
                 .collect(Collectors.toList());
 
-        return new ProductResponse(
+        ProductResponse response = new ProductResponse(
                 product.getId(),
                 product.getName(),
                 product.getBasePrice(),
@@ -67,5 +80,11 @@ public class ProductMapper {
                     );
                 }).collect(Collectors.toList())
         );
+
+        if (supplier != null) {
+            response.setSupplierName(supplier.getName());
+        }
+
+        return response;
     }
 }

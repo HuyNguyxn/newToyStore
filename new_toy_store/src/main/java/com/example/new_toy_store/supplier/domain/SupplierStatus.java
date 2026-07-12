@@ -12,11 +12,8 @@ public enum SupplierStatus {
         public boolean canImport() { return true; }
         @Override
         public boolean canBeAssignedToProduct() { return true; }
-
         @Override
-        public List<SupplierStatus> getNextValidStates() {
-            return Arrays.asList(SUSPENDED, BLACKLISTED);
-        }
+        public List<SupplierStatus> getNextValidStates() { return Arrays.asList(SUSPENDED, BLACKLISTED); }
     },
 
     SUSPENDED("Tạm ngưng") {
@@ -24,11 +21,8 @@ public enum SupplierStatus {
         public boolean canImport() { return false; }
         @Override
         public boolean canBeAssignedToProduct() { return true; }
-
         @Override
-        public List<SupplierStatus> getNextValidStates() {
-            return Arrays.asList(ACTIVE, BLACKLISTED);
-        }
+        public List<SupplierStatus> getNextValidStates() { return Arrays.asList(ACTIVE, BLACKLISTED); }
     },
 
     BLACKLISTED("Cấm hợp tác") {
@@ -36,11 +30,8 @@ public enum SupplierStatus {
         public boolean canImport() { return false; }
         @Override
         public boolean canBeAssignedToProduct() { return false; }
-
         @Override
-        public List<SupplierStatus> getNextValidStates() {
-            return Collections.singletonList(ACTIVE);
-        }
+        public List<SupplierStatus> getNextValidStates() { return Collections.singletonList(ACTIVE); }
     };
 
     private final String displayName;
@@ -53,7 +44,6 @@ public enum SupplierStatus {
 
     public abstract boolean canImport();
     public abstract boolean canBeAssignedToProduct();
-
     public abstract List<SupplierStatus> getNextValidStates();
 
     @JsonCreator
