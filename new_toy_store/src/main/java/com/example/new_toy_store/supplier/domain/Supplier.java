@@ -1,6 +1,7 @@
 package com.example.new_toy_store.supplier.domain;
 
 import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.supplier.domain.exception.InvalidSupplierOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -40,15 +41,15 @@ public class Supplier extends BaseAuditEntity {
 
     public Supplier(String name, String phoneNumber, String email, String address) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên nhà cung cấp không được để trống");
+            throw InvalidSupplierOperationException.emptyField("Tên nhà cung cấp");
         }
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("Số điện thoại không được để trống");
+            throw InvalidSupplierOperationException.emptyField("Số điện thoại");
         }
-        this.name= name;
-        this.phoneNumber= phoneNumber;
-        this.email= email;
-        this.address= address;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.address = address;
     }
 
     public void updateInfo(String name, String phoneNumber, String email, String address) {
@@ -58,8 +59,8 @@ public class Supplier extends BaseAuditEntity {
         if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
             this.phoneNumber = phoneNumber;
         }
-        this.email= email;
-        this.address= address;
+        this.email = email;
+        this.address = address;
     }
 
     public void setStatus(SupplierStatus status) {

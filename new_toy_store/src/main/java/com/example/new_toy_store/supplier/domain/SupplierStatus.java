@@ -1,5 +1,6 @@
 package com.example.new_toy_store.supplier.domain;
 
+import com.example.new_toy_store.supplier.domain.exception.InvalidSupplierOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,12 +50,12 @@ public enum SupplierStatus {
     @JsonCreator
     public static SupplierStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái nhà cung cấp không được để trống");
+            throw InvalidSupplierOperationException.emptyField("Trạng thái");
         }
         try {
             return SupplierStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái nhà cung cấp không hợp lệ: '" + value + "'. Chỉ chấp nhận: " + Arrays.toString(SupplierStatus.values()));
+            throw InvalidSupplierOperationException.invalidStatus(value);
         }
     }
 }
