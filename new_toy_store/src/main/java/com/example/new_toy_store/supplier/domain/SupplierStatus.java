@@ -9,9 +9,10 @@ public enum SupplierStatus {
 
     ACTIVE("Đang hợp tác") {
         @Override
-        public boolean canImport() {
-            return true;
-        }
+        public boolean canImport() { return true; }
+        @Override
+        public boolean canBeAssignedToProduct() { return true; }
+
         @Override
         public List<SupplierStatus> getNextValidStates() {
             return Arrays.asList(SUSPENDED, BLACKLISTED);
@@ -20,9 +21,10 @@ public enum SupplierStatus {
 
     SUSPENDED("Tạm ngưng") {
         @Override
-        public boolean canImport() {
-            return false;
-        }
+        public boolean canImport() { return false; }
+        @Override
+        public boolean canBeAssignedToProduct() { return true; }
+
         @Override
         public List<SupplierStatus> getNextValidStates() {
             return Arrays.asList(ACTIVE, BLACKLISTED);
@@ -31,9 +33,10 @@ public enum SupplierStatus {
 
     BLACKLISTED("Cấm hợp tác") {
         @Override
-        public boolean canImport() {
-            return false;
-        }
+        public boolean canImport() { return false; }
+        @Override
+        public boolean canBeAssignedToProduct() { return false; }
+
         @Override
         public List<SupplierStatus> getNextValidStates() {
             return Collections.singletonList(ACTIVE);
@@ -46,12 +49,13 @@ public enum SupplierStatus {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
+    public String getDisplayName() { return displayName; }
 
     public abstract boolean canImport();
+    public abstract boolean canBeAssignedToProduct();
+
     public abstract List<SupplierStatus> getNextValidStates();
+
     @JsonCreator
     public static SupplierStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {

@@ -17,6 +17,7 @@ public class ProductRequest {
     @NotEmpty(message = "Cần chọn ít nhất một danh mục")
     private List<Integer> categoryIds;
 
+    @Size(max = 50, message = "Trạng thái không được vượt quá 50 ký tự")
     private String status;
 
     @Min(value = 0, message = "Số lượng tồn kho ban đầu không được nhỏ hơn 0")

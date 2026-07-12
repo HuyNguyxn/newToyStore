@@ -14,6 +14,10 @@ import com.example.new_toy_store.product.domain.exception.ProductNotFoundExcepti
 import com.example.new_toy_store.product.mapper.ProductMapper;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
+
+// [ADD] Import Enum
+import com.example.new_toy_store.supplier.domain.SupplierStatus;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,8 +44,51 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> getAllProducts(Pageable pageable) {
-        return repository.findAll(pageable)
-                .map(ProductMapper::toResponse);
+        Page<Product> productPage = repository.findAll(pageable);
+        return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getProductsByCategory(Integer categoryId, Pageable pageable) {
+        Page<Product> productPage = repository.findByCategoriesId(categoryId, pageable);
+        return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchActiveProducts(String keyword, Pageable pageable) {
+        Page<Product> productPage = repository.findByNameContainingIgnoreCaseAndStatus(
+                keyword != null ? keyword.trim() : "", ProductStatus.ACTIVE, pageable);
+        return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
+        double validMinPrice = (minPrice != null && minPrice >= 0) ? minPrice : 0.0;
+        double validMaxPrice = (maxPrice != null && maxPrice >= validMinPrice) ? maxPrice : Double.MAX_VALUE;
+        ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : ProductStatus.ACTIVE;
+
+        Page<Product> productPage = repository.findByBasePriceBetweenAndStatus(validMinPrice, validMaxPrice, targetStatus, pageable);
+        return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    private Page<ProductResponse> mapProductsToResponsesWithBatchData(Page<Product> productPage) {
+        if (productPage.isEmpty()) {
+            return Page.empty(productPage.getPageable());
+        }
+
+        Set<Integer> supplierIds = productPage.getContent().stream()
+                .map(Product::getSupplierId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
+                .stream()
+                .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
+
+        return productPage.map(product -> {
+            SupplierResponse supplier = supplierMap.get(product.getSupplierId());
+            return ProductMapper.toResponse(product, supplier);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -50,14 +97,18 @@ public class ProductService {
         if (product == null) {
             throw new ProductNotFoundException(id);
         }
-        return ProductMapper.toResponse(product);
+        SupplierResponse supplier = null;
+        if (product.getSupplierId() != null) {
+            supplier = supplierService.getSupplierDetails(product.getSupplierId());
+        }
+        return ProductMapper.toResponse(product, supplier);
     }
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
         if (request.getSupplierId() != null) {
             SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
-            if (!"ACTIVE".equals(supplier.getStatus())) {
+            if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
                 throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
         }
@@ -79,7 +130,7 @@ public class ProductService {
         }
 
         repository.save(product);
-        return ProductMapper.toResponse(product);
+        return ProductMapper.toResponse(product, null);
     }
 
     @Transactional
@@ -87,7 +138,7 @@ public class ProductService {
         Product product = getProductEntity(id);
         if (request.getSupplierId() != null && !request.getSupplierId().equals(product.getSupplierId())) {
             SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
-            if (!"ACTIVE".equals(supplier.getStatus())) {
+            if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
                 throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
             product.assignSupplier(request.getSupplierId());
@@ -106,7 +157,7 @@ public class ProductService {
         }
 
         repository.save(product);
-        return ProductMapper.toResponse(product);
+        return ProductMapper.toResponse(product, null);
     }
 
     @Transactional
@@ -147,17 +198,13 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<Product> getProductsByIdsWithDetails(Set<Integer> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
+        if (ids == null || ids.isEmpty()) return List.of();
         return repository.findAllByIdsWithDetails(ids);
     }
 
     @Transactional
     public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
-        if (stockUpdates == null || stockUpdates.isEmpty()) {
-            return;
-        }
+        if (stockUpdates == null || stockUpdates.isEmpty()) return;
 
         Set<Integer> variantIds = stockUpdates.stream()
                 .map(ImportedStockRequest::getVariantId)
@@ -184,9 +231,7 @@ public class ProductService {
 
     @Transactional
     public void addStockFromImport(Map<Integer, Integer> variantQuantities) {
-        if (variantQuantities == null || variantQuantities.isEmpty()) {
-            return;
-        }
+        if (variantQuantities == null || variantQuantities.isEmpty()) return;
 
         Set<Integer> variantIds = variantQuantities.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -207,37 +252,9 @@ public class ProductService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public Page<ProductResponse> getProductsByCategory(Integer categoryId, Pageable pageable) {
-        return repository.findByCategoriesId(categoryId, pageable)
-                .map(ProductMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ProductResponse> searchActiveProducts(String keyword, Pageable pageable) {
-        return repository.findByNameContainingIgnoreCaseAndStatus(
-                        keyword != null ? keyword.trim() : "",
-                        ProductStatus.ACTIVE,
-                        pageable
-                )
-                .map(ProductMapper::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
-        double validMinPrice = (minPrice != null && minPrice >= 0) ? minPrice : 0.0;
-        double validMaxPrice = (maxPrice != null && maxPrice >= validMinPrice) ? maxPrice : Double.MAX_VALUE;
-        ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : ProductStatus.ACTIVE;
-
-        return repository.findByBasePriceBetweenAndStatus(validMinPrice, validMaxPrice, targetStatus, pageable)
-                .map(ProductMapper::toResponse);
-    }
-
     @Transactional
     public void deductStockForOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            return;
-        }
+        if (orderItems == null || orderItems.isEmpty()) return;
 
         Set<Integer> variantIds = orderItems.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -266,9 +283,7 @@ public class ProductService {
 
     @Transactional
     public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            return;
-        }
+        if (orderItems == null || orderItems.isEmpty()) return;
 
         Set<Integer> variantIds = orderItems.keySet();
         Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
@@ -294,7 +309,7 @@ public class ProductService {
         Product product = getProductEntity(productId);
         product.addImage(imageUrl, isThumbnail);
         repository.save(product);
-        return ProductMapper.toResponse(product);
+        return ProductMapper.toResponse(product, null);
     }
 
     @Transactional

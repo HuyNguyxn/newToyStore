@@ -21,6 +21,7 @@ public class SupplierRequest {
     @Size(max = 500, message = "Địa chỉ không được vượt quá 500 ký tự")
     private String address;
 
+    @Size(max = 50, message = "Trạng thái không được vượt quá 50 ký tự")
     private String status;
 
     public String getName() { return name; }

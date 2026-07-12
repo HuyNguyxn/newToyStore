@@ -9,6 +9,8 @@ public class ProductResponse {
     private double basePrice;
     private String status;
     private Integer supplierId;
+    private String supplierName;
+
     private List<Integer> categoryIds;
     private double averageRating;
     private int reviewCount;
@@ -33,6 +35,8 @@ public class ProductResponse {
     public double getBasePrice() { return basePrice; }
     public String getStatus() { return status; }
     public Integer getSupplierId() { return supplierId; }
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
     public List<Integer> getCategoryIds() { return categoryIds; }
     public double getAverageRating() { return averageRating; }
     public int getReviewCount() { return reviewCount; }
