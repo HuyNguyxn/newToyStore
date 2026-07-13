@@ -1,10 +1,9 @@
 package com.example.new_toy_store.category.domain;
 
 import com.example.new_toy_store.category.domain.exception.InvalidCategoryOperationException;
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,10 +18,9 @@ import java.util.List;
                 @Index(name = "idx_category_status", columnList = "status")
         }
 )
-public class Category extends BaseAuditEntity {
+public class Category extends BaseRootEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false, length = 100)
@@ -48,50 +46,30 @@ public class Category extends BaseAuditEntity {
     protected Category() {}
 
     public Category(String name, String slug, String description) {
-        if (name == null || name.trim().isEmpty() || slug == null || slug.trim().isEmpty()) {
-            throw InvalidCategoryOperationException.emptyNameOrSlug();
-        }
-        this.name = name;
-        this.slug = slug;
-        this.description = description;
+        if (name == null || name.trim().isEmpty() || slug == null || slug.trim().isEmpty()) throw InvalidCategoryOperationException.emptyNameOrSlug();
+        this.name = name; this.slug = slug; this.description = description;
     }
 
-    public void hide() {
-        this.status = CategoryStatus.HIDDEN;
-    }
-
-    public void show() {
-        this.status = CategoryStatus.VISIBLE;
-    }
+    public void hide() { this.status = CategoryStatus.HIDDEN; }
+    public void show() { this.status = CategoryStatus.VISIBLE; }
 
     public void assignParent(Category parentCategory) {
         if (parentCategory != null) {
-            if (this.equals(parentCategory)) {
-                throw InvalidCategoryOperationException.selfParenting(this.id);
-            }
-
+            if (this.equals(parentCategory)) throw InvalidCategoryOperationException.selfParenting(this.id);
             Category currentAncestor = parentCategory;
             while (currentAncestor != null) {
-                if (this.equals(currentAncestor)) {
-                    throw InvalidCategoryOperationException.circularReference(this.id, parentCategory.getId());
-                }
+                if (this.equals(currentAncestor)) throw InvalidCategoryOperationException.circularReference(this.id, parentCategory.getId());
                 currentAncestor = currentAncestor.getParent();
             }
         }
         this.parent = parentCategory;
     }
 
-    public void removeParent() {
-        this.parent = null;
-    }
+    public void removeParent() { this.parent = null; }
 
     public void update(String name, String slug, String description) {
-        if (name != null && !name.trim().isEmpty()) {
-            this.name = name;
-        }
-        if (slug != null && !slug.trim().isEmpty()) {
-            this.slug = slug;
-        }
+        if (name != null && !name.trim().isEmpty()) this.name = name;
+        if (slug != null && !slug.trim().isEmpty()) this.slug = slug;
         this.description = description;
     }
 
@@ -110,13 +88,6 @@ public class Category extends BaseAuditEntity {
     public Category getParent() { return parent; }
     public List<Category> getSubCategories() { return Collections.unmodifiableList(subCategories); }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof Category c && id != null && id.equals(c.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof Category c && id != null && id.equals(c.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

@@ -1,12 +1,9 @@
 package com.example.new_toy_store.moderation.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.moderation.domain.exception.InvalidModerationOperationException;
-import com.example.new_toy_store.promotion.domain.Promotion;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
-
-import java.time.LocalDateTime;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -17,10 +14,9 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_blacklisted_category", columnList = "category")
         }
 )
-public class BlacklistedWord extends BaseAuditEntity {
+public class BlacklistedWord extends BaseRootEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -47,22 +43,13 @@ public class BlacklistedWord extends BaseAuditEntity {
     }
 
     private void validateWord(String word) {
-        if (word == null || word.trim().isEmpty()) {
-            throw InvalidModerationOperationException.emptyWord();
-        }
+        if (word == null || word.trim().isEmpty()) throw InvalidModerationOperationException.emptyWord();
     }
 
     public Integer getId() { return id; }
     public String getWord() { return word; }
     public WordCategory getCategory() { return category; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof BlacklistedWord p && id != null && id.equals(p.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof BlacklistedWord p && id != null && id.equals(p.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

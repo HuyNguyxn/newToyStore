@@ -1,6 +1,6 @@
 package com.example.new_toy_store.user.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -8,14 +8,11 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "addresses",
-        indexes = {
-                @Index(name = "idx_address_user_id", columnList = "user_id")
-        }
+        indexes = {@Index(name = "idx_address_user_id", columnList = "user_id")}
 )
-public class Address extends BaseAuditEntity {
+public class Address extends BaseSoftDeleteEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,44 +34,22 @@ public class Address extends BaseAuditEntity {
     protected Address() {}
 
     public Address(String receiverName, String receiverPhone, String detailAddress, boolean isDefault) {
-        if (receiverName == null || receiverName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Receiver name is required");
-        }
-        if (receiverPhone == null || receiverPhone.trim().isEmpty()) {
-            throw new IllegalArgumentException("Receiver phone is required");
-        }
-        if (detailAddress == null || detailAddress.trim().isEmpty()) {
-            throw new IllegalArgumentException("Detail address is required");
-        }
-        this.receiverName = receiverName;
-        this.receiverPhone = receiverPhone;
-        this.detailAddress = detailAddress;
-        this.isDefault = isDefault;
+        if (receiverName == null || receiverName.trim().isEmpty()) throw new IllegalArgumentException("Receiver name is required");
+        if (receiverPhone == null || receiverPhone.trim().isEmpty()) throw new IllegalArgumentException("Receiver phone is required");
+        if (detailAddress == null || detailAddress.trim().isEmpty()) throw new IllegalArgumentException("Detail address is required");
+        this.receiverName = receiverName; this.receiverPhone = receiverPhone; this.detailAddress = detailAddress; this.isDefault = isDefault;
     }
 
-    void setUser(User user) {
-        this.user = user;
-    }
+    void setUser(User user) { this.user = user; }
 
     public void updateInfo(String receiverName, String receiverPhone, String detailAddress) {
-        if (receiverName != null && !receiverName.trim().isEmpty()) {
-            this.receiverName = receiverName;
-        }
-        if (receiverPhone != null && !receiverPhone.trim().isEmpty()) {
-            this.receiverPhone = receiverPhone;
-        }
-        if (detailAddress != null && !detailAddress.trim().isEmpty()) {
-            this.detailAddress = detailAddress;
-        }
+        if (receiverName != null && !receiverName.trim().isEmpty()) this.receiverName = receiverName;
+        if (receiverPhone != null && !receiverPhone.trim().isEmpty()) this.receiverPhone = receiverPhone;
+        if (detailAddress != null && !detailAddress.trim().isEmpty()) this.detailAddress = detailAddress;
     }
 
-    void makeDefault() {
-        this.isDefault = true;
-    }
-
-    void removeDefault() {
-        this.isDefault = false;
-    }
+    void makeDefault() { this.isDefault = true; }
+    void removeDefault() { this.isDefault = false; }
 
     public Integer getId() { return id; }
     public User getUser() { return user; }
@@ -83,13 +58,6 @@ public class Address extends BaseAuditEntity {
     public String getDetailAddress() { return detailAddress; }
     public boolean isDefault() { return isDefault; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof Address a && id != null && id.equals(a.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof Address a && id != null && id.equals(a.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

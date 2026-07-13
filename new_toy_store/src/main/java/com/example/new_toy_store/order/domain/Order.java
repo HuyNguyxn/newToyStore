@@ -1,11 +1,10 @@
 package com.example.new_toy_store.order.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,10 +19,9 @@ import java.util.List;
                 @Index(name = "idx_order_status", columnList = "status")
         }
 )
-public class Order extends BaseAuditEntity {
+public class Order extends BaseRootEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "user_id", nullable = false)
@@ -54,12 +52,8 @@ public class Order extends BaseAuditEntity {
     protected Order() {}
 
     public Order(Integer userId, String shippingAddress) {
-        if (userId == null) {
-            throw new InvalidOrderDataException("userId", "ID người dùng không được để trống");
-        }
-        if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
-            throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng không được để trống");
-        }
+        if (userId == null) throw new InvalidOrderDataException("userId", "ID người dùng không được để trống");
+        if (shippingAddress == null || shippingAddress.trim().isEmpty()) throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng không được để trống");
         this.userId = userId;
         this.shippingAddress = shippingAddress;
         this.status = OrderStatus.PENDING;
@@ -80,27 +74,17 @@ public class Order extends BaseAuditEntity {
     }
 
     private void calculateTotal() {
-        double rawTotal = items.stream()
-                .mapToDouble(OrderItem::getTotalPrice)
-                .sum();
+        double rawTotal = items.stream().mapToDouble(OrderItem::getTotalPrice).sum();
         double finalTotal = rawTotal - this.discountAmount;
         this.totalAmount = Math.max(0.0, Math.round(finalTotal * 100.0) / 100.0);
     }
 
     public void updateShippingAddress(String newAddress, String note) {
-        if (newAddress == null || newAddress.trim().isEmpty()) {
-            throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng mới không được để trống");
-        }
-
-        if (!this.status.canModifyShippingInfo()) {
-            throw new InvalidOrderOperationException(this.status.getDisplayName(), "Cập nhật địa chỉ giao hàng");
-        }
-
+        if (newAddress == null || newAddress.trim().isEmpty()) throw new InvalidOrderDataException("shippingAddress", "Địa chỉ giao hàng mới không được để trống");
+        if (!this.status.canModifyShippingInfo()) throw new InvalidOrderOperationException(this.status.getDisplayName(), "Cập nhật địa chỉ giao hàng");
         String oldAddress = this.shippingAddress;
         this.shippingAddress = newAddress.trim();
-        String historyNote = note != null && !note.trim().isEmpty()
-                ? note
-                : "Cập nhật địa chỉ từ [" + oldAddress + "] thành [" + this.shippingAddress + "]";
+        String historyNote = note != null && !note.trim().isEmpty() ? note : "Cập nhật địa chỉ từ [" + oldAddress + "] thành [" + this.shippingAddress + "]";
         recordHistory(this.status, historyNote);
     }
 
@@ -122,12 +106,10 @@ public class Order extends BaseAuditEntity {
 
     @Override
     public void delete() {
-        if (!this.status.canBeDeleted()) {
-            throw new InvalidOrderOperationException(this.status.getDisplayName(), "Xóa đơn hàng");
-        }
+        if (!this.status.canBeDeleted()) throw new InvalidOrderOperationException(this.status.getDisplayName(), "Xóa đơn hàng");
         super.delete();
-        this.items.forEach(BaseAuditEntity::delete);
-        this.histories.forEach(BaseAuditEntity::delete);
+        this.items.forEach(OrderItem::delete);
+        this.histories.forEach(OrderHistory::delete);
     }
 
     public Integer getId() { return id; }
@@ -140,13 +122,6 @@ public class Order extends BaseAuditEntity {
     public List<OrderItem> getItems() { return Collections.unmodifiableList(items); }
     public List<OrderHistory> getHistories() { return Collections.unmodifiableList(histories); }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof Order other && id != null && id.equals(other.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof Order other && id != null && id.equals(other.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

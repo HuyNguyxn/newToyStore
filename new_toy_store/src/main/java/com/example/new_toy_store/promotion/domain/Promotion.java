@@ -1,10 +1,9 @@
 package com.example.new_toy_store.promotion.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,10 +16,9 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_promo_scope_target", columnList = "scope, target_product_id")
         }
 )
-public class Promotion extends BaseAuditEntity {
+public class Promotion extends BaseRootEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -67,15 +65,9 @@ public class Promotion extends BaseAuditEntity {
     protected Promotion() {}
 
     public Promotion(String code, String name, PromotionType type, PromotionScope scope, double discountValue, LocalDateTime startDate, LocalDateTime endDate) {
-        if (code == null || code.trim().isEmpty()) {
-            throw InvalidPromotionOperationException.nullPromoCode();
-        }
-        if (name == null || name.trim().isEmpty()) {
-            throw InvalidPromotionOperationException.nullPromoName();
-        }
-        if (type == null || scope == null) {
-            throw InvalidPromotionOperationException.nullPromoTypeOrScope();
-        }
+        if (code == null || code.trim().isEmpty()) throw InvalidPromotionOperationException.nullPromoCode();
+        if (name == null || name.trim().isEmpty()) throw InvalidPromotionOperationException.nullPromoName();
+        if (type == null || scope == null) throw InvalidPromotionOperationException.nullPromoTypeOrScope();
 
         this.code = code.toUpperCase().trim();
         this.name = name;
@@ -89,25 +81,15 @@ public class Promotion extends BaseAuditEntity {
     @PrePersist
     @PreUpdate
     private void validateEntityState() {
-        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-            throw InvalidPromotionOperationException.invalidDateRange();
-        }
-        if (discountValue < 0) {
-            throw InvalidPromotionOperationException.negativeDiscountValue(discountValue);
-        }
-        if (type == PromotionType.PERCENTAGE && discountValue > 100) {
-            throw InvalidPromotionOperationException.percentageExceeded(discountValue);
-        }
-        if (usedCount < 0) {
-            throw InvalidPromotionOperationException.negativeUsedCount(usedCount);
-        }
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) throw InvalidPromotionOperationException.invalidDateRange();
+        if (discountValue < 0) throw InvalidPromotionOperationException.negativeDiscountValue(discountValue);
+        if (type == PromotionType.PERCENTAGE && discountValue > 100) throw InvalidPromotionOperationException.percentageExceeded(discountValue);
+        if (usedCount < 0) throw InvalidPromotionOperationException.negativeUsedCount(usedCount);
     }
 
     public void setupConditions(Double minOrderValue, Double maxDiscountAmount, Integer targetProductId, Integer usageLimit) {
         this.scope.validateSetup(minOrderValue, targetProductId);
-        if (usageLimit != null && usageLimit < this.usedCount) {
-            throw InvalidPromotionOperationException.invalidUsageLimit(this.usedCount);
-        }
+        if (usageLimit != null && usageLimit < this.usedCount) throw InvalidPromotionOperationException.invalidUsageLimit(this.usedCount);
         this.minOrderValue = minOrderValue != null ? Math.max(0.0, minOrderValue) : null;
         this.maxDiscountAmount = maxDiscountAmount != null ? Math.max(0.0, maxDiscountAmount) : null;
         this.targetProductId = targetProductId;
@@ -115,56 +97,39 @@ public class Promotion extends BaseAuditEntity {
     }
 
     public void updateDetails(String name, double discountValue, LocalDateTime startDate, LocalDateTime endDate, Double minOrderValue, Double maxDiscountAmount, Integer targetProductId, Integer usageLimit) {
-        if (name != null && !name.trim().isEmpty()) {
-            this.name = name;
-        }
+        if (name != null && !name.trim().isEmpty()) this.name = name;
         this.discountValue = Math.max(0.0, discountValue);
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.startDate = startDate; this.endDate = endDate;
         setupConditions(minOrderValue, maxDiscountAmount, targetProductId, usageLimit);
     }
 
-    public boolean hasAvailableUsages() {
-        return this.usageLimit == null || this.usedCount < this.usageLimit;
-    }
+    public boolean hasAvailableUsages() { return this.usageLimit == null || this.usedCount < this.usageLimit; }
 
     public boolean isCurrentlyValid() {
-        if (!this.isActive || !hasAvailableUsages()) {
-            return false;
-        }
-
+        if (!this.isActive || !hasAvailableUsages()) return false;
         LocalDateTime now = LocalDateTime.now();
         boolean isStarted = (this.startDate == null || !now.isBefore(this.startDate));
         boolean isNotExpired = (this.endDate == null || !now.isAfter(this.endDate));
-
         return isStarted && isNotExpired;
     }
 
     public boolean isApplicableForOrder(double currentOrderTotal) {
-        if (!isCurrentlyValid()) {
-            return false;
-        }
+        if (!isCurrentlyValid()) return false;
         return this.minOrderValue == null || currentOrderTotal >= this.minOrderValue;
     }
 
     public double applyDiscount(double originalAmount) {
-        if (!isCurrentlyValid() || originalAmount <= 0) {
-            return 0.0;
-        }
+        if (!isCurrentlyValid() || originalAmount <= 0) return 0.0;
         return this.type.calculateDiscount(originalAmount, this.discountValue, this.maxDiscountAmount);
     }
 
     public void incrementUsedCount() {
-        if (!isCurrentlyValid()) {
-            throw InvalidPromotionOperationException.quotaExceeded();
-        }
+        if (!isCurrentlyValid()) throw InvalidPromotionOperationException.quotaExceeded();
         this.usedCount++;
     }
 
     public void decrementUsedCount() {
-        if (this.usedCount <= 0) {
-            throw InvalidPromotionOperationException.quotaZero();
-        }
+        if (this.usedCount <= 0) throw InvalidPromotionOperationException.quotaZero();
         this.usedCount--;
     }
 
@@ -174,13 +139,8 @@ public class Promotion extends BaseAuditEntity {
         this.isActive = false;
     }
 
-    public void activate() {
-        this.isActive = true;
-    }
-
-    public void deactivate() {
-        this.isActive = false;
-    }
+    public void activate() { this.isActive = true; }
+    public void deactivate() { this.isActive = false; }
 
     public Integer getId() { return id; }
     public String getCode() { return code; }
@@ -197,13 +157,6 @@ public class Promotion extends BaseAuditEntity {
     public LocalDateTime getEndDate() { return endDate; }
     public boolean isActive() { return isActive; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof Promotion p && id != null && id.equals(p.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof Promotion p && id != null && id.equals(p.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

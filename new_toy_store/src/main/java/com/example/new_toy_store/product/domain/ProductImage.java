@@ -1,6 +1,6 @@
 package com.example.new_toy_store.product.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -9,14 +9,11 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "product_images",
-        indexes = {
-                @Index(name = "idx_image_product_id", columnList = "product_id")
-        }
+        indexes = {@Index(name = "idx_image_product_id", columnList = "product_id")}
 )
-public class ProductImage extends BaseAuditEntity {
+public class ProductImage extends BaseSoftDeleteEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false)
@@ -32,37 +29,19 @@ public class ProductImage extends BaseAuditEntity {
     protected ProductImage() {}
 
     public ProductImage(String imageUrl, boolean isThumbnail) {
-        if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            throw InvalidProductOperationException.emptyImageUrl();
-        }
-        this.imageUrl = imageUrl;
-        this.isThumbnail = isThumbnail;
+        if (imageUrl == null || imageUrl.trim().isEmpty()) throw InvalidProductOperationException.emptyImageUrl();
+        this.imageUrl = imageUrl; this.isThumbnail = isThumbnail;
     }
 
-    void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public void makeThumbnail() {
-        this.isThumbnail = true;
-    }
-
-    public void removeThumbnail() {
-        this.isThumbnail = false;
-    }
+    void setProduct(Product product) { this.product = product; }
+    public void makeThumbnail() { this.isThumbnail = true; }
+    public void removeThumbnail() { this.isThumbnail = false; }
 
     public Integer getId() { return id; }
     public String getImageUrl() { return imageUrl; }
     public boolean isThumbnail() { return isThumbnail; }
     public Product getProduct() { return product; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof ProductImage p && id != null && id.equals(p.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof ProductImage p && id != null && id.equals(p.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

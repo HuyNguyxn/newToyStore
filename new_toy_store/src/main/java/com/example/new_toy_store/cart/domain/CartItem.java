@@ -1,25 +1,22 @@
 package com.example.new_toy_store.cart.domain;
 
 import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 
 @Entity
 @Table(
         name = "cart_items",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_cart_variant", columnNames = {"cart_id", "variant_id"})
-        },
+        uniqueConstraints = {@UniqueConstraint(name = "uk_cart_variant", columnNames = {"cart_id", "variant_id"})},
         indexes = {
                 @Index(name = "idx_cart_item_cart", columnList = "cart_id"),
                 @Index(name = "idx_cart_item_product", columnList = "product_id"),
                 @Index(name = "idx_cart_item_variant", columnList = "variant_id")
         }
 )
-public class CartItem extends BaseAuditEntity {
+public class CartItem extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -38,29 +35,21 @@ public class CartItem extends BaseAuditEntity {
     protected CartItem() {}
 
     public CartItem(Integer productId, Integer variantId, int quantity) {
-        if (productId == null || variantId == null) {
-            throw InvalidCartOperationException.nullProductOrVariant();
-        }
+        if (productId == null || variantId == null) throw InvalidCartOperationException.nullProductOrVariant();
         this.productId = productId;
         this.variantId = variantId;
         this.quantity = quantity;
     }
 
-    void setCart(Cart cart) {
-        this.cart = cart;
-    }
+    void setCart(Cart cart) { this.cart = cart; }
 
     public void addQuantity(int amount) {
-        if (amount <= 0) {
-            throw InvalidCartOperationException.invalidQuantity(amount);
-        }
+        if (amount <= 0) throw InvalidCartOperationException.invalidQuantity(amount);
         this.quantity += amount;
     }
 
     public void updateQuantity(int newQuantity) {
-        if (newQuantity <= 0) {
-            throw InvalidCartOperationException.invalidQuantity(newQuantity);
-        }
+        if (newQuantity <= 0) throw InvalidCartOperationException.invalidQuantity(newQuantity);
         this.quantity = newQuantity;
     }
 
@@ -70,13 +59,6 @@ public class CartItem extends BaseAuditEntity {
     public Integer getVariantId() { return variantId; }
     public int getQuantity() { return quantity; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof CartItem c && id != null && id.equals(c.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof CartItem c && id != null && id.equals(c.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }

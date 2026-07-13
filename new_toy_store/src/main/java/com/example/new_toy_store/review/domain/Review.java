@@ -1,6 +1,6 @@
 package com.example.new_toy_store.review.domain;
 
-import com.example.new_toy_store.global.common.BaseAuditEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -9,19 +9,16 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "reviews",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_review_order_item", columnNames = {"order_item_id"})
-        },
+        uniqueConstraints = {@UniqueConstraint(name = "uk_review_order_item", columnNames = {"order_item_id"})},
         indexes = {
                 @Index(name = "idx_review_product_id", columnList = "product_id"),
                 @Index(name = "idx_review_status", columnList = "status"),
                 @Index(name = "idx_review_user_id", columnList = "user_id")
         }
 )
-public class Review extends BaseAuditEntity {
+public class Review extends BaseRootEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "user_id", nullable = false)
@@ -57,20 +54,14 @@ public class Review extends BaseAuditEntity {
         if (orderItemId == null) throw InvalidReviewOperationException.missingRequirement("orderItemId");
         if (rating < 1 || rating > 5) throw InvalidReviewOperationException.invalidRating(rating);
 
-        this.userId = userId;
-        this.productId = productId;
-        this.orderItemId = orderItemId;
+        this.userId = userId; this.productId = productId; this.orderItemId = orderItemId;
         this.variantAttributesSnapshot = variantAttributesSnapshot != null ? variantAttributesSnapshot : "Mặc định";
-        this.rating = rating;
-        this.comment = comment;
+        this.rating = rating; this.comment = comment;
     }
 
     public void updateByUser(int rating, String comment) {
         if (rating < 1 || rating > 5) throw InvalidReviewOperationException.invalidRating(rating);
-        this.rating = rating;
-        this.comment = comment;
-        this.adminReply = null;
-        this.status = ReviewStatus.PUBLISHED;
+        this.rating = rating; this.comment = comment; this.adminReply = null; this.status = ReviewStatus.PUBLISHED;
     }
 
     public void replyByAdmin(String reply) {
@@ -78,11 +69,7 @@ public class Review extends BaseAuditEntity {
         this.adminReply = reply;
     }
 
-    public void changeStatus(ReviewStatus newStatus) {
-        if (newStatus != null) {
-            this.status = newStatus;
-        }
-    }
+    public void changeStatus(ReviewStatus newStatus) { if (newStatus != null) { this.status = newStatus; } }
 
     public Integer getId() { return id; }
     public Integer getUserId() { return userId; }
@@ -94,13 +81,6 @@ public class Review extends BaseAuditEntity {
     public String getAdminReply() { return adminReply; }
     public ReviewStatus getStatus() { return status; }
 
-    @Override
-    public boolean equals(Object o) {
-        return this == o || (o instanceof Review p && id != null && id.equals(p.id));
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
+    @Override public boolean equals(Object o) { return this == o || (o instanceof Review p && id != null && id.equals(p.id)); }
+    @Override public int hashCode() { return getClass().hashCode(); }
 }
