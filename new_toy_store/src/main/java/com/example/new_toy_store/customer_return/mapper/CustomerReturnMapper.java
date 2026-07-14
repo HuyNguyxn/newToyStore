@@ -42,7 +42,7 @@ public class CustomerReturnMapper {
 
         response.setItems(mapItems(entity.getItems()));
         response.setHistories(mapHistories(entity.getHistories()));
-        response.setProofImages(mapImages(entity.getProofImages())); // Trích xuất ảnh trả về
+        response.setProofImages(mapImages(entity.getProofImages()));
         response.setAvailableActions(getAvailableActions(entity.getStatus()));
 
         return response;
@@ -52,6 +52,8 @@ public class CustomerReturnMapper {
         return new CustomerReturnItem(
                 req.getOrderItemId(),
                 req.getQuantity(),
+                req.getProductId(),
+                req.getVariantId(),
                 ReturnReasonCode.from(req.getReasonCode()),
                 req.getExpectedRefundAmount()
         );
@@ -59,11 +61,17 @@ public class CustomerReturnMapper {
 
     private static List<CustomerReturnItemResponse> mapItems(List<CustomerReturnItem> items) {
         if (items == null || items.isEmpty()) return Collections.emptyList();
-        return items.stream().map(i -> new CustomerReturnItemResponse(
-                i.getId(), i.getOrderItemId(), i.getQuantity(),
-                i.getReasonCode().name(), i.getReasonCode().getDescription(),
-                roundDouble(i.getExpectedRefundAmount())
-        )).collect(Collectors.toList());
+
+        return items.stream().map(i -> {
+            CustomerReturnItemResponse res = new CustomerReturnItemResponse(
+                    i.getId(), i.getOrderItemId(), i.getQuantity(),
+                    i.getReasonCode().name(), i.getReasonCode().getDescription(),
+                    roundDouble(i.getExpectedRefundAmount())
+            );
+            res.setProductId(i.getProductId());
+            res.setVariantId(i.getVariantId());
+            return res;
+        }).collect(Collectors.toList());
     }
 
     private static List<CustomerReturnHistoryResponse> mapHistories(List<CustomerReturnHistory> histories) {

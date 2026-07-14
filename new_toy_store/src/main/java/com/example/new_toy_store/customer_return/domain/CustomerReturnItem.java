@@ -31,14 +31,24 @@ public class CustomerReturnItem extends BaseSoftDeleteEntity {
     @Column(name = "expected_refund_amount", nullable = false)
     private double expectedRefundAmount;
 
+    @Column(name = "product_id", nullable = false)
+    private Integer productId;
+
+    @Column(name = "variant_id", nullable = false)
+    private Integer variantId;
+
     protected CustomerReturnItem() {}
 
-    public CustomerReturnItem(Integer orderItemId, Integer quantity, ReturnReasonCode reasonCode, double expectedRefundAmount) {
+    public CustomerReturnItem(Integer orderItemId, Integer productId, Integer variantId, Integer quantity, ReturnReasonCode reasonCode, double expectedRefundAmount) {
         if (orderItemId == null) throw InvalidCustomerReturnDataException.emptyField("Mã sản phẩm trong đơn");
+        if (productId == null) throw InvalidCustomerReturnDataException.emptyField("Mã sản phẩm");
+        if (variantId == null) throw InvalidCustomerReturnDataException.emptyField("Mã biến thể");
         if (quantity == null || quantity <= 0) throw InvalidCustomerReturnDataException.emptyField("Số lượng trả");
         if (reasonCode == null) throw InvalidCustomerReturnDataException.emptyField("Lý do trả hàng");
 
         this.orderItemId = orderItemId;
+        this.productId = productId;
+        this.variantId = variantId;
         this.quantity = quantity;
         this.reasonCode = reasonCode;
         this.expectedRefundAmount = expectedRefundAmount;
@@ -54,6 +64,8 @@ public class CustomerReturnItem extends BaseSoftDeleteEntity {
     public Integer getQuantity() { return quantity; }
     public ReturnReasonCode getReasonCode() { return reasonCode; }
     public double getExpectedRefundAmount() { return expectedRefundAmount; }
+    public Integer getProductId() { return productId; }
+    public Integer getVariantId() { return variantId; }
 
     @Override
     public boolean equals(Object o) {

@@ -7,6 +7,7 @@ import com.example.new_toy_store.customer_return.domain.exception.*;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
 import com.example.new_toy_store.order.application.OrderService;
+import com.example.new_toy_store.product.application.ProductService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +25,15 @@ public class CustomerReturnService {
 
     private final CustomerReturnRepository repository;
     private final OrderService orderService;
+    private final ProductService productService;
 
     @Value("${app.customer-return.auto-reject.expiration-days:7}")
     private int expirationDays;
 
-    public CustomerReturnService(CustomerReturnRepository repository, OrderService orderService) {
+    public CustomerReturnService(CustomerReturnRepository repository, OrderService orderService, ProductService productService) {
         this.repository = repository;
         this.orderService = orderService;
+        this.productService = productService;
     }
 
     @Transactional(readOnly = true)
@@ -41,7 +44,6 @@ public class CustomerReturnService {
 
     @Transactional
     public CustomerReturnResponse createRequest(CustomerReturnRequest request, String customerUsername) {
-        // [GIAO TIẾP DOMAIN 1]: Check trạng thái đơn hàng bên Order
         String currentOrderStatus = orderService.getOrderStatus(request.getOrderId());
         if (!"COMPLETED".equals(currentOrderStatus)) {
             throw InvalidCustomerReturnDataException.invalidOrderStatus(currentOrderStatus);
@@ -96,11 +98,25 @@ public class CustomerReturnService {
     @Transactional
     public CustomerReturnResponse inspectQuality(Integer id, String qcUsername, boolean isPassed, String qcNote) {
         CustomerReturn rma = getEntity(id);
+
         if (isPassed) {
             rma.passQualityControl(qcUsername, qcNote);
+            Map<Integer, Integer> sellableItems = rma.getItems().stream()
+                    .filter(item -> item.getReasonCode().isSellable())
+                    .collect(Collectors.toMap(
+                            CustomerReturnItem::getVariantId,
+                            CustomerReturnItem::getQuantity,
+                            Integer::sum
+                    ));
+
+            if (!sellableItems.isEmpty()) {
+                productService.restoreStockForCancelledOrder(sellableItems);
+            }
+
         } else {
             rma.failQualityControl(qcUsername, qcNote);
         }
+
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
