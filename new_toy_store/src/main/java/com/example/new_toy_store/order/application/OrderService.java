@@ -56,9 +56,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getOrderDetails(Integer id) {
         Order order = repository.findByIdWithItems(id);
-        if (order == null) {
-            throw new OrderNotFoundException(id);
-        }
+        if (order == null) throw new OrderNotFoundException(id);
         return OrderMapper.toResponse(order);
     }
 
@@ -86,8 +84,7 @@ public class OrderService {
                 .collect(Collectors.toSet());
 
         Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .stream().collect(Collectors.toMap(Product::getId, p -> p));
 
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
@@ -102,10 +99,8 @@ public class OrderService {
 
             if (variant.getInventory().getStockQuantity() < itemRequest.getQuantity()) {
                 throw new InsufficientStockException(
-                        product.getId(),
-                        product.getName(),
-                        itemRequest.getQuantity(),
-                        variant.getInventory().getStockQuantity()
+                        product.getId(), product.getName(),
+                        itemRequest.getQuantity(), variant.getInventory().getStockQuantity()
                 );
             }
         }
@@ -122,12 +117,8 @@ public class OrderService {
             variant.getInventory().reduceStock(itemRequest.getQuantity());
 
             order.addItem(
-                    product.getId(),
-                    variant.getId(),
-                    product.getName(),
-                    snapshot,
-                    itemRequest.getQuantity(),
-                    variant.getPrice()
+                    product.getId(), variant.getId(), product.getName(),
+                    snapshot, itemRequest.getQuantity(), variant.getPrice()
             );
         }
 
@@ -145,7 +136,6 @@ public class OrderService {
 
         repository.save(order);
         cartService.clearCart(request.getUserId());
-
         return OrderMapper.toResponse(order);
     }
 
@@ -176,20 +166,17 @@ public class OrderService {
         order.cancel(note != null && !note.trim().isEmpty() ? note : "Đơn hàng đã bị hủy");
 
         Set<Integer> productIds = order.getItems().stream()
-                .map(OrderItem::getProductId)
-                .collect(Collectors.toSet());
+                .map(OrderItem::getProductId).collect(Collectors.toSet());
 
         Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .stream().collect(Collectors.toMap(Product::getId, p -> p));
 
         order.getItems().forEach(item -> {
             Product product = productMap.get(item.getProductId());
             if (product != null) {
                 ProductVariant variant = product.getVariants().stream()
                         .filter(v -> v.getId().equals(item.getVariantId()))
-                        .findFirst()
-                        .orElse(null);
+                        .findFirst().orElse(null);
 
                 if (variant != null) {
                     variant.getInventory().addStock(item.getQuantity());
@@ -208,8 +195,7 @@ public class OrderService {
     }
 
     private Order getOrder(Integer id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new OrderNotFoundException(id));
+        return repository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
@@ -243,23 +229,33 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public String getOrderStatus(Integer orderId) {
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Order order = getOrder(orderId);
         return order.getStatus().name();
     }
 
     @Transactional
     public void updateOrderRefundStatus(Integer orderId, Map<Integer, Integer> returnedItemsQty) {
-        Order order = repository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        Order order = getOrder(orderId);
+
         int totalOriginalItems = order.getItems().stream().mapToInt(OrderItem::getQuantity).sum();
         int totalReturnedItems = returnedItemsQty.values().stream().mapToInt(Integer::intValue).sum();
-        String note = "Hệ thống tự động cập nhật do khách hàng trả hàng";
+
+        String note = "Hệ thống tự động cập nhật từ Yêu cầu trả hàng";
+
         if (totalReturnedItems >= totalOriginalItems) {
             order.refundFully(note);
         } else {
             order.refundPartially(note);
         }
+
         repository.save(order);
+    }
+
+    @Transactional(readOnly = true)
+    public void verifyOrderOwnership(Integer orderId, Integer userId) {
+        Order order = getOrder(orderId);
+        if (!order.getUserId().equals(userId)) {
+            throw new OrderAccessDeniedException(orderId, userId, "truy cập hoặc thao tác trên");
+        }
     }
 }

@@ -43,7 +43,9 @@ public class CustomerReturnService {
     }
 
     @Transactional
-    public CustomerReturnResponse createRequest(CustomerReturnRequest request, String customerUsername) {
+    public CustomerReturnResponse createRequest(CustomerReturnRequest request, Integer customerId, String customerUsername) {
+        orderService.verifyOrderOwnership(request.getOrderId(), customerId);
+
         String currentOrderStatus = orderService.getOrderStatus(request.getOrderId());
         if (!"COMPLETED".equals(currentOrderStatus)) {
             throw InvalidCustomerReturnDataException.invalidOrderStatus(currentOrderStatus);
@@ -66,20 +68,32 @@ public class CustomerReturnService {
     }
 
     @Transactional
-    public CustomerReturnResponse cancelRequest(Integer id, String customerUsername) {
+    public CustomerReturnResponse cancelRequest(Integer id, Integer customerId, String customerUsername) {
         CustomerReturn rma = getEntity(id);
-        validateActionAccess(rma, customerUsername, "Hủy yêu cầu trả hàng");
+        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+
         rma.cancelByUser(customerUsername, "Khách hàng tự hủy yêu cầu");
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
     @Transactional
-    public CustomerReturnResponse updateInfoByCustomer(Integer id, String customerUsername, String newReasonNote) {
+    public CustomerReturnResponse updateInfoByCustomer(Integer id, Integer customerId, String customerUsername, String newReasonNote) {
         CustomerReturn rma = getEntity(id);
-        validateActionAccess(rma, customerUsername, "Cập nhật thông tin");
+        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+
         rma.updateInfoFromCustomer(customerUsername, newReasonNote);
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
+
+    @Transactional
+    public CustomerReturnResponse createDispute(Integer id, Integer customerId, String customerUsername, String disputeReason) {
+        CustomerReturn rma = getEntity(id);
+        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+
+        rma.openDispute(customerUsername, disputeReason);
+        return CustomerReturnMapper.toResponse(repository.save(rma));
+    }
+
 
     @Transactional
     public CustomerReturnResponse requireMoreInfo(Integer id, String adminUsername, String adminMessage) {
@@ -121,20 +135,10 @@ public class CustomerReturnService {
     }
 
     @Transactional
-    public CustomerReturnResponse createDispute(Integer id, String customerUsername, String disputeReason) {
-        CustomerReturn rma = getEntity(id);
-        validateActionAccess(rma, customerUsername, "Mở khiếu nại (Dispute)");
-        rma.openDispute(customerUsername, disputeReason);
-        return CustomerReturnMapper.toResponse(repository.save(rma));
-    }
-
-    @Transactional
     public CustomerReturnResponse finalizeRefundProcess(Integer id, String adminUsername, String note) {
         CustomerReturn rma = getEntity(id);
         rma.finalizeRefund(adminUsername, note);
-
         syncRefundStatusWithOrderDomain(rma);
-
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
@@ -142,9 +146,7 @@ public class CustomerReturnService {
     public CustomerReturnResponse resolveDisputeToRefund(Integer id, String adminUsername, String resolutionNote) {
         CustomerReturn rma = getEntity(id);
         rma.finalizeRefund(adminUsername, resolutionNote);
-
         syncRefundStatusWithOrderDomain(rma);
-
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
@@ -169,15 +171,5 @@ public class CustomerReturnService {
 
     private CustomerReturn getEntity(Integer id) {
         return repository.findById(id).orElseThrow(() -> new CustomerReturnNotFoundException(id));
-    }
-
-    private void validateActionAccess(CustomerReturn rma, String currentUser, String actionName) {
-        boolean isOwner = rma.getHistories().stream()
-                .findFirst()
-                .map(h -> h.getActionBy().equals(currentUser))
-                .orElse(false);
-        if (!isOwner) {
-            throw new CustomerReturnAccessDeniedException(currentUser, actionName);
-        }
     }
 }
