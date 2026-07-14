@@ -30,4 +30,12 @@ public class InvalidCustomerReturnDataException extends RuntimeException {
     public static InvalidCustomerReturnDataException missingProofImage() {
         return new InvalidCustomerReturnDataException("Bắt buộc phải cung cấp ít nhất 1 hình ảnh chứng minh đối với lý do Hàng lỗi/Giao sai.", "MISSING_PROOF_IMAGE", Map.of("minRequired", 1));
     }
+
+    public static InvalidCustomerReturnDataException invalidOrderStatus(String status) {
+        return new InvalidCustomerReturnDataException(
+                "Không thể tạo yêu cầu trả hàng. Trạng thái đơn hàng hiện tại (" + status + ") không hợp lệ. Chỉ áp dụng cho đơn 'COMPLETED' (Hoàn thành).",
+                "INVALID_ORDER_STATUS_FOR_RETURN",
+                Map.of("currentOrderStatus", status, "requiredStatus", "COMPLETED")
+        );
+    }
 }

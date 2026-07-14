@@ -103,6 +103,8 @@ public class Order extends BaseRootEntity {
     public void ship(String note) { status.ship(this, note); }
     public void complete(String note) { status.complete(this, note); }
     public void cancel(String note) { status.cancel(this, note); }
+    public void refundPartially(String note) { status.refundPartially(this, note); }
+    public void refundFully(String note) { status.refundFully(this, note); }
 
     @Override
     public void delete() {

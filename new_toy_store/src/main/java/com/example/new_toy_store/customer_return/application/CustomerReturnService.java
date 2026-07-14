@@ -6,6 +6,7 @@ import com.example.new_toy_store.customer_return.domain.*;
 import com.example.new_toy_store.customer_return.domain.exception.*;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
+import com.example.new_toy_store.order.application.OrderService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,17 +16,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomerReturnService {
 
     private final CustomerReturnRepository repository;
+    private final OrderService orderService;
 
     @Value("${app.customer-return.auto-reject.expiration-days:7}")
     private int expirationDays;
 
-    public CustomerReturnService(CustomerReturnRepository repository) {
+    public CustomerReturnService(CustomerReturnRepository repository, OrderService orderService) {
         this.repository = repository;
+        this.orderService = orderService;
     }
 
     @Transactional(readOnly = true)
@@ -36,6 +41,12 @@ public class CustomerReturnService {
 
     @Transactional
     public CustomerReturnResponse createRequest(CustomerReturnRequest request, String customerUsername) {
+        // [GIAO TIẾP DOMAIN 1]: Check trạng thái đơn hàng bên Order
+        String currentOrderStatus = orderService.getOrderStatus(request.getOrderId());
+        if (!"COMPLETED".equals(currentOrderStatus)) {
+            throw InvalidCustomerReturnDataException.invalidOrderStatus(currentOrderStatus);
+        }
+
         if (repository.hasActiveReturnRequest(request.getOrderId())) {
             throw new DuplicateReturnRequestException(request.getOrderId());
         }
@@ -56,7 +67,6 @@ public class CustomerReturnService {
     public CustomerReturnResponse cancelRequest(Integer id, String customerUsername) {
         CustomerReturn rma = getEntity(id);
         validateActionAccess(rma, customerUsername, "Hủy yêu cầu trả hàng");
-
         rma.cancelByUser(customerUsername, "Khách hàng tự hủy yêu cầu");
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
@@ -65,7 +75,6 @@ public class CustomerReturnService {
     public CustomerReturnResponse updateInfoByCustomer(Integer id, String customerUsername, String newReasonNote) {
         CustomerReturn rma = getEntity(id);
         validateActionAccess(rma, customerUsername, "Cập nhật thông tin");
-
         rma.updateInfoFromCustomer(customerUsername, newReasonNote);
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
@@ -99,8 +108,17 @@ public class CustomerReturnService {
     public CustomerReturnResponse createDispute(Integer id, String customerUsername, String disputeReason) {
         CustomerReturn rma = getEntity(id);
         validateActionAccess(rma, customerUsername, "Mở khiếu nại (Dispute)");
-
         rma.openDispute(customerUsername, disputeReason);
+        return CustomerReturnMapper.toResponse(repository.save(rma));
+    }
+
+    @Transactional
+    public CustomerReturnResponse finalizeRefundProcess(Integer id, String adminUsername, String note) {
+        CustomerReturn rma = getEntity(id);
+        rma.finalizeRefund(adminUsername, note);
+
+        syncRefundStatusWithOrderDomain(rma);
+
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
@@ -108,6 +126,9 @@ public class CustomerReturnService {
     public CustomerReturnResponse resolveDisputeToRefund(Integer id, String adminUsername, String resolutionNote) {
         CustomerReturn rma = getEntity(id);
         rma.finalizeRefund(adminUsername, resolutionNote);
+
+        syncRefundStatusWithOrderDomain(rma);
+
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
@@ -119,6 +140,15 @@ public class CustomerReturnService {
             req.rejectReturn("SYSTEM", "Tự động từ chối do quá hạn " + expirationDays + " ngày không bổ sung thông tin.");
         }
         repository.saveAll(expiredList);
+    }
+
+    private void syncRefundStatusWithOrderDomain(CustomerReturn rma) {
+        Map<Integer, Integer> returnedItemsQty = rma.getItems().stream()
+                .collect(Collectors.toMap(
+                        CustomerReturnItem::getOrderItemId,
+                        CustomerReturnItem::getQuantity
+                ));
+        orderService.updateOrderRefundStatus(rma.getOrderId(), returnedItemsQty);
     }
 
     private CustomerReturn getEntity(Integer id) {

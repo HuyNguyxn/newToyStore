@@ -240,4 +240,26 @@ public class OrderService {
         return repository.findCompletedOrderItem(orderItemId, userId)
                 .orElseThrow(() -> new IllegalStateException("Thao tác bị từ chối: Sản phẩm này chưa được giao thành công hoặc không thuộc về đơn hàng của bạn."));
     }
+
+    @Transactional(readOnly = true)
+    public String getOrderStatus(Integer orderId) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        return order.getStatus().name();
+    }
+
+    @Transactional
+    public void updateOrderRefundStatus(Integer orderId, Map<Integer, Integer> returnedItemsQty) {
+        Order order = repository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        int totalOriginalItems = order.getItems().stream().mapToInt(OrderItem::getQuantity).sum();
+        int totalReturnedItems = returnedItemsQty.values().stream().mapToInt(Integer::intValue).sum();
+        String note = "Hệ thống tự động cập nhật do khách hàng trả hàng";
+        if (totalReturnedItems >= totalOriginalItems) {
+            order.refundFully(note);
+        } else {
+            order.refundPartially(note);
+        }
+        repository.save(order);
+    }
 }
