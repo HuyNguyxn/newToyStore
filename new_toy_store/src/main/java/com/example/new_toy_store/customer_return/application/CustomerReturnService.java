@@ -64,6 +64,11 @@ public class CustomerReturnService {
         }
 
         CustomerReturn rma = CustomerReturnMapper.toEntity(request, customerUsername);
+
+        if (orderService.isHighRiskCustomer(customerId)) {
+            rma.markAsHighRisk("CẢNH BÁO: Tài khoản này có tỷ lệ hoàn hàng >= 30%. Vui lòng kiểm định minh chứng hình ảnh nghiêm ngặt.");
+        }
+
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
@@ -71,7 +76,6 @@ public class CustomerReturnService {
     public CustomerReturnResponse cancelRequest(Integer id, Integer customerId, String customerUsername) {
         CustomerReturn rma = getEntity(id);
         orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
-
         rma.cancelByUser(customerUsername, "Khách hàng tự hủy yêu cầu");
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
@@ -80,20 +84,9 @@ public class CustomerReturnService {
     public CustomerReturnResponse updateInfoByCustomer(Integer id, Integer customerId, String customerUsername, String newReasonNote) {
         CustomerReturn rma = getEntity(id);
         orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
-
         rma.updateInfoFromCustomer(customerUsername, newReasonNote);
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
-
-    @Transactional
-    public CustomerReturnResponse createDispute(Integer id, Integer customerId, String customerUsername, String disputeReason) {
-        CustomerReturn rma = getEntity(id);
-        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
-
-        rma.openDispute(customerUsername, disputeReason);
-        return CustomerReturnMapper.toResponse(repository.save(rma));
-    }
-
 
     @Transactional
     public CustomerReturnResponse requireMoreInfo(Integer id, String adminUsername, String adminMessage) {
@@ -126,7 +119,6 @@ public class CustomerReturnService {
             if (!sellableItems.isEmpty()) {
                 productService.restoreStockForCancelledOrder(sellableItems);
             }
-
         } else {
             rma.failQualityControl(qcUsername, qcNote);
         }
@@ -135,17 +127,24 @@ public class CustomerReturnService {
     }
 
     @Transactional
-    public CustomerReturnResponse finalizeRefundProcess(Integer id, String adminUsername, String note) {
+    public CustomerReturnResponse createDispute(Integer id, Integer customerId, String customerUsername, String disputeReason) {
         CustomerReturn rma = getEntity(id);
-        rma.finalizeRefund(adminUsername, note);
-        syncRefundStatusWithOrderDomain(rma);
+        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+        rma.openDispute(customerUsername, disputeReason);
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }
 
     @Transactional
-    public CustomerReturnResponse resolveDisputeToRefund(Integer id, String adminUsername, String resolutionNote) {
+    public CustomerReturnResponse resolveDispute(Integer id, String adminUsername, boolean isApproved, String resolutionNote) {
         CustomerReturn rma = getEntity(id);
-        rma.finalizeRefund(adminUsername, resolutionNote);
+        rma.resolveDispute(adminUsername, isApproved, resolutionNote);
+        return CustomerReturnMapper.toResponse(repository.save(rma));
+    }
+
+    @Transactional
+    public CustomerReturnResponse finalizeRefundProcess(Integer id, String adminUsername, String note) {
+        CustomerReturn rma = getEntity(id);
+        rma.finalizeRefund(adminUsername, note);
         syncRefundStatusWithOrderDomain(rma);
         return CustomerReturnMapper.toResponse(repository.save(rma));
     }

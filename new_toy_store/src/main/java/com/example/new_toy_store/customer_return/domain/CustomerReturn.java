@@ -1,5 +1,6 @@
 package com.example.new_toy_store.customer_return.domain;
 
+import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnOperationException;
 import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnTransitionException;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import jakarta.persistence.*;
@@ -35,6 +36,9 @@ public class CustomerReturn extends BaseRootEntity {
 
     @Column(name = "deadline_for_extra_info")
     private LocalDateTime deadlineForExtraInfo;
+
+    @Column(name = "is_high_risk", nullable = false)
+    private boolean isHighRisk = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -76,6 +80,11 @@ public class CustomerReturn extends BaseRootEntity {
         CustomerReturnHistory history = new CustomerReturnHistory(oldStatus, newStatus, actionBy, note);
         this.histories.add(history);
         history.assignToReturn(this);
+    }
+
+    public void markAsHighRisk(String note) {
+        this.isHighRisk = true;
+        logHistory(this.status, this.status, "SYSTEM", note);
     }
 
     public double calculateRawTotalRefund() {
@@ -125,7 +134,19 @@ public class CustomerReturn extends BaseRootEntity {
     }
 
     public void openDispute(String actionBy, String disputeReason) {
+        if (this.status != CustomerReturnStatus.REJECTED && this.status != CustomerReturnStatus.INSPECTED_FAILED) {
+            throw InvalidCustomerReturnOperationException.invalidDisputeState(this.status.getDisplayName());
+        }
         changeStatus(CustomerReturnStatus.DISPUTED, actionBy, disputeReason);
+    }
+
+    public void resolveDispute(String actionBy, boolean isApproved, String note) {
+        if (this.status != CustomerReturnStatus.DISPUTED) {
+            throw InvalidCustomerReturnOperationException.notInDisputeState(this.status.getDisplayName());
+        }
+        CustomerReturnStatus newStatus = isApproved ? CustomerReturnStatus.APPROVED : CustomerReturnStatus.REJECTED;
+        changeStatus(newStatus, actionBy, note);
+        this.adminNote = note;
     }
 
     public void finalizeRefund(String actionBy, String note) {
@@ -157,6 +178,7 @@ public class CustomerReturn extends BaseRootEntity {
     public double getReturnShippingFee() { return returnShippingFee; }
     public String getAdminNote() { return adminNote; }
     public LocalDateTime getDeadlineForExtraInfo() { return deadlineForExtraInfo; }
+    public boolean isHighRisk() { return isHighRisk; }
     public CustomerReturnStatus getStatus() { return status; }
     public List<CustomerReturnItem> getItems() { return Collections.unmodifiableList(items); }
     public List<CustomerReturnHistory> getHistories() { return Collections.unmodifiableList(histories); }

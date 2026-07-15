@@ -258,4 +258,13 @@ public class OrderService {
             throw new OrderAccessDeniedException(orderId, userId, "truy cập hoặc thao tác trên");
         }
     }
+
+    @Transactional(readOnly = true)
+    public boolean isHighRiskCustomer(Integer userId) {
+        long totalOrders = repository.countTotalValidOrders(userId);
+        if (totalOrders < 3) return false;
+        long refundedOrders = repository.countRefundedOrders(userId);
+        double returnRate = (double) refundedOrders / totalOrders;
+        return returnRate >= 0.3;
+    }
 }

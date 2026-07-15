@@ -29,4 +29,10 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("SELECT i FROM Order o JOIN o.items i WHERE i.id = :orderItemId AND o.userId = :userId AND o.status = 'COMPLETED'")
     Optional<OrderItem> findCompletedOrderItem(@Param("orderItemId") Integer orderItemId, @Param("userId") Integer userId);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')")
+    long countTotalValidOrders(@Param("userId") Integer userId);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN ('PARTIALLY_REFUNDED', 'FULLY_REFUNDED')")
+    long countRefundedOrders(@Param("userId") Integer userId);
 }
