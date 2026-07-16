@@ -7,10 +7,12 @@ public class SupplierReturnItemResponse {
     private Integer variantId;
     private String productName;
     private int quantity;
+    private int acceptedQuantity;
     private double returnPrice;
-    private double taxAmount;
+    private double discountAmount;
     private String reasonCode;
     private String reasonDescription;
+    private String discrepancyReason;
 
     public Integer getId() {
         return id;
@@ -52,6 +54,14 @@ public class SupplierReturnItemResponse {
         this.quantity = quantity;
     }
 
+    public int getAcceptedQuantity() {
+        return acceptedQuantity;
+    }
+
+    public void setAcceptedQuantity(int acceptedQuantity) {
+        this.acceptedQuantity = acceptedQuantity;
+    }
+
     public double getReturnPrice() {
         return returnPrice;
     }
@@ -60,12 +70,12 @@ public class SupplierReturnItemResponse {
         this.returnPrice = returnPrice;
     }
 
-    public double getTaxAmount() {
-        return taxAmount;
+    public double getDiscountAmount() {
+        return discountAmount;
     }
 
-    public void setTaxAmount(double taxAmount) {
-        this.taxAmount = taxAmount;
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     public String getReasonCode() {
@@ -82,5 +92,13 @@ public class SupplierReturnItemResponse {
 
     public void setReasonDescription(String reasonDescription) {
         this.reasonDescription = reasonDescription;
+    }
+
+    public String getDiscrepancyReason() {
+        return discrepancyReason;
+    }
+
+    public void setDiscrepancyReason(String discrepancyReason) {
+        this.discrepancyReason = discrepancyReason;
     }
 }

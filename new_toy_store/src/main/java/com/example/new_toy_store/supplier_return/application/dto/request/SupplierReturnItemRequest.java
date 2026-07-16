@@ -21,9 +21,6 @@ public class SupplierReturnItemRequest {
     @Min(value = 0, message = "Đơn giá trả không được âm")
     private double returnPrice;
 
-    @Min(value = 0, message = "Thuế VAT không được âm")
-    private double vatRate;
-
     @Min(value = 0, message = "Chiết khấu không được âm")
     private double discountAmount;
 
@@ -68,14 +65,6 @@ public class SupplierReturnItemRequest {
 
     public void setReturnPrice(double returnPrice) {
         this.returnPrice = returnPrice;
-    }
-
-    public double getVatRate() {
-        return vatRate;
-    }
-
-    public void setVatRate(double vatRate) {
-        this.vatRate = vatRate;
     }
 
     public double getDiscountAmount() {

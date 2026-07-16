@@ -25,6 +25,7 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
     public static InvalidSupplierReturnOperationException emptyField(String fieldName) {
         Map<String, Object> context = new HashMap<>();
         context.put("fieldName", fieldName);
+
         return new InvalidSupplierReturnOperationException(
                 "Trường bắt buộc không được để trống: " + fieldName,
                 "EMPTY_FIELD",
@@ -35,6 +36,7 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
     public static InvalidSupplierReturnOperationException invalidStatus(String invalidValue) {
         Map<String, Object> context = new HashMap<>();
         context.put("invalidValue", invalidValue);
+
         return new InvalidSupplierReturnOperationException(
                 "Trạng thái Phiếu trả hàng không hợp lệ: '" + invalidValue + "'.",
                 "INVALID_ENUM_STATUS",
@@ -45,6 +47,7 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
     public static InvalidSupplierReturnOperationException invalidReason(String invalidValue) {
         Map<String, Object> context = new HashMap<>();
         context.put("invalidValue", invalidValue);
+
         return new InvalidSupplierReturnOperationException(
                 "Lý do trả hàng không hợp lệ: '" + invalidValue + "'.",
                 "INVALID_ENUM_REASON",
@@ -80,6 +83,7 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
         Map<String, Object> context = new HashMap<>();
         context.put("currentState", currentState);
         context.put("attemptedState", nextState);
+
         return new InvalidSupplierReturnOperationException(
                 "Vi phạm máy trạng thái: Không thể chuyển từ [" + currentState + "] sang [" + nextState + "].",
                 "INVALID_STATE_TRANSITION",
@@ -91,10 +95,19 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
         Map<String, Object> context = new HashMap<>();
         context.put("action", action);
         context.put("currentState", currentState);
+
         return new InvalidSupplierReturnOperationException(
                 "Từ chối thao tác: " + action + ". Phiếu đang bị khóa ở trạng thái: " + currentState,
                 "READ_ONLY_VIOLATION",
                 context
+        );
+    }
+
+    public static InvalidSupplierReturnOperationException invalidAcceptedQuantity(int maxQty) {
+        return new InvalidSupplierReturnOperationException(
+                "Số lượng NCC chấp nhận không hợp lệ (Phải từ 0 đến tối đa là " + maxQty + ").",
+                "INVALID_ACCEPTED_QUANTITY",
+                Map.of("maxAllowedQuantity", maxQty)
         );
     }
 }

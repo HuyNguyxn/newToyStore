@@ -2,6 +2,7 @@ package com.example.new_toy_store.supplier_return.application;
 
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnRequest;
 import com.example.new_toy_store.supplier_return.application.dto.response.SupplierReturnResponse;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturn;
@@ -90,7 +91,9 @@ public class SupplierReturnService {
                     request.getImportNoteId(),
                     List.of(SupplierReturnStatus.CANCELLED, SupplierReturnStatus.REJECTED)
             );
-            if (hasActiveReturn) throw new DuplicateSupplierReturnException(request.getImportNoteId());
+            if (hasActiveReturn) {
+                throw new DuplicateSupplierReturnException(request.getImportNoteId());
+            }
         }
 
         SupplierReturn entity = SupplierReturnMapper.mapRequestToNewEntity(request, adminUsername);
@@ -126,6 +129,27 @@ public class SupplierReturnService {
         Map<Integer, Integer> deductQuantities = returnNote.getItems().stream()
                 .collect(Collectors.toMap(SupplierReturnItem::getVariantId, SupplierReturnItem::getQuantity, Integer::sum));
         productService.deductStockForOrder(deductQuantities);
+
+        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+    }
+
+    @Transactional
+    public SupplierReturnResponse recordInspection(Integer id, SupplierReturnInspectionRequest request, String username) {
+        SupplierReturn returnNote = getEntity(id);
+
+        Map<Integer, Integer> qtyMap = request.getItems().stream()
+                .collect(Collectors.toMap(
+                        SupplierReturnInspectionRequest.ItemInspection::getItemId,
+                        SupplierReturnInspectionRequest.ItemInspection::getAcceptedQuantity
+                ));
+
+        Map<Integer, String> reasonMap = request.getItems().stream()
+                .collect(Collectors.toMap(
+                        SupplierReturnInspectionRequest.ItemInspection::getItemId,
+                        item -> item.getDiscrepancyReason() != null ? item.getDiscrepancyReason() : ""
+                ));
+
+        returnNote.recordInspection(qtyMap, reasonMap, username);
 
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }

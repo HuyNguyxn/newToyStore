@@ -2,6 +2,7 @@ package com.example.new_toy_store.supplier_return.api;
 
 import com.example.new_toy_store.infrastructure.security.service.CustomUserDetails;
 import com.example.new_toy_store.supplier_return.application.SupplierReturnService;
+import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnRequest;
 import com.example.new_toy_store.supplier_return.application.dto.response.SupplierReturnResponse;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturn;
@@ -61,38 +62,74 @@ public class SupplierReturnController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SupplierReturnResponse createDraft(@Valid @RequestBody SupplierReturnRequest request, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse createDraft(
+            @Valid @RequestBody SupplierReturnRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkWarehouseOrAdminRole(currentUser, "Tạo Phiếu trả hàng");
+
         return service.createDraft(request, currentUser.getUsername());
     }
 
     @PatchMapping("/{id}/submit")
-    public SupplierReturnResponse submitForApproval(@PathVariable Integer id, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse submitForApproval(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkWarehouseOrAdminRole(currentUser, "Trình duyệt");
+
         return service.submitForApproval(id, currentUser.getUsername());
     }
 
     @PatchMapping("/{id}/approve")
-    public SupplierReturnResponse approve(@PathVariable Integer id, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse approve(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkAdminRole(currentUser, "Duyệt xuất trả");
+
         return service.approve(id, currentUser.getUsername());
     }
 
     @PatchMapping("/{id}/reject")
-    public SupplierReturnResponse reject(@PathVariable Integer id, @RequestParam String reason, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse reject(
+            @PathVariable Integer id,
+            @RequestParam String reason,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkAdminRole(currentUser, "Từ chối phiếu");
+
         return service.reject(id, currentUser.getUsername(), reason);
     }
 
     @PatchMapping("/{id}/ship")
-    public SupplierReturnResponse shipAndDeductStock(@PathVariable Integer id, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse shipAndDeductStock(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkWarehouseOrAdminRole(currentUser, "Xuất kho");
+
         return service.shipAndDeductStock(id, currentUser.getUsername());
     }
 
+    @PatchMapping("/{id}/inspect")
+    public SupplierReturnResponse recordInspection(
+            @PathVariable Integer id,
+            @Valid @RequestBody SupplierReturnInspectionRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        checkWarehouseOrAdminRole(currentUser, "Ghi nhận đồng kiểm");
+
+        return service.recordInspection(id, request, currentUser.getUsername());
+    }
+
     @PatchMapping("/{id}/complete")
-    public SupplierReturnResponse complete(@PathVariable Integer id, @AuthenticationPrincipal CustomUserDetails currentUser) {
+    public SupplierReturnResponse complete(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
         checkAdminRole(currentUser, "Xác nhận cấn trừ tiền");
+
         return service.complete(id, currentUser.getUsername());
     }
 

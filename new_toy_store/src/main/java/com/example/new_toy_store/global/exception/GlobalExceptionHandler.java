@@ -1,5 +1,6 @@
 package com.example.new_toy_store.global.exception;
 
+import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -70,6 +71,22 @@ public class GlobalExceptionHandler {
                 errors,
                 request.getRequestURI()
         );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(InvalidSupplierReturnOperationException.class)
+    public ResponseEntity<ErrorResponse> handleSupplierReturnException(
+            InvalidSupplierReturnOperationException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getErrorType(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                ex.getContextData()
+        );
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

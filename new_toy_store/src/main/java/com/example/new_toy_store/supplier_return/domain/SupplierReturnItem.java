@@ -36,14 +36,11 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
     @Column(nullable = false)
     private int quantity;
 
+    @Column(name = "accepted_quantity", nullable = false)
+    private int acceptedQuantity;
+
     @Column(name = "return_price", nullable = false)
     private double returnPrice;
-
-    @Column(name = "vat_rate", nullable = false)
-    private double vatRate;
-
-    @Column(name = "tax_amount", nullable = false)
-    private double taxAmount;
 
     @Column(name = "discount_amount", nullable = false)
     private double discountAmount;
@@ -51,6 +48,9 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_code", nullable = false)
     private SupplierReturnReason reasonCode;
+
+    @Column(name = "discrepancy_reason", length = 500)
+    private String discrepancyReason;
 
     protected SupplierReturnItem() {
     }
@@ -61,7 +61,6 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
             String productName,
             int quantity,
             double returnPrice,
-            double vatRate,
             double discountAmount,
             SupplierReturnReason reasonCode) {
 
@@ -71,7 +70,7 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
         if (quantity <= 0) {
             throw InvalidSupplierReturnOperationException.invalidQuantity();
         }
-        if (returnPrice < 0 || vatRate < 0 || discountAmount < 0) {
+        if (returnPrice < 0 || discountAmount < 0) {
             throw InvalidSupplierReturnOperationException.negativeFinancialValue();
         }
         if (reasonCode == null) {
@@ -81,13 +80,21 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
         this.productId = productId;
         this.variantId = variantId;
         this.productName = productName;
+
         this.quantity = quantity;
+        this.acceptedQuantity = quantity;
+
         this.returnPrice = returnPrice;
-        this.vatRate = vatRate;
         this.discountAmount = discountAmount;
         this.reasonCode = reasonCode;
+    }
 
-        this.taxAmount = (quantity * returnPrice) * vatRate;
+    public void updateInspection(int acceptedQuantity, String discrepancyReason) {
+        if (acceptedQuantity < 0 || acceptedQuantity > this.quantity) {
+            throw InvalidSupplierReturnOperationException.invalidAcceptedQuantity(this.quantity);
+        }
+        this.acceptedQuantity = acceptedQuantity;
+        this.discrepancyReason = discrepancyReason;
     }
 
     void assignToReturn(SupplierReturn supplierReturn) {
@@ -114,16 +121,12 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
         return quantity;
     }
 
+    public int getAcceptedQuantity() {
+        return acceptedQuantity;
+    }
+
     public double getReturnPrice() {
         return returnPrice;
-    }
-
-    public double getVatRate() {
-        return vatRate;
-    }
-
-    public double getTaxAmount() {
-        return taxAmount;
     }
 
     public double getDiscountAmount() {
@@ -132,6 +135,10 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
 
     public SupplierReturnReason getReasonCode() {
         return reasonCode;
+    }
+
+    public String getDiscrepancyReason() {
+        return discrepancyReason;
     }
 
     @Override

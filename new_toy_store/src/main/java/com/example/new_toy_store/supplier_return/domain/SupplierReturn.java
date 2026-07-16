@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -105,11 +106,40 @@ public class SupplierReturn extends BaseRootEntity {
 
     private void recalculateTotalAmount() {
         double itemsRawTotal = items.stream().mapToDouble(item ->
-                (item.getQuantity() * item.getReturnPrice()) + item.getTaxAmount() - item.getDiscountAmount()
+                (item.getAcceptedQuantity() * item.getReturnPrice()) - item.getDiscountAmount()
         ).sum();
 
         double rawFinal = itemsRawTotal - this.freightCost - this.restockingFee;
         this.totalRefundAmount = Math.max(0.0, Math.round(rawFinal * 100.0) / 100.0);
+    }
+
+    public void recordInspection(Map<Integer, Integer> acceptedQuantities, Map<Integer, String> discrepancyReasons, String actionBy) {
+        if (this.status != SupplierReturnStatus.SHIPPED) {
+            throw InvalidSupplierReturnOperationException.invalidTransition(this.status.getDisplayName(), "Ghi nhận đồng kiểm");
+        }
+
+        boolean hasDiscrepancy = false;
+
+        for (SupplierReturnItem item : this.items) {
+            Integer newQty = acceptedQuantities.get(item.getId());
+
+            if (newQty != null) {
+                String reason = discrepancyReasons.get(item.getId());
+                item.updateInspection(newQty, reason);
+
+                if (newQty < item.getQuantity()) {
+                    hasDiscrepancy = true;
+                }
+            }
+        }
+
+        recalculateTotalAmount();
+
+        String logNote = hasDiscrepancy
+                ? "Ghi nhận đồng kiểm: Có chênh lệch số lượng/hư hỏng. Đã tính lại công nợ."
+                : "Ghi nhận đồng kiểm: Khớp 100% số lượng.";
+
+        logHistory(this.status, this.status, actionBy, logNote);
     }
 
     public void submitForApproval(String actionBy, String note) {
