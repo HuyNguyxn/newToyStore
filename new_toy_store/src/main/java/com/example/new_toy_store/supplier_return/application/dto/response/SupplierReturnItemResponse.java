@@ -1,5 +1,7 @@
 package com.example.new_toy_store.supplier_return.application.dto.response;
 
+import java.time.LocalDate;
+
 public class SupplierReturnItemResponse {
 
     private Integer id;
@@ -13,6 +15,10 @@ public class SupplierReturnItemResponse {
     private String reasonCode;
     private String reasonDescription;
     private String discrepancyReason;
+
+    // --- HAI TRƯỜNG PHẢN HỒI LÔ MỚI ---
+    private String batchNumber;
+    private LocalDate expiryDate;
 
     public Integer getId() {
         return id;
@@ -100,5 +106,21 @@ public class SupplierReturnItemResponse {
 
     public void setDiscrepancyReason(String discrepancyReason) {
         this.discrepancyReason = discrepancyReason;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
+    }
+
+    public LocalDate getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDate expiryDate) {
+        this.expiryDate = expiryDate;
     }
 }

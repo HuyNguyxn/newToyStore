@@ -200,6 +200,7 @@ public class SupplierReturn extends BaseRootEntity {
         this.images.forEach(SupplierReturnImage::delete);
     }
 
+    // Explicit Getters (Không dùng Lombok @Getter)
     public Integer getId() {
         return id;
     }

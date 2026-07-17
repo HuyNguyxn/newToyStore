@@ -3,6 +3,7 @@ package com.example.new_toy_store.supplier_return.application.dto.request;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 
 public class SupplierReturnItemRequest {
 
@@ -26,6 +27,12 @@ public class SupplierReturnItemRequest {
 
     @NotBlank(message = "Mã lý do trả hàng không được trống")
     private String reasonCode;
+
+    @NotBlank(message = "Bắt buộc phải truyền mã lô (Batch Number)")
+    private String batchNumber;
+
+    @NotNull(message = "Bắt buộc phải có hạn sử dụng của lô hàng")
+    private LocalDate expiryDate;
 
     public Integer getProductId() {
         return productId;
@@ -81,5 +88,21 @@ public class SupplierReturnItemRequest {
 
     public void setReasonCode(String reasonCode) {
         this.reasonCode = reasonCode;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
+    }
+
+    public LocalDate getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDate expiryDate) {
+        this.expiryDate = expiryDate;
     }
 }

@@ -2,7 +2,7 @@ package com.example.new_toy_store.product.domain.exception;
 
 public class InvalidProductOperationException extends RuntimeException {
 
-    private InvalidProductOperationException(String message) {
+    public InvalidProductOperationException(String message) {
         super(message);
     }
 
@@ -80,5 +80,13 @@ public class InvalidProductOperationException extends RuntimeException {
 
     public static InvalidProductOperationException variantNotFound() {
         return new InvalidProductOperationException("Không tìm thấy mẫu mã sản phẩm yêu cầu");
+    }
+
+    public static InvalidProductOperationException batchNotFound(String batchNumber) {
+        return new InvalidProductOperationException("Không tìm thấy mã lô: " + batchNumber + " trong kho sản phẩm.");
+    }
+
+    public static InvalidProductOperationException insufficientBatchStock(String batchNumber, int currentQty, int requestedQty) {
+        return new InvalidProductOperationException("Lô hàng " + batchNumber + " không đủ số lượng (Hiện có: " + currentQty + ", Yêu cầu trừ: " + requestedQty + ").");
     }
 }

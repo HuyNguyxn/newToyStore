@@ -4,6 +4,8 @@ import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(
         name = "supplier_return_items",
@@ -52,6 +54,12 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
     @Column(name = "discrepancy_reason", length = 500)
     private String discrepancyReason;
 
+    @Column(name = "batch_number", nullable = false, length = 50)
+    private String batchNumber;
+
+    @Column(name = "expiry_date", nullable = false)
+    private LocalDate expiryDate;
+
     protected SupplierReturnItem() {
     }
 
@@ -62,7 +70,9 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
             int quantity,
             double returnPrice,
             double discountAmount,
-            SupplierReturnReason reasonCode) {
+            SupplierReturnReason reasonCode,
+            String batchNumber,
+            LocalDate expiryDate) {
 
         if (productId == null || variantId == null) {
             throw InvalidSupplierReturnOperationException.emptyField("Mã sản phẩm/biến thể");
@@ -76,6 +86,12 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
         if (reasonCode == null) {
             throw InvalidSupplierReturnOperationException.emptyField("Lý do trả hàng");
         }
+        if (batchNumber == null || batchNumber.trim().isEmpty()) {
+            throw InvalidSupplierReturnOperationException.emptyField("Mã lô hàng (Batch Number)");
+        }
+        if (expiryDate == null) {
+            throw InvalidSupplierReturnOperationException.emptyField("Hạn sử dụng lô");
+        }
 
         this.productId = productId;
         this.variantId = variantId;
@@ -87,6 +103,8 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
         this.returnPrice = returnPrice;
         this.discountAmount = discountAmount;
         this.reasonCode = reasonCode;
+        this.batchNumber = batchNumber;
+        this.expiryDate = expiryDate;
     }
 
     public void updateInspection(int acceptedQuantity, String discrepancyReason) {
@@ -139,6 +157,14 @@ public class SupplierReturnItem extends BaseSoftDeleteEntity {
 
     public String getDiscrepancyReason() {
         return discrepancyReason;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public LocalDate getExpiryDate() {
+        return expiryDate;
     }
 
     @Override

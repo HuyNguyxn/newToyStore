@@ -105,9 +105,20 @@ public class SupplierReturnResponse {
     public void setItems(List<SupplierReturnItemResponse> items) {
         this.items = items;
     }
-    public List<SupplierReturnHistoryResponse> getHistories() { return histories; }
-    public void setHistories(List<SupplierReturnHistoryResponse> histories) { this.histories = histories; }
 
-    public List<SupplierReturnImageResponse> getImages() { return images; }
-    public void setImages(List<SupplierReturnImageResponse> images) { this.images = images; }
+    public List<SupplierReturnHistoryResponse> getHistories() {
+        return histories;
+    }
+
+    public void setHistories(List<SupplierReturnHistoryResponse> histories) {
+        this.histories = histories;
+    }
+
+    public List<SupplierReturnImageResponse> getImages() {
+        return images;
+    }
+
+    public void setImages(List<SupplierReturnImageResponse> images) {
+        this.images = images;
+    }
 }
