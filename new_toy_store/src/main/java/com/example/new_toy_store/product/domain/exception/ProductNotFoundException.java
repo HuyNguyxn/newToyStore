@@ -5,4 +5,8 @@ public class ProductNotFoundException extends RuntimeException {
     public ProductNotFoundException(Integer id) {
         super("Không tìm thấy sản phẩm với ID: " + id);
     }
+
+    public ProductNotFoundException(String message) {
+        super(message);
+    }
 }

@@ -9,6 +9,7 @@ import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.ProductRepository;
+import com.example.new_toy_store.product.domain.ProductVariantRepository;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import com.example.new_toy_store.product.domain.exception.ProductNotFoundException;
 import com.example.new_toy_store.product.mapper.ProductMapper;
@@ -31,14 +32,115 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository repository;
+    private final ProductVariantRepository variantRepository;
     private final CategoryRepository categoryRepository;
     private final SupplierService supplierService;
 
-    public ProductService(ProductRepository repository, CategoryRepository categoryRepository, SupplierService supplierService) {
+    public ProductService(
+            ProductRepository repository,
+            ProductVariantRepository variantRepository,
+            CategoryRepository categoryRepository,
+            SupplierService supplierService) {
         this.repository = repository;
+        this.variantRepository = variantRepository;
         this.categoryRepository = categoryRepository;
         this.supplierService = supplierService;
     }
+
+    @Transactional(readOnly = true)
+    public ProductVariant getVariantDetail(Integer variantId) {
+        return variantRepository.findByIdWithProduct(variantId)
+                .orElseThrow(InvalidProductOperationException::variantNotFound);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductVariant getVariantBySku(String sku) {
+        return variantRepository.findBySku(sku)
+                .orElseThrow(() -> new ProductNotFoundException("Không tìm thấy biến thể với mã SKU: " + sku));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductVariant> getVariantsByProductId(Integer productId) {
+        return variantRepository.findByProductId(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public void validateSkuUniqueness(String sku) {
+        if (variantRepository.existsBySku(sku)) {
+            throw new RuntimeException("Mã SKU đã tồn tại: " + sku);
+        }
+    }
+
+    @Transactional
+    public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
+        if (stockUpdates == null || stockUpdates.isEmpty()) return;
+
+        for (ImportedStockRequest req : stockUpdates) {
+            ProductVariant variant = variantRepository.findById(req.getVariantId())
+                    .orElseThrow(InvalidProductOperationException::variantNotFound);
+
+            variant.importStock(req.getQuantity(), req.getImportPrice());
+        }
+    }
+
+    @Transactional
+    public void addStockFromImport(Map<Integer, Integer> variantQuantities) {
+        if (variantQuantities == null || variantQuantities.isEmpty()) return;
+
+        for (Map.Entry<Integer, Integer> entry : variantQuantities.entrySet()) {
+            ProductVariant variant = variantRepository.findById(entry.getKey())
+                    .orElseThrow(InvalidProductOperationException::variantNotFound);
+
+            variant.getInventory().addStock(entry.getValue());
+        }
+    }
+
+    @Transactional
+    public void deductStockForOrder(Map<Integer, Integer> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) return;
+
+        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
+            ProductVariant targetVariant = variantRepository.findByIdWithProduct(entry.getKey())
+                    .orElseThrow(InvalidProductOperationException::variantNotFound);
+
+            if (!targetVariant.getProduct().isAvailableForPurchase()) {
+                throw InvalidProductOperationException.invalidStatus(
+                        targetVariant.getProduct().getStatus().getDisplayName());
+            }
+
+            targetVariant.getInventory().reduceStock(entry.getValue());
+        }
+    }
+
+    @Transactional
+    public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
+        if (orderItems == null || orderItems.isEmpty()) return;
+
+        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
+            ProductVariant variant = variantRepository.findById(entry.getKey())
+                    .orElseThrow(InvalidProductOperationException::variantNotFound);
+
+            variant.getInventory().addStock(entry.getValue());
+        }
+    }
+
+    @Transactional
+    public void updateStock(Integer productId, Integer variantId, int amountToAdd) {
+        ProductVariant variant = variantRepository.findById(variantId)
+                .orElseThrow(InvalidProductOperationException::variantNotFound);
+        variant.getInventory().addStock(amountToAdd);
+    }
+
+    @Transactional
+    public void updateVariantPrice(Integer productId, Integer variantId, double newPrice) {
+        ProductVariant variant = variantRepository.findById(variantId)
+                .orElseThrow(InvalidProductOperationException::variantNotFound);
+        variant.updatePrice(newPrice);
+    }
+
+    // ==========================================
+    // CÁC HÀM XỬ LÝ PRODUCT GỐC GIỮ NGUYÊN
+    // ==========================================
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> getAllProducts(Pageable pageable) {
@@ -70,9 +172,7 @@ public class ProductService {
     }
 
     private Page<ProductResponse> mapProductsToResponsesWithBatchData(Page<Product> productPage) {
-        if (productPage.isEmpty()) {
-            return Page.empty(productPage.getPageable());
-        }
+        if (productPage.isEmpty()) return Page.empty(productPage.getPageable());
 
         Set<Integer> supplierIds = productPage.getContent().stream()
                 .map(Product::getSupplierId)
@@ -80,8 +180,7 @@ public class ProductService {
                 .collect(Collectors.toSet());
 
         Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
-                .stream()
-                .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
+                .stream().collect(Collectors.toMap(SupplierResponse::getId, s -> s));
 
         return productPage.map(product -> {
             SupplierResponse supplier = supplierMap.get(product.getSupplierId());
@@ -92,9 +191,8 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductDetails(Integer id) {
         Product product = repository.findByIdWithDetails(id);
-        if (product == null) {
-            throw new ProductNotFoundException(id);
-        }
+        if (product == null) throw new ProductNotFoundException(id);
+
         SupplierResponse supplier = null;
         if (product.getSupplierId() != null) {
             supplier = supplierService.getSupplierDetails(product.getSupplierId());
@@ -105,7 +203,6 @@ public class ProductService {
     @Transactional
     public ProductResponse create(ProductRequest request) {
         SupplierResponse supplier = null;
-
         if (request.getSupplierId() != null) {
             supplier = supplierService.getSupplierDetails(request.getSupplierId());
             if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
@@ -167,157 +264,30 @@ public class ProductService {
     }
 
     @Transactional
-    public void updateStock(Integer productId, Integer variantId, int amountToAdd) {
-        Product product = getProductEntity(productId);
-        ProductVariant variant = product.getVariants().stream()
-                .filter(v -> v.getId().equals(variantId))
-                .findFirst()
-                .orElseThrow(InvalidProductOperationException::variantNotFound);
-        variant.getInventory().addStock(amountToAdd);
-    }
-
-    @Transactional
     public void setThumbnail(Integer productId, Integer imageId) {
-        Product product = getProductEntity(productId);
-        product.setThumbnail(imageId);
+        getProductEntity(productId).setThumbnail(imageId);
     }
 
     @Transactional
     public void updateProductRating(Integer productId, double averageRating, int reviewCount) {
-        Product product = repository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException(productId));
-
+        Product product = getProductEntity(productId);
         product.updateRatingMetrics(averageRating, reviewCount);
         repository.save(product);
     }
 
     @Transactional
     public void delete(Integer id) {
-        Product product = getProductEntity(id);
-        product.delete();
+        getProductEntity(id).delete();
     }
 
     public Product getProductEntity(Integer id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException(id));
+        return repository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     @Transactional(readOnly = true)
     public List<Product> getProductsByIdsWithDetails(Set<Integer> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
+        if (ids == null || ids.isEmpty()) return List.of();
         return repository.findAllByIdsWithDetails(ids);
-    }
-
-    @Transactional
-    public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
-        if (stockUpdates == null || stockUpdates.isEmpty()) {
-            return;
-        }
-
-        Set<Integer> variantIds = stockUpdates.stream()
-                .map(ImportedStockRequest::getVariantId)
-                .collect(Collectors.toSet());
-
-        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
-
-        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        for (ImportedStockRequest req : stockUpdates) {
-            Integer targetVariantId = req.getVariantId();
-            int quantityToAdd = req.getQuantity();
-            double importPrice = req.getImportPrice();
-
-            productMap.values().stream()
-                    .flatMap(p -> p.getVariants().stream())
-                    .filter(v -> v.getId().equals(targetVariantId))
-                    .findFirst()
-                    .ifPresent(variant -> variant.importStock(quantityToAdd, importPrice));
-        }
-    }
-
-    @Transactional
-    public void addStockFromImport(Map<Integer, Integer> variantQuantities) {
-        if (variantQuantities == null || variantQuantities.isEmpty()) {
-            return;
-        }
-
-        Set<Integer> variantIds = variantQuantities.keySet();
-        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
-
-        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        for (Map.Entry<Integer, Integer> entry : variantQuantities.entrySet()) {
-            Integer targetVariantId = entry.getKey();
-            Integer quantityToAdd = entry.getValue();
-
-            productMap.values().stream()
-                    .flatMap(p -> p.getVariants().stream())
-                    .filter(v -> v.getId().equals(targetVariantId))
-                    .findFirst()
-                    .ifPresent(variant -> variant.getInventory().addStock(quantityToAdd));
-        }
-    }
-
-    @Transactional
-    public void deductStockForOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            return;
-        }
-
-        Set<Integer> variantIds = orderItems.keySet();
-        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
-
-        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
-            Integer targetVariantId = entry.getKey();
-            Integer quantityToDeduct = entry.getValue();
-
-            ProductVariant targetVariant = productMap.values().stream()
-                    .flatMap(p -> p.getVariants().stream())
-                    .filter(v -> v.getId().equals(targetVariantId))
-                    .findFirst()
-                    .orElseThrow(InvalidProductOperationException::variantNotFound);
-
-            if (!targetVariant.getProduct().isAvailableForPurchase()) {
-                throw InvalidProductOperationException.invalidStatus(targetVariant.getProduct().getStatus().getDisplayName());
-            }
-
-            targetVariant.getInventory().reduceStock(quantityToDeduct);
-        }
-    }
-
-    @Transactional
-    public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
-        if (orderItems == null || orderItems.isEmpty()) {
-            return;
-        }
-
-        Set<Integer> variantIds = orderItems.keySet();
-        Set<Integer> productIds = repository.findProductIdsByVariantIds(variantIds);
-
-        Map<Integer, Product> productMap = repository.findAllByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        for (Map.Entry<Integer, Integer> entry : orderItems.entrySet()) {
-            Integer targetVariantId = entry.getKey();
-            Integer quantityToRestore = entry.getValue();
-
-            productMap.values().stream()
-                    .flatMap(p -> p.getVariants().stream())
-                    .filter(v -> v.getId().equals(targetVariantId))
-                    .findFirst()
-                    .ifPresent(variant -> variant.getInventory().addStock(quantityToRestore));
-        }
     }
 
     @Transactional
@@ -335,17 +305,6 @@ public class ProductService {
     public void removeImage(Integer productId, Integer imageId) {
         Product product = getProductEntity(productId);
         product.removeImage(imageId);
-        repository.save(product);
-    }
-
-    @Transactional
-    public void updateVariantPrice(Integer productId, Integer variantId, double newPrice) {
-        Product product = getProductEntity(productId);
-        ProductVariant variant = product.getVariants().stream()
-                .filter(v -> v.getId().equals(variantId))
-                .findFirst()
-                .orElseThrow(InvalidProductOperationException::variantNotFound);
-        variant.updatePrice(newPrice);
         repository.save(product);
     }
 }
