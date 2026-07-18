@@ -1,6 +1,6 @@
 package com.example.new_toy_store.supplier_return.application;
 
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnRequest;
@@ -15,6 +15,7 @@ import com.example.new_toy_store.infrastructure.specification.SupplierReturnSpec
 import com.example.new_toy_store.supplier_return.mapper.SupplierReturnMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,13 +33,19 @@ public class SupplierReturnService {
     private static final Logger log = LoggerFactory.getLogger(SupplierReturnService.class);
 
     private final SupplierReturnRepository repository;
-    private final ProductService productService;
+
     private final SupplierService supplierService;
 
-    public SupplierReturnService(SupplierReturnRepository repository, ProductService productService, SupplierService supplierService) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public SupplierReturnService(
+            SupplierReturnRepository repository,
+            SupplierService supplierService,
+            ApplicationEventPublisher eventPublisher) {
+
         this.repository = repository;
-        this.productService = productService;
         this.supplierService = supplierService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +74,7 @@ public class SupplierReturnService {
     @Transactional(readOnly = true)
     public List<SupplierReturn> getReturnsForCriticalAlert(int criticalHours) {
         LocalDateTime criticalCutoffTime = LocalDateTime.now().minusHours(criticalHours);
+
         return repository.findAllByStatusAndUpdatedAtBefore(
                 SupplierReturnStatus.PENDING_APPROVAL, criticalCutoffTime);
     }
@@ -91,12 +99,14 @@ public class SupplierReturnService {
                     request.getImportNoteId(),
                     List.of(SupplierReturnStatus.CANCELLED, SupplierReturnStatus.REJECTED)
             );
+
             if (hasActiveReturn) {
                 throw new DuplicateSupplierReturnException(request.getImportNoteId());
             }
         }
 
         SupplierReturn entity = SupplierReturnMapper.mapRequestToNewEntity(request, adminUsername);
+
         return SupplierReturnMapper.mapEntityToResponse(repository.save(entity));
     }
 
@@ -104,6 +114,7 @@ public class SupplierReturnService {
     public SupplierReturnResponse submitForApproval(Integer id, String adminUsername) {
         SupplierReturn returnNote = getEntity(id);
         returnNote.submitForApproval(adminUsername, "Trình duyệt phiếu trả hàng");
+
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }
 
@@ -111,6 +122,7 @@ public class SupplierReturnService {
     public SupplierReturnResponse approve(Integer id, String managerUsername) {
         SupplierReturn returnNote = getEntity(id);
         returnNote.approve(managerUsername, "Quản lý đã duyệt xuất trả");
+
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }
 
@@ -118,6 +130,7 @@ public class SupplierReturnService {
     public SupplierReturnResponse reject(Integer id, String managerUsername, String reason) {
         SupplierReturn returnNote = getEntity(id);
         returnNote.reject(managerUsername, "Từ chối: " + reason);
+
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }
 
@@ -126,9 +139,15 @@ public class SupplierReturnService {
         SupplierReturn returnNote = getEntity(id);
         returnNote.ship(warehouseUsername, "Xuất kho trả nhà cung cấp");
 
-        Map<Integer, Integer> deductQuantities = returnNote.getItems().stream()
-                .collect(Collectors.toMap(SupplierReturnItem::getVariantId, SupplierReturnItem::getQuantity, Integer::sum));
-        productService.deductStockForOrder(deductQuantities);
+        List<SupplierReturnCompletedEvent.ReturnItemDetail> eventItems = returnNote.getItems().stream()
+                .map(item -> new SupplierReturnCompletedEvent.ReturnItemDetail(
+                        item.getVariantId(),
+                        item.getBatchNumber(),
+                        item.getQuantity()
+                ))
+                .collect(Collectors.toList());
+
+        eventPublisher.publishEvent(new SupplierReturnCompletedEvent(returnNote.getId(), eventItems));
 
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }
@@ -158,6 +177,7 @@ public class SupplierReturnService {
     public SupplierReturnResponse complete(Integer id, String accountantUsername) {
         SupplierReturn returnNote = getEntity(id);
         returnNote.complete(accountantUsername, "Xác nhận nhận tiền/cấn trừ công nợ hoàn tất");
+
         return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
     }
 

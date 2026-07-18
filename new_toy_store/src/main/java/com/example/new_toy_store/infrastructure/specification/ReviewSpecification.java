@@ -1,45 +1,33 @@
 package com.example.new_toy_store.infrastructure.specification;
 
+import com.example.new_toy_store.global.specification.BaseSpecification;
 import com.example.new_toy_store.review.application.dto.request.ReviewFilterRequest;
 import com.example.new_toy_store.review.domain.Review;
 import com.example.new_toy_store.review.domain.ReviewStatus;
-import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class ReviewSpecification {
 
     public static Specification<Review> filter(ReviewFilterRequest request) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        if (request == null) return Specification.where(null);
 
-            if (request.getProductId() != null) {
-                predicates.add(cb.equal(root.get("productId"), request.getProductId()));
-            }
+        Specification<Review> spec = Specification.where(BaseSpecification.<Review>isEqual("productId", request.getProductId()))
+                .and(BaseSpecification.isEqual("rating", request.getRating()));
 
-            if (request.getRating() != null) {
-                predicates.add(cb.equal(root.get("rating"), request.getRating()));
-            }
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            ReviewStatus statusEnum = ReviewStatus.valueOf(request.getStatus().trim().toUpperCase());
+            spec = spec.and(BaseSpecification.isEqual("status", statusEnum));
+        }
 
-            if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-                try {
-                    ReviewStatus statusEnum = ReviewStatus.valueOf(request.getStatus().toUpperCase());
-                    predicates.add(cb.equal(root.get("status"), statusEnum));
-                } catch (IllegalArgumentException e) {
-                }
-            }
+        if (request.getHasAdminReplied() != null) {
+            spec = spec.and(hasAdminReplied(request.getHasAdminReplied()));
+        }
 
-            if (request.getHasAdminReplied() != null) {
-                if (request.getHasAdminReplied()) {
-                    predicates.add(cb.isNotNull(root.get("adminReply")));
-                } else {
-                    predicates.add(cb.isNull(root.get("adminReply")));
-                }
-            }
+        return spec;
+    }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    private static Specification<Review> hasAdminReplied(boolean hasReplied) {
+        return (root, query, cb)
+                -> hasReplied ? cb.isNotNull(root.get("adminReply")) : cb.isNull(root.get("adminReply"));
     }
 }

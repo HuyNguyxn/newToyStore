@@ -19,11 +19,14 @@ public class InventoryEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onSupplierReturnCompleted(SupplierReturnCompletedEvent event) {
+
         event.getItems().forEach(item -> {
+
             ProductVariant variant = variantRepository.findById(item.getVariantId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm ID: " + item.getVariantId()));
 
             Inventory inventory = variant.getInventory();
+
             if (inventory == null) {
                 throw new RuntimeException("Biến thể ID " + item.getVariantId() + " chưa được khởi tạo kho.");
             }

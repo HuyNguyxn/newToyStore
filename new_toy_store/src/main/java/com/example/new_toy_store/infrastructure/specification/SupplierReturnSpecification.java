@@ -1,13 +1,10 @@
 package com.example.new_toy_store.infrastructure.specification;
 
+import com.example.new_toy_store.global.specification.BaseSpecification;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturn;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturnStatus;
 import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SupplierReturnSpecification {
 
@@ -17,35 +14,12 @@ public class SupplierReturnSpecification {
             LocalDate startDate,
             LocalDate endDate) {
 
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        Specification<SupplierReturn> spec = Specification.where(BaseSpecification.<SupplierReturn>isEqual("supplierId", supplierId));
 
-            if (supplierId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("supplierId"), supplierId));
-            }
+        if (statusValue != null && !statusValue.trim().isEmpty()) {
+            spec = spec.and(BaseSpecification.isEqual("status", SupplierReturnStatus.from(statusValue)));
+        }
 
-            if (statusValue != null && !statusValue.trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(
-                        root.get("status"),
-                        SupplierReturnStatus.from(statusValue)
-                ));
-            }
-
-            if (startDate != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                        root.get("createdAt"),
-                        startDate.atStartOfDay()
-                ));
-            }
-
-            if (endDate != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                        root.get("createdAt"),
-                        endDate.atTime(LocalTime.MAX)
-                ));
-            }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
+        return spec.and(BaseSpecification.dateBetween("createdAt", startDate, endDate));
     }
 }
