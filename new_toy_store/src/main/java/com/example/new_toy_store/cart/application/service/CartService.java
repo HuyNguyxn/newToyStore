@@ -27,7 +27,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public Cart getCartByUserId(Integer userId) {
         return repository.findByUserId(userId)
-                .orElseThrow(() -> new CartNotFoundException(userId));
+                .orElseThrow(() -> CartNotFoundException.byUserId(userId));
     }
 
     @Transactional
@@ -53,21 +53,21 @@ public class CartService {
 
     @Transactional
     public Cart updateItemQuantity(Integer userId, Integer itemId, int quantity) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException(userId));
+        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
         cart.updateItemQuantity(itemId, quantity);
         return repository.save(cart);
     }
 
     @Transactional
     public Cart toggleItemSelection(Integer userId, Integer itemId, boolean isSelected) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException(userId));
+        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
         cart.toggleItemSelection(itemId, isSelected);
         return repository.save(cart);
     }
 
     @Transactional
     public Cart removeItemFromCart(Integer userId, Integer itemId) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException(userId));
+        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
         cart.removeItem(itemId);
         return repository.save(cart);
     }
@@ -82,14 +82,14 @@ public class CartService {
 
     @Transactional
     public Cart lockCartForCheckout(Integer userId) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException(userId));
+        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
         cart.changeStatus(CartStatus.CHECKING_OUT);
         return repository.save(cart);
     }
 
     @Transactional
     public void clearCheckedOutItems(Integer cartId) {
-        Cart cart = repository.findById(cartId).orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
+        Cart cart = repository.findById(cartId).orElseThrow(() -> CartNotFoundException.byCartId(cartId));
         cart.getItems().removeIf(CartItem::isSelected);
         cart.changeStatus(CartStatus.ACTIVE);
         repository.save(cart);
@@ -97,7 +97,7 @@ public class CartService {
 
     @Transactional
     public void unlockCart(Integer cartId) {
-        Cart cart = repository.findById(cartId).orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
+        Cart cart = repository.findById(cartId).orElseThrow(() -> CartNotFoundException.byCartId(cartId));
         cart.changeStatus(CartStatus.ACTIVE);
         repository.save(cart);
     }

@@ -7,6 +7,9 @@ import com.example.new_toy_store.cart.application.dto.request.CheckoutRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
+import com.example.new_toy_store.cart.domain.exception.CartCrossModuleException;
+import com.example.new_toy_store.cart.domain.exception.CartDataConflictException;
+import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.cart.mapper.CartMapper;
 import com.example.new_toy_store.global.event.CartCheckoutRequestedEvent;
 import com.example.new_toy_store.product.application.ProductService;
@@ -89,7 +92,7 @@ public class CartFacade {
                 .collect(Collectors.toList());
 
         if (selectedItems.isEmpty()) {
-            throw new IllegalStateException("Giỏ hàng trống hoặc không có sản phẩm nào được chọn để thanh toán");
+            throw InvalidCartOperationException.emptyCart();
         }
 
         Set<Integer> productIds = selectedItems.stream().map(CartItem::getProductId).collect(Collectors.toSet());
@@ -102,7 +105,16 @@ public class CartFacade {
             ProductVariant variant = product.getVariants().stream()
                     .filter(v -> v.getId().equals(item.getVariantId()))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("Lỗi dữ liệu: Không tìm thấy biến thể"));
+                    .orElseThrow(() -> new CartCrossModuleException(
+                            "Product",
+                            "EXTRACT_VARIANT",
+                            "Dữ liệu mẫu mã sản phẩm bị sai lệch hoặc đã bị xóa."
+                    ));
+
+            // Chặn checkout nếu giá sản phẩm đã bị thay đổi
+            if (item.getAddedPrice() != variant.getPrice()) {
+                throw CartDataConflictException.priceChanged(product.getId(), item.getAddedPrice(), variant.getPrice());
+            }
 
             return new CartCheckoutRequestedEvent.CheckoutItemDetail(
                     item.getProductId(),
@@ -127,16 +139,24 @@ public class CartFacade {
         Product product = productService.getProductEntity(productId);
 
         if (!product.isAvailableForPurchase()) {
-            throw new IllegalStateException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
+            throw CartDataConflictException.softDeletedProduct(productId);
         }
 
         ProductVariant variant = product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm tương ứng"));
+                .orElseThrow(() -> new CartCrossModuleException(
+                        "Product",
+                        "GET_VARIANT_PRICE",
+                        "Không tìm thấy mẫu mã sản phẩm tương ứng (Variant ID: " + variantId + ")"
+                ));
 
         if (variant.getInventory().getStockQuantity() < requestedQuantity) {
-            throw new IllegalStateException("Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu");
+            throw new CartCrossModuleException(
+                    "Inventory",
+                    "CHECK_STOCK",
+                    "Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu (Còn: " + variant.getInventory().getStockQuantity() + ")"
+            );
         }
 
         return variant.getPrice();

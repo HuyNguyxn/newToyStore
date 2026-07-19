@@ -40,10 +40,7 @@ public class Cart extends BaseRootEntity {
 
     public void changeStatus(CartStatus newStatus) {
         if (!this.status.canTransitionTo(newStatus)) {
-            throw new IllegalStateException(
-                    String.format("Luồng phi logic: Không thể chuyển trạng thái giỏ hàng từ [%s] sang [%s]",
-                            this.status.name(), newStatus.name())
-            );
+            throw InvalidCartOperationException.invalidStatusTransition(this.status.name(), newStatus.name());
         }
         this.status = newStatus;
     }
@@ -85,7 +82,7 @@ public class Cart extends BaseRootEntity {
 
     private void checkIfCartIsActive() {
         if (this.status != CartStatus.ACTIVE) {
-            throw new IllegalStateException("Không thể chỉnh sửa: Giỏ hàng đang trong quá trình thanh toán");
+            throw InvalidCartOperationException.cartNotActive();
         }
     }
 
