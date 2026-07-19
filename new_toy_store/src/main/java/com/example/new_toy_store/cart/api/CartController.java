@@ -1,11 +1,13 @@
 package com.example.new_toy_store.cart.api;
 
-import com.example.new_toy_store.cart.application.CartService;
+import com.example.new_toy_store.cart.application.facade.CartFacade;
 import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
 import com.example.new_toy_store.cart.application.dto.request.CartRequest;
+import com.example.new_toy_store.cart.application.dto.request.CheckoutRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,27 +16,27 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 public class CartController {
 
-    private final CartService service;
+    private final CartFacade cartFacade;
 
-    public CartController(CartService service) {
-        this.service = service;
+    public CartController(CartFacade cartFacade) {
+        this.cartFacade = cartFacade;
     }
 
     @GetMapping("/{userId}")
     public CartResponse getCart(
             @PathVariable Integer userId,
             @RequestParam(required = false) String promoCode) {
-        return service.getCartByUserId(userId, promoCode);
+        return cartFacade.getCart(userId, promoCode);
     }
 
     @PostMapping("/{userId}/items")
     public CartResponse addItem(@PathVariable Integer userId, @Valid @RequestBody CartItemRequest request) {
-        return service.addItemToCart(userId, request);
+        return cartFacade.addItem(userId, request);
     }
 
     @PostMapping("/{userId}/sync")
     public CartResponse syncCart(@PathVariable Integer userId, @Valid @RequestBody CartRequest request) {
-        return service.syncCart(userId, request);
+        return cartFacade.syncCart(userId, request);
     }
 
     @PutMapping("/{userId}/items/{itemId}")
@@ -42,7 +44,7 @@ public class CartController {
             @PathVariable Integer userId,
             @PathVariable Integer itemId,
             @RequestParam @Min(value = 1, message = "Số lượng cập nhật phải lớn hơn 0") int quantity) {
-        return service.updateItemQuantity(userId, itemId, quantity);
+        return cartFacade.updateQuantity(userId, itemId, quantity);
     }
 
     @PatchMapping("/{userId}/items/{itemId}/toggle")
@@ -50,16 +52,24 @@ public class CartController {
             @PathVariable Integer userId,
             @PathVariable Integer itemId,
             @RequestParam boolean isSelected) {
-        return service.toggleItemSelection(userId, itemId, isSelected);
+        return cartFacade.toggleSelection(userId, itemId, isSelected);
     }
 
     @DeleteMapping("/{userId}/items/{itemId}")
     public CartResponse removeItem(@PathVariable Integer userId, @PathVariable Integer itemId) {
-        return service.removeItemFromCart(userId, itemId);
+        return cartFacade.removeItem(userId, itemId);
     }
 
     @DeleteMapping("/{userId}")
     public void clearCart(@PathVariable Integer userId) {
-        service.clearCart(userId);
+        cartFacade.clearCart(userId);
+    }
+
+    @PostMapping("/{userId}/checkout")
+    public ResponseEntity<String> checkout(
+            @PathVariable Integer userId,
+            @Valid @RequestBody CheckoutRequest request) {
+        cartFacade.checkout(userId, request);
+        return ResponseEntity.ok("Yêu cầu thanh toán đã được tiếp nhận và đang xử lý.");
     }
 }

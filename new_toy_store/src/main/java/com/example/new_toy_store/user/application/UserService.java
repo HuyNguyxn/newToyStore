@@ -1,6 +1,6 @@
 package com.example.new_toy_store.user.application;
 
-import com.example.new_toy_store.cart.application.CartService;
+import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
 import com.example.new_toy_store.user.application.dto.request.*;
 import com.example.new_toy_store.user.application.dto.response.*;

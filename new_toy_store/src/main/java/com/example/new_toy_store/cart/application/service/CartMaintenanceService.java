@@ -1,7 +1,9 @@
-package com.example.new_toy_store.cart.application;
+package com.example.new_toy_store.cart.application.service;
 
 import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.cart.domain.CartItemRepository;
+import com.example.new_toy_store.global.event.CartItemExpiringEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +14,11 @@ import java.util.List;
 public class CartMaintenanceService {
 
     private final CartItemRepository itemRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CartMaintenanceService(CartItemRepository itemRepository) {
+    public CartMaintenanceService(CartItemRepository itemRepository, ApplicationEventPublisher eventPublisher) {
         this.itemRepository = itemRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -37,10 +41,12 @@ public class CartMaintenanceService {
 
     private void notifyUsers(List<CartItem> items, int daysLeft) {
         for (CartItem item : items) {
-            Integer userId = item.getCart().getUserId();
-            Integer productId = item.getProductId();
-
-            System.out.println("Gửi thông báo tới User " + userId + ": Sản phẩm ID " + productId + " sẽ bị xóa khỏi giỏ hàng sau " + daysLeft + " ngày.");
+            eventPublisher.publishEvent(new CartItemExpiringEvent(
+                    item.getCart().getUserId(),
+                    item.getProductId(),
+                    item.getVariantId(),
+                    daysLeft
+            ));
         }
     }
 }

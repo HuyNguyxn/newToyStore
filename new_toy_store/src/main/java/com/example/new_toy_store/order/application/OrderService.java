@@ -1,6 +1,6 @@
 package com.example.new_toy_store.order.application;
 
-import com.example.new_toy_store.cart.application.CartService;
+import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.infrastructure.specification.OrderSpecification;
 import com.example.new_toy_store.order.application.dto.request.OrderFilterRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
