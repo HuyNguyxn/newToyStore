@@ -13,7 +13,7 @@ import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
-import com.example.new_toy_store.promotion.domain.Promotion;
+import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,15 +48,17 @@ public class CartService {
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
         Product product = productService.getProductEntity(request.getProductId());
+        ProductVariant variant = getVariantOrThrow(product, request.getVariantId());
+
         int currentQuantityInCart = cart.getItems().stream()
                 .filter(item -> item.getVariantId().equals(request.getVariantId()))
                 .mapToInt(CartItem::getQuantity)
                 .sum();
 
         int finalTargetQuantity = currentQuantityInCart + request.getQuantity();
-        checkStockSufficiency(product, request.getVariantId(), finalTargetQuantity);
+        checkStockSufficiency(product, variant, finalTargetQuantity);
 
-        cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity());
+        cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity(), variant.getPrice());
         repository.save(cart);
         return getCartData(cart, null);
     }
@@ -66,12 +68,12 @@ public class CartService {
         Cart cart = repository.findByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
-        cart.clearCart();
-
         for (CartItemRequest itemReq : request.getItems()) {
             Product product = productService.getProductEntity(itemReq.getProductId());
-            checkStockSufficiency(product, itemReq.getVariantId(), itemReq.getQuantity());
-            cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity());
+            ProductVariant variant = getVariantOrThrow(product, itemReq.getVariantId());
+
+            checkStockSufficiency(product, variant, itemReq.getQuantity());
+            cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity(), variant.getPrice());
         }
 
         repository.save(cart);
@@ -89,9 +91,19 @@ public class CartService {
                 .orElseThrow(() -> new CartItemNotFoundException(itemId));
 
         Product product = productService.getProductEntity(targetItem.getProductId());
-        checkStockSufficiency(product, targetItem.getVariantId(), quantity);
+        ProductVariant variant = getVariantOrThrow(product, targetItem.getVariantId());
+
+        checkStockSufficiency(product, variant, quantity);
 
         cart.updateItemQuantity(itemId, quantity);
+        repository.save(cart);
+        return getCartData(cart, null);
+    }
+
+    @Transactional
+    public CartResponse toggleItemSelection(Integer userId, Integer itemId, boolean isSelected) {
+        Cart cart = repository.findByUserId(userId).orElseThrow(() -> new CartNotFoundException(userId));
+        cart.toggleItemSelection(itemId, isSelected);
         repository.save(cart);
         return getCartData(cart, null);
     }
@@ -115,16 +127,17 @@ public class CartService {
         }
     }
 
-    private void checkStockSufficiency(Product product, Integer variantId, int finalTargetQuantity) {
-        if (!product.isAvailableForPurchase()) {
-            throw new IllegalStateException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
-        }
-
-        ProductVariant variant = product.getVariants().stream()
+    private ProductVariant getVariantOrThrow(Product product, Integer variantId) {
+        return product.getVariants().stream()
                 .filter(v -> v.getId().equals(variantId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mẫu mã sản phẩm tương ứng"));
+    }
 
+    private void checkStockSufficiency(Product product, ProductVariant variant, int finalTargetQuantity) {
+        if (!product.isAvailableForPurchase()) {
+            throw new IllegalStateException("Sản phẩm không hỗ trợ mua hàng tại thời điểm này");
+        }
         if (variant.getInventory().getStockQuantity() < finalTargetQuantity) {
             throw new IllegalStateException("Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu");
         }
@@ -143,7 +156,7 @@ public class CartService {
                 .stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        List<Promotion> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
+        List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
 
         return CartMapper.toResponse(cart, productMap, activePromotions, promoCode, promotionService);
     }

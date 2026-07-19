@@ -32,13 +32,20 @@ public class CartItem extends BaseTimeEntity {
     @Column(nullable = false)
     private int quantity;
 
+    @Column(name = "is_selected", nullable = false)
+    private boolean isSelected = true;
+
+    @Column(name = "added_price", nullable = false)
+    private double addedPrice;
+
     protected CartItem() {}
 
-    public CartItem(Integer productId, Integer variantId, int quantity) {
+    public CartItem(Integer productId, Integer variantId, int quantity, double addedPrice) {
         if (productId == null || variantId == null) throw InvalidCartOperationException.nullProductOrVariant();
         this.productId = productId;
         this.variantId = variantId;
         this.quantity = quantity;
+        this.addedPrice = addedPrice;
     }
 
     void setCart(Cart cart) { this.cart = cart; }
@@ -53,11 +60,17 @@ public class CartItem extends BaseTimeEntity {
         this.quantity = newQuantity;
     }
 
+    public void toggleSelection(boolean isSelected) {
+        this.isSelected = isSelected;
+    }
+
     public Integer getId() { return id; }
     public Cart getCart() { return cart; }
     public Integer getProductId() { return productId; }
     public Integer getVariantId() { return variantId; }
     public int getQuantity() { return quantity; }
+    public boolean isSelected() { return isSelected; }
+    public double getAddedPrice() { return addedPrice; }
 
     @Override public boolean equals(Object o) { return this == o || (o instanceof CartItem c && id != null && id.equals(c.id)); }
     @Override public int hashCode() { return getClass().hashCode(); }

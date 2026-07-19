@@ -33,7 +33,7 @@ public class Cart extends BaseRootEntity {
         this.userId = userId;
     }
 
-    public void addItem(Integer productId, Integer variantId, int quantity) {
+    public void addItem(Integer productId, Integer variantId, int quantity, double addedPrice) {
         Optional<CartItem> existingItem = items.stream()
                 .filter(item -> item.getProductId().equals(productId) && item.getVariantId().equals(variantId))
                 .findFirst();
@@ -42,7 +42,7 @@ public class Cart extends BaseRootEntity {
             existingItem.get().addQuantity(quantity);
         } else {
             if (this.items.size() >= MAX_CART_ITEMS) throw InvalidCartOperationException.maxItemsExceeded(MAX_CART_ITEMS);
-            CartItem newItem = new CartItem(productId, variantId, quantity);
+            CartItem newItem = new CartItem(productId, variantId, quantity, addedPrice);
             newItem.setCart(this);
             items.add(newItem);
         }
@@ -51,6 +51,11 @@ public class Cart extends BaseRootEntity {
     public void updateItemQuantity(Integer itemId, int newQuantity) {
         CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> new CartItemNotFoundException(itemId));
         item.updateQuantity(newQuantity);
+    }
+
+    public void toggleItemSelection(Integer itemId, boolean isSelected) {
+        CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> new CartItemNotFoundException(itemId));
+        item.toggleSelection(isSelected);
     }
 
     public void removeItem(Integer itemId) { items.removeIf(item -> item.getId().equals(itemId)); }

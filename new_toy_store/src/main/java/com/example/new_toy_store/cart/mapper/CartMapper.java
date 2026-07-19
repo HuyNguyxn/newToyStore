@@ -7,7 +7,7 @@ import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
-import com.example.new_toy_store.promotion.domain.Promotion;
+import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -15,8 +15,9 @@ import java.util.stream.Collectors;
 
 public class CartMapper {
 
+    // SỬA LỖI TẠI ĐÂY: Tham số thứ 3 đổi thành List<PromotionResponse>
     public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap,
-                                          List<Promotion> activePromotions,
+                                          List<PromotionResponse> activePromotions,
                                           String promoCode, PromotionService promotionService) {
 
         List<CartItemResponse> itemResponses = cart.getItems().stream().map(item -> {
@@ -27,6 +28,7 @@ public class CartMapper {
 
             boolean isAvailable = true;
             String message = "Sẵn sàng thanh toán";
+            boolean hasPriceChanged = false;
 
             if (product == null) {
                 isAvailable = false;
@@ -47,11 +49,29 @@ public class CartMapper {
             String attributes = variant != null ? variant.generateAttributesSnapshot() : "";
             double originalPrice = variant != null ? variant.getPrice() : 0.0;
 
+            if (variant != null && item.getAddedPrice() != originalPrice) {
+                hasPriceChanged = true;
+                message = item.getAddedPrice() < originalPrice ?
+                        "Sản phẩm đã tăng giá so với lúc bạn thêm vào giỏ hàng." :
+                        "Sản phẩm đang giảm giá! Hãy thanh toán ngay.";
+            }
+
             double discountAmount = 0.0;
             if (product != null && activePromotions != null) {
                 discountAmount = activePromotions.stream()
-                        .filter(p -> p.getTargetProductId().equals(product.getId()))
-                        .map(p -> p.applyDiscount(originalPrice))
+                        .filter(p -> p.getTargetProductId() != null && p.getTargetProductId().equals(product.getId()))
+                        .map(p -> {
+                            double discount = 0.0;
+                            if ("PERCENTAGE".equalsIgnoreCase(p.getType()) || "PERCENT".equalsIgnoreCase(p.getType())) {
+                                discount = originalPrice * (p.getDiscountValue() / 100.0);
+                                if (p.getMaxDiscountAmount() != null && discount > p.getMaxDiscountAmount()) {
+                                    discount = p.getMaxDiscountAmount();
+                                }
+                            } else {
+                                discount = p.getDiscountValue();
+                            }
+                            return discount;
+                        })
                         .max(Double::compareTo)
                         .orElse(0.0);
             }
@@ -69,16 +89,19 @@ public class CartMapper {
                     name,
                     attributes,
                     thumbnail,
+                    item.getAddedPrice(),
                     originalPrice,
                     finalPrice,
                     item.getQuantity(),
+                    item.isSelected(),
                     isAvailable,
+                    hasPriceChanged,
                     message
             );
         }).collect(Collectors.toList());
 
         double cartTotal = itemResponses.stream()
-                .filter(CartItemResponse::isAvailable)
+                .filter(i -> i.isAvailable() && i.isSelected())
                 .mapToDouble(i -> i.getFinalPrice() * i.getQuantity())
                 .sum();
 

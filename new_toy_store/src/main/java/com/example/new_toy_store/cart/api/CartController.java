@@ -45,6 +45,14 @@ public class CartController {
         return service.updateItemQuantity(userId, itemId, quantity);
     }
 
+    @PatchMapping("/{userId}/items/{itemId}/toggle")
+    public CartResponse toggleItemSelection(
+            @PathVariable Integer userId,
+            @PathVariable Integer itemId,
+            @RequestParam boolean isSelected) {
+        return service.toggleItemSelection(userId, itemId, isSelected);
+    }
+
     @DeleteMapping("/{userId}/items/{itemId}")
     public CartResponse removeItem(@PathVariable Integer userId, @PathVariable Integer itemId) {
         return service.removeItemFromCart(userId, itemId);
