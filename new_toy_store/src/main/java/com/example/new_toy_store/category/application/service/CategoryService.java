@@ -1,15 +1,16 @@
 package com.example.new_toy_store.category.application.service;
 
+
 import com.example.new_toy_store.category.application.dto.request.CategoryRequest;
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
-import com.example.new_toy_store.category.domain.CategoryStatus;
-import com.example.new_toy_store.global.event.CategoryHiddenOrDeletedEvent;
-import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
 import com.example.new_toy_store.category.domain.exception.DuplicateCategorySlugException;
+import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
 import com.example.new_toy_store.category.mapper.CategoryMapper;
-import com.example.new_toy_store.infrastructure.specification.CategorySpecification;
+import com.example.new_toy_store.global.event.CategoryCreatedEvent;
+import com.example.new_toy_store.global.event.CategoryStateChangedEvent;
+import com.example.new_toy_store.global.event.CategoryUpdatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +19,6 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,54 +31,6 @@ public class CategoryService {
     public CategoryService(CategoryRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
-    }
-
-    @Transactional(readOnly = true)
-    public Page<CategoryResponse> searchCategories(String keyword, String statusValue, Pageable pageable) {
-        CategoryStatus status = null;
-        if (statusValue != null && !statusValue.trim().isEmpty()) {
-            status = CategoryStatus.from(statusValue);
-        }
-
-        Specification<Category> spec = Specification.where(CategorySpecification.hasKeyword(keyword))
-                .and(CategorySpecification.hasStatus(status));
-
-        return repository.findAll(spec, pageable)
-                .map(CategoryMapper::toFlatResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryTreeForCustomer() {
-        return repository.findVisibleRootCategories().stream()
-                .map(category -> CategoryMapper.toResponse(category, true))
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryTreeForAdmin() {
-        return repository.findAllRootCategories().stream()
-                .map(category -> CategoryMapper.toResponse(category, false))
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public CategoryResponse getCategory(Integer id) {
-        return CategoryMapper.toResponse(getCategoryEntity(id));
-    }
-
-    @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryPath(Integer categoryId) {
-        Category current = getCategoryEntity(categoryId);
-        List<Category> path = new ArrayList<>();
-
-        while (current != null) {
-            path.add(0, current);
-            current = current.getParent();
-        }
-
-        return path.stream()
-                .map(CategoryMapper::toFlatResponse)
-                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -95,6 +47,13 @@ public class CategoryService {
         }
 
         repository.save(category);
+
+        eventPublisher.publishEvent(new CategoryCreatedEvent(
+                category.getId(),
+                category.getSlug(),
+                category.getPath()
+        ));
+
         return CategoryMapper.toResponse(category);
     }
 
@@ -110,7 +69,15 @@ public class CategoryService {
             throw new DuplicateCategorySlugException(request.getSlug());
         }
 
-        category.update(request.getName(), request.getSlug(), request.getDescription(), request.getIconUrl(), request.getDisplayOrder());
+        String oldPath = category.getPath();
+
+        category.update(
+                request.getName(),
+                request.getSlug(),
+                request.getDescription(),
+                request.getIconUrl(),
+                request.getDisplayOrder()
+        );
 
         if (request.getParentId() != null) {
             Category parent = getCategoryEntity(request.getParentId());
@@ -118,6 +85,16 @@ public class CategoryService {
         } else {
             category.removeParent();
         }
+
+        repository.save(category);
+
+        boolean pathChanged = oldPath != null && !oldPath.equals(category.getPath());
+        eventPublisher.publishEvent(new CategoryUpdatedEvent(
+                category.getId(),
+                oldPath,
+                category.getPath(),
+                pathChanged
+        ));
 
         return CategoryMapper.toResponse(category);
     }
@@ -127,7 +104,7 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.hide();
         repository.save(category);
-        eventPublisher.publishEvent(new CategoryHiddenOrDeletedEvent(id, "HIDDEN"));
+        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "HIDDEN"));
     }
 
     @Transactional
@@ -135,6 +112,8 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.show();
         repository.save(category);
+
+        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "VISIBLE"));
     }
 
     @Transactional
@@ -142,7 +121,27 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.delete();
         repository.save(category);
-        eventPublisher.publishEvent(new CategoryHiddenOrDeletedEvent(id, "DELETED"));
+
+        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "DELETED"));
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryResponse getById(Integer id) {
+        return CategoryMapper.toResponse(getCategoryEntity(id));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CategoryResponse> searchCategories(Specification<Category> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable)
+                .map(CategoryMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategoryTree() {
+        List<Category> rootCategories = repository.findByParentIsNullOrderByDisplayOrderAsc();
+        return rootCategories.stream()
+                .map(CategoryMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     private Category getCategoryEntity(Integer id) {
