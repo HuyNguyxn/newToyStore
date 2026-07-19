@@ -3,139 +3,181 @@ package com.example.new_toy_store.cart.mapper;
 import com.example.new_toy_store.cart.application.dto.response.CartItemResponse;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
+import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CartMapper {
 
-    // SỬA LỖI TẠI ĐÂY: Tham số thứ 3 đổi thành List<PromotionResponse>
     public static CartResponse toResponse(Cart cart, Map<Integer, Product> productMap,
                                           List<PromotionResponse> activePromotions,
                                           String promoCode, PromotionService promotionService) {
 
-        List<CartItemResponse> itemResponses = cart.getItems().stream().map(item -> {
-            Product product = productMap.get(item.getProductId());
-            ProductVariant variant = product != null ? product.getVariants().stream()
-                    .filter(v -> v.getId().equals(item.getVariantId()))
-                    .findFirst().orElse(null) : null;
+        List<CartItemResponse> itemResponses = mapCartItems(cart.getItems(), productMap, activePromotions);
 
-            boolean isAvailable = true;
-            String message = "Sẵn sàng thanh toán";
-            boolean hasPriceChanged = false;
+        double cartTotal = calculateCartTotal(itemResponses);
 
-            if (product == null) {
-                isAvailable = false;
-                message = "Sản phẩm không còn tồn tại trên hệ thống";
-            } else if (variant == null) {
-                isAvailable = false;
-                message = "Mẫu mã này đã ngừng phân phối";
-            } else if (!product.isAvailableForPurchase()) {
-                isAvailable = false;
-                message = "Sản phẩm đang tạm ngừng kinh doanh";
-            } else if (variant.getInventory() == null || variant.getInventory().getStockQuantity() < item.getQuantity()) {
-                isAvailable = false;
-                message = "Rất tiếc, kho chỉ còn lại " +
-                        (variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0) + " sản phẩm";
-            }
+        OrderPromotionResult promotionResult = applyOrderPromotion(promoCode, cartTotal, promotionService);
+        double finalTotal = calculateFinalTotal(cartTotal, promotionResult.discountAmount);
 
-            String name = product != null ? product.getName() : "Sản phẩm không hợp lệ";
-            String attributes = variant != null ? variant.generateAttributesSnapshot() : "";
-            double originalPrice = variant != null ? variant.getPrice() : 0.0;
-
-            if (variant != null && item.getAddedPrice() != originalPrice) {
-                hasPriceChanged = true;
-                message = item.getAddedPrice() < originalPrice ?
-                        "Sản phẩm đã tăng giá so với lúc bạn thêm vào giỏ hàng." :
-                        "Sản phẩm đang giảm giá! Hãy thanh toán ngay.";
-            }
-
-            double discountAmount = 0.0;
-            if (product != null && activePromotions != null) {
-                discountAmount = activePromotions.stream()
-                        .filter(p -> p.getTargetProductId() != null && p.getTargetProductId().equals(product.getId()))
-                        .map(p -> {
-                            double discount = 0.0;
-                            if ("PERCENTAGE".equalsIgnoreCase(p.getType()) || "PERCENT".equalsIgnoreCase(p.getType())) {
-                                discount = originalPrice * (p.getDiscountValue() / 100.0);
-                                if (p.getMaxDiscountAmount() != null && discount > p.getMaxDiscountAmount()) {
-                                    discount = p.getMaxDiscountAmount();
-                                }
-                            } else {
-                                discount = p.getDiscountValue();
-                            }
-                            return discount;
-                        })
-                        .max(Double::compareTo)
-                        .orElse(0.0);
-            }
-
-            double finalPrice = Math.max(0.0, Math.round((originalPrice - discountAmount) * 100.0) / 100.0);
-
-            String thumbnail = product != null ? product.getImages().stream()
-                    .filter(ProductImage::isThumbnail).map(ProductImage::getImageUrl)
-                    .findFirst().orElse(null) : null;
-
-            return new CartItemResponse(
-                    item.getId(),
-                    item.getProductId(),
-                    item.getVariantId(),
-                    name,
-                    attributes,
-                    thumbnail,
-                    item.getAddedPrice(),
-                    originalPrice,
-                    finalPrice,
-                    item.getQuantity(),
-                    item.isSelected(),
-                    isAvailable,
-                    hasPriceChanged,
-                    message
-            );
-        }).collect(Collectors.toList());
-
-        double cartTotal = itemResponses.stream()
-                .filter(i -> i.isAvailable() && i.isSelected())
-                .mapToDouble(i -> i.getFinalPrice() * i.getQuantity())
-                .sum();
-
-        cartTotal = Math.round(cartTotal * 100.0) / 100.0;
-
-        double orderDiscountAmount = 0.0;
-        String appliedPromoCode = null;
-        String promoMessage = null;
-
-        if (promoCode != null && !promoCode.trim().isEmpty() && promotionService != null) {
-            try {
-                orderDiscountAmount = promotionService.calculateOrderDiscount(promoCode, cartTotal);
-                if (orderDiscountAmount > 0) {
-                    appliedPromoCode = promoCode.toUpperCase().trim();
-                    promoMessage = "Áp dụng mã giảm giá thành công";
-                } else {
-                    promoMessage = "Mã giảm giá không mang lại ưu đãi cho đơn hàng này";
-                }
-            } catch (RuntimeException ex) {
-                promoMessage = ex.getMessage();
-            }
-        }
-
-        double finalTotal = Math.max(0.0, Math.round((cartTotal - orderDiscountAmount) * 100.0) / 100.0);
+        List<String> allowedActions = generateAllowedActions(itemResponses);
 
         return new CartResponse(
                 cart.getId(),
                 cart.getUserId(),
                 cartTotal,
-                appliedPromoCode,
-                orderDiscountAmount,
+                promotionResult.appliedCode,
+                promotionResult.discountAmount,
                 finalTotal,
-                promoMessage,
-                itemResponses
+                promotionResult.message,
+                itemResponses,
+                allowedActions
         );
     }
+
+    private static List<CartItemResponse> mapCartItems(List<CartItem> items,
+                                                       Map<Integer, Product> productMap,
+                                                       List<PromotionResponse> activePromotions) {
+        return items.stream()
+                .map(item -> buildItemResponse(item, productMap.get(item.getProductId()), activePromotions))
+                .collect(Collectors.toList());
+    }
+
+    private static CartItemResponse buildItemResponse(CartItem item, Product product, List<PromotionResponse> activePromotions) {
+        ProductVariant variant = extractVariant(product, item.getVariantId());
+
+        ItemStatus status = evaluateItemStatus(product, variant, item.getQuantity());
+        PriceStatus priceStatus = evaluatePriceChange(variant, item.getAddedPrice());
+
+        String name = product != null ? product.getName() : "Sản phẩm không hợp lệ";
+        String attributes = variant != null ? variant.generateAttributesSnapshot() : "";
+        String thumbnail = extractThumbnail(product);
+
+        double originalPrice = variant != null ? variant.getPrice() : 0.0;
+        double itemDiscount = calculateItemDiscount(product, originalPrice, activePromotions);
+        double finalPrice = Math.max(0.0, Math.round((originalPrice - itemDiscount) * 100.0) / 100.0);
+
+        return new CartItemResponse(
+                item.getId(),
+                item.getProductId(),
+                item.getVariantId(),
+                name,
+                attributes,
+                thumbnail,
+                item.getAddedPrice(),
+                originalPrice,
+                finalPrice,
+                item.getQuantity(),
+                item.isSelected(),
+                status.isAvailable,
+                priceStatus.hasChanged,
+                priceStatus.hasChanged ? priceStatus.message : status.message
+        );
+    }
+
+    private static double calculateCartTotal(List<CartItemResponse> itemResponses) {
+        double sum = itemResponses.stream()
+                .filter(i -> i.isAvailable() && i.isSelected())
+                .mapToDouble(i -> i.getFinalPrice() * i.getQuantity())
+                .sum();
+        return Math.round(sum * 100.0) / 100.0;
+    }
+
+    private static double calculateFinalTotal(double cartTotal, double discountAmount) {
+        return Math.max(0.0, Math.round((cartTotal - discountAmount) * 100.0) / 100.0);
+    }
+
+    private static double calculateItemDiscount(Product product, double originalPrice, List<PromotionResponse> activePromotions) {
+        if (product == null || activePromotions == null) return 0.0;
+
+        return activePromotions.stream()
+                .filter(p -> p.getTargetProductId() != null && p.getTargetProductId().equals(product.getId()))
+                .map(p -> {
+                    double discount = ("PERCENTAGE".equalsIgnoreCase(p.getType()) || "PERCENT".equalsIgnoreCase(p.getType()))
+                            ? originalPrice * (p.getDiscountValue() / 100.0)
+                            : p.getDiscountValue();
+                    return p.getMaxDiscountAmount() != null ? Math.min(discount, p.getMaxDiscountAmount()) : discount;
+                })
+                .max(Double::compareTo)
+                .orElse(0.0);
+    }
+
+    private static OrderPromotionResult applyOrderPromotion(String promoCode, double cartTotal, PromotionService promotionService) {
+        if (promoCode == null || promoCode.trim().isEmpty() || promotionService == null) {
+            return new OrderPromotionResult(null, 0.0, null);
+        }
+
+        try {
+            double discountAmount = promotionService.calculateOrderDiscount(promoCode, cartTotal);
+            if (discountAmount > 0) {
+                return new OrderPromotionResult(promoCode.toUpperCase().trim(), discountAmount, "Áp dụng mã giảm giá thành công");
+            }
+            return new OrderPromotionResult(null, 0.0, "Mã giảm giá không mang lại ưu đãi cho đơn hàng này");
+        } catch (RuntimeException ex) {
+            return new OrderPromotionResult(null, 0.0, ex.getMessage());
+        }
+    }
+
+    private static List<String> generateAllowedActions(List<CartItemResponse> itemResponses) {
+        List<String> allowedActions = new ArrayList<>();
+        allowedActions.add("CONTINUE_SHOPPING");
+
+        if (!itemResponses.isEmpty()) {
+            allowedActions.add("CLEAR_CART");
+
+            boolean hasSelectedAndAvailable = itemResponses.stream().anyMatch(i -> i.isSelected() && i.isAvailable());
+            boolean hasWarnings = itemResponses.stream().anyMatch(i -> i.isSelected() && (!i.isAvailable() || i.hasPriceChanged()));
+
+            if (hasSelectedAndAvailable) {
+                if (hasWarnings) {
+                    allowedActions.add("REVIEW_CART_WARNINGS");
+                }
+                allowedActions.add("PROCEED_TO_CHECKOUT");
+            }
+        }
+        return allowedActions;
+    }
+
+    private static ItemStatus evaluateItemStatus(Product product, ProductVariant variant, int requestedQuantity) {
+        if (product == null) return new ItemStatus(false, "Sản phẩm không còn tồn tại trên hệ thống");
+        if (variant == null) return new ItemStatus(false, "Mẫu mã này đã ngừng phân phối");
+        if (!product.isAvailableForPurchase()) return new ItemStatus(false, "Sản phẩm đang tạm ngừng kinh doanh");
+
+        int stock = variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0;
+        if (stock < requestedQuantity) return new ItemStatus(false, "Rất tiếc, kho chỉ còn lại " + stock + " sản phẩm");
+
+        return new ItemStatus(true, "Sẵn sàng thanh toán");
+    }
+
+    private static PriceStatus evaluatePriceChange(ProductVariant variant, double addedPrice) {
+        if (variant == null) return new PriceStatus(false, null);
+        double currentPrice = variant.getPrice();
+
+        if (addedPrice < currentPrice) return new PriceStatus(true, "Sản phẩm đã tăng giá so với lúc bạn thêm vào giỏ hàng.");
+        if (addedPrice > currentPrice) return new PriceStatus(true, "Sản phẩm đang giảm giá! Hãy thanh toán ngay.");
+
+        return new PriceStatus(false, null);
+    }
+
+    private static ProductVariant extractVariant(Product product, Integer variantId) {
+        if (product == null || product.getVariants() == null) return null;
+        return product.getVariants().stream().filter(v -> v.getId().equals(variantId)).findFirst().orElse(null);
+    }
+
+    private static String extractThumbnail(Product product) {
+        if (product == null || product.getImages() == null) return null;
+        return product.getImages().stream().filter(ProductImage::isThumbnail).map(ProductImage::getImageUrl).findFirst().orElse(null);
+    }
+
+    private record ItemStatus(boolean isAvailable, String message) {}
+    private record PriceStatus(boolean hasChanged, String message) {}
+    private record OrderPromotionResult(String appliedCode, double discountAmount, String message) {}
 }
