@@ -19,11 +19,21 @@ public class CategoryRequest {
     @Size(max = 500, message = "Mô tả không được vượt quá 500 ký tự")
     private String description;
 
+    @Size(max = 255, message = "Đường dẫn icon không được vượt quá 255 ký tự")
+    private String iconUrl;
+
+    private Integer displayOrder;
+
     @Positive(message = "ID của danh mục cha phải là một số lớn hơn 0")
     private Integer parentId;
+
+    private Long version;
 
     public String getName() { return name; }
     public String getSlug() { return slug; }
     public String getDescription() { return description; }
+    public String getIconUrl() { return iconUrl; }
+    public Integer getDisplayOrder() { return displayOrder; }
     public Integer getParentId() { return parentId; }
+    public Long getVersion() { return version; }
 }

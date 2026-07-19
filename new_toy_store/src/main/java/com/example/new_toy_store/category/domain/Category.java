@@ -15,10 +15,13 @@ import java.util.List;
         indexes = {
                 @Index(name = "idx_category_slug", columnList = "slug"),
                 @Index(name = "idx_category_parent_id", columnList = "parent_id"),
-                @Index(name = "idx_category_status", columnList = "status")
+                @Index(name = "idx_category_status", columnList = "status"),
+                @Index(name = "idx_category_path", columnList = "path")
         }
 )
 public class Category extends BaseRootEntity {
+
+    public static final int MAX_DEPTH = 3;
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -31,6 +34,18 @@ public class Category extends BaseRootEntity {
 
     @Column(length = 500)
     private String description;
+
+    @Column(name = "icon_url", length = 255)
+    private String iconUrl;
+
+    @Column(name = "display_order", nullable = false)
+    private Integer displayOrder = 0;
+
+    @Column(nullable = false)
+    private Integer level = 1;
+
+    @Column(nullable = false, length = 500)
+    private String path;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,9 +60,14 @@ public class Category extends BaseRootEntity {
 
     protected Category() {}
 
-    public Category(String name, String slug, String description) {
+    public Category(String name, String slug, String description, String iconUrl, Integer displayOrder) {
         if (name == null || name.trim().isEmpty() || slug == null || slug.trim().isEmpty()) throw InvalidCategoryOperationException.emptyNameOrSlug();
-        this.name = name; this.slug = slug; this.description = description;
+        this.name = name;
+        this.slug = slug;
+        this.description = description;
+        this.iconUrl = iconUrl;
+        this.displayOrder = displayOrder != null ? displayOrder : 0;
+        this.path = "/" + slug + "/";
     }
 
     public void hide() { this.status = CategoryStatus.HIDDEN; }
@@ -56,21 +76,37 @@ public class Category extends BaseRootEntity {
     public void assignParent(Category parentCategory) {
         if (parentCategory != null) {
             if (this.equals(parentCategory)) throw InvalidCategoryOperationException.selfParenting(this.id);
+            if (parentCategory.getLevel() >= MAX_DEPTH) throw InvalidCategoryOperationException.maxDepthExceeded(MAX_DEPTH);
+
             Category currentAncestor = parentCategory;
             while (currentAncestor != null) {
                 if (this.equals(currentAncestor)) throw InvalidCategoryOperationException.circularReference(this.id, parentCategory.getId());
                 currentAncestor = currentAncestor.getParent();
             }
+            this.level = parentCategory.getLevel() + 1;
+            this.path = parentCategory.getPath() + this.slug + "/";
+        } else {
+            this.level = 1;
+            this.path = "/" + this.slug + "/";
         }
         this.parent = parentCategory;
     }
 
-    public void removeParent() { this.parent = null; }
+    public void removeParent() {
+        this.parent = null;
+        this.level = 1;
+        this.path = "/" + this.slug + "/";
+    }
 
-    public void update(String name, String slug, String description) {
+    public void update(String name, String slug, String description, String iconUrl, Integer displayOrder) {
         if (name != null && !name.trim().isEmpty()) this.name = name;
-        if (slug != null && !slug.trim().isEmpty()) this.slug = slug;
+        if (slug != null && !slug.trim().isEmpty()) {
+            this.slug = slug;
+            this.path = (this.parent != null ? this.parent.getPath() : "/") + this.slug + "/";
+        }
         this.description = description;
+        if (iconUrl != null) this.iconUrl = iconUrl;
+        if (displayOrder != null) this.displayOrder = displayOrder;
     }
 
     @Override
@@ -84,6 +120,10 @@ public class Category extends BaseRootEntity {
     public String getName() { return name; }
     public String getSlug() { return slug; }
     public String getDescription() { return description; }
+    public String getIconUrl() { return iconUrl; }
+    public Integer getDisplayOrder() { return displayOrder; }
+    public Integer getLevel() { return level; }
+    public String getPath() { return path; }
     public CategoryStatus getStatus() { return status; }
     public Category getParent() { return parent; }
     public List<Category> getSubCategories() { return Collections.unmodifiableList(subCategories); }

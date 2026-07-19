@@ -5,6 +5,7 @@ import com.example.new_toy_store.category.application.dto.response.CategoryRespo
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryStatus;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 public class CategoryMapper {
@@ -13,7 +14,9 @@ public class CategoryMapper {
         return new Category(
                 request.getName(),
                 request.getSlug(),
-                request.getDescription()
+                request.getDescription(),
+                request.getIconUrl(),
+                request.getDisplayOrder()
         );
     }
 
@@ -27,11 +30,16 @@ public class CategoryMapper {
                 category.getName(),
                 category.getSlug(),
                 category.getDescription(),
+                category.getIconUrl(),
+                category.getDisplayOrder(),
+                category.getLevel(),
+                category.getPath(),
                 category.getStatus().getDisplayName(),
                 category.getParent() != null ? category.getParent().getId() : null,
                 category.getSubCategories() != null && !category.getSubCategories().isEmpty() ?
                         category.getSubCategories().stream()
                                 .filter(sub -> !onlyVisible || sub.getStatus() == CategoryStatus.VISIBLE)
+                                .sorted(Comparator.comparingInt(Category::getDisplayOrder)) // Sắp xếp cây con
                                 .map(sub -> toResponse(sub, onlyVisible))
                                 .collect(Collectors.toList())
                         : Collections.emptyList()
@@ -44,6 +52,10 @@ public class CategoryMapper {
                 category.getName(),
                 category.getSlug(),
                 category.getDescription(),
+                category.getIconUrl(),
+                category.getDisplayOrder(),
+                category.getLevel(),
+                category.getPath(),
                 category.getStatus().getDisplayName(),
                 category.getParent() != null ? category.getParent().getId() : null,
                 Collections.emptyList()

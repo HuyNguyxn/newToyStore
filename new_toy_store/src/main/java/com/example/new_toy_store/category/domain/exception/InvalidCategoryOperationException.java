@@ -37,6 +37,14 @@ public class InvalidCategoryOperationException extends RuntimeException {
         );
     }
 
+    public static InvalidCategoryOperationException maxDepthExceeded(int maxLevel) {
+        return new InvalidCategoryOperationException(
+                "Độ sâu danh mục vượt quá giới hạn cho phép (Tối đa " + maxLevel + " cấp).",
+                "ASSIGN_PARENT",
+                maxLevel
+        );
+    }
+
     public static InvalidCategoryOperationException emptyStatus() {
         return new InvalidCategoryOperationException(
                 "Trạng thái danh mục không được để trống.",

@@ -1,15 +1,20 @@
-package com.example.new_toy_store.category.application;
+package com.example.new_toy_store.category.application.service;
 
 import com.example.new_toy_store.category.application.dto.request.CategoryRequest;
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
 import com.example.new_toy_store.category.domain.CategoryStatus;
+import com.example.new_toy_store.global.event.CategoryHiddenOrDeletedEvent;
 import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
 import com.example.new_toy_store.category.domain.exception.DuplicateCategorySlugException;
 import com.example.new_toy_store.category.mapper.CategoryMapper;
+import com.example.new_toy_store.infrastructure.specification.CategorySpecification;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +26,11 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CategoryService(CategoryRepository repository) {
+    public CategoryService(CategoryRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -33,7 +40,10 @@ public class CategoryService {
             status = CategoryStatus.from(statusValue);
         }
 
-        return repository.searchCategories(keyword, status, pageable)
+        Specification<Category> spec = Specification.where(CategorySpecification.hasKeyword(keyword))
+                .and(CategorySpecification.hasStatus(status));
+
+        return repository.findAll(spec, pageable)
                 .map(CategoryMapper::toFlatResponse);
     }
 
@@ -92,11 +102,15 @@ public class CategoryService {
     public CategoryResponse update(Integer id, CategoryRequest request) {
         Category category = getCategoryEntity(id);
 
+        if (request.getVersion() != null && !request.getVersion().equals(category.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(Category.class, id);
+        }
+
         if (!category.getSlug().equals(request.getSlug()) && repository.existsBySlug(request.getSlug())) {
             throw new DuplicateCategorySlugException(request.getSlug());
         }
 
-        category.update(request.getName(), request.getSlug(), request.getDescription());
+        category.update(request.getName(), request.getSlug(), request.getDescription(), request.getIconUrl(), request.getDisplayOrder());
 
         if (request.getParentId() != null) {
             Category parent = getCategoryEntity(request.getParentId());
@@ -113,6 +127,7 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.hide();
         repository.save(category);
+        eventPublisher.publishEvent(new CategoryHiddenOrDeletedEvent(id, "HIDDEN"));
     }
 
     @Transactional
@@ -127,6 +142,7 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.delete();
         repository.save(category);
+        eventPublisher.publishEvent(new CategoryHiddenOrDeletedEvent(id, "DELETED"));
     }
 
     private Category getCategoryEntity(Integer id) {

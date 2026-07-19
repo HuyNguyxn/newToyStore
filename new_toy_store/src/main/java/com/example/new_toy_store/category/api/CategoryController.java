@@ -1,6 +1,6 @@
 package com.example.new_toy_store.category.api;
 
-import com.example.new_toy_store.category.application.CategoryService;
+import com.example.new_toy_store.category.application.service.CategoryService;
 import com.example.new_toy_store.category.application.dto.request.CategoryRequest;
 import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
 import jakarta.validation.Valid;
