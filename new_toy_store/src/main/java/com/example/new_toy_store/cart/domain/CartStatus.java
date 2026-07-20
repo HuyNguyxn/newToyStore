@@ -1,47 +1,68 @@
 package com.example.new_toy_store.cart.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.new_toy_store.cart.domain.exception.InvalidCartDataException;
 
-import java.util.Arrays;
+import java.util.List;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum CartStatus {
 
-    ACTIVE("active") {
+    ACTIVE("active", "Đang mua sắm") {
         @Override
-        public boolean canTransitionTo(CartStatus nextStatus) {
-            return nextStatus == CHECKING_OUT || nextStatus == ACTIVE;
+        public boolean isCheckoutInProgress() { return false; }
+
+        @Override
+        public List<CartStatus> getNextValidStates() {
+            return List.of(ACTIVE, CHECKING_OUT);
         }
     },
-    CHECKING_OUT("checking_out") {
+
+    CHECKING_OUT("checking_out", "Đang trong quá trình thanh toán") {
         @Override
-        public boolean canTransitionTo(CartStatus nextStatus) {
-            return nextStatus == ACTIVE || nextStatus == CHECKING_OUT;
+        public boolean isCheckoutInProgress() { return true; }
+
+        @Override
+        public List<CartStatus> getNextValidStates() {
+            return List.of(ACTIVE, CHECKING_OUT);
         }
     };
 
     private final String code;
+    private final String description;
 
-    CartStatus(String code) {
+    CartStatus(String code, String description) {
         this.code = code;
+        this.description = description;
     }
 
-    @JsonValue
-    public String getCode() {
-        return code;
-    }
+    public String getCode() { return code; }
 
-    public abstract boolean canTransitionTo(CartStatus nextStatus);
+    public String getDescription() { return description; }
+
+    public String getName() { return this.name(); }
+
+    public abstract boolean isCheckoutInProgress();
+
+    public abstract List<CartStatus> getNextValidStates();
+
+    public boolean canTransitionTo(CartStatus nextStatus) {
+        return getNextValidStates().contains(nextStatus);
+    }
 
     @JsonCreator
-    public static CartStatus fromCode(String code) {
-        if (code == null || code.trim().isEmpty()) {
-            throw new IllegalArgumentException("Lỗi rác dữ liệu: Trạng thái giỏ hàng không được để trống");
+    public static CartStatus fromCode(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw InvalidCartDataException.emptyStatus();
         }
 
-        return Arrays.stream(CartStatus.values())
-                .filter(status -> status.code.equalsIgnoreCase(code.trim()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Lỗi rác dữ liệu: Không tồn tại trạng thái giỏ hàng mang mã '" + code + "'"));
+        for (CartStatus status : CartStatus.values()) {
+            if (status.code.equalsIgnoreCase(value.trim()) || status.name().equalsIgnoreCase(value.trim())) {
+                return status;
+            }
+        }
+
+        throw InvalidCartDataException.invalidStatus(value);
     }
 }
