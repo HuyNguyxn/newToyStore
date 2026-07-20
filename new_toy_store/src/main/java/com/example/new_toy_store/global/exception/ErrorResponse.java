@@ -10,7 +10,7 @@ public class ErrorResponse {
     private String error;
     private String message;
     private String path;
-    private Map<String, Object> details;
+    private Map<String, ?> details;
 
     public ErrorResponse(int status, String error, String message, String path) {
         this.timestamp = LocalDateTime.now();
@@ -20,7 +20,7 @@ public class ErrorResponse {
         this.path = path;
     }
 
-    public ErrorResponse(int status, String error, String message, String path, Map<String, Object> details) {
+    public ErrorResponse(int status, String error, String message, String path, Map<String, ?> details) {
         this.timestamp = LocalDateTime.now();
         this.status = status;
         this.error = error;
@@ -49,7 +49,7 @@ public class ErrorResponse {
         return path;
     }
 
-    public Map<String, Object> getDetails() {
+    public Map<String, ?> getDetails() {
         return details;
     }
 }

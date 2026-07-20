@@ -5,10 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -18,11 +20,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleOptimisticLockingFailure(
             ObjectOptimisticLockingFailureException ex,
             HttpServletRequest request) {
-
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 "Xung đột dữ liệu",
-                "Sản phẩm bạn đang mua vừa có sự thay đổi về số lượng tồn kho do có người khác vừa thanh toán. Vui lòng tải lại trang và kiểm tra lại giỏ hàng.",
+                "Dữ liệu bạn đang thao tác vừa được cập nhật bởi một người khác. Vui lòng tải lại trang để xem dữ liệu mới nhất.",
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
@@ -61,15 +62,19 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
 
-        String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
+        Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        FieldError::getDefaultMessage,
+                        (existing, replacement) -> existing
+                ));
 
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Lỗi xác thực dữ liệu",
-                errors,
-                request.getRequestURI()
+                "Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra lại các trường được đánh dấu.",
+                request.getRequestURI(),
+                fieldErrors
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }

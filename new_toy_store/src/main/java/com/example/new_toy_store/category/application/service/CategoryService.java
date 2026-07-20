@@ -1,12 +1,16 @@
 package com.example.new_toy_store.category.application.service;
 
-
-import com.example.new_toy_store.category.application.dto.request.CategoryRequest;
-import com.example.new_toy_store.category.application.dto.response.CategoryResponse;
+import com.example.new_toy_store.category.application.dto.request.CategoryCreateRequest;
+import com.example.new_toy_store.category.application.dto.request.CategoryMoveRequest;
+import com.example.new_toy_store.category.application.dto.request.CategoryUpdateInfoRequest;
+import com.example.new_toy_store.category.application.dto.response.CategoryDetailResponse;
+import com.example.new_toy_store.category.application.dto.response.CategorySummaryResponse;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.category.domain.CategoryStatus;
 import com.example.new_toy_store.category.domain.exception.DuplicateCategorySlugException;
 import com.example.new_toy_store.category.domain.exception.CategoryNotFoundException;
+import com.example.new_toy_store.category.domain.exception.InvalidCategoryOperationException;
 import com.example.new_toy_store.category.mapper.CategoryMapper;
 import com.example.new_toy_store.global.event.CategoryCreatedEvent;
 import com.example.new_toy_store.global.event.CategoryStateChangedEvent;
@@ -19,6 +23,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,19 +32,21 @@ public class CategoryService {
 
     private final CategoryRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CategoryMapper categoryMapper;
 
-    public CategoryService(CategoryRepository repository, ApplicationEventPublisher eventPublisher) {
+    public CategoryService(CategoryRepository repository, ApplicationEventPublisher eventPublisher, CategoryMapper categoryMapper) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
+        this.categoryMapper = categoryMapper;
     }
 
     @Transactional
-    public CategoryResponse create(CategoryRequest request) {
+    public CategoryDetailResponse create(CategoryCreateRequest request) {
         if (repository.existsBySlug(request.getSlug())) {
             throw new DuplicateCategorySlugException(request.getSlug());
         }
 
-        Category category = CategoryMapper.toEntity(request);
+        Category category = categoryMapper.toNewEntity(request);
 
         if (request.getParentId() != null) {
             Category parent = getCategoryEntity(request.getParentId());
@@ -47,36 +54,45 @@ public class CategoryService {
         }
 
         repository.save(category);
+        eventPublisher.publishEvent(new CategoryCreatedEvent(category.getId(), category.getSlug(), category.getPath()));
 
-        eventPublisher.publishEvent(new CategoryCreatedEvent(
-                category.getId(),
-                category.getSlug(),
-                category.getPath()
-        ));
-
-        return CategoryMapper.toResponse(category);
+        return categoryMapper.toDetailResponse(category);
     }
 
     @Transactional
-    public CategoryResponse update(Integer id, CategoryRequest request) {
+    public CategoryDetailResponse updateInfo(Integer id, CategoryUpdateInfoRequest request) {
         Category category = getCategoryEntity(id);
-
-        if (request.getVersion() != null && !request.getVersion().equals(category.getVersion())) {
-            throw new ObjectOptimisticLockingFailureException(Category.class, id);
-        }
+        checkOptimisticLocking(category.getVersion(), request.getVersion(), id);
 
         if (!category.getSlug().equals(request.getSlug()) && repository.existsBySlug(request.getSlug())) {
             throw new DuplicateCategorySlugException(request.getSlug());
         }
 
         String oldPath = category.getPath();
-
         category.update(
                 request.getName(),
                 request.getSlug(),
                 request.getDescription(),
                 request.getIconUrl(),
-                request.getDisplayOrder()
+                category.getDisplayOrder()
+        );
+
+        repository.save(category);
+        boolean pathChanged = oldPath != null && !oldPath.equals(category.getPath());
+        eventPublisher.publishEvent(new CategoryUpdatedEvent(category.getId(), oldPath, category.getPath(), pathChanged));
+
+        return categoryMapper.toDetailResponse(category);
+    }
+
+    @Transactional
+    public CategoryDetailResponse moveCategory(Integer id, CategoryMoveRequest request) {
+        Category category = getCategoryEntity(id);
+        checkOptimisticLocking(category.getVersion(), request.getVersion(), id);
+
+        String oldPath = category.getPath();
+        category.update(
+                category.getName(), category.getSlug(), category.getDescription(),
+                category.getIconUrl(), request.getDisplayOrder()
         );
 
         if (request.getParentId() != null) {
@@ -87,16 +103,12 @@ public class CategoryService {
         }
 
         repository.save(category);
-
         boolean pathChanged = oldPath != null && !oldPath.equals(category.getPath());
-        eventPublisher.publishEvent(new CategoryUpdatedEvent(
-                category.getId(),
-                oldPath,
-                category.getPath(),
-                pathChanged
-        ));
+        if (pathChanged) {
+            eventPublisher.publishEvent(new CategoryUpdatedEvent(category.getId(), oldPath, category.getPath(), true));
+        }
 
-        return CategoryMapper.toResponse(category);
+        return categoryMapper.toDetailResponse(category);
     }
 
     @Transactional
@@ -110,9 +122,11 @@ public class CategoryService {
     @Transactional
     public void showCategory(Integer id) {
         Category category = getCategoryEntity(id);
+        if (category.getParent() != null && category.getParent().getStatus() == CategoryStatus.HIDDEN) {
+            throw InvalidCategoryOperationException.parentIsHidden(id);
+        }
         category.show();
         repository.save(category);
-
         eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "VISIBLE"));
     }
 
@@ -121,31 +135,75 @@ public class CategoryService {
         Category category = getCategoryEntity(id);
         category.delete();
         repository.save(category);
-
         eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "DELETED"));
     }
 
     @Transactional(readOnly = true)
-    public CategoryResponse getById(Integer id) {
-        return CategoryMapper.toResponse(getCategoryEntity(id));
+    public CategoryDetailResponse getById(Integer id) {
+        return categoryMapper.toDetailResponse(getCategoryEntity(id));
     }
 
     @Transactional(readOnly = true)
-    public Page<CategoryResponse> searchCategories(Specification<Category> spec, Pageable pageable) {
+    public Page<CategorySummaryResponse> searchCategories(String keyword, String status, Pageable pageable) {
+        Specification<Category> spec = Specification.where(null);
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                CategoryStatus categoryStatus = CategoryStatus.valueOf(status.toUpperCase());
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), categoryStatus));
+            } catch (IllegalArgumentException e) {
+            }
+        }
+
         return repository.findAll(spec, pageable)
-                .map(CategoryMapper::toResponse);
+                .map(categoryMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoryTree() {
+    public List<CategoryDetailResponse> getCategoryTreeForAdmin() {
         List<Category> rootCategories = repository.findByParentIsNullOrderByDisplayOrderAsc();
         return rootCategories.stream()
-                .map(CategoryMapper::toResponse)
+                .map(categoryMapper::toDetailResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryDetailResponse> getCategoryTreeForCustomer() {
+        List<Category> rootCategories = repository.findByParentIsNullOrderByDisplayOrderAsc();
+        return rootCategories.stream()
+                .filter(category -> category.getStatus() != CategoryStatus.HIDDEN)
+                .map(categoryMapper::toDetailResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategorySummaryResponse> getCategoryPath(Integer id) {
+        Category current = getCategoryEntity(id);
+        List<Category> path = new ArrayList<>();
+
+        while (current != null) {
+            path.add(0, current);
+            current = current.getParent();
+        }
+
+        return path.stream()
+                .map(categoryMapper::toSummaryResponse)
                 .collect(Collectors.toList());
     }
 
     private Category getCategoryEntity(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
+    }
+
+    private void checkOptimisticLocking(Long currentVersion, Long requestVersion, Integer id) {
+        if (requestVersion != null && !requestVersion.equals(currentVersion)) {
+            throw new ObjectOptimisticLockingFailureException(Category.class, id);
+        }
     }
 }

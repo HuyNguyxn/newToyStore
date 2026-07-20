@@ -61,6 +61,14 @@ public class InvalidCategoryOperationException extends RuntimeException {
         );
     }
 
+    public static InvalidCategoryOperationException parentIsHidden(Integer categoryId) {
+        return new InvalidCategoryOperationException(
+                "Không thể hiển thị danh mục này vì danh mục cha đang bị ẩn.",
+                "SHOW_CATEGORY",
+                categoryId
+        );
+    }
+
     public String getOperation() { return operation; }
     public Object getInvalidValue() { return invalidValue; }
 }
