@@ -8,12 +8,19 @@ import org.springframework.data.jpa.domain.Specification;
 public class CustomerReturnSpecification {
 
     public static Specification<CustomerReturn> filter(String status, Integer orderId) {
-        Specification<CustomerReturn> spec = Specification.where(BaseSpecification.isDistinct());
+        return Specification.where(BaseSpecification.<CustomerReturn>isDistinct())
+                .and(hasStatus(status))
+                .and(hasOrderId(orderId));
+    }
 
-        if (status != null && !status.trim().isEmpty()) {
-            spec = spec.and(BaseSpecification.isEqual("status", CustomerReturnStatus.from(status)));
+    private static Specification<CustomerReturn> hasStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
         }
+        return BaseSpecification.isEqual("status", CustomerReturnStatus.from(status));
+    }
 
-        return spec.and(BaseSpecification.isEqual("orderId", orderId));
+    private static Specification<CustomerReturn> hasOrderId(Integer orderId) {
+        return BaseSpecification.isEqual("orderId", orderId);
     }
 }
