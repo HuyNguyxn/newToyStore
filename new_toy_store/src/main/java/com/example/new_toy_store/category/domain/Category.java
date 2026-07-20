@@ -14,9 +14,9 @@ import java.util.List;
         name = "categories",
         indexes = {
                 @Index(name = "idx_category_slug", columnList = "slug"),
-                @Index(name = "idx_category_parent_id", columnList = "parent_id"),
                 @Index(name = "idx_category_status", columnList = "status"),
-                @Index(name = "idx_category_path", columnList = "path")
+                @Index(name = "idx_category_path", columnList = "path"),
+                @Index(name = "idx_category_parent_order", columnList = "parent_id, display_order")
         }
 )
 public class Category extends BaseRootEntity {
