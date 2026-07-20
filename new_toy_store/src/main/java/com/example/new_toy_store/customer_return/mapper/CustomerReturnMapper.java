@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 public class CustomerReturnMapper {
 
-
     public static CustomerReturn toEntity(CustomerReturnRequest request, String customerUsername) {
         List<CustomerReturnItem> items = request.getItems().stream()
                 .map(CustomerReturnMapper::toItemEntity)
@@ -36,14 +35,13 @@ public class CustomerReturnMapper {
                 entity.getOrderId(),
                 roundDouble(entity.getReturnShippingFee()),
                 roundDouble(entity.calculateRawTotalRefund()),
-                entity.getStatus().name(),
-                entity.getStatus().getDisplayName()
+                entity.getStatus()
         );
 
         response.setItems(mapItems(entity.getItems()));
         response.setHistories(mapHistories(entity.getHistories()));
         response.setProofImages(mapImages(entity.getProofImages()));
-        response.setAvailableActions(getAvailableActions(entity.getStatus()));
+        response.setAvailableActions(entity.getStatus().getNextValidStates());
 
         return response;
     }
@@ -51,9 +49,9 @@ public class CustomerReturnMapper {
     private static CustomerReturnItem toItemEntity(CustomerReturnItemRequest req) {
         return new CustomerReturnItem(
                 req.getOrderItemId(),
-                req.getQuantity(),
                 req.getProductId(),
                 req.getVariantId(),
+                req.getQuantity(),
                 ReturnReasonCode.from(req.getReasonCode()),
                 req.getExpectedRefundAmount()
         );
@@ -65,7 +63,7 @@ public class CustomerReturnMapper {
         return items.stream().map(i -> {
             CustomerReturnItemResponse res = new CustomerReturnItemResponse(
                     i.getId(), i.getOrderItemId(), i.getQuantity(),
-                    i.getReasonCode().name(), i.getReasonCode().getDescription(),
+                    i.getReasonCode(),
                     roundDouble(i.getExpectedRefundAmount())
             );
             res.setProductId(i.getProductId());
@@ -77,19 +75,14 @@ public class CustomerReturnMapper {
     private static List<CustomerReturnHistoryResponse> mapHistories(List<CustomerReturnHistory> histories) {
         if (histories == null || histories.isEmpty()) return Collections.emptyList();
         return histories.stream().map(h -> new CustomerReturnHistoryResponse(
-                h.getId(), h.getOldStatus() != null ? h.getOldStatus().name() : null,
-                h.getNewStatus().name(), h.getActionBy(), h.getActionDate(), h.getNote()
+                h.getId(), h.getOldStatus(), h.getNewStatus(),
+                h.getActionBy(), h.getActionDate(), h.getNote()
         )).collect(Collectors.toList());
     }
 
     private static List<String> mapImages(List<CustomerReturnImage> images) {
         if (images == null || images.isEmpty()) return Collections.emptyList();
         return images.stream().map(CustomerReturnImage::getImageUrl).collect(Collectors.toList());
-    }
-
-    private static List<String> getAvailableActions(CustomerReturnStatus status) {
-        if (status == null) return Collections.emptyList();
-        return status.getNextValidStates().stream().map(Enum::name).collect(Collectors.toList());
     }
 
     private static double roundDouble(double value) {

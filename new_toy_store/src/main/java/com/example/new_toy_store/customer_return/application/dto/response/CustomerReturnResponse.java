@@ -1,5 +1,6 @@
 package com.example.new_toy_store.customer_return.application.dto.response;
 
+import com.example.new_toy_store.customer_return.domain.CustomerReturnStatus;
 import java.util.List;
 
 public class CustomerReturnResponse {
@@ -7,17 +8,21 @@ public class CustomerReturnResponse {
     private Integer orderId;
     private double returnShippingFee;
     private double totalRefundAmount;
-    private String status;
-    private String statusDisplayName;
-    private List<String> availableActions;
+    private CustomerReturnStatus status;
+    private List<CustomerReturnStatus> availableActions;
+
     private List<String> proofImages;
     private List<CustomerReturnItemResponse> items;
     private List<CustomerReturnHistoryResponse> histories;
 
     public CustomerReturnResponse() {}
 
-    public CustomerReturnResponse(Integer id, Integer orderId, double returnShippingFee, double totalRefundAmount, String status, String statusDisplayName) {
-        this.id = id; this.orderId = orderId; this.returnShippingFee = returnShippingFee; this.totalRefundAmount = totalRefundAmount; this.status = status; this.statusDisplayName = statusDisplayName;
+    public CustomerReturnResponse(Integer id, Integer orderId, double returnShippingFee, double totalRefundAmount, CustomerReturnStatus status) {
+        this.id = id;
+        this.orderId = orderId;
+        this.returnShippingFee = returnShippingFee;
+        this.totalRefundAmount = totalRefundAmount;
+        this.status = status;
     }
 
     public Integer getId() { return id; }
@@ -28,12 +33,10 @@ public class CustomerReturnResponse {
     public void setReturnShippingFee(double returnShippingFee) { this.returnShippingFee = returnShippingFee; }
     public double getTotalRefundAmount() { return totalRefundAmount; }
     public void setTotalRefundAmount(double totalRefundAmount) { this.totalRefundAmount = totalRefundAmount; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public String getStatusDisplayName() { return statusDisplayName; }
-    public void setStatusDisplayName(String statusDisplayName) { this.statusDisplayName = statusDisplayName; }
-    public List<String> getAvailableActions() { return availableActions; }
-    public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
+    public CustomerReturnStatus getStatus() { return status; }
+    public void setStatus(CustomerReturnStatus status) { this.status = status; }
+    public List<CustomerReturnStatus> getAvailableActions() { return availableActions; }
+    public void setAvailableActions(List<CustomerReturnStatus> availableActions) { this.availableActions = availableActions; }
     public List<String> getProofImages() { return proofImages; }
     public void setProofImages(List<String> proofImages) { this.proofImages = proofImages; }
     public List<CustomerReturnItemResponse> getItems() { return items; }
