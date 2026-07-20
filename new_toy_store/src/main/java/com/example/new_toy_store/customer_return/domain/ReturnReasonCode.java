@@ -2,7 +2,10 @@ package com.example.new_toy_store.customer_return.domain;
 
 import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnDataException;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum ReturnReasonCode {
     CHANGED_MIND("Đổi ý, không muốn mua nữa") {
         @Override public boolean isSellable() { return true; }
@@ -23,6 +26,12 @@ public enum ReturnReasonCode {
         this.description = description;
     }
 
+    @JsonProperty("code")
+    public String getCode() {
+        return name();
+    }
+
+    @JsonProperty("description")
     public String getDescription() {
         return description;
     }

@@ -2,10 +2,13 @@ package com.example.new_toy_store.customer_return.domain;
 
 import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnDataException;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum CustomerReturnStatus {
     REQUESTED("Yêu cầu mới") {
         @Override public List<CustomerReturnStatus> getNextValidStates() { return Arrays.asList(APPROVED, REJECTED, NEEDS_MORE_INFO, CANCELLED); }
@@ -47,6 +50,12 @@ public enum CustomerReturnStatus {
         this.displayName = displayName;
     }
 
+    @JsonProperty("code")
+    public String getCode() {
+        return name();
+    }
+
+    @JsonProperty("displayName")
     public String getDisplayName() {
         return displayName;
     }
