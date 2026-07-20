@@ -1,9 +1,9 @@
 package com.example.new_toy_store.category.application.dto.response;
 
+import com.example.new_toy_store.category.domain.CategoryStatus;
 import java.util.List;
 
 public class CategoryResponse {
-
     private Integer id;
     private String name;
     private String slug;
@@ -12,11 +12,19 @@ public class CategoryResponse {
     private Integer displayOrder;
     private Integer level;
     private String path;
-    private String status;
+    private CategoryStatus status;
+    private List<CategoryStatus> allowedNextActions;
     private Integer parentId;
-    private List<CategoryResponse> children;
+    private String parentName;
 
-    public CategoryResponse(Integer id, String name, String slug, String description, String iconUrl, Integer displayOrder, Integer level, String path, String status, Integer parentId, List<CategoryResponse> children) {
+    private List<CategoryResponse> subCategories;
+
+    public CategoryResponse() {}
+
+    public CategoryResponse(Integer id, String name, String slug, String description,
+                            String iconUrl, Integer displayOrder, Integer level, String path,
+                            CategoryStatus status, List<CategoryStatus> allowedNextActions,
+                            Integer parentId, String parentName, List<CategoryResponse> subCategories) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -26,8 +34,10 @@ public class CategoryResponse {
         this.level = level;
         this.path = path;
         this.status = status;
+        this.allowedNextActions = allowedNextActions;
         this.parentId = parentId;
-        this.children = children;
+        this.parentName = parentName;
+        this.subCategories = subCategories;
     }
 
     public Integer getId() { return id; }
@@ -38,7 +48,9 @@ public class CategoryResponse {
     public Integer getDisplayOrder() { return displayOrder; }
     public Integer getLevel() { return level; }
     public String getPath() { return path; }
-    public String getStatus() { return status; }
+    public CategoryStatus getStatus() { return status; }
+    public List<CategoryStatus> getAllowedNextActions() { return allowedNextActions; }
     public Integer getParentId() { return parentId; }
-    public List<CategoryResponse> getChildren() { return children; }
+    public String getParentName() { return parentName; }
+    public List<CategoryResponse> getSubCategories() { return subCategories; }
 }

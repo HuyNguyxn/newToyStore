@@ -13,9 +13,9 @@ public interface CategoryRepository extends JpaRepository<Category, Integer>, Jp
 
     boolean existsBySlug(String slug);
 
-    @EntityGraph(attributePaths = {"children"})
+    @EntityGraph(attributePaths = {"parent", "children"})
     List<Category> findByParentIsNullOrderByDisplayOrderAsc();
 
-    @EntityGraph(attributePaths = {"children"})
+    @EntityGraph(attributePaths = {"parent", "children"})
     Optional<Category> findById(Integer id);
 }

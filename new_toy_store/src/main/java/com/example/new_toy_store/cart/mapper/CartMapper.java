@@ -4,6 +4,7 @@ import com.example.new_toy_store.cart.application.dto.response.CartItemResponse;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
+import com.example.new_toy_store.cart.domain.CartStatus;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
@@ -29,10 +30,14 @@ public class CartMapper {
         double finalTotal = calculateFinalTotal(cartTotal, promotionResult.discountAmount);
 
         List<String> allowedActions = generateAllowedActions(itemResponses);
+        CartStatus currentStatus = cart.getStatus();
+        List<CartStatus> nextStates = currentStatus != null ? currentStatus.getNextValidStates() : null;
 
         return new CartResponse(
                 cart.getId(),
                 cart.getUserId(),
+                currentStatus,
+                nextStates,
                 cartTotal,
                 promotionResult.appliedCode,
                 promotionResult.discountAmount,
