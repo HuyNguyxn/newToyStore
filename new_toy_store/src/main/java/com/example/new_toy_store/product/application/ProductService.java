@@ -12,6 +12,7 @@ import com.example.new_toy_store.product.domain.ProductRepository;
 import com.example.new_toy_store.product.domain.ProductVariantRepository;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import com.example.new_toy_store.product.domain.exception.ProductNotFoundException;
+import com.example.new_toy_store.infrastructure.specification.ProductSpecification;
 import com.example.new_toy_store.product.mapper.ProductMapper;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
@@ -19,6 +20,7 @@ import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,10 +140,6 @@ public class ProductService {
         variant.updatePrice(newPrice);
     }
 
-    // ==========================================
-    // CÁC HÀM XỬ LÝ PRODUCT GỐC GIỮ NGUYÊN
-    // ==========================================
-
     @Transactional(readOnly = true)
     public Page<ProductResponse> getAllProducts(Pageable pageable) {
         Page<Product> productPage = repository.findAll(pageable);
@@ -150,24 +148,32 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> getProductsByCategory(Integer categoryId, Pageable pageable) {
-        Page<Product> productPage = repository.findByCategoriesId(categoryId, pageable);
+        Specification<Product> spec = Specification.where(ProductSpecification.isDistinct())
+                .and(ProductSpecification.hasCategoryId(categoryId));
+
+        Page<Product> productPage = repository.findAll(spec, pageable);
         return mapProductsToResponsesWithBatchData(productPage);
     }
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> searchActiveProducts(String keyword, Pageable pageable) {
-        Page<Product> productPage = repository.findByNameContainingIgnoreCaseAndStatus(
-                keyword != null ? keyword.trim() : "", ProductStatus.ACTIVE, pageable);
+        Specification<Product> spec = Specification.where(ProductSpecification.isDistinct())
+                .and(ProductSpecification.hasKeyword(keyword))
+                .and(ProductSpecification.hasStatus(ProductStatus.ACTIVE));
+
+        Page<Product> productPage = repository.findAll(spec, pageable);
         return mapProductsToResponsesWithBatchData(productPage);
     }
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
-        double validMinPrice = (minPrice != null && minPrice >= 0) ? minPrice : 0.0;
-        double validMaxPrice = (maxPrice != null && maxPrice >= validMinPrice) ? maxPrice : Double.MAX_VALUE;
         ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : ProductStatus.ACTIVE;
 
-        Page<Product> productPage = repository.findByBasePriceBetweenAndStatus(validMinPrice, validMaxPrice, targetStatus, pageable);
+        Specification<Product> spec = Specification.where(ProductSpecification.isDistinct())
+                .and(ProductSpecification.priceBetween(minPrice, maxPrice))
+                .and(ProductSpecification.hasStatus(targetStatus));
+
+        Page<Product> productPage = repository.findAll(spec, pageable);
         return mapProductsToResponsesWithBatchData(productPage);
     }
 

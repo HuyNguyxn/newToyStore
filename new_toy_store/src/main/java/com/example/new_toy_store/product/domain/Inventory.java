@@ -24,6 +24,10 @@ public class Inventory extends BaseSoftDeleteEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
 
@@ -121,6 +125,10 @@ public class Inventory extends BaseSoftDeleteEntity {
 
     public Integer getId() {
         return id;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public int getStockQuantity() {

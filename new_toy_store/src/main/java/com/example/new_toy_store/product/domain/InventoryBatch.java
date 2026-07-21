@@ -19,6 +19,10 @@ public class InventoryBatch extends BaseSoftDeleteEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Column(name = "batch_number", nullable = false, length = 50)
     private String batchNumber;
 
@@ -64,6 +68,10 @@ public class InventoryBatch extends BaseSoftDeleteEntity {
 
     public Integer getId() {
         return id;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public String getBatchNumber() {
