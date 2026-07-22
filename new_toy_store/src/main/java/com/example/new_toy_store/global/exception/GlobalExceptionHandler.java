@@ -2,6 +2,7 @@ package com.example.new_toy_store.global.exception;
 
 import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -75,6 +76,28 @@ public class GlobalExceptionHandler {
                 "Dữ liệu đầu vào không hợp lệ. Vui lòng kiểm tra lại các trường được đánh dấu.",
                 request.getRequestURI(),
                 fieldErrors
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+
+        Map<String, String> violations = ex.getConstraintViolations().stream()
+                .collect(Collectors.toMap(
+                        violation -> violation.getPropertyPath().toString(),
+                        violation -> violation.getMessage(),
+                        (existing, replacement) -> existing
+                ));
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Dữ liệu không hợp lệ",
+                "Tham số yêu cầu không hợp lệ.",
+                request.getRequestURI(),
+                violations
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }

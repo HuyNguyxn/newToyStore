@@ -14,12 +14,35 @@ public class InvalidCartOperationException extends CartDomainException {
         return new InvalidCartOperationException("ID người dùng không được để trống khi khởi tạo giỏ hàng.", "CREATE_CART", null);
     }
 
+    public static InvalidCartOperationException invalidUserId(Integer userId) {
+        return new InvalidCartOperationException("ID người dùng phải lớn hơn 0.", "CREATE_CART", userId);
+    }
+
     public static InvalidCartOperationException nullProductOrVariant() {
         return new InvalidCartOperationException("ID sản phẩm và ID phân loại không được để trống.", "ADD_ITEM", null);
     }
 
+    public static InvalidCartOperationException invalidProductOrVariant(Integer productId, Integer variantId) {
+        InvalidCartOperationException exception = new InvalidCartOperationException(
+                "ID sản phẩm và ID phân loại phải lớn hơn 0.",
+                "ADD_ITEM",
+                null
+        );
+        exception.addContext("productId", productId);
+        exception.addContext("variantId", variantId);
+        return exception;
+    }
+
     public static InvalidCartOperationException invalidQuantity(int quantity) {
         return new InvalidCartOperationException("Số lượng không hợp lệ (" + quantity + "). Số lượng thao tác phải lớn hơn 0.", "UPDATE_QUANTITY", quantity);
+    }
+
+    public static InvalidCartOperationException invalidPrice(double price) {
+        return new InvalidCartOperationException(
+                "Giá sản phẩm trong giỏ phải là số hữu hạn và không được nhỏ hơn 0.",
+                "ADD_ITEM",
+                price
+        );
     }
 
     public static InvalidCartOperationException maxItemsExceeded(int maxItems) {

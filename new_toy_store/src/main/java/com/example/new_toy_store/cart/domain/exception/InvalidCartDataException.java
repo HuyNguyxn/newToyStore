@@ -1,18 +1,16 @@
 package com.example.new_toy_store.cart.domain.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class InvalidCartDataException extends RuntimeException {
+public class InvalidCartDataException extends CartDomainException {
 
     private final String field;
     private final Object invalidValue;
 
     private InvalidCartDataException(String message, String field, Object invalidValue) {
-        super(message);
+        super(message, "INVALID_CART_DATA");
         this.field = field;
         this.invalidValue = invalidValue;
+        addContext("field", field);
+        addContext("invalidValue", invalidValue);
     }
 
     public static InvalidCartDataException emptyStatus() {

@@ -5,6 +5,7 @@ import com.example.new_toy_store.global.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,10 +39,28 @@ public class CartExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex, request);
     }
 
+    @ExceptionHandler(InvalidCartDataException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidDataException(
+            InvalidCartDataException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex, request);
+    }
+
     @ExceptionHandler(CartCrossModuleException.class)
     public ResponseEntity<ErrorResponse> handleCrossModuleException(
             CartCrossModuleException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex, request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                "CART_DATA_CONFLICT",
+                "Dữ liệu giỏ hàng xung đột với dữ liệu hiện có.",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(

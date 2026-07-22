@@ -3,14 +3,14 @@ package com.example.new_toy_store.cart.domain;
 import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 
 @Entity
+@Check(constraints = "product_id > 0 AND variant_id > 0 AND quantity > 0 AND added_price >= 0")
 @Table(
         name = "cart_items",
         uniqueConstraints = {@UniqueConstraint(name = "uk_cart_variant", columnNames = {"cart_id", "variant_id"})},
         indexes = {
-                @Index(name = "idx_cart_item_cart", columnList = "cart_id"),
-                @Index(name = "idx_cart_item_product", columnList = "product_id"),
                 @Index(name = "idx_cart_item_variant", columnList = "variant_id"),
                 @Index(name = "idx_cart_item_updated_at", columnList = "updated_at")
         }
@@ -43,6 +43,13 @@ public class CartItem extends BaseTimeEntity {
 
     public CartItem(Integer productId, Integer variantId, int quantity, double addedPrice) {
         if (productId == null || variantId == null) throw InvalidCartOperationException.nullProductOrVariant();
+        if (productId <= 0 || variantId <= 0) {
+            throw InvalidCartOperationException.invalidProductOrVariant(productId, variantId);
+        }
+        if (quantity <= 0) throw InvalidCartOperationException.invalidQuantity(quantity);
+        if (!Double.isFinite(addedPrice) || addedPrice < 0) {
+            throw InvalidCartOperationException.invalidPrice(addedPrice);
+        }
         this.productId = productId;
         this.variantId = variantId;
         this.quantity = quantity;

@@ -4,6 +4,7 @@ import com.example.new_toy_store.cart.domain.exception.CartItemNotFoundException
 import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
+@Check(constraints = "user_id > 0 AND status IN ('ACTIVE', 'CHECKING_OUT')")
 @Table(
         name = "carts",
         uniqueConstraints = @UniqueConstraint(name = "uk_cart_user", columnNames = "user_id")
@@ -38,6 +40,7 @@ public class Cart extends BaseRootEntity {
 
     public Cart(Integer userId) {
         if (userId == null) throw InvalidCartOperationException.nullUserId();
+        if (userId <= 0) throw InvalidCartOperationException.invalidUserId(userId);
         this.userId = userId;
     }
 
@@ -81,7 +84,10 @@ public class Cart extends BaseRootEntity {
 
     public void removeItem(Integer itemId) {
         checkIfCartIsActive();
-        items.removeIf(item -> item.getId().equals(itemId));
+        boolean removed = items.removeIf(item -> item.getId().equals(itemId));
+        if (!removed) {
+            throw new CartItemNotFoundException(itemId);
+        }
     }
 
     public void clearCart() {
