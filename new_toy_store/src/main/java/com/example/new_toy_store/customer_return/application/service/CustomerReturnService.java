@@ -1,4 +1,4 @@
-package com.example.new_toy_store.customer_return.application;
+package com.example.new_toy_store.customer_return.application.service;
 
 import com.example.new_toy_store.customer_return.application.dto.request.CustomerReturnRequest;
 import com.example.new_toy_store.customer_return.application.dto.response.CustomerReturnResponse;

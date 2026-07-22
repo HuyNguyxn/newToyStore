@@ -1,6 +1,6 @@
 package com.example.new_toy_store.customer_return.api;
 
-import com.example.new_toy_store.customer_return.application.CustomerReturnService;
+import com.example.new_toy_store.customer_return.application.service.CustomerReturnService;
 import com.example.new_toy_store.customer_return.application.dto.request.CustomerReturnRequest;
 import com.example.new_toy_store.customer_return.application.dto.response.CustomerReturnResponse;
 import com.example.new_toy_store.infrastructure.security.service.CustomUserDetails;

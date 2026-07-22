@@ -12,9 +12,15 @@ import java.util.stream.Collectors;
 public class CustomerReturnMapper {
 
     public static CustomerReturn toEntity(CustomerReturnRequest request, String customerUsername) {
-        List<CustomerReturnItem> items = request.getItems().stream()
-                .map(CustomerReturnMapper::toItemEntity)
-                .collect(Collectors.toList());
+        return buildCustomerReturnEntity(request, customerUsername);
+    }
+
+    public static CustomerReturnResponse toResponse(CustomerReturn entity) {
+        return buildCustomerReturnResponse(entity);
+    }
+
+    private static CustomerReturn buildCustomerReturnEntity(CustomerReturnRequest request, String customerUsername) {
+        List<CustomerReturnItem> items = extractItemsFromRequest(request.getItems());
 
         return new CustomerReturn(
                 request.getOrderId(),
@@ -25,28 +31,51 @@ public class CustomerReturnMapper {
         );
     }
 
-    public static CustomerReturnResponse toResponse(CustomerReturn entity) {
-        return buildResponse(entity);
-    }
-
-    private static CustomerReturnResponse buildResponse(CustomerReturn entity) {
+    private static CustomerReturnResponse buildCustomerReturnResponse(CustomerReturn entity) {
         CustomerReturnResponse response = new CustomerReturnResponse(
                 entity.getId(),
                 entity.getOrderId(),
-                roundDouble(entity.getReturnShippingFee()),
-                roundDouble(entity.calculateRawTotalRefund()),
+                roundToTwoDecimals(entity.getReturnShippingFee()),
+                roundToTwoDecimals(entity.calculateRawTotalRefund()),
                 entity.getStatus()
         );
 
-        response.setItems(mapItems(entity.getItems()));
-        response.setHistories(mapHistories(entity.getHistories()));
-        response.setProofImages(mapImages(entity.getProofImages()));
+        response.setItems(extractItemResponses(entity.getItems()));
+        response.setHistories(extractHistoryResponses(entity.getHistories()));
+        response.setProofImages(extractImageUrls(entity.getProofImages()));
         response.setAvailableActions(entity.getStatus().getNextValidStates());
 
         return response;
     }
 
-    private static CustomerReturnItem toItemEntity(CustomerReturnItemRequest req) {
+    private static List<CustomerReturnItem> extractItemsFromRequest(List<CustomerReturnItemRequest> requests) {
+        if (requests == null || requests.isEmpty()) return Collections.emptyList();
+        return requests.stream()
+                .map(CustomerReturnMapper::buildItemEntity)
+                .collect(Collectors.toList());
+    }
+
+    private static List<CustomerReturnItemResponse> extractItemResponses(List<CustomerReturnItem> items) {
+        if (items == null || items.isEmpty()) return Collections.emptyList();
+        return items.stream()
+                .map(CustomerReturnMapper::buildItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    private static List<CustomerReturnHistoryResponse> extractHistoryResponses(List<CustomerReturnHistory> histories) {
+        if (histories == null || histories.isEmpty()) return Collections.emptyList();
+        return histories.stream()
+                .map(CustomerReturnMapper::buildHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> extractImageUrls(List<CustomerReturnImage> images) {
+        if (images == null || images.isEmpty()) return Collections.emptyList();
+        return images.stream()
+                .map(CustomerReturnImage::getImageUrl)
+                .collect(Collectors.toList());
+    }
+    private static CustomerReturnItem buildItemEntity(CustomerReturnItemRequest req) {
         return new CustomerReturnItem(
                 req.getOrderItemId(),
                 req.getProductId(),
@@ -57,35 +86,31 @@ public class CustomerReturnMapper {
         );
     }
 
-    private static List<CustomerReturnItemResponse> mapItems(List<CustomerReturnItem> items) {
-        if (items == null || items.isEmpty()) return Collections.emptyList();
-
-        return items.stream().map(i -> {
-            CustomerReturnItemResponse res = new CustomerReturnItemResponse(
-                    i.getId(), i.getOrderItemId(), i.getQuantity(),
-                    i.getReasonCode(),
-                    roundDouble(i.getExpectedRefundAmount())
-            );
-            res.setProductId(i.getProductId());
-            res.setVariantId(i.getVariantId());
-            return res;
-        }).collect(Collectors.toList());
+    private static CustomerReturnItemResponse buildItemResponse(CustomerReturnItem item) {
+        CustomerReturnItemResponse response = new CustomerReturnItemResponse(
+                item.getId(),
+                item.getOrderItemId(),
+                item.getQuantity(),
+                item.getReasonCode(),
+                roundToTwoDecimals(item.getExpectedRefundAmount())
+        );
+        response.setProductId(item.getProductId());
+        response.setVariantId(item.getVariantId());
+        return response;
     }
 
-    private static List<CustomerReturnHistoryResponse> mapHistories(List<CustomerReturnHistory> histories) {
-        if (histories == null || histories.isEmpty()) return Collections.emptyList();
-        return histories.stream().map(h -> new CustomerReturnHistoryResponse(
-                h.getId(), h.getOldStatus(), h.getNewStatus(),
-                h.getActionBy(), h.getActionDate(), h.getNote()
-        )).collect(Collectors.toList());
+    private static CustomerReturnHistoryResponse buildHistoryResponse(CustomerReturnHistory history) {
+        return new CustomerReturnHistoryResponse(
+                history.getId(),
+                history.getOldStatus(),
+                history.getNewStatus(),
+                history.getActionBy(),
+                history.getActionDate(),
+                history.getNote()
+        );
     }
 
-    private static List<String> mapImages(List<CustomerReturnImage> images) {
-        if (images == null || images.isEmpty()) return Collections.emptyList();
-        return images.stream().map(CustomerReturnImage::getImageUrl).collect(Collectors.toList());
-    }
-
-    private static double roundDouble(double value) {
+    private static double roundToTwoDecimals(double value) {
         return Math.max(0.0, Math.round(value * 100.0) / 100.0);
     }
 }
