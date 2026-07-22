@@ -1,9 +1,12 @@
 package com.example.new_toy_store.cart.application.facade;
 
 import com.example.new_toy_store.cart.application.service.CartService;
-import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
-import com.example.new_toy_store.cart.application.dto.request.CartRequest;
-import com.example.new_toy_store.cart.application.dto.request.CheckoutRequest;
+import com.example.new_toy_store.cart.application.dto.request.AddCartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.CheckoutCartRequest;
+import com.example.new_toy_store.cart.application.dto.request.SyncCartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.SyncCartRequest;
+import com.example.new_toy_store.cart.application.dto.request.ToggleCartItemSelectionRequest;
+import com.example.new_toy_store.cart.application.dto.request.UpdateCartItemQuantityRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
@@ -11,6 +14,7 @@ import com.example.new_toy_store.cart.domain.exception.CartCrossModuleException;
 import com.example.new_toy_store.cart.domain.exception.CartDataConflictException;
 import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.cart.mapper.CartMapper;
+import com.example.new_toy_store.global.event.CartCheckoutItemPayload;
 import com.example.new_toy_store.global.event.CartCheckoutRequestedEvent;
 import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.domain.Product;
@@ -49,21 +53,21 @@ public class CartFacade {
     }
 
     @Transactional
-    public CartResponse addItem(Integer userId, CartItemRequest request) {
+    public CartResponse addItem(Integer userId, AddCartItemRequest request) {
         double currentPrice = getPriceAndCheckStock(request.getProductId(), request.getVariantId(), request.getQuantity());
         Cart cart = cartService.addItemToCart(userId, request, currentPrice);
         return buildCartResponse(cart, null);
     }
 
     @Transactional
-    public CartResponse syncCart(Integer userId, CartRequest request) {
+    public CartResponse syncCart(Integer userId, SyncCartRequest request) {
         Map<Integer, Double> variantPrices = new HashMap<>();
         Set<Integer> productIds = request.getItems().stream()
-                .map(CartItemRequest::getProductId)
+                .map(SyncCartItemRequest::getProductId)
                 .collect(Collectors.toSet());
         Map<Integer, Product> productMap = loadProductMap(productIds);
 
-        for (CartItemRequest itemReq : request.getItems()) {
+        for (SyncCartItemRequest itemReq : request.getItems()) {
             Product product = productMap.get(itemReq.getProductId());
             double price = getPriceAndCheckStock(
                     product,
@@ -79,14 +83,14 @@ public class CartFacade {
     }
 
     @Transactional
-    public CartResponse updateQuantity(Integer userId, Integer itemId, int quantity) {
-        Cart cart = cartService.updateItemQuantity(userId, itemId, quantity);
+    public CartResponse updateQuantity(Integer userId, Integer itemId, UpdateCartItemQuantityRequest request) {
+        Cart cart = cartService.updateItemQuantity(userId, itemId, request.getQuantity());
         return buildCartResponse(cart, null);
     }
 
     @Transactional
-    public CartResponse toggleSelection(Integer userId, Integer itemId, boolean isSelected) {
-        Cart cart = cartService.toggleItemSelection(userId, itemId, isSelected);
+    public CartResponse toggleSelection(Integer userId, Integer itemId, ToggleCartItemSelectionRequest request) {
+        Cart cart = cartService.toggleItemSelection(userId, itemId, request.isSelected());
         return buildCartResponse(cart, null);
     }
 
@@ -101,7 +105,7 @@ public class CartFacade {
     }
 
     @Transactional
-    public void checkout(Integer userId, CheckoutRequest request) {
+    public void checkout(Integer userId, CheckoutCartRequest request) {
         Cart cart = cartService.lockCartForCheckout(userId);
         List<CartItem> selectedItems = cart.getItems().stream()
                 .filter(CartItem::isSelected)
@@ -114,7 +118,7 @@ public class CartFacade {
         Set<Integer> productIds = selectedItems.stream().map(CartItem::getProductId).collect(Collectors.toSet());
         Map<Integer, Product> productMap = loadProductMap(productIds);
 
-        List<CartCheckoutRequestedEvent.CheckoutItemDetail> eventItems = selectedItems.stream().map(item -> {
+        List<CartCheckoutItemPayload> eventItems = selectedItems.stream().map(item -> {
             Product product = productMap.get(item.getProductId());
             ProductVariant variant = product.getVariants().stream()
                     .filter(v -> v.getId().equals(item.getVariantId()))
@@ -130,7 +134,7 @@ public class CartFacade {
                 throw CartDataConflictException.priceChanged(product.getId(), item.getAddedPrice(), variant.getPrice());
             }
 
-            return new CartCheckoutRequestedEvent.CheckoutItemDetail(
+            return new CartCheckoutItemPayload(
                     item.getProductId(),
                     item.getVariantId(),
                     product.getName(),

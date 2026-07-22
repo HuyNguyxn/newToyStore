@@ -1,7 +1,8 @@
 package com.example.new_toy_store.cart.application.service;
 
-import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
-import com.example.new_toy_store.cart.application.dto.request.CartRequest;
+import com.example.new_toy_store.cart.application.dto.request.AddCartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.SyncCartItemRequest;
+import com.example.new_toy_store.cart.application.dto.request.SyncCartRequest;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartRepository;
 import com.example.new_toy_store.cart.domain.CartItemRepository;
@@ -38,7 +39,7 @@ public class CartService {
     }
 
     @Transactional
-    public Cart addItemToCart(Integer userId, CartItemRequest request, double currentPrice) {
+    public Cart addItemToCart(Integer userId, AddCartItemRequest request, double currentPrice) {
         Cart cart = repository.findForUpdateByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
@@ -47,11 +48,11 @@ public class CartService {
     }
 
     @Transactional
-    public Cart syncCart(Integer userId, CartRequest request, Map<Integer, Double> variantPrices) {
+    public Cart syncCart(Integer userId, SyncCartRequest request, Map<Integer, Double> variantPrices) {
         Cart cart = repository.findForUpdateByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
-        for (CartItemRequest itemReq : request.getItems()) {
+        for (SyncCartItemRequest itemReq : request.getItems()) {
             double price = variantPrices.getOrDefault(itemReq.getVariantId(), 0.0);
             cart.addItem(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity(), price);
         }

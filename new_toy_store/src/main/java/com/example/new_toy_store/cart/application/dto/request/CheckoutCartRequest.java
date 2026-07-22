@@ -3,7 +3,7 @@ package com.example.new_toy_store.cart.application.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class CheckoutRequest {
+public class CheckoutCartRequest {
 
     @NotBlank(message = "Địa chỉ giao hàng không được để trống")
     @Size(max = 500, message = "Địa chỉ giao hàng không được vượt quá 500 ký tự")
