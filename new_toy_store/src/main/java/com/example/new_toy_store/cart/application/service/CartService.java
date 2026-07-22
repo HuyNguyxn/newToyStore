@@ -3,7 +3,6 @@ package com.example.new_toy_store.cart.application.service;
 import com.example.new_toy_store.cart.application.dto.request.CartItemRequest;
 import com.example.new_toy_store.cart.application.dto.request.CartRequest;
 import com.example.new_toy_store.cart.domain.Cart;
-import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.cart.domain.CartRepository;
 import com.example.new_toy_store.cart.domain.CartItemRepository;
 import com.example.new_toy_store.cart.domain.CartStatus;
@@ -32,7 +31,7 @@ public class CartService {
 
     @Transactional
     public Cart addItemToCart(Integer userId, CartItemRequest request, double currentPrice) {
-        Cart cart = repository.findByUserId(userId)
+        Cart cart = repository.findForUpdateByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
         cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity(), currentPrice);
@@ -41,7 +40,7 @@ public class CartService {
 
     @Transactional
     public Cart syncCart(Integer userId, CartRequest request, Map<Integer, Double> variantPrices) {
-        Cart cart = repository.findByUserId(userId)
+        Cart cart = repository.findForUpdateByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
         for (CartItemRequest itemReq : request.getItems()) {
@@ -53,28 +52,28 @@ public class CartService {
 
     @Transactional
     public Cart updateItemQuantity(Integer userId, Integer itemId, int quantity) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
+        Cart cart = getCartForUpdate(userId);
         cart.updateItemQuantity(itemId, quantity);
         return repository.save(cart);
     }
 
     @Transactional
     public Cart toggleItemSelection(Integer userId, Integer itemId, boolean isSelected) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
+        Cart cart = getCartForUpdate(userId);
         cart.toggleItemSelection(itemId, isSelected);
         return repository.save(cart);
     }
 
     @Transactional
     public Cart removeItemFromCart(Integer userId, Integer itemId) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
+        Cart cart = getCartForUpdate(userId);
         cart.removeItem(itemId);
         return repository.save(cart);
     }
 
     @Transactional
     public void clearCart(Integer userId) {
-        repository.findByUserId(userId).ifPresent(cart -> {
+        repository.findForUpdateByUserId(userId).ifPresent(cart -> {
             cart.clearCart();
             repository.save(cart);
         });
@@ -82,28 +81,38 @@ public class CartService {
 
     @Transactional
     public Cart lockCartForCheckout(Integer userId) {
-        Cart cart = repository.findByUserId(userId).orElseThrow(() -> CartNotFoundException.byUserId(userId));
+        Cart cart = getCartForUpdate(userId);
         cart.changeStatus(CartStatus.CHECKING_OUT);
         return repository.save(cart);
     }
 
     @Transactional
     public void clearCheckedOutItems(Integer cartId) {
-        Cart cart = repository.findById(cartId).orElseThrow(() -> CartNotFoundException.byCartId(cartId));
-        cart.getItems().removeIf(CartItem::isSelected);
-        cart.changeStatus(CartStatus.ACTIVE);
+        Cart cart = getCartForUpdateById(cartId);
+        cart.completeCheckout();
         repository.save(cart);
     }
 
     @Transactional
     public void unlockCart(Integer cartId) {
-        Cart cart = repository.findById(cartId).orElseThrow(() -> CartNotFoundException.byCartId(cartId));
+        Cart cart = getCartForUpdateById(cartId);
         cart.changeStatus(CartStatus.ACTIVE);
         repository.save(cart);
     }
 
     @Transactional
     public void syncProductChanges(Integer variantId, double newPrice) {
+        repository.touchCartsContainingVariant(variantId);
         itemRepository.updatePriceByVariantId(variantId, newPrice);
+    }
+
+    private Cart getCartForUpdate(Integer userId) {
+        return repository.findForUpdateByUserId(userId)
+                .orElseThrow(() -> CartNotFoundException.byUserId(userId));
+    }
+
+    private Cart getCartForUpdateById(Integer cartId) {
+        return repository.findForUpdateById(cartId)
+                .orElseThrow(() -> CartNotFoundException.byCartId(cartId));
     }
 }

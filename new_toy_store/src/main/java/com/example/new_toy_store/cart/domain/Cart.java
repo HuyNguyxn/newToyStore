@@ -13,7 +13,10 @@ import java.util.Optional;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(name = "carts", indexes = {@Index(name = "idx_cart_user_id", columnList = "user_id")})
+@Table(
+        name = "carts",
+        uniqueConstraints = @UniqueConstraint(name = "uk_cart_user", columnNames = "user_id")
+)
 public class Cart extends BaseRootEntity {
 
     public static final int MAX_CART_ITEMS = 50;
@@ -21,7 +24,7 @@ public class Cart extends BaseRootEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "user_id", nullable = false, unique = true)
+    @Column(name = "user_id", nullable = false)
     private Integer userId;
 
     @Enumerated(EnumType.STRING)
@@ -78,7 +81,18 @@ public class Cart extends BaseRootEntity {
         items.removeIf(item -> item.getId().equals(itemId));
     }
 
-    public void clearCart() { items.clear(); }
+    public void clearCart() {
+        checkIfCartIsActive();
+        items.clear();
+    }
+
+    public void completeCheckout() {
+        if (status != CartStatus.CHECKING_OUT) {
+            throw InvalidCartOperationException.cartNotActive();
+        }
+        items.removeIf(CartItem::isSelected);
+        changeStatus(CartStatus.ACTIVE);
+    }
 
     private void checkIfCartIsActive() {
         if (this.status != CartStatus.ACTIVE) {

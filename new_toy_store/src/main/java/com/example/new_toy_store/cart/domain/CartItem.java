@@ -11,7 +11,8 @@ import jakarta.persistence.*;
         indexes = {
                 @Index(name = "idx_cart_item_cart", columnList = "cart_id"),
                 @Index(name = "idx_cart_item_product", columnList = "product_id"),
-                @Index(name = "idx_cart_item_variant", columnList = "variant_id")
+                @Index(name = "idx_cart_item_variant", columnList = "variant_id"),
+                @Index(name = "idx_cart_item_updated_at", columnList = "updated_at")
         }
 )
 public class CartItem extends BaseTimeEntity {
