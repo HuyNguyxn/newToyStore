@@ -6,7 +6,9 @@ import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartRepository;
 import com.example.new_toy_store.cart.domain.CartItemRepository;
 import com.example.new_toy_store.cart.domain.CartStatus;
+import com.example.new_toy_store.cart.domain.event.CartStatusChangedEvent;
 import com.example.new_toy_store.cart.domain.exception.CartNotFoundException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,16 @@ public class CartService {
 
     private final CartRepository repository;
     private final CartItemRepository itemRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CartService(CartRepository repository, CartItemRepository itemRepository) {
+    public CartService(
+            CartRepository repository,
+            CartItemRepository itemRepository,
+            ApplicationEventPublisher eventPublisher
+    ) {
         this.repository = repository;
         this.itemRepository = itemRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -82,22 +90,29 @@ public class CartService {
     @Transactional
     public Cart lockCartForCheckout(Integer userId) {
         Cart cart = getCartForUpdate(userId);
+        CartStatus previousStatus = cart.getStatus();
         cart.changeStatus(CartStatus.CHECKING_OUT);
-        return repository.save(cart);
+        Cart savedCart = repository.save(cart);
+        publishStatusChanged(savedCart, previousStatus);
+        return savedCart;
     }
 
     @Transactional
     public void clearCheckedOutItems(Integer cartId) {
         Cart cart = getCartForUpdateById(cartId);
+        CartStatus previousStatus = cart.getStatus();
         cart.completeCheckout();
         repository.save(cart);
+        publishStatusChanged(cart, previousStatus);
     }
 
     @Transactional
     public void unlockCart(Integer cartId) {
         Cart cart = getCartForUpdateById(cartId);
+        CartStatus previousStatus = cart.getStatus();
         cart.changeStatus(CartStatus.ACTIVE);
         repository.save(cart);
+        publishStatusChanged(cart, previousStatus);
     }
 
     @Transactional
@@ -114,5 +129,18 @@ public class CartService {
     private Cart getCartForUpdateById(Integer cartId) {
         return repository.findForUpdateById(cartId)
                 .orElseThrow(() -> CartNotFoundException.byCartId(cartId));
+    }
+
+    private void publishStatusChanged(Cart cart, CartStatus previousStatus) {
+        if (previousStatus == cart.getStatus()) {
+            return;
+        }
+
+        eventPublisher.publishEvent(CartStatusChangedEvent.now(
+                cart.getId(),
+                cart.getUserId(),
+                previousStatus,
+                cart.getStatus()
+        ));
     }
 }

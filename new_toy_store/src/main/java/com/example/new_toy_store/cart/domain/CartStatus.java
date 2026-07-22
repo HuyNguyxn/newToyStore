@@ -15,7 +15,7 @@ public enum CartStatus {
 
         @Override
         public List<CartStatus> getNextValidStates() {
-            return List.of(ACTIVE, CHECKING_OUT);
+            return List.of(CHECKING_OUT);
         }
     },
 
@@ -25,7 +25,7 @@ public enum CartStatus {
 
         @Override
         public List<CartStatus> getNextValidStates() {
-            return List.of(ACTIVE, CHECKING_OUT);
+            return List.of(ACTIVE);
         }
     };
 
@@ -48,7 +48,7 @@ public enum CartStatus {
     public abstract List<CartStatus> getNextValidStates();
 
     public boolean canTransitionTo(CartStatus nextStatus) {
-        return getNextValidStates().contains(nextStatus);
+        return nextStatus != null && getNextValidStates().contains(nextStatus);
     }
 
     @JsonCreator

@@ -43,7 +43,10 @@ public class Cart extends BaseRootEntity {
 
     public void changeStatus(CartStatus newStatus) {
         if (!this.status.canTransitionTo(newStatus)) {
-            throw InvalidCartOperationException.invalidStatusTransition(this.status.name(), newStatus.name());
+            throw InvalidCartOperationException.invalidStatusTransition(
+                    this.status.name(),
+                    newStatus == null ? "null" : newStatus.name()
+            );
         }
         this.status = newStatus;
     }
