@@ -8,10 +8,18 @@ public class CartNotFoundException extends CartDomainException {
     }
 
     public static CartNotFoundException byUserId(Integer userId) {
-        return new CartNotFoundException("Không tìm thấy giỏ hàng của người dùng (User ID: " + userId + ").", "userId", userId);
+        return new CartNotFoundException(
+                "Không tìm thấy giỏ hàng của người dùng (User ID: " + userId + ").",
+                "userId",
+                userId
+        );
     }
 
     public static CartNotFoundException byCartId(Integer cartId) {
-        return new CartNotFoundException("Không tìm thấy giỏ hàng (Cart ID: " + cartId + ").", "cartId", cartId);
+        return new CartNotFoundException(
+                "Không tìm thấy giỏ hàng (Cart ID: " + cartId + ").",
+                "cartId",
+                cartId
+        );
     }
 }

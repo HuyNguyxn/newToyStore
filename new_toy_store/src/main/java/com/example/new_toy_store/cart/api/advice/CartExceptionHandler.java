@@ -1,6 +1,13 @@
 package com.example.new_toy_store.cart.api.advice;
 
-import com.example.new_toy_store.cart.domain.exception.*;
+import com.example.new_toy_store.cart.domain.exception.CartAccessDeniedException;
+import com.example.new_toy_store.cart.domain.exception.CartCrossModuleException;
+import com.example.new_toy_store.cart.domain.exception.CartDataConflictException;
+import com.example.new_toy_store.cart.domain.exception.CartDomainException;
+import com.example.new_toy_store.cart.domain.exception.CartItemNotFoundException;
+import com.example.new_toy_store.cart.domain.exception.CartNotFoundException;
+import com.example.new_toy_store.cart.domain.exception.InvalidCartDataException;
+import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationException;
 import com.example.new_toy_store.global.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.Ordered;
@@ -10,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.Map;
 
 @RestControllerAdvice(basePackages = "com.example.new_toy_store.cart.api")
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -57,8 +66,9 @@ public class CartExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 "CART_DATA_CONFLICT",
-                "Dữ liệu giỏ hàng xung đột với dữ liệu hiện có.",
-                request.getRequestURI()
+                "Dữ liệu giỏ hàng xung đột với dữ liệu hiện có. Vui lòng kiểm tra lại thông tin giỏ hàng.",
+                request.getRequestURI(),
+                Map.of("reason", "constraint")
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }

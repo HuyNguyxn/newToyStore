@@ -72,13 +72,13 @@ public class Cart extends BaseRootEntity {
 
     public void updateItemQuantity(Integer itemId, int newQuantity) {
         checkIfCartIsActive();
-        CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> new CartItemNotFoundException(itemId));
+        CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> CartItemNotFoundException.byItemId(itemId));
         item.updateQuantity(newQuantity);
     }
 
     public void toggleItemSelection(Integer itemId, boolean isSelected) {
         checkIfCartIsActive();
-        CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> new CartItemNotFoundException(itemId));
+        CartItem item = items.stream().filter(i -> i.getId().equals(itemId)).findFirst().orElseThrow(() -> CartItemNotFoundException.byItemId(itemId));
         item.toggleSelection(isSelected);
     }
 
@@ -86,7 +86,7 @@ public class Cart extends BaseRootEntity {
         checkIfCartIsActive();
         boolean removed = items.removeIf(item -> item.getId().equals(itemId));
         if (!removed) {
-            throw new CartItemNotFoundException(itemId);
+            throw CartItemNotFoundException.byItemId(itemId);
         }
     }
 
@@ -97,7 +97,7 @@ public class Cart extends BaseRootEntity {
 
     public void completeCheckout() {
         if (status != CartStatus.CHECKING_OUT) {
-            throw InvalidCartOperationException.cartNotActive();
+            throw InvalidCartOperationException.checkoutNotInProgress();
         }
         items.removeIf(CartItem::isSelected);
         changeStatus(CartStatus.ACTIVE);

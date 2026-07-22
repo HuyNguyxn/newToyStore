@@ -1,6 +1,5 @@
 package com.example.new_toy_store.cart.application.facade;
 
-import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.cart.application.dto.request.AddCartItemRequest;
 import com.example.new_toy_store.cart.application.dto.request.CheckoutCartRequest;
 import com.example.new_toy_store.cart.application.dto.request.SyncCartItemRequest;
@@ -8,6 +7,7 @@ import com.example.new_toy_store.cart.application.dto.request.SyncCartRequest;
 import com.example.new_toy_store.cart.application.dto.request.ToggleCartItemSelectionRequest;
 import com.example.new_toy_store.cart.application.dto.request.UpdateCartItemQuantityRequest;
 import com.example.new_toy_store.cart.application.dto.response.CartResponse;
+import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartItem;
 import com.example.new_toy_store.cart.domain.exception.CartCrossModuleException;
@@ -39,7 +39,8 @@ public class CartFacade {
     private final PromotionService promotionService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public CartFacade(CartService cartService, ProductService productService, PromotionService promotionService, ApplicationEventPublisher eventPublisher) {
+    public CartFacade(CartService cartService, ProductService productService,
+                      PromotionService promotionService, ApplicationEventPublisher eventPublisher) {
         this.cartService = cartService;
         this.productService = productService;
         this.promotionService = promotionService;
@@ -118,31 +119,9 @@ public class CartFacade {
         Set<Integer> productIds = selectedItems.stream().map(CartItem::getProductId).collect(Collectors.toSet());
         Map<Integer, Product> productMap = loadProductMap(productIds);
 
-        List<CartCheckoutItemPayload> eventItems = selectedItems.stream().map(item -> {
-            Product product = productMap.get(item.getProductId());
-            ProductVariant variant = product.getVariants().stream()
-                    .filter(v -> v.getId().equals(item.getVariantId()))
-                    .findFirst()
-                    .orElseThrow(() -> new CartCrossModuleException(
-                            "Product",
-                            "EXTRACT_VARIANT",
-                            "Dữ liệu mẫu mã sản phẩm bị sai lệch hoặc đã bị xóa."
-                    ));
-
-            // Chặn checkout nếu giá sản phẩm đã bị thay đổi
-            if (item.getAddedPrice() != variant.getPrice()) {
-                throw CartDataConflictException.priceChanged(product.getId(), item.getAddedPrice(), variant.getPrice());
-            }
-
-            return new CartCheckoutItemPayload(
-                    item.getProductId(),
-                    item.getVariantId(),
-                    product.getName(),
-                    variant.generateAttributesSnapshot(),
-                    item.getQuantity(),
-                    item.getAddedPrice()
-            );
-        }).collect(Collectors.toList());
+        List<CartCheckoutItemPayload> eventItems = selectedItems.stream()
+                .map(item -> toCheckoutItemPayload(item, productMap))
+                .collect(Collectors.toList());
 
         eventPublisher.publishEvent(new CartCheckoutRequestedEvent(
                 cart.getId(),
@@ -151,6 +130,32 @@ public class CartFacade {
                 request.getPromoCode(),
                 eventItems
         ));
+    }
+
+    private CartCheckoutItemPayload toCheckoutItemPayload(CartItem item, Map<Integer, Product> productMap) {
+        Product product = productMap.get(item.getProductId());
+        if (product == null) {
+            throw CartCrossModuleException.missingProduct(item.getProductId());
+        }
+
+        ProductVariant variant = findVariant(product, item.getProductId(), item.getVariantId());
+        if (item.getAddedPrice() != variant.getPrice()) {
+            throw CartDataConflictException.priceChanged(
+                    product.getId(),
+                    variant.getId(),
+                    item.getAddedPrice(),
+                    variant.getPrice()
+            );
+        }
+
+        return new CartCheckoutItemPayload(
+                item.getProductId(),
+                item.getVariantId(),
+                product.getName(),
+                variant.generateAttributesSnapshot(),
+                item.getQuantity(),
+                item.getAddedPrice()
+        );
     }
 
     private double getPriceAndCheckStock(Integer productId, Integer variantId, int requestedQuantity) {
@@ -165,35 +170,31 @@ public class CartFacade {
             int requestedQuantity
     ) {
         if (product == null) {
-            throw new CartCrossModuleException(
-                    "Product",
-                    "GET_PRODUCT",
-                    "Product data is missing (Product ID: " + productId + ")"
-            );
+            throw CartCrossModuleException.missingProduct(productId);
         }
 
         if (!product.isAvailableForPurchase()) {
             throw CartDataConflictException.softDeletedProduct(productId);
         }
 
-        ProductVariant variant = product.getVariants().stream()
-                .filter(v -> v.getId().equals(variantId))
-                .findFirst()
-                .orElseThrow(() -> new CartCrossModuleException(
-                        "Product",
-                        "GET_VARIANT_PRICE",
-                        "Không tìm thấy mẫu mã sản phẩm tương ứng (Variant ID: " + variantId + ")"
-                ));
+        ProductVariant variant = findVariant(product, productId, variantId);
+        if (variant.getInventory() == null) {
+            throw CartCrossModuleException.invalidInventory(productId, variantId);
+        }
 
-        if (variant.getInventory().getStockQuantity() < requestedQuantity) {
-            throw new CartCrossModuleException(
-                    "Inventory",
-                    "CHECK_STOCK",
-                    "Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu (Còn: " + variant.getInventory().getStockQuantity() + ")"
-            );
+        int availableQuantity = variant.getInventory().getStockQuantity();
+        if (availableQuantity < requestedQuantity) {
+            throw CartCrossModuleException.insufficientStock(productId, variantId, requestedQuantity, availableQuantity);
         }
 
         return variant.getPrice();
+    }
+
+    private ProductVariant findVariant(Product product, Integer productId, Integer variantId) {
+        return product.getVariants().stream()
+                .filter(variant -> variant.getId().equals(variantId))
+                .findFirst()
+                .orElseThrow(() -> CartCrossModuleException.missingVariant(productId, variantId));
     }
 
     private Map<Integer, Product> loadProductMap(Set<Integer> productIds) {
@@ -216,7 +217,6 @@ public class CartFacade {
                 .collect(Collectors.toSet());
 
         Map<Integer, Product> productMap = loadProductMap(productIds);
-
         List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
 
         return CartMapper.toCartResponse(cart, productMap, activePromotions, promoCode, promotionService);

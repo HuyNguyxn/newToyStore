@@ -16,15 +16,15 @@ public class InvalidCartDataException extends CartDomainException {
     public static InvalidCartDataException emptyStatus() {
         return new InvalidCartDataException(
                 "Trạng thái giỏ hàng không được để trống.",
-                "STATUS",
+                "status",
                 null
         );
     }
 
     public static InvalidCartDataException invalidStatus(String value) {
         return new InvalidCartDataException(
-                "Trạng thái giỏ hàng không hợp lệ: " + value,
-                "STATUS",
+                "Trạng thái giỏ hàng không hợp lệ: " + value + ".",
+                "status",
                 value
         );
     }
