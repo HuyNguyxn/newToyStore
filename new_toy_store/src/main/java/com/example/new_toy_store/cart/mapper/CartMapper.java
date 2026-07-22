@@ -11,7 +11,6 @@ import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,15 +21,16 @@ public class CartMapper {
                                           List<PromotionResponse> activePromotions,
                                           String promoCode, PromotionService promotionService) {
 
-        List<CartItemResponse> itemResponses = mapCartItems(cart.getItems(), productMap, activePromotions);
+        Map<Integer, List<PromotionResponse>> promotionsByProduct = indexPromotionsByProduct(activePromotions);
+        List<CartItemResponse> itemResponses = mapCartItems(cart.getItems(), productMap, promotionsByProduct);
 
         double cartTotal = calculateCartTotal(itemResponses);
 
         OrderPromotionResult promotionResult = applyOrderPromotion(promoCode, cartTotal, promotionService);
         double finalTotal = calculateFinalTotal(cartTotal, promotionResult.discountAmount);
 
-        List<String> allowedActions = generateAllowedActions(itemResponses);
         CartStatus currentStatus = cart.getStatus();
+        List<String> allowedActions = generateAllowedActions(currentStatus, itemResponses);
         List<CartStatus> nextStates = currentStatus != null ? currentStatus.getNextValidStates() : null;
 
         return new CartResponse(
@@ -50,10 +50,26 @@ public class CartMapper {
 
     private static List<CartItemResponse> mapCartItems(List<CartItem> items,
                                                        Map<Integer, Product> productMap,
-                                                       List<PromotionResponse> activePromotions) {
+                                                       Map<Integer, List<PromotionResponse>> promotionsByProduct) {
         return items.stream()
-                .map(item -> buildItemResponse(item, productMap.get(item.getProductId()), activePromotions))
+                .map(item -> buildItemResponse(
+                        item,
+                        productMap.get(item.getProductId()),
+                        promotionsByProduct.getOrDefault(item.getProductId(), List.of())
+                ))
                 .collect(Collectors.toList());
+    }
+
+    private static Map<Integer, List<PromotionResponse>> indexPromotionsByProduct(
+            List<PromotionResponse> activePromotions
+    ) {
+        if (activePromotions == null || activePromotions.isEmpty()) {
+            return Map.of();
+        }
+
+        return activePromotions.stream()
+                .filter(promotion -> promotion.getTargetProductId() != null)
+                .collect(Collectors.groupingBy(PromotionResponse::getTargetProductId));
     }
 
     private static CartItemResponse buildItemResponse(CartItem item, Product product, List<PromotionResponse> activePromotions) {
@@ -131,24 +147,26 @@ public class CartMapper {
         }
     }
 
-    private static List<String> generateAllowedActions(List<CartItemResponse> itemResponses) {
-        List<String> allowedActions = new ArrayList<>();
-        allowedActions.add("CONTINUE_SHOPPING");
-
-        if (!itemResponses.isEmpty()) {
-            allowedActions.add("CLEAR_CART");
-
-            boolean hasSelectedAndAvailable = itemResponses.stream().anyMatch(i -> i.isSelected() && i.isAvailable());
-            boolean hasWarnings = itemResponses.stream().anyMatch(i -> i.isSelected() && (!i.isAvailable() || i.hasPriceChanged()));
-
-            if (hasSelectedAndAvailable) {
-                if (hasWarnings) {
-                    allowedActions.add("REVIEW_CART_WARNINGS");
-                }
-                allowedActions.add("PROCEED_TO_CHECKOUT");
-            }
+    static List<String> generateAllowedActions(CartStatus status, List<CartItemResponse> itemResponses) {
+        if (status != CartStatus.ACTIVE) {
+            return List.of();
         }
-        return allowedActions;
+        if (itemResponses.isEmpty()) {
+            return List.of("CONTINUE_SHOPPING");
+        }
+
+        boolean hasSelectedAndAvailable = itemResponses.stream()
+                .anyMatch(item -> item.isSelected() && item.isAvailable());
+        boolean hasBlockingWarnings = itemResponses.stream()
+                .anyMatch(item -> item.isSelected() && (!item.isAvailable() || item.hasPriceChanged()));
+
+        if (hasBlockingWarnings) {
+            return List.of("CONTINUE_SHOPPING", "CLEAR_CART", "REVIEW_CART_WARNINGS");
+        }
+        if (hasSelectedAndAvailable) {
+            return List.of("CONTINUE_SHOPPING", "CLEAR_CART", "PROCEED_TO_CHECKOUT");
+        }
+        return List.of("CONTINUE_SHOPPING", "CLEAR_CART");
     }
 
     private static ItemStatus evaluateItemStatus(Product product, ProductVariant variant, int requestedQuantity) {

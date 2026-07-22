@@ -42,22 +42,35 @@ public class CartFacade {
         this.eventPublisher = eventPublisher;
     }
 
+    @Transactional(readOnly = true)
     public CartResponse getCart(Integer userId, String promoCode) {
         Cart cart = cartService.getCartByUserId(userId);
         return buildCartResponse(cart, promoCode);
     }
 
+    @Transactional
     public CartResponse addItem(Integer userId, CartItemRequest request) {
         double currentPrice = getPriceAndCheckStock(request.getProductId(), request.getVariantId(), request.getQuantity());
         Cart cart = cartService.addItemToCart(userId, request, currentPrice);
         return buildCartResponse(cart, null);
     }
 
+    @Transactional
     public CartResponse syncCart(Integer userId, CartRequest request) {
         Map<Integer, Double> variantPrices = new HashMap<>();
+        Set<Integer> productIds = request.getItems().stream()
+                .map(CartItemRequest::getProductId)
+                .collect(Collectors.toSet());
+        Map<Integer, Product> productMap = loadProductMap(productIds);
 
         for (CartItemRequest itemReq : request.getItems()) {
-            double price = getPriceAndCheckStock(itemReq.getProductId(), itemReq.getVariantId(), itemReq.getQuantity());
+            Product product = productMap.get(itemReq.getProductId());
+            double price = getPriceAndCheckStock(
+                    product,
+                    itemReq.getProductId(),
+                    itemReq.getVariantId(),
+                    itemReq.getQuantity()
+            );
             variantPrices.put(itemReq.getVariantId(), price);
         }
 
@@ -65,16 +78,19 @@ public class CartFacade {
         return buildCartResponse(cart, null);
     }
 
+    @Transactional
     public CartResponse updateQuantity(Integer userId, Integer itemId, int quantity) {
         Cart cart = cartService.updateItemQuantity(userId, itemId, quantity);
         return buildCartResponse(cart, null);
     }
 
+    @Transactional
     public CartResponse toggleSelection(Integer userId, Integer itemId, boolean isSelected) {
         Cart cart = cartService.toggleItemSelection(userId, itemId, isSelected);
         return buildCartResponse(cart, null);
     }
 
+    @Transactional
     public CartResponse removeItem(Integer userId, Integer itemId) {
         Cart cart = cartService.removeItemFromCart(userId, itemId);
         return buildCartResponse(cart, null);
@@ -96,9 +112,7 @@ public class CartFacade {
         }
 
         Set<Integer> productIds = selectedItems.stream().map(CartItem::getProductId).collect(Collectors.toSet());
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+        Map<Integer, Product> productMap = loadProductMap(productIds);
 
         List<CartCheckoutRequestedEvent.CheckoutItemDetail> eventItems = selectedItems.stream().map(item -> {
             Product product = productMap.get(item.getProductId());
@@ -137,6 +151,22 @@ public class CartFacade {
 
     private double getPriceAndCheckStock(Integer productId, Integer variantId, int requestedQuantity) {
         Product product = productService.getProductEntity(productId);
+        return getPriceAndCheckStock(product, productId, variantId, requestedQuantity);
+    }
+
+    private double getPriceAndCheckStock(
+            Product product,
+            Integer productId,
+            Integer variantId,
+            int requestedQuantity
+    ) {
+        if (product == null) {
+            throw new CartCrossModuleException(
+                    "Product",
+                    "GET_PRODUCT",
+                    "Product data is missing (Product ID: " + productId + ")"
+            );
+        }
 
         if (!product.isAvailableForPurchase()) {
             throw CartDataConflictException.softDeletedProduct(productId);
@@ -162,6 +192,16 @@ public class CartFacade {
         return variant.getPrice();
     }
 
+    private Map<Integer, Product> loadProductMap(Set<Integer> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return productService.getProductsByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+    }
+
     private CartResponse buildCartResponse(Cart cart, String promoCode) {
         if (cart.getItems().isEmpty()) {
             return CartMapper.toResponse(cart, Map.of(), List.of(), promoCode, promotionService);
@@ -171,9 +211,7 @@ public class CartFacade {
                 .map(CartItem::getProductId)
                 .collect(Collectors.toSet());
 
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+        Map<Integer, Product> productMap = loadProductMap(productIds);
 
         List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
 

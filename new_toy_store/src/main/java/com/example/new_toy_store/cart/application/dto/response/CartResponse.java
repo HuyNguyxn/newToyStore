@@ -3,21 +3,21 @@ package com.example.new_toy_store.cart.application.dto.response;
 import com.example.new_toy_store.cart.domain.CartStatus;
 import java.util.List;
 
-public class CartResponse {
-    private Integer cartId;
-    private Integer userId;
+public final class CartResponse {
+    private final Integer cartId;
+    private final Integer userId;
 
     // Tích hợp State Machine cho Frontend
-    private CartStatus status;
-    private List<CartStatus> allowedNextStates;
+    private final CartStatus status;
+    private final List<CartStatus> allowedNextStates;
 
-    private double cartTotal;
-    private String appliedPromoCode;
-    private double orderDiscountAmount;
-    private double finalTotal;
-    private String promoMessage;
-    private List<CartItemResponse> items;
-    private List<String> allowedActions;
+    private final double cartTotal;
+    private final String appliedPromoCode;
+    private final double orderDiscountAmount;
+    private final double finalTotal;
+    private final String promoMessage;
+    private final List<CartItemResponse> items;
+    private final List<String> allowedActions;
 
     public CartResponse(Integer cartId, Integer userId, CartStatus status, List<CartStatus> allowedNextStates,
                         double cartTotal, String appliedPromoCode, double orderDiscountAmount,
@@ -26,14 +26,14 @@ public class CartResponse {
         this.cartId = cartId;
         this.userId = userId;
         this.status = status;
-        this.allowedNextStates = allowedNextStates;
+        this.allowedNextStates = allowedNextStates == null ? List.of() : List.copyOf(allowedNextStates);
         this.cartTotal = cartTotal;
         this.appliedPromoCode = appliedPromoCode;
         this.orderDiscountAmount = orderDiscountAmount;
         this.finalTotal = finalTotal;
         this.promoMessage = promoMessage;
-        this.items = items;
-        this.allowedActions = allowedActions;
+        this.items = List.copyOf(items);
+        this.allowedActions = List.copyOf(allowedActions);
     }
 
     public Integer getCartId() { return cartId; }

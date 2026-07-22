@@ -12,14 +12,14 @@ import java.util.Set;
 
 public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
-    @EntityGraph(attributePaths = {"images", "variants"})
+    @EntityGraph(attributePaths = {"variants", "variants.inventory"})
     Optional<Product> findById(Integer id);
 
     @EntityGraph(attributePaths = {"images", "variants"})
     @Query("SELECT p FROM Product p WHERE p.id = :id")
     Product findByIdWithDetails(@Param("id") Integer id);
 
-    @EntityGraph(attributePaths = {"images", "variants"})
+    @EntityGraph(attributePaths = {"variants", "variants.inventory"})
     @Query("SELECT p FROM Product p WHERE p.id IN :ids")
     List<Product> findAllByIdsWithDetails(@Param("ids") Set<Integer> ids);
 
