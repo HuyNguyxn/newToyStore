@@ -204,7 +204,7 @@ public class CartFacade {
 
     private CartResponse buildCartResponse(Cart cart, String promoCode) {
         if (cart.getItems().isEmpty()) {
-            return CartMapper.toResponse(cart, Map.of(), List.of(), promoCode, promotionService);
+            return CartMapper.toCartResponse(cart, Map.of(), List.of(), promoCode, promotionService);
         }
 
         Set<Integer> productIds = cart.getItems().stream()
@@ -215,6 +215,6 @@ public class CartFacade {
 
         List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
 
-        return CartMapper.toResponse(cart, productMap, activePromotions, promoCode, promotionService);
+        return CartMapper.toCartResponse(cart, productMap, activePromotions, promoCode, promotionService);
     }
 }
