@@ -6,30 +6,44 @@ import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequ
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
 import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
+import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
-import com.example.new_toy_store.user.application.dto.response.UserResponse;
+import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/users")
+@Validated
 public class UserController {
 
     private final UserService service;
-    private final UserRepository userRepository;
 
-    public UserController(UserService service, UserRepository userRepository) {
+    public UserController(UserService service) {
         this.service = service;
-        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
-    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+    public UserProfileResponse register(@Valid @RequestBody RegisterRequest request) {
         return service.register(request);
     }
 
@@ -43,56 +57,127 @@ public class UserController {
         service.verifyEmailToken(token);
     }
 
-    @GetMapping("/me/profile")
-    public UserResponse getProfile(@AuthenticationPrincipal UserDetails userDetails) {
+    @GetMapping("/me")
+    public UserProfileResponse getMe(@AuthenticationPrincipal UserDetails userDetails) {
         User user = getAuthenticatedUser(userDetails);
         return service.getProfile(user.getId());
     }
 
-    @PutMapping("/me/profile")
-    public UserResponse updateProfile(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody ProfileUpdateRequest request) {
+    @PutMapping("/me")
+    public UserProfileResponse updateMe(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ProfileUpdateRequest request
+    ) {
         User user = getAuthenticatedUser(userDetails);
         return service.updateProfile(user.getId(), request);
     }
 
-    @PutMapping("/me/password")
-    public void changePassword(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody ChangePasswordRequest request) {
+    @PatchMapping("/me/password")
+    public void changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
         User user = getAuthenticatedUser(userDetails);
         service.changePassword(user.getId(), request);
     }
 
+    @GetMapping("/me/profile")
+    public UserProfileResponse getProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        return getMe(userDetails);
+    }
+
+    @PutMapping("/me/profile")
+    public UserProfileResponse updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ProfileUpdateRequest request
+    ) {
+        return updateMe(userDetails, request);
+    }
+
+    @PutMapping("/me/password")
+    public void changePasswordLegacy(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        changePassword(userDetails, request);
+    }
+
     @PostMapping("/me/addresses")
-    public UserResponse addAddress(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody AddressRequest request) {
+    public UserProfileResponse addAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody AddressRequest request
+    ) {
         User user = getAuthenticatedUser(userDetails);
         return service.addAddress(user.getId(), request);
     }
 
     @PatchMapping("/me/addresses/{addressId}/default")
-    public UserResponse setDefaultAddress(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer addressId) {
+    public UserProfileResponse setDefaultAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable @Positive(message = "ID địa chỉ phải lớn hơn 0") Integer addressId
+    ) {
         User user = getAuthenticatedUser(userDetails);
         return service.setAddressDefault(user.getId(), addressId);
     }
 
     @DeleteMapping("/me/addresses/{addressId}")
-    public UserResponse removeAddress(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer addressId) {
+    public UserProfileResponse removeAddress(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable @Positive(message = "ID địa chỉ phải lớn hơn 0") Integer addressId
+    ) {
         User user = getAuthenticatedUser(userDetails);
         return service.removeAddress(user.getId(), addressId);
     }
 
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<UserAdminResponse> getUsers(Pageable pageable) {
+        return service.getUsers(pageable);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserAdminResponse getUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
+        return service.getUserForAdmin(id);
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserAdminResponse updateRole(
+            @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
+            @Valid @RequestBody UpdateUserRoleRequest request
+    ) {
+        return service.updateUserRole(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserAdminResponse updateStatus(
+            @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
+            @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+        return service.updateUserStatus(id, request);
+    }
+
     @PatchMapping("/{id}/lock")
     @PreAuthorize("hasRole('ADMIN')")
-    public void lockAccount(@PathVariable Integer id) {
+    public void lockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         service.lockAccount(id);
     }
 
     @PatchMapping("/{id}/unlock")
     @PreAuthorize("hasRole('ADMIN')")
-    public void unlockAccount(@PathVariable Integer id) {
+    public void unlockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         service.unlockAccount(id);
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
+        service.deleteAccount(id);
+    }
+
     private User getAuthenticatedUser(UserDetails userDetails) {
-        return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database"));
+        return service.getAuthenticatedUser(userDetails.getUsername());
     }
 }

@@ -2,6 +2,8 @@ package com.example.new_toy_store.user.mapper;
 
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
 import com.example.new_toy_store.user.application.dto.response.AddressResponse;
+import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.application.dto.response.UserResponse;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRole;
@@ -21,12 +23,51 @@ public class UserMapper {
         );
     }
 
-    public static UserResponse toResponse(User user) {
-        String defaultAvatar = "/assets/default-avatar.png";
-        String finalAvatar = (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty())
-                ? user.getAvatarUrl() : defaultAvatar;
+    public static UserProfileResponse toProfileResponse(User user) {
+        return new UserProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getPhoneNumber(),
+                resolveAvatarUrl(user),
+                user.getRole().name(),
+                user.getStatus().name(),
+                toAddressResponses(user)
+        );
+    }
 
-        List<AddressResponse> addressResponses = user.getAddresses().stream()
+    public static UserAdminResponse toAdminResponse(User user) {
+        return new UserAdminResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getPhoneNumber(),
+                resolveAvatarUrl(user),
+                user.getRole().name(),
+                user.getRole().getDisplayName(),
+                user.getStatus().name(),
+                user.getStatus().getDisplayName(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+
+    public static UserResponse toResponse(User user) {
+        UserProfileResponse profile = toProfileResponse(user);
+        return new UserResponse(
+                profile.getId(),
+                profile.getEmail(),
+                profile.getFullName(),
+                profile.getPhoneNumber(),
+                profile.getAvatarUrl(),
+                profile.getRole(),
+                profile.getStatus(),
+                profile.getAddresses()
+        );
+    }
+
+    private static List<AddressResponse> toAddressResponses(User user) {
+        return user.getAddresses().stream()
                 .map(a -> new AddressResponse(
                         a.getId(),
                         a.getReceiverName(),
@@ -35,16 +76,12 @@ public class UserMapper {
                         a.isDefault()
                 ))
                 .collect(Collectors.toList());
+    }
 
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getPhoneNumber(),
-                finalAvatar,
-                user.getRole().name(),
-                user.getStatus().name(),
-                addressResponses
-        );
+    private static String resolveAvatarUrl(User user) {
+        String defaultAvatar = "/assets/default-avatar.png";
+        return user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()
+                ? user.getAvatarUrl()
+                : defaultAvatar;
     }
 }

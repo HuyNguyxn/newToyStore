@@ -82,6 +82,8 @@ public class User extends BaseRootEntity {
 
     public void lockAccount() { this.status = UserStatus.LOCKED; }
     public void unlockAccount() { this.status = UserStatus.ACTIVE; }
+    public void changeRole(UserRole role) { if (role != null) this.role = role; }
+    public void changeStatus(UserStatus status) { if (status != null) this.status = status; }
 
     public void addAddress(Address address) {
         checkIfModificationIsAllowed();
