@@ -1,29 +1,29 @@
 package com.example.new_toy_store.infrastructure.security.jwt;
 
-import com.example.new_toy_store.infrastructure.security.service.CustomUserDetails;
-import io.jsonwebtoken.Claims;
+import com.example.new_toy_store.infrastructure.security.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final CustomUserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtProvider jwtProvider) {
+    public JwtAuthenticationFilter(JwtProvider jwtProvider, CustomUserDetailsService userDetailsService) {
         this.jwtProvider = jwtProvider;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -32,24 +32,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
-                Claims claims = jwtProvider.getClaimsFromToken(jwt);
-                String email = claims.getSubject();
-                Integer id = claims.get("id", Integer.class);
-                String role = claims.get("role", String.class);
-                CustomUserDetails userDetails = new CustomUserDetails(
-                        id,
-                        email,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
-                );
+            if (StringUtils.hasText(jwt)
+                    && jwtProvider.validateToken(jwt)
+                    && SecurityContextHolder.getContext().getAuthentication() == null) {
+                String email = jwtProvider.getEmailFromToken(jwt);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {
-            logger.error("Không thể thiết lập xác thực người dùng", ex);
+            logger.error("Không thể thiết lập xác thực người dùng từ JWT", ex);
         }
 
         filterChain.doFilter(request, response);

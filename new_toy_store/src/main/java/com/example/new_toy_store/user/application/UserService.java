@@ -2,10 +2,24 @@ package com.example.new_toy_store.user.application;
 
 import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
-import com.example.new_toy_store.user.application.dto.request.*;
-import com.example.new_toy_store.user.application.dto.response.*;
-import com.example.new_toy_store.user.domain.*;
+import com.example.new_toy_store.user.application.dto.request.AddressRequest;
+import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
+import com.example.new_toy_store.user.application.dto.request.LoginRequest;
+import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
+import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.UserResponse;
+import com.example.new_toy_store.user.domain.Address;
+import com.example.new_toy_store.user.domain.TokenType;
+import com.example.new_toy_store.user.domain.User;
+import com.example.new_toy_store.user.domain.UserRepository;
+import com.example.new_toy_store.user.domain.UserStatus;
+import com.example.new_toy_store.user.domain.VerificationToken;
+import com.example.new_toy_store.user.domain.VerificationTokenRepository;
 import com.example.new_toy_store.user.mapper.UserMapper;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,17 +35,22 @@ public class UserService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final CartService cartService;
+    private final AuthenticationManager authenticationManager;
 
-    public UserService(UserRepository repository,
-                       VerificationTokenRepository tokenRepository,
-                       JwtProvider jwtProvider,
-                       PasswordEncoder passwordEncoder,
-                       CartService cartService) {
+    public UserService(
+            UserRepository repository,
+            VerificationTokenRepository tokenRepository,
+            JwtProvider jwtProvider,
+            PasswordEncoder passwordEncoder,
+            CartService cartService,
+            AuthenticationManager authenticationManager
+    ) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
         this.jwtProvider = jwtProvider;
         this.passwordEncoder = passwordEncoder;
         this.cartService = cartService;
+        this.authenticationManager = authenticationManager;
     }
 
     @Transactional
@@ -75,12 +94,16 @@ public class UserService {
             throw new IllegalStateException("Tài khoản chưa được kích hoạt hoặc đang bị khóa");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Mật khẩu không chính xác");
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (BadCredentialsException ex) {
+            throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác");
         }
 
         String token = jwtProvider.generateToken(user);
-        return new AuthResponse(token, UserMapper.toResponse(user));
+        return new AuthResponse(token, jwtProvider.getAccessTokenExpirationSeconds(), UserMapper.toResponse(user));
     }
 
     @Transactional
@@ -185,7 +208,7 @@ public class UserService {
 
     private User getUserEntity(Integer id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm tháy người dùng."));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng."));
     }
 
     private User getUserEntityWithAddresses(Integer id) {

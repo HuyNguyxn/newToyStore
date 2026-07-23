@@ -14,6 +14,30 @@ public enum UserRole {
         }
     },
 
+    STAFF("Nhân viên") {
+        @Override
+        public boolean canManageProducts() {
+            return true;
+        }
+
+        @Override
+        public boolean canManageOrders() {
+            return true;
+        }
+    },
+
+    MANAGER("Quản lý") {
+        @Override
+        public boolean canManageProducts() {
+            return true;
+        }
+
+        @Override
+        public boolean canManageOrders() {
+            return true;
+        }
+    },
+
     ADMIN("Quản trị viên") {
         @Override
         public boolean canManageProducts() {
@@ -38,6 +62,10 @@ public enum UserRole {
 
     public abstract boolean canManageProducts();
     public abstract boolean canManageOrders();
+
+    public String toAuthority() {
+        return "ROLE_" + name();
+    }
 
     public static UserRole from(String value) {
         if (value == null || value.trim().isEmpty()) {
