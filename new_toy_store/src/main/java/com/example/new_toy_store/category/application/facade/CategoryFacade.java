@@ -3,9 +3,11 @@ package com.example.new_toy_store.category.application.facade;
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.domain.CategoryRepository;
 import com.example.new_toy_store.category.domain.CategoryStatus;
+import com.example.new_toy_store.category.domain.exception.CategoryCrossModuleException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +52,17 @@ public class CategoryFacade {
     public List<Category> getExistingCategories(Set<Integer> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) return List.of();
 
-        return repository.findAllById(categoryIds);
+        List<Category> categories = repository.findAllById(categoryIds);
+        Set<Integer> existingCategoryIds = categories.stream()
+                .map(Category::getId)
+                .collect(Collectors.toSet());
+
+        Set<Integer> missingCategoryIds = new HashSet<>(categoryIds);
+        missingCategoryIds.removeAll(existingCategoryIds);
+        if (!missingCategoryIds.isEmpty()) {
+            throw CategoryCrossModuleException.missingCategories("Product", missingCategoryIds);
+        }
+
+        return categories;
     }
 }

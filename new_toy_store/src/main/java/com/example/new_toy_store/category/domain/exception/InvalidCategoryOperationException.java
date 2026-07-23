@@ -1,12 +1,25 @@
 package com.example.new_toy_store.category.domain.exception;
 
-public class InvalidCategoryOperationException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class InvalidCategoryOperationException extends CategoryDomainException {
 
     private final String operation;
     private final Object invalidValue;
 
     private InvalidCategoryOperationException(String message, String operation, Object invalidValue) {
-        super(message);
+        super(
+                HttpStatus.BAD_REQUEST,
+                "CATEGORY_INVALID_OPERATION",
+                message,
+                Map.of(
+                        "operation", operation,
+                        "invalidValue", invalidValue == null ? "" : invalidValue,
+                        "reason", "BUSINESS_RULE_VIOLATION"
+                )
+        );
         this.operation = operation;
         this.invalidValue = invalidValue;
     }
@@ -20,18 +33,18 @@ public class InvalidCategoryOperationException extends RuntimeException {
     }
 
     public static InvalidCategoryOperationException selfParenting(Integer categoryId) {
-        String target = categoryId != null ? " (ID: " + categoryId + ")" : "";
+        String target = categoryId != null ? " có ID " + categoryId : "";
         return new InvalidCategoryOperationException(
-                "Danh mục" + target + " không thể tự nhận chính mình làm danh mục cha.",
+                "Danh mục" + target + " không thể tự nhận chính nó làm danh mục cha.",
                 "ASSIGN_PARENT",
                 categoryId
         );
     }
 
     public static InvalidCategoryOperationException circularReference(Integer categoryId, Integer parentId) {
-        String target = categoryId != null ? " (ID: " + categoryId + ")" : "";
+        String target = categoryId != null ? " có ID " + categoryId : "";
         return new InvalidCategoryOperationException(
-                "Phát hiện lỗi vòng lặp: Danh mục" + target + " hiện đang là cấp trên của danh mục mục tiêu (ID: " + parentId + ").",
+                "Phát hiện vòng lặp danh mục: danh mục" + target + " đang là cấp trên của danh mục cha mục tiêu có ID " + parentId + ".",
                 "ASSIGN_PARENT",
                 parentId
         );
@@ -39,7 +52,7 @@ public class InvalidCategoryOperationException extends RuntimeException {
 
     public static InvalidCategoryOperationException maxDepthExceeded(int maxLevel) {
         return new InvalidCategoryOperationException(
-                "Độ sâu danh mục vượt quá giới hạn cho phép (Tối đa " + maxLevel + " cấp).",
+                "Độ sâu danh mục vượt quá giới hạn cho phép. Tối đa " + maxLevel + " cấp.",
                 "ASSIGN_PARENT",
                 maxLevel
         );
@@ -55,7 +68,7 @@ public class InvalidCategoryOperationException extends RuntimeException {
 
     public static InvalidCategoryOperationException invalidStatus(String value) {
         return new InvalidCategoryOperationException(
-                "Trạng thái danh mục không hợp lệ: " + value,
+                "Trạng thái danh mục không hợp lệ: " + value + ".",
                 "PARSE_STATUS",
                 value
         );

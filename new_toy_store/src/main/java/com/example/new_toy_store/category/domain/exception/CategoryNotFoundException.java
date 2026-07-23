@@ -1,11 +1,23 @@
 package com.example.new_toy_store.category.domain.exception;
 
-public class CategoryNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class CategoryNotFoundException extends CategoryDomainException {
 
     private final Integer categoryId;
 
     public CategoryNotFoundException(Integer categoryId) {
-        super("Không tìm thấy danh mục (ID: " + categoryId + ").");
+        super(
+                HttpStatus.NOT_FOUND,
+                "CATEGORY_NOT_FOUND",
+                "Không tìm thấy danh mục có ID " + categoryId + ".",
+                Map.of(
+                        "categoryId", categoryId,
+                        "entity", "Category"
+                )
+        );
         this.categoryId = categoryId;
     }
 

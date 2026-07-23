@@ -1,12 +1,25 @@
 package com.example.new_toy_store.category.domain.exception;
 
-public class InvalidCategoryDataException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class InvalidCategoryDataException extends CategoryDomainException {
 
     private final String field;
     private final Object invalidValue;
 
     private InvalidCategoryDataException(String message, String field, Object invalidValue) {
-        super(message);
+        super(
+                HttpStatus.BAD_REQUEST,
+                "CATEGORY_INVALID_INPUT",
+                message,
+                Map.of(
+                        "field", field,
+                        "invalidValue", invalidValue == null ? "" : invalidValue,
+                        "reason", "INVALID_INPUT"
+                )
+        );
         this.field = field;
         this.invalidValue = invalidValue;
     }
@@ -21,7 +34,7 @@ public class InvalidCategoryDataException extends RuntimeException {
 
     public static InvalidCategoryDataException invalidStatus(String value) {
         return new InvalidCategoryDataException(
-                "Trạng thái danh mục không hợp lệ: " + value,
+                "Trạng thái danh mục không hợp lệ: " + value + ".",
                 "STATUS",
                 value
         );
