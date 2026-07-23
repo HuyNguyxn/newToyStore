@@ -1,7 +1,7 @@
 package com.example.new_toy_store.product.mapper;
 
 import com.example.new_toy_store.category.domain.Category;
-import com.example.new_toy_store.product.application.dto.request.ProductRequest;
+import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductVariantResponse;
 import com.example.new_toy_store.product.domain.Product;
@@ -21,7 +21,7 @@ public final class ProductMapper {
     private ProductMapper() {
     }
 
-    public static Product toEntity(ProductRequest request) {
+    public static Product toEntity(CreateProductRequest request) {
         Product product = new Product(
                 request.getName(),
                 request.getBasePrice()

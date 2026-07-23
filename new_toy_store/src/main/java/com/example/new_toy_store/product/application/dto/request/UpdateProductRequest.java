@@ -1,0 +1,34 @@
+package com.example.new_toy_store.product.application.dto.request;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
+
+public class UpdateProductRequest {
+
+    @NotBlank(message = "Tên sản phẩm không được để trống")
+    @Size(max = 255, message = "Tên sản phẩm không được vượt quá 255 ký tự")
+    private String name;
+
+    @Min(value = 0, message = "Giá bán không được nhỏ hơn 0")
+    private double basePrice;
+
+    @NotEmpty(message = "Cần chọn ít nhất một danh mục")
+    private List<Integer> categoryIds;
+
+    @Size(max = 50, message = "Trạng thái không được vượt quá 50 ký tự")
+    private String status;
+
+    @NotNull(message = "Nhà cung cấp không được để trống")
+    private Integer supplierId;
+
+    public String getName() { return name; }
+    public double getBasePrice() { return basePrice; }
+    public List<Integer> getCategoryIds() { return categoryIds; }
+    public String getStatus() { return status; }
+    public Integer getSupplierId() { return supplierId; }
+}

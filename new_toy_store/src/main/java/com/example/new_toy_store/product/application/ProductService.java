@@ -1,9 +1,10 @@
 package com.example.new_toy_store.product.application;
 
 import com.example.new_toy_store.category.domain.Category;
-import com.example.new_toy_store.category.domain.CategoryRepository;
+import com.example.new_toy_store.category.application.facade.CategoryFacade;
+import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
-import com.example.new_toy_store.product.application.dto.request.ProductRequest;
+import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductStatus;
@@ -15,7 +16,7 @@ import com.example.new_toy_store.product.domain.exception.ProductNotFoundExcepti
 import com.example.new_toy_store.infrastructure.specification.ProductSpecification;
 import com.example.new_toy_store.product.mapper.ProductMapper;
 import com.example.new_toy_store.global.event.ProductUpdatedEvent;
-import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
@@ -37,20 +38,20 @@ public class ProductService {
 
     private final ProductRepository repository;
     private final ProductVariantRepository variantRepository;
-    private final CategoryRepository categoryRepository;
-    private final SupplierService supplierService;
+    private final CategoryFacade categoryFacade;
+    private final SupplierFacade supplierFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public ProductService(
             ProductRepository repository,
             ProductVariantRepository variantRepository,
-            CategoryRepository categoryRepository,
-            SupplierService supplierService,
+            CategoryFacade categoryFacade,
+            SupplierFacade supplierFacade,
             ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.variantRepository = variantRepository;
-        this.categoryRepository = categoryRepository;
-        this.supplierService = supplierService;
+        this.categoryFacade = categoryFacade;
+        this.supplierFacade = supplierFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -178,7 +179,7 @@ public class ProductService {
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
+        Map<Integer, SupplierResponse> supplierMap = supplierFacade.getSuppliersByIds(supplierIds)
                 .stream().collect(Collectors.toMap(SupplierResponse::getId, s -> s));
 
         return productPage.map(product -> {
@@ -194,16 +195,16 @@ public class ProductService {
 
         SupplierResponse supplier = null;
         if (product.getSupplierId() != null) {
-            supplier = supplierService.getSupplierDetails(product.getSupplierId());
+            supplier = supplierFacade.getSupplierDetails(product.getSupplierId());
         }
         return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
     @Transactional
-    public ProductResponse create(ProductRequest request) {
+    public ProductResponse create(CreateProductRequest request) {
         SupplierResponse supplier = null;
         if (request.getSupplierId() != null) {
-            supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
             if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
                 throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
@@ -211,7 +212,7 @@ public class ProductService {
 
         Set<Category> categories = new HashSet<>();
         if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
-            categories = new HashSet<>(categoryRepository.findAllById(request.getCategoryIds()));
+            categories = new HashSet<>(categoryFacade.getExistingCategories(new HashSet<>(request.getCategoryIds())));
             if (categories.size() != request.getCategoryIds().size()) {
                 throw InvalidProductOperationException.invalidCategories();
             }
@@ -230,12 +231,12 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponse updateInfo(Integer id, ProductRequest request) {
+    public ProductResponse updateInfo(Integer id, UpdateProductRequest request) {
         Product product = getProductEntity(id);
         SupplierResponse supplier = null;
 
         if (request.getSupplierId() != null) {
-            supplier = supplierService.getSupplierDetails(request.getSupplierId());
+            supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
             if (!request.getSupplierId().equals(product.getSupplierId())) {
                 if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
                     throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
@@ -243,7 +244,7 @@ public class ProductService {
                 product.assignSupplier(request.getSupplierId());
             }
         } else if (product.getSupplierId() != null) {
-            supplier = supplierService.getSupplierDetails(product.getSupplierId());
+            supplier = supplierFacade.getSupplierDetails(product.getSupplierId());
         }
 
         product.updateInfo(request.getName(), request.getBasePrice());
@@ -254,7 +255,7 @@ public class ProductService {
 
         if (request.getCategoryIds() != null) {
             product.getCategories().clear();
-            List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
+            List<Category> categories = categoryFacade.getExistingCategories(new HashSet<>(request.getCategoryIds()));
             categories.forEach(product::addCategory);
         }
 
@@ -296,7 +297,7 @@ public class ProductService {
         repository.save(product);
 
         SupplierResponse supplier = product.getSupplierId() != null ?
-                supplierService.getSupplierDetails(product.getSupplierId()) : null;
+                supplierFacade.getSupplierDetails(product.getSupplierId()) : null;
         return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
