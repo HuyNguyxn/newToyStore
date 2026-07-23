@@ -9,6 +9,7 @@ import com.example.new_toy_store.user.application.dto.request.ProfileUpdateReque
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
+import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
@@ -23,6 +24,7 @@ import com.example.new_toy_store.user.domain.VerificationTokenRepository;
 import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 import com.example.new_toy_store.user.domain.exception.UserNotFoundException;
 import com.example.new_toy_store.user.mapper.UserMapper;
+import com.example.new_toy_store.infrastructure.specification.UserSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -195,8 +197,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserAdminResponse> getUsers(Pageable pageable) {
-        return repository.findAll(pageable).map(UserMapper::toAdminResponse);
+    public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
+        return repository.findAll(UserSpecification.filter(request), pageable)
+                .map(UserMapper::toAdminResponse);
     }
 
     @Transactional(readOnly = true)

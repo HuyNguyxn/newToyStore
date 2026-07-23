@@ -2,6 +2,7 @@ package com.example.new_toy_store.user.domain;
 
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,7 +14,9 @@ import java.util.List;
         name = "users",
         indexes = {
                 @Index(name = "idx_user_email", columnList = "email"),
-                @Index(name = "idx_user_status", columnList = "status")
+                @Index(name = "idx_user_status", columnList = "status"),
+                @Index(name = "idx_user_role", columnList = "role"),
+                @Index(name = "idx_user_role_status", columnList = "role,status")
         }
 )
 public class User extends BaseRootEntity {
@@ -45,6 +48,7 @@ public class User extends BaseRootEntity {
     private UserStatus status;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     private List<Address> addresses = new ArrayList<>();
 
     protected User() {}

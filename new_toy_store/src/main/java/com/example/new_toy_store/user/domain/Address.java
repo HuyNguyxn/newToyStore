@@ -2,6 +2,7 @@ package com.example.new_toy_store.user.domain;
 
 import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -17,6 +18,7 @@ public class Address extends BaseSoftDeleteEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @BatchSize(size = 100)
     private User user;
 
     @Column(name = "receiver_name", nullable = false)

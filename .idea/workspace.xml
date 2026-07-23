@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="84bde215-7df7-441f-a834-2e58da1f686e" name="Changes" comment="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
+    <list default="true" id="84bde215-7df7-441f-a834-2e58da1f686e" name="Changes" comment="refactor(product): service, facade">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -67,14 +69,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1780976630857</updated>
-    </task>
-    <task id="LOCAL-00124" summary="tach rieng exception ra khoi entity, enum, service">
-      <option name="closed" value="true" />
-      <created>1783502558572</created>
-      <option name="number" value="00124" />
-      <option name="presentableId" value="LOCAL-00124" />
-      <option name="project" value="LOCAL" />
-      <updated>1783502558572</updated>
     </task>
     <task id="LOCAL-00125" summary="bo sung chuc nang bo loc dong cho order.&#10;bo sung them luong huy don tu dong voi schedule khi het han thoi gian thanh toan tu dong hoan lay product vao kho.&#10;bo sung them @Version tranh ghi de du lieu.&#10;them tinh nang sua dia chi giao hang.&#10;bo sung them Index cho cot status">
       <option name="closed" value="true" />
@@ -460,11 +454,18 @@
       <option name="project" value="LOCAL" />
       <updated>1784729100468</updated>
     </task>
-    <option name="localTasksCounter" value="173" />
+    <task id="LOCAL-00173" summary="refactor(product): service, facade">
+      <option name="closed" value="true" />
+      <created>1784774671665</created>
+      <option name="number" value="00173" />
+      <option name="presentableId" value="LOCAL-00173" />
+      <option name="project" value="LOCAL" />
+      <updated>1784774671666</updated>
+    </task>
+    <option name="localTasksCounter" value="174" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="feat(customer-return): implement fraud prevention radar and appeal workflow&#10;InvalidCustomerReturnOperationException.java:&#10;ADD: new exception class to handle business rule violations cleanly&#10;OrderRepository.java &amp; OrderService.java:&#10;ADD: JPQL counts and isHighRiskCustomer logic to evaluate &gt;30% return rates&#10;CustomerReturn.java:&#10;ADD: isHighRisk flag and system logging for fraudulent accounts&#10;UPDATE: openDispute to enforce strictly transitioning from REJECTED/FAILED states&#10;ADD: resolveDispute to allow admins to approve or permanently reject appeals&#10;CustomerReturnService.java:&#10;UPDATE: createRequest to automatically flag high-risk customers upon creation&#10;CustomerReturnController.java:&#10;UPDATE: remove hardcoded demo users and enforce JWT @AuthenticationPrincipal" />
     <MESSAGE value="feat(supplier-return): implement core domain entities, rich enums, and domain exceptions&#10;* ENUMS:&#10;  - `SupplierReturnStatus.java`: Add State Machine to manage next valid states and enforce `isReadOnly` data mutation constraints.&#10;  - `SupplierReturnReason.java`: Add Rich Enum to categorize return reasons, integrating the `isRestockable()` logic for inventory routing.&#10;&#10;* ENTITIES:&#10;  - `SupplierReturn.java` (Aggregate Root): Extend `BaseRootEntity` (Version + Soft Delete). Encapsulate strict financial recalculations and block external data mutations via internal Business Methods.&#10;  - `SupplierReturnItem.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store item details, tax rates, and discount amounts.&#10;  - `SupplierReturnImage.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store proof image URLs.&#10;  - `SupplierReturnHistory.java` (Child Entity): Extend `BaseTimeEntity`. Maintain a strict audit trail (Immutable: no soft delete or update allowed).&#10;&#10;* EXCEPTIONS (Domain Level):&#10;  - `InvalidSupplierReturnOperationException.java`: Add exception to handle all input validations and business logic violations (invalid state transitions, negative financials). Attach Context Data (Map) to support dynamic Frontend UI handling." />
     <MESSAGE value="feat(supplier-return): build strictly separated DTOs and SRP-compliant mapper&#10;* REQUEST DTOs:&#10;  - `SupplierReturnRequest.java` &amp; `SupplierReturnItemRequest.java`: Add input DTOs fortified with strict Jakarta Validations (@NotNull, @Min, @NotBlank) to reject invalid payloads at the controller layer.&#10;&#10;* RESPONSE DTOs:&#10;  - `SupplierReturnResponse.java` &amp; `SupplierReturnItemResponse.java`: Add output DTOs. Introduce the `availableNextActions` array to dynamically route UI actions based on current status.&#10;  - `SupplierReturnHistoryResponse.java` &amp; `SupplierReturnImageResponse.java`: Add DTOs to extract audit and image data from child entities.&#10;&#10;* MAPPER:&#10;  - `SupplierReturnMapper.java`: Decompose the mapper into micro private methods (Create Entity, Map Full Response, Map specific Child Lists) ensuring only one reason to change this utility class." />
     <MESSAGE value="feat(supplier-return): implement repository, dynamic spec, and business service logic&#10;* REPOSITORY &amp; SPECIFICATION:&#10;  - `SupplierReturnRepository.java`: Apply `@EntityGraph` to eagerly fetch collections (items, histories, images), eliminating N+1 Query issues. Add `existsByImportNoteIdAndStatusNotIn` for duplication checks.&#10;  - `SupplierReturnSpecification.java`: Add Criteria API to support dynamic filtering by Supplier, Status, and Date Range.&#10;&#10;* SERVICE EXCEPTIONS:&#10;  - `SupplierReturnNotFoundException.java`: Handle 404 Not Found errors.&#10;  - `DuplicateSupplierReturnException.java`: Handle 409 Conflict errors (e.g., creating multiple active returns for a single import note).&#10;  - `SupplierReturnDeletedConflictException.java`: Handle 409 Conflict errors when interacting with soft-deleted records.&#10;  - `SupplierReturnAccessDeniedException.java`: Handle 403 Forbidden RBAC errors.&#10;&#10;* SERVICE:&#10;  - `SupplierReturnService.java`: Wrap the entire RMA lifecycle in `@Transactional`. Orchestrate the state machine and directly invoke `ProductService.deductStockForOrder` to safely deduct inventory, ensuring atomic rollback on cross-domain failures." />
@@ -489,6 +490,7 @@
     <MESSAGE value="refactor(customer_return): enhance enum serialization with object shape formatting&#10;* ENUM:&#10;  CustomerReturnStatus.java: Apply object structure formatting to provide full context to frontend and encapsulate state machine logic.&#10;  ReturnReasonCode.java: Apply object structure formatting and expose internal code for rich API responses." />
     <MESSAGE value="refactor(customer_return): simplify response structure and mapping logic using enum objects&#10;* DTO:&#10;  CustomerReturnResponse.java: Replace raw strings with enum object for status and available actions.&#10;  CustomerReturnItemResponse.java: Replace raw strings with enum object for return reason code.&#10;  CustomerReturnHistoryResponse.java: Replace raw strings with enum object for history states.&#10;* MAPPER:&#10;  CustomerReturnMapper.java: Remove redundant string mapping and pass enum directly to response layer to support dynamic frontend UI." />
     <MESSAGE value="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
-    <option name="LAST_COMMIT_MESSAGE" value="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
+    <MESSAGE value="refactor(product): service, facade" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor(product): service, facade" />
   </component>
 </project>

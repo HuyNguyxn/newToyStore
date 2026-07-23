@@ -8,6 +8,7 @@ import com.example.new_toy_store.user.application.dto.request.ProfileUpdateReque
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
+import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
@@ -131,8 +132,8 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Page<UserAdminResponse> getUsers(Pageable pageable) {
-        return service.getUsers(pageable);
+    public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
+        return service.getUsers(request, pageable);
     }
 
     @GetMapping("/{id}")
