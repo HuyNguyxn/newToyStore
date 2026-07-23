@@ -1,8 +1,10 @@
 package com.example.new_toy_store.supplier.api;
 
 import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierCreateRequest;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierFilterRequest;
-import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierStatusChangeRequest;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierUpdateRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -36,12 +38,12 @@ public class SupplierController {
     }
 
     @PostMapping
-    public SupplierResponse create(@Valid @RequestBody SupplierRequest request) {
+    public SupplierResponse create(@Valid @RequestBody SupplierCreateRequest request) {
         return service.create(request);
     }
 
     @PutMapping("/{id}")
-    public SupplierResponse update(@PathVariable Integer id, @Valid @RequestBody SupplierRequest request) {
+    public SupplierResponse update(@PathVariable Integer id, @Valid @RequestBody SupplierUpdateRequest request) {
         return service.update(id, request);
     }
 
@@ -51,8 +53,8 @@ public class SupplierController {
     }
 
     @PatchMapping("/{id}/status")
-    public void changeStatus(@PathVariable Integer id, @RequestParam String status) {
-        service.changeStatus(id, status);
+    public void changeStatus(@PathVariable Integer id, @Valid @RequestBody SupplierStatusChangeRequest request) {
+        service.changeStatus(id, request.getStatus());
     }
 
     @PatchMapping("/{id}/restore")

@@ -12,7 +12,7 @@ import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
 import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.domain.Product;
-import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 
 import org.springframework.data.domain.Page;
@@ -30,12 +30,12 @@ public class ImportService {
 
     private final ImportNoteRepository repository;
     private final ProductService productService;
-    private final SupplierService supplierService;
+    private final SupplierFacade supplierFacade;
 
-    public ImportService(ImportNoteRepository repository, ProductService productService, SupplierService supplierService) {
+    public ImportService(ImportNoteRepository repository, ProductService productService, SupplierFacade supplierFacade) {
         this.repository = repository;
         this.productService = productService;
-        this.supplierService = supplierService;
+        this.supplierFacade = supplierFacade;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +55,7 @@ public class ImportService {
             return notes.map(note -> ImportNoteMapper.toFlatResponse(note, null));
         }
 
-        Map<Integer, SupplierResponse> supplierMap = supplierService.getSuppliersByIds(supplierIds)
+        Map<Integer, SupplierResponse> supplierMap = supplierFacade.getSuppliersByIds(supplierIds)
                 .stream()
                 .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
 
@@ -68,13 +68,13 @@ public class ImportService {
         if (note == null) {
             throw new ImportNoteNotFoundException(id);
         }
-        SupplierResponse supplier = supplierService.getSupplierDetails(note.getSupplierId());
+        SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
     }
 
     @Transactional
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
-        SupplierResponse supplier = supplierService.getSupplierDetails(request.getSupplierId());
+        SupplierResponse supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
         if (!"ACTIVE".equals(supplier.getStatus())) {
             throw InvalidImportOperationException.supplierInactive(supplier.getStatusDisplayName());
         }
@@ -134,7 +134,7 @@ public class ImportService {
 
         productService.processImportedStock(stockUpdates);
 
-        SupplierResponse supplier = supplierService.getSupplierDetails(note.getSupplierId());
+        SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
     }
 
@@ -145,7 +145,7 @@ public class ImportService {
         note.cancel();
         repository.save(note);
 
-        SupplierResponse supplier = supplierService.getSupplierDetails(note.getSupplierId());
+        SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
     }
 }

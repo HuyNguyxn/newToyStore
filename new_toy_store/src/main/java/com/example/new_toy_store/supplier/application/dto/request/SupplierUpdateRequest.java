@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class SupplierRequest {
+public class SupplierUpdateRequest {
 
     @NotBlank(message = "Tên nhà cung cấp không được để trống")
     @Size(max = 150, message = "Tên nhà cung cấp không được vượt quá 150 ký tự")
@@ -21,12 +21,8 @@ public class SupplierRequest {
     @Size(max = 500, message = "Địa chỉ không được vượt quá 500 ký tự")
     private String address;
 
-    @Size(max = 50, message = "Trạng thái không được vượt quá 50 ký tự")
-    private String status;
-
     public String getName() { return name; }
     public String getPhoneNumber() { return phoneNumber; }
     public String getEmail() { return email; }
     public String getAddress() { return address; }
-    public String getStatus() { return status; }
 }

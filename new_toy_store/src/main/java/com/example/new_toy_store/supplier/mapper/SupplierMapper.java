@@ -1,26 +1,21 @@
 package com.example.new_toy_store.supplier.mapper;
 
-import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierCreateRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.Supplier;
-import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class SupplierMapper {
 
-    public static Supplier toEntity(SupplierRequest request) {
-        Supplier supplier = new Supplier(
+    public static Supplier toEntity(SupplierCreateRequest request) {
+        return new Supplier(
                 request.getName(),
                 request.getPhoneNumber(),
                 request.getEmail(),
                 request.getAddress()
         );
-        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            supplier.setStatus(SupplierStatus.from(request.getStatus()));
-        }
-        return supplier;
     }
 
     public static SupplierResponse toResponse(Supplier supplier) {

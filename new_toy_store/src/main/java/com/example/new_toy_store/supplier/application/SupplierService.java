@@ -3,8 +3,9 @@ package com.example.new_toy_store.supplier.application;
 import com.example.new_toy_store.global.event.SupplierDeletedEvent;
 import com.example.new_toy_store.global.event.SupplierStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.SupplierSpecification;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierCreateRequest;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierFilterRequest;
-import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
+import com.example.new_toy_store.supplier.application.dto.request.SupplierUpdateRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.Supplier;
 import com.example.new_toy_store.supplier.domain.SupplierRepository;
@@ -57,7 +58,7 @@ public class SupplierService {
     }
 
     @Transactional
-    public SupplierResponse create(SupplierRequest request) {
+    public SupplierResponse create(SupplierCreateRequest request) {
         Optional<Supplier> existing = repository.findByPhoneNumberIncludingDeleted(request.getPhoneNumber());
         if (existing.isPresent()) {
             if (existing.get().isDeleted()) {
@@ -72,7 +73,7 @@ public class SupplierService {
     }
 
     @Transactional
-    public SupplierResponse update(Integer id, SupplierRequest request) {
+    public SupplierResponse update(Integer id, SupplierUpdateRequest request) {
         Supplier supplier = getSupplierEntity(id);
 
         repository.findByPhoneNumberIncludingDeleted(request.getPhoneNumber())
@@ -91,10 +92,6 @@ public class SupplierService {
                 request.getEmail(),
                 request.getAddress()
         );
-
-        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            supplier.setStatus(SupplierStatus.from(request.getStatus()));
-        }
 
         repository.save(supplier);
         return SupplierMapper.toResponse(supplier);

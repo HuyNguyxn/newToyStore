@@ -1,7 +1,7 @@
 package com.example.new_toy_store.supplier_return.application;
 
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
-import com.example.new_toy_store.supplier.application.SupplierService;
+import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnRequest;
 import com.example.new_toy_store.supplier_return.application.dto.response.SupplierReturnResponse;
@@ -34,17 +34,17 @@ public class SupplierReturnService {
 
     private final SupplierReturnRepository repository;
 
-    private final SupplierService supplierService;
+    private final SupplierFacade supplierFacade;
 
     private final ApplicationEventPublisher eventPublisher;
 
     public SupplierReturnService(
             SupplierReturnRepository repository,
-            SupplierService supplierService,
+            SupplierFacade supplierFacade,
             ApplicationEventPublisher eventPublisher) {
 
         this.repository = repository;
-        this.supplierService = supplierService;
+        this.supplierFacade = supplierFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -92,7 +92,7 @@ public class SupplierReturnService {
 
     @Transactional
     public SupplierReturnResponse createDraft(SupplierReturnRequest request, String adminUsername) {
-        supplierService.getSupplierDetails(request.getSupplierId());
+        supplierFacade.getSupplierDetails(request.getSupplierId());
 
         if (request.getImportNoteId() != null) {
             boolean hasActiveReturn = repository.existsByImportNoteIdAndStatusNotIn(
