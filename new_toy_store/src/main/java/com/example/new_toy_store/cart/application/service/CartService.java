@@ -7,7 +7,7 @@ import com.example.new_toy_store.cart.domain.Cart;
 import com.example.new_toy_store.cart.domain.CartRepository;
 import com.example.new_toy_store.cart.domain.CartItemRepository;
 import com.example.new_toy_store.cart.domain.CartStatus;
-import com.example.new_toy_store.cart.domain.event.CartStatusChangedEvent;
+import com.example.new_toy_store.global.event.CartStatusChangedEvent;
 import com.example.new_toy_store.cart.domain.exception.CartNotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;

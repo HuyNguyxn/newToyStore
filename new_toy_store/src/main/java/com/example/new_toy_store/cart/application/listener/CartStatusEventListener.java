@@ -1,6 +1,6 @@
 package com.example.new_toy_store.cart.application.listener;
 
-import com.example.new_toy_store.cart.domain.event.CartStatusChangedEvent;
+import com.example.new_toy_store.global.event.CartStatusChangedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

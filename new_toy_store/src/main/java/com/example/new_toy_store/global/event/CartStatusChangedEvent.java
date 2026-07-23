@@ -1,4 +1,4 @@
-package com.example.new_toy_store.cart.domain.event;
+package com.example.new_toy_store.global.event;
 
 import com.example.new_toy_store.cart.domain.CartStatus;
 
