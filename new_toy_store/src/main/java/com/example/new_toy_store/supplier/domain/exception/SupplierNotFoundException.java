@@ -1,10 +1,20 @@
 package com.example.new_toy_store.supplier.domain.exception;
 
-public class SupplierNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class SupplierNotFoundException extends SupplierDomainException {
+
     private final Integer supplierId;
 
     public SupplierNotFoundException(Integer supplierId) {
-        super("Không tìm thấy nhà cung cấp với ID: " + supplierId);
+        super(
+                HttpStatus.NOT_FOUND,
+                "SUPPLIER_NOT_FOUND",
+                "Không tìm thấy nhà cung cấp với ID: " + supplierId,
+                Map.of("supplierId", supplierId)
+        );
         this.supplierId = supplierId;
     }
 

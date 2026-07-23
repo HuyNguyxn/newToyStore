@@ -92,7 +92,7 @@ public class SupplierReturnService {
 
     @Transactional
     public SupplierReturnResponse createDraft(SupplierReturnRequest request, String adminUsername) {
-        supplierFacade.getSupplierDetails(request.getSupplierId());
+        supplierFacade.getRequiredSupplierDetails(request.getSupplierId(), "supplier_return");
 
         if (request.getImportNoteId() != null) {
             boolean hasActiveReturn = repository.existsByImportNoteIdAndStatusNotIn(

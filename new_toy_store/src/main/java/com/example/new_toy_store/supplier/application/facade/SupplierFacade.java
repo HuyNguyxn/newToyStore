@@ -2,6 +2,7 @@ package com.example.new_toy_store.supplier.application.facade;
 
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
+import com.example.new_toy_store.supplier.domain.exception.InvalidSupplierOperationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,14 @@ public class SupplierFacade {
 
     public SupplierResponse getSupplierDetails(Integer supplierId) {
         if (supplierId == null) return null;
+
+        return supplierService.getSupplierDetails(supplierId);
+    }
+
+    public SupplierResponse getRequiredSupplierDetails(Integer supplierId, String sourceModule) {
+        if (supplierId == null) {
+            throw InvalidSupplierOperationException.missingExternalReference("supplierId", sourceModule);
+        }
 
         return supplierService.getSupplierDetails(supplierId);
     }

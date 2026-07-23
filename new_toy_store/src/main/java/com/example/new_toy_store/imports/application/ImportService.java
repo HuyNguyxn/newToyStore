@@ -75,7 +75,7 @@ public class ImportService {
 
     @Transactional
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
-        SupplierResponse supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
+        SupplierResponse supplier = supplierFacade.getRequiredSupplierDetails(request.getSupplierId(), "imports");
         if (supplier.getStatus() != SupplierStatus.ACTIVE) {
             throw InvalidImportOperationException.supplierInactive(supplier.getStatusDisplayName());
         }

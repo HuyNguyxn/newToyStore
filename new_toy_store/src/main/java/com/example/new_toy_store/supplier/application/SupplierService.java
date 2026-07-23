@@ -115,6 +115,14 @@ public class SupplierService {
             return;
         }
 
+        if (!previousStatus.canTransitionTo(targetStatus)) {
+            throw InvalidSupplierOperationException.invalidTransition(
+                    supplier.getId(),
+                    previousStatus,
+                    targetStatus
+            );
+        }
+
         int updatedRows = repository.updateStatusWithVersion(supplier.getId(), targetStatus, supplier.getVersion());
         verifyBulkCommandSucceeded(updatedRows, supplier.getId());
         eventPublisher.publishEvent(SupplierStatusChangedEvent.now(supplier.getId(), previousStatus, targetStatus));
