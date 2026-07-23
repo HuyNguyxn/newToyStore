@@ -30,7 +30,7 @@ public class OrderItem extends BaseSoftDeleteEntity {
     private double price;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(name = "order_id", nullable = false, columnDefinition = "BIGINT")
     private Order order;
 
     @Column(name = "product_id", nullable = false)

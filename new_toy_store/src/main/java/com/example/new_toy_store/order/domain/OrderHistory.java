@@ -24,7 +24,7 @@ public class OrderHistory extends BaseSoftDeleteEntity {
     private String note;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id", nullable = false)
+    @JoinColumn(name = "order_id", nullable = false, columnDefinition = "BIGINT")
     private Order order;
 
     protected OrderHistory() {}

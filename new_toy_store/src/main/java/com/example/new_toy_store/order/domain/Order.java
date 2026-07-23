@@ -21,7 +21,9 @@ import java.util.List;
 )
 public class Order extends BaseRootEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "BIGINT")
     private Integer id;
 
     @Column(name = "user_id", nullable = false)
