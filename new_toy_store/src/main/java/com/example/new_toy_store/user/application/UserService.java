@@ -1,6 +1,6 @@
 package com.example.new_toy_store.user.application;
 
-import com.example.new_toy_store.cart.application.service.CartService;
+import com.example.new_toy_store.global.event.UserDeletedEvent;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
@@ -27,6 +27,7 @@ import com.example.new_toy_store.user.mapper.UserMapper;
 import com.example.new_toy_store.infrastructure.specification.UserSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,23 +45,23 @@ public class UserService {
     private final VerificationTokenRepository tokenRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
-    private final CartService cartService;
     private final AuthenticationManager authenticationManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserService(
             UserRepository repository,
             VerificationTokenRepository tokenRepository,
             JwtProvider jwtProvider,
             PasswordEncoder passwordEncoder,
-            CartService cartService,
-            AuthenticationManager authenticationManager
+            AuthenticationManager authenticationManager,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
         this.jwtProvider = jwtProvider;
         this.passwordEncoder = passwordEncoder;
-        this.cartService = cartService;
         this.authenticationManager = authenticationManager;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -238,9 +239,10 @@ public class UserService {
     @Transactional
     public void deleteAccount(Integer userId) {
         User user = getUserEntity(userId);
+        String deletedEmail = user.getEmail();
         user.delete();
         repository.save(user);
-        cartService.clearCart(userId);
+        eventPublisher.publishEvent(UserDeletedEvent.now(userId, deletedEmail));
     }
 
     public User getAuthenticatedUser(String email) {

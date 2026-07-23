@@ -4,6 +4,7 @@ import com.example.new_toy_store.cart.application.service.CartService;
 import com.example.new_toy_store.global.event.OrderCreatedEvent;
 import com.example.new_toy_store.global.event.OrderCreationFailedEvent;
 import com.example.new_toy_store.global.event.ProductUpdatedEvent;
+import com.example.new_toy_store.global.event.UserDeletedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -37,5 +38,11 @@ public class CartEventListener {
     public void handleProductUpdated(ProductUpdatedEvent event) {
         log.info("Product Variant {} price updated. Syncing carts...", event.getVariantId());
         cartService.syncProductChanges(event.getVariantId(), event.getNewPrice());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleUserDeleted(UserDeletedEvent event) {
+        log.info("User {} deleted. Clearing cart after user transaction committed.", event.userId());
+        cartService.clearCart(event.userId());
     }
 }
