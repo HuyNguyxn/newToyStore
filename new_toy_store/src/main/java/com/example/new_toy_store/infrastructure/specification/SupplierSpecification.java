@@ -6,18 +6,30 @@ import com.example.new_toy_store.supplier.domain.Supplier;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 import org.springframework.data.jpa.domain.Specification;
 
-public class SupplierSpecification {
+public final class SupplierSpecification {
+
+    private SupplierSpecification() {}
 
     public static Specification<Supplier> filter(SupplierFilterRequest request) {
         if (request == null) return Specification.where(null);
 
-        Specification<Supplier> spec = Specification.where(BaseSpecification.<Supplier>contains("name", request.getName()))
-                .and(BaseSpecification.contains("phoneNumber", request.getPhoneNumber()));
+        return Specification.where(hasName(request.getName()))
+                .and(hasPhoneNumber(request.getPhoneNumber()))
+                .and(hasStatus(request.getStatus()));
+    }
 
-        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
-            spec = spec.and(BaseSpecification.isEqual("status", SupplierStatus.from(request.getStatus())));
+    public static Specification<Supplier> hasName(String name) {
+        return BaseSpecification.contains("name", name);
+    }
+
+    public static Specification<Supplier> hasPhoneNumber(String phoneNumber) {
+        return BaseSpecification.contains("phoneNumber", phoneNumber);
+    }
+
+    public static Specification<Supplier> hasStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
         }
-
-        return spec;
+        return BaseSpecification.isEqual("status", SupplierStatus.from(status));
     }
 }

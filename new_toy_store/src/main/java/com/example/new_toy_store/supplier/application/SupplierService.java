@@ -1,5 +1,8 @@
 package com.example.new_toy_store.supplier.application;
 
+import com.example.new_toy_store.global.event.SupplierDeletedEvent;
+import com.example.new_toy_store.global.event.SupplierStatusChangedEvent;
+import com.example.new_toy_store.infrastructure.specification.SupplierSpecification;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierFilterRequest;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
@@ -7,10 +10,11 @@ import com.example.new_toy_store.supplier.domain.Supplier;
 import com.example.new_toy_store.supplier.domain.SupplierRepository;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 import com.example.new_toy_store.supplier.domain.exception.*;
-import com.example.new_toy_store.supplier.infrastructure.specification.SupplierSpecification;
 import com.example.new_toy_store.supplier.mapper.SupplierMapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +27,11 @@ import java.util.stream.Collectors;
 public class SupplierService {
 
     private final SupplierRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public SupplierService(SupplierRepository repository) {
+    public SupplierService(SupplierRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -97,15 +103,24 @@ public class SupplierService {
     @Transactional
     public void delete(Integer id) {
         Supplier supplier = getSupplierEntity(id);
-        supplier.delete();
-        repository.save(supplier);
+        int updatedRows = repository.softDeleteWithVersion(supplier.getId(), supplier.getVersion());
+        verifyBulkCommandSucceeded(updatedRows, supplier.getId());
+        eventPublisher.publishEvent(SupplierDeletedEvent.now(supplier.getId(), supplier.getPhoneNumber()));
     }
 
     @Transactional
     public void changeStatus(Integer id, String statusStr) {
         Supplier supplier = getSupplierEntity(id);
-        supplier.setStatus(SupplierStatus.from(statusStr));
-        repository.save(supplier);
+        SupplierStatus previousStatus = supplier.getStatus();
+        SupplierStatus targetStatus = SupplierStatus.from(statusStr);
+
+        if (previousStatus == targetStatus) {
+            return;
+        }
+
+        int updatedRows = repository.updateStatusWithVersion(supplier.getId(), targetStatus, supplier.getVersion());
+        verifyBulkCommandSucceeded(updatedRows, supplier.getId());
+        eventPublisher.publishEvent(SupplierStatusChangedEvent.now(supplier.getId(), previousStatus, targetStatus));
     }
 
     @Transactional
@@ -123,5 +138,11 @@ public class SupplierService {
     private Supplier getSupplierEntity(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new SupplierNotFoundException(id));
+    }
+
+    private void verifyBulkCommandSucceeded(int updatedRows, Integer supplierId) {
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Supplier.class, supplierId);
+        }
     }
 }
