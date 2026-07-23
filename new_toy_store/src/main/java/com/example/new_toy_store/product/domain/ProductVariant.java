@@ -1,6 +1,6 @@
 package com.example.new_toy_store.product.domain;
 
-import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
+import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
         name = "product_variants",
         indexes = {@Index(name = "idx_variant_product_id", columnList = "product_id")}
 )
-public class ProductVariant extends BaseSoftDeleteEntity {
+public class ProductVariant extends BaseRootEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

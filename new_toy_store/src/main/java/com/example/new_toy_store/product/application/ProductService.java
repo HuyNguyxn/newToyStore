@@ -56,21 +56,8 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductVariant getVariantBySku(String sku) {
-        return variantRepository.findBySku(sku)
-                .orElseThrow(() -> new ProductNotFoundException("Không tìm thấy biến thể với mã SKU: " + sku));
-    }
-
-    @Transactional(readOnly = true)
     public List<ProductVariant> getVariantsByProductId(Integer productId) {
         return variantRepository.findByProductId(productId);
-    }
-
-    @Transactional(readOnly = true)
-    public void validateSkuUniqueness(String sku) {
-        if (variantRepository.existsBySku(sku)) {
-            throw new RuntimeException("Mã SKU đã tồn tại: " + sku);
-        }
     }
 
     @Transactional
@@ -196,8 +183,8 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductResponse getProductDetails(Integer id) {
-        Product product = repository.findByIdWithDetails(id);
-        if (product == null) throw new ProductNotFoundException(id);
+        Product product = repository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
 
         SupplierResponse supplier = null;
         if (product.getSupplierId() != null) {

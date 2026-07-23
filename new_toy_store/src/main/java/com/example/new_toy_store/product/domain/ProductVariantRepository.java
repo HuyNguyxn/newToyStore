@@ -11,15 +11,13 @@ import java.util.Optional;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Integer>, JpaSpecificationExecutor<ProductVariant> {
 
-    Optional<ProductVariant> findBySku(String sku);
-
-    boolean existsBySku(String sku);
-
+    @EntityGraph(attributePaths = {"inventory", "attributes"})
     List<ProductVariant> findByProductId(Integer productId);
 
-    @EntityGraph(attributePaths = {"product"})
+    @EntityGraph(attributePaths = {"product", "inventory", "attributes"})
     Optional<ProductVariant> findById(Integer id);
 
-    @Query("SELECT v FROM ProductVariant v JOIN FETCH v.product p WHERE v.id = :id")
+    @EntityGraph(attributePaths = {"product", "inventory", "attributes"})
+    @Query("SELECT v FROM ProductVariant v WHERE v.id = :id")
     Optional<ProductVariant> findByIdWithProduct(@Param("id") Integer id);
 }
