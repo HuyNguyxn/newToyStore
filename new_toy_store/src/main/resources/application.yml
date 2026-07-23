@@ -43,8 +43,9 @@ app:
       cron: "0 */15 * * * *"
       zone: "Asia/Ho_Chi_Minh"
       expiration-minutes: 30
-  schedule:
-    supplier-return:
+  supplier-return:
+    sla:
       cron: "0 0 8 * * ?"
-      alert-hours: 48
+      zone: "Asia/Ho_Chi_Minh"
+      warning-hours: 48
       critical-hours: 96

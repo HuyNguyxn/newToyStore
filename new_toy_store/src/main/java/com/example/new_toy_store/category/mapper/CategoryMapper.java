@@ -4,11 +4,13 @@ import com.example.new_toy_store.category.application.dto.request.CategoryCreate
 import com.example.new_toy_store.category.application.dto.response.CategoryDetailResponse;
 import com.example.new_toy_store.category.application.dto.response.CategorySummaryResponse;
 import com.example.new_toy_store.category.domain.Category;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class CategoryMapper {
 
     public CategorySummaryResponse toSummaryResponse(Category entity) {
