@@ -7,7 +7,7 @@ import com.example.new_toy_store.customer_return.domain.exception.*;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
 import com.example.new_toy_store.order.application.OrderService;
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.service.ProductService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.example.new_toy_store.product.api;
 
-import com.example.new_toy_store.product.application.InventoryService;
+import com.example.new_toy_store.product.application.service.InventoryService;
 import com.example.new_toy_store.product.application.dto.response.InventoryBatchResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

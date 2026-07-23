@@ -4,7 +4,7 @@ import com.example.new_toy_store.infrastructure.specification.ReviewSpecificatio
 import com.example.new_toy_store.moderation.application.BlacklistWordService;
 import com.example.new_toy_store.order.application.OrderService;
 import com.example.new_toy_store.order.domain.OrderItem;
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;

@@ -4,13 +4,12 @@ import com.example.new_toy_store.imports.application.dto.request.ImportNoteItemR
 import com.example.new_toy_store.imports.application.dto.request.ImportNoteRequest;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
 import com.example.new_toy_store.imports.domain.ImportNote;
-import com.example.new_toy_store.imports.domain.ImportNoteItem;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundException;
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.SupplierService;

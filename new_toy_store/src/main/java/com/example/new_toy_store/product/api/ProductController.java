@@ -1,6 +1,6 @@
 package com.example.new_toy_store.product.api;
 
-import com.example.new_toy_store.product.application.ProductFacade;
+import com.example.new_toy_store.product.application.facade.ProductFacade;
 import com.example.new_toy_store.product.application.dto.request.AddProductImageRequest;
 import com.example.new_toy_store.product.application.dto.request.AddVariantStockRequest;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;

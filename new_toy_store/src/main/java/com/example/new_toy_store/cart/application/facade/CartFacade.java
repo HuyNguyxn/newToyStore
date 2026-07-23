@@ -16,7 +16,7 @@ import com.example.new_toy_store.cart.domain.exception.InvalidCartOperationExcep
 import com.example.new_toy_store.cart.mapper.CartMapper;
 import com.example.new_toy_store.global.event.CartCheckoutItemPayload;
 import com.example.new_toy_store.global.event.CartCheckoutRequestedEvent;
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;

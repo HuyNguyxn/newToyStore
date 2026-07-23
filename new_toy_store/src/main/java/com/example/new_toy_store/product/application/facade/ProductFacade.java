@@ -1,5 +1,6 @@
-package com.example.new_toy_store.product.application;
+package com.example.new_toy_store.product.application.facade;
 
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;

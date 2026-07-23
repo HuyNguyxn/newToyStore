@@ -1,4 +1,4 @@
-package com.example.new_toy_store.product.application;
+package com.example.new_toy_store.product.application.service;
 
 import com.example.new_toy_store.product.application.dto.response.InventoryBatchResponse;
 import com.example.new_toy_store.product.domain.Inventory;

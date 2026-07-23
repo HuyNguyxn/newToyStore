@@ -13,7 +13,7 @@ import com.example.new_toy_store.order.domain.OrderRepository;
 import com.example.new_toy_store.order.domain.OrderStatus;
 import com.example.new_toy_store.order.domain.exception.*;
 import com.example.new_toy_store.order.mapper.OrderMapper;
-import com.example.new_toy_store.product.application.ProductService;
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.PromotionService;
