@@ -1,11 +1,12 @@
 package com.example.new_toy_store.user.application.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.example.new_toy_store.user.domain.UserStatus;
+import jakarta.validation.constraints.NotNull;
 
 public class UpdateUserStatusRequest {
 
-    @NotBlank(message = "Trạng thái người dùng không được để trống")
-    private String status;
+    @NotNull(message = "Trạng thái người dùng không được để trống")
+    private UserStatus status;
 
-    public String getStatus() { return status; }
+    public UserStatus getStatus() { return status; }
 }

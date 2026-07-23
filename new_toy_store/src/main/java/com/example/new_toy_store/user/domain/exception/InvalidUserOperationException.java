@@ -54,6 +54,15 @@ public class InvalidUserOperationException extends UserDomainException {
         );
     }
 
+    public static InvalidUserOperationException invalidStatusTransition(String currentStatus, String targetStatus) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Xung đột trạng thái người dùng",
+                "Không thể chuyển trạng thái người dùng từ " + currentStatus + " sang " + targetStatus,
+                Map.of("currentStatus", safe(currentStatus), "targetStatus", safe(targetStatus))
+        );
+    }
+
     public static InvalidUserOperationException invalidToken() {
         return new InvalidUserOperationException(
                 HttpStatus.BAD_REQUEST,

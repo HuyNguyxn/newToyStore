@@ -1,6 +1,7 @@
 package com.example.new_toy_store.user.domain;
 
 import com.example.new_toy_store.global.common.BaseRootEntity;
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
@@ -87,7 +88,13 @@ public class User extends BaseRootEntity {
     public void lockAccount() { this.status = UserStatus.LOCKED; }
     public void unlockAccount() { this.status = UserStatus.ACTIVE; }
     public void changeRole(UserRole role) { if (role != null) this.role = role; }
-    public void changeStatus(UserStatus status) { if (status != null) this.status = status; }
+    public void changeStatus(UserStatus status) {
+        if (status == null || status == this.status) return;
+        if (!this.status.canChangeTo(status)) {
+            throw InvalidUserOperationException.invalidStatusTransition(this.status.getDisplayName(), status.getDisplayName());
+        }
+        this.status = status;
+    }
 
     public void addAddress(Address address) {
         checkIfModificationIsAllowed();

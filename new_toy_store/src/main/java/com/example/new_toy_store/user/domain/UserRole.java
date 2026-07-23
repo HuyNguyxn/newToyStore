@@ -1,5 +1,11 @@
 package com.example.new_toy_store.user.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.util.List;
+
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum UserRole {
 
     CUSTOMER("Khách hàng") {
@@ -11,6 +17,11 @@ public enum UserRole {
         @Override
         public boolean canManageOrders() {
             return false;
+        }
+
+        @Override
+        public List<UserRole> getAssignableRoles() {
+            return List.of();
         }
     },
 
@@ -24,6 +35,11 @@ public enum UserRole {
         public boolean canManageOrders() {
             return true;
         }
+
+        @Override
+        public List<UserRole> getAssignableRoles() {
+            return List.of(CUSTOMER);
+        }
     },
 
     MANAGER("Quản lý") {
@@ -35,6 +51,11 @@ public enum UserRole {
         @Override
         public boolean canManageOrders() {
             return true;
+        }
+
+        @Override
+        public List<UserRole> getAssignableRoles() {
+            return List.of(CUSTOMER, STAFF);
         }
     },
 
@@ -48,6 +69,11 @@ public enum UserRole {
         public boolean canManageOrders() {
             return true;
         }
+
+        @Override
+        public List<UserRole> getAssignableRoles() {
+            return List.of(CUSTOMER, STAFF, MANAGER, ADMIN);
+        }
     };
 
     private final String displayName;
@@ -56,17 +82,23 @@ public enum UserRole {
         this.displayName = displayName;
     }
 
+    public String getCode() {
+        return name();
+    }
+
     public String getDisplayName() {
         return displayName;
     }
 
     public abstract boolean canManageProducts();
     public abstract boolean canManageOrders();
+    public abstract List<UserRole> getAssignableRoles();
 
     public String toAuthority() {
         return "ROLE_" + name();
     }
 
+    @JsonCreator
     public static UserRole from(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Vai trò người dùng không được để trống.");

@@ -1,11 +1,12 @@
 package com.example.new_toy_store.user.application.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.example.new_toy_store.user.domain.UserRole;
+import jakarta.validation.constraints.NotNull;
 
 public class UpdateUserRoleRequest {
 
-    @NotBlank(message = "Vai trò người dùng không được để trống")
-    private String role;
+    @NotNull(message = "Vai trò người dùng không được để trống")
+    private UserRole role;
 
-    public String getRole() { return role; }
+    public UserRole getRole() { return role; }
 }

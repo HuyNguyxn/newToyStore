@@ -1,5 +1,11 @@
 package com.example.new_toy_store.user.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.util.List;
+
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum UserStatus {
 
     UNVERIFIED("Chưa xác thực email") {
@@ -16,6 +22,11 @@ public enum UserStatus {
         @Override
         public boolean canModifyData() {
             return true;
+        }
+
+        @Override
+        public List<UserStatus> getNextValidStates() {
+            return List.of(ACTIVE, LOCKED);
         }
     },
 
@@ -34,6 +45,11 @@ public enum UserStatus {
         public boolean canModifyData() {
             return true;
         }
+
+        @Override
+        public List<UserStatus> getNextValidStates() {
+            return List.of(LOCKED);
+        }
     },
 
     LOCKED("Tài khoản bị khóa") {
@@ -51,12 +67,21 @@ public enum UserStatus {
         public boolean canModifyData() {
             return false;
         }
+
+        @Override
+        public List<UserStatus> getNextValidStates() {
+            return List.of(ACTIVE);
+        }
     };
 
     private final String displayName;
 
     UserStatus(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getCode() {
+        return name();
     }
 
     public String getDisplayName() {
@@ -66,7 +91,13 @@ public enum UserStatus {
     public abstract boolean canLogin();
     public abstract boolean canPlaceOrder();
     public abstract boolean canModifyData();
+    public abstract List<UserStatus> getNextValidStates();
 
+    public boolean canChangeTo(UserStatus targetStatus) {
+        return targetStatus != null && getNextValidStates().contains(targetStatus);
+    }
+
+    @JsonCreator
     public static UserStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Trạng thái người dùng không được để trống");

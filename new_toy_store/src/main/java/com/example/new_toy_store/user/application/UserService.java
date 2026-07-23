@@ -211,7 +211,7 @@ public class UserService {
     @Transactional
     public UserAdminResponse updateUserRole(Integer userId, UpdateUserRoleRequest request) {
         User user = getUserEntity(userId);
-        user.changeRole(UserRole.from(request.getRole()));
+        user.changeRole(request.getRole());
         repository.save(user);
         return UserMapper.toAdminResponse(user);
     }
@@ -219,7 +219,7 @@ public class UserService {
     @Transactional
     public UserAdminResponse updateUserStatus(Integer userId, UpdateUserStatusRequest request) {
         User user = getUserEntity(userId);
-        user.changeStatus(UserStatus.from(request.getStatus()));
+        user.changeStatus(request.getStatus());
         repository.save(user);
         return UserMapper.toAdminResponse(user);
     }
