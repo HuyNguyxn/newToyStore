@@ -3,6 +3,7 @@ package com.example.new_toy_store.product.domain;
 import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
+@Check(constraints = "stock_quantity >= 0")
 @Table(
         name = "inventories",
         indexes = {@Index(name = "idx_inventory_variant_id", columnList = "variant_id")}

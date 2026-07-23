@@ -4,6 +4,7 @@ import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
+@Check(constraints = "base_price >= 0 AND average_rating >= 0 AND review_count >= 0")
 @Table(
         name = "products",
         indexes = {

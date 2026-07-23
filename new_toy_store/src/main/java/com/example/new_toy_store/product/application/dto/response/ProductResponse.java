@@ -1,5 +1,7 @@
 package com.example.new_toy_store.product.application.dto.response;
 
+import com.example.new_toy_store.product.domain.ProductStatus;
+
 import java.util.List;
 
 public class ProductResponse {
@@ -15,10 +17,14 @@ public class ProductResponse {
     private double averageRating;
     private int reviewCount;
     private List<ProductVariantResponse> variants;
+    private ProductStatus statusDetail;
+    private List<ProductStatus> allowedNextStatuses;
+    private List<String> allowedActions;
 
     public ProductResponse(Integer id, String name, double basePrice, String status, Integer supplierId,
                            List<Integer> categoryIds, double averageRating, int reviewCount,
-                           List<ProductVariantResponse> variants) {
+                           List<ProductVariantResponse> variants, ProductStatus statusDetail,
+                           List<ProductStatus> allowedNextStatuses, List<String> allowedActions) {
         this.id = id;
         this.name = name;
         this.basePrice = basePrice;
@@ -28,6 +34,9 @@ public class ProductResponse {
         this.averageRating = averageRating;
         this.reviewCount = reviewCount;
         this.variants = variants;
+        this.statusDetail = statusDetail;
+        this.allowedNextStatuses = allowedNextStatuses == null ? List.of() : List.copyOf(allowedNextStatuses);
+        this.allowedActions = allowedActions == null ? List.of() : List.copyOf(allowedActions);
     }
 
     public Integer getId() { return id; }
@@ -41,4 +50,7 @@ public class ProductResponse {
     public double getAverageRating() { return averageRating; }
     public int getReviewCount() { return reviewCount; }
     public List<ProductVariantResponse> getVariants() { return variants; }
+    public ProductStatus getStatusDetail() { return statusDetail; }
+    public List<ProductStatus> getAllowedNextStatuses() { return allowedNextStatuses; }
+    public List<String> getAllowedActions() { return allowedActions; }
 }

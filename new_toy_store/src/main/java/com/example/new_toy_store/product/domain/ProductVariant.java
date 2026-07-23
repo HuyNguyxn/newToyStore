@@ -3,6 +3,7 @@ package com.example.new_toy_store.product.domain;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.product.domain.exception.InvalidProductOperationException;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
+@Check(constraints = "price >= 0 AND cost_price >= 0")
 @Table(
         name = "product_variants",
         indexes = {@Index(name = "idx_variant_product_id", columnList = "product_id")}

@@ -4,6 +4,9 @@ import com.example.new_toy_store.product.application.ProductService;
 import com.example.new_toy_store.product.application.dto.request.ProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
@@ -26,7 +29,10 @@ public class ProductController {
     }
 
     @GetMapping("/category/{categoryId}")
-    public Page<ProductResponse> getProductsByCategory(@PathVariable Integer categoryId, Pageable pageable) {
+    public Page<ProductResponse> getProductsByCategory(
+            @PathVariable @Positive(message = "ID danh mục phải lớn hơn 0") Integer categoryId,
+            Pageable pageable
+    ) {
         return service.getProductsByCategory(categoryId, pageable);
     }
 
@@ -45,7 +51,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ProductResponse getProductDetails(@PathVariable Integer id) {
+    public ProductResponse getProductDetails(@PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id) {
         return service.getProductDetails(id);
     }
 
@@ -55,43 +61,56 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ProductResponse update(@PathVariable Integer id, @Valid @RequestBody ProductRequest request) {
+    public ProductResponse update(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id,
+            @Valid @RequestBody ProductRequest request
+    ) {
         return service.updateInfo(id, request);
     }
 
     @PostMapping("/{id}/images")
     public ProductResponse addImage(
-            @PathVariable Integer id,
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id,
             @RequestParam String imageUrl,
             @RequestParam(defaultValue = "false") boolean isThumbnail) {
         return service.addImage(id, imageUrl, isThumbnail);
     }
 
     @DeleteMapping("/{id}/images/{imageId}")
-    public void removeImage(@PathVariable Integer id, @PathVariable Integer imageId) {
+    public void removeImage(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id,
+            @PathVariable @Positive(message = "ID hình ảnh phải lớn hơn 0") Integer imageId
+    ) {
         service.removeImage(id, imageId);
     }
 
     @PatchMapping("/{productId}/variants/{variantId}/price")
     public void updateVariantPrice(
-            @PathVariable Integer productId,
-            @PathVariable Integer variantId,
-            @RequestParam double price) {
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer productId,
+            @PathVariable @Positive(message = "ID biến thể phải lớn hơn 0") Integer variantId,
+            @RequestParam @DecimalMin(value = "0.0", message = "Giá bán không được nhỏ hơn 0") double price) {
         service.updateVariantPrice(productId, variantId, price);
     }
 
     @PatchMapping("/{productId}/variants/{variantId}/stock")
-    public void addStock(@PathVariable Integer productId, @PathVariable Integer variantId, @RequestParam int amount) {
+    public void addStock(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer productId,
+            @PathVariable @Positive(message = "ID biến thể phải lớn hơn 0") Integer variantId,
+            @RequestParam @Min(value = 1, message = "Số lượng nhập kho phải lớn hơn 0") int amount
+    ) {
         service.updateStock(productId, variantId, amount);
     }
 
     @PatchMapping("/{productId}/images/{imageId}/thumbnail")
-    public void setThumbnail(@PathVariable Integer productId, @PathVariable Integer imageId) {
+    public void setThumbnail(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer productId,
+            @PathVariable @Positive(message = "ID hình ảnh phải lớn hơn 0") Integer imageId
+    ) {
         service.setThumbnail(productId, imageId);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
+    public void delete(@PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id) {
         service.delete(id);
     }
 }
