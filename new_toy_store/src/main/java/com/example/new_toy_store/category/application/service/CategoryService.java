@@ -15,10 +15,10 @@ import com.example.new_toy_store.category.mapper.CategoryMapper;
 import com.example.new_toy_store.global.event.CategoryCreatedEvent;
 import com.example.new_toy_store.global.event.CategoryStateChangedEvent;
 import com.example.new_toy_store.global.event.CategoryUpdatedEvent;
+import com.example.new_toy_store.infrastructure.specification.CategorySpecification;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,8 +114,7 @@ public class CategoryService {
     @Transactional
     public void hideCategory(Integer id) {
         Category category = getCategoryEntity(id);
-        category.hide();
-        repository.save(category);
+        updateStatusWithOptimisticLock(category, CategoryStatus.HIDDEN);
         eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "HIDDEN"));
     }
 
@@ -125,8 +124,7 @@ public class CategoryService {
         if (category.getParent() != null && category.getParent().getStatus() == CategoryStatus.HIDDEN) {
             throw InvalidCategoryOperationException.parentIsHidden(id);
         }
-        category.show();
-        repository.save(category);
+        updateStatusWithOptimisticLock(category, CategoryStatus.VISIBLE);
         eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "VISIBLE"));
     }
 
@@ -145,22 +143,7 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public Page<CategorySummaryResponse> searchCategories(String keyword, String status, Pageable pageable) {
-        Specification<Category> spec = Specification.where(null);
-
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"));
-        }
-
-        if (status != null && !status.trim().isEmpty()) {
-            try {
-                CategoryStatus categoryStatus = CategoryStatus.valueOf(status.toUpperCase());
-                spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), categoryStatus));
-            } catch (IllegalArgumentException e) {
-            }
-        }
-
-        return repository.findAll(spec, pageable)
+        return repository.findAll(CategorySpecification.filter(keyword, status), pageable)
                 .map(categoryMapper::toSummaryResponse);
     }
 
@@ -204,6 +187,22 @@ public class CategoryService {
     private void checkOptimisticLocking(Long currentVersion, Long requestVersion, Integer id) {
         if (requestVersion != null && !requestVersion.equals(currentVersion)) {
             throw new ObjectOptimisticLockingFailureException(Category.class, id);
+        }
+    }
+
+    private void updateStatusWithOptimisticLock(Category category, CategoryStatus targetStatus) {
+        if (category.getStatus() == targetStatus) {
+            return;
+        }
+
+        int updatedRows = repository.updateStatusWithVersion(
+                category.getId(),
+                targetStatus,
+                category.getVersion()
+        );
+
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Category.class, category.getId());
         }
     }
 }
