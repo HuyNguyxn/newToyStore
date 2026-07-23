@@ -104,6 +104,105 @@ public class InvalidUserOperationException extends UserDomainException {
         );
     }
 
+    public static InvalidUserOperationException inputDataInvalid(String field, String reason) {
+        return new InvalidUserOperationException(
+                HttpStatus.BAD_REQUEST,
+                "Dữ liệu đầu vào không hợp lệ",
+                reason,
+                Map.of("field", safe(field), "reason", safe(reason))
+        );
+    }
+
+    public static InvalidUserOperationException invalidRole(String value) {
+        return new InvalidUserOperationException(
+                HttpStatus.BAD_REQUEST,
+                "Vai trò người dùng không hợp lệ",
+                "Vai trò người dùng không hợp lệ: " + value,
+                Map.of("enum", "UserRole", "value", safe(value))
+        );
+    }
+
+    public static InvalidUserOperationException invalidStatus(String value) {
+        return new InvalidUserOperationException(
+                HttpStatus.BAD_REQUEST,
+                "Trạng thái người dùng không hợp lệ",
+                "Trạng thái người dùng không hợp lệ: " + value,
+                Map.of("enum", "UserStatus", "value", safe(value))
+        );
+    }
+
+    public static InvalidUserOperationException invalidTokenType(String value) {
+        return new InvalidUserOperationException(
+                HttpStatus.BAD_REQUEST,
+                "Loại token không hợp lệ",
+                "Loại token không hợp lệ: " + value,
+                Map.of("enum", "TokenType", "value", safe(value))
+        );
+    }
+
+    public static InvalidUserOperationException accountModificationBlocked(String status) {
+        return new InvalidUserOperationException(
+                HttpStatus.FORBIDDEN,
+                "Không có quyền sửa dữ liệu tài khoản",
+                "Tài khoản đang ở trạng thái " + status + ", không thể thực hiện thay đổi dữ liệu",
+                Map.of("status", safe(status))
+        );
+    }
+
+    public static InvalidUserOperationException activationConflict(String status) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Xung đột kích hoạt tài khoản",
+                "Chỉ tài khoản chưa xác thực mới có thể kích hoạt",
+                Map.of("currentStatus", safe(status), "requiredStatus", "UNVERIFIED")
+        );
+    }
+
+    public static InvalidUserOperationException addressNotFound(Integer addressId) {
+        return new InvalidUserOperationException(
+                HttpStatus.NOT_FOUND,
+                "Không tìm thấy địa chỉ",
+                "Không tìm thấy địa chỉ với ID: " + addressId,
+                Map.of("addressId", addressId == null ? "" : addressId)
+        );
+    }
+
+    public static InvalidUserOperationException accessDenied(String action, Integer userId) {
+        return new InvalidUserOperationException(
+                HttpStatus.FORBIDDEN,
+                "Không có quyền thao tác người dùng",
+                "Bạn không có quyền thực hiện thao tác " + action + " trên người dùng này",
+                Map.of("action", safe(action), "userId", userId == null ? "" : userId)
+        );
+    }
+
+    public static InvalidUserOperationException softDeletedConflict(String entityName, Integer entityId) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Xung đột dữ liệu đã xóa mềm",
+                entityName + " đã bị xóa mềm nên không thể tiếp tục thao tác",
+                Map.of("entity", safe(entityName), "entityId", entityId == null ? "" : entityId)
+        );
+    }
+
+    public static InvalidUserOperationException duplicateActiveData(String field, String value) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Trùng lặp dữ liệu đang hoạt động",
+                "Dữ liệu " + field + " đang được sử dụng bởi một bản ghi đang hoạt động",
+                Map.of("field", safe(field), "value", safe(value))
+        );
+    }
+
+    public static InvalidUserOperationException crossModuleDataMismatch(String module, String reason) {
+        return new InvalidUserOperationException(
+                HttpStatus.BAD_REQUEST,
+                "Gửi sai dữ liệu giữa module",
+                "Dữ liệu gửi sang module " + module + " không hợp lệ: " + reason,
+                Map.of("module", safe(module), "reason", safe(reason))
+        );
+    }
+
     private static String safe(String value) {
         return value == null ? "" : value;
     }

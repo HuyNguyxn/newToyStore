@@ -1,5 +1,7 @@
 package com.example.new_toy_store.user.domain;
 
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
+
 public enum TokenType {
 
     VERIFICATION("Xác thực Email", 15),
@@ -24,12 +26,12 @@ public enum TokenType {
 
     public static TokenType from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Loại token không được để trống");
+            throw InvalidUserOperationException.inputDataInvalid("tokenType", "Loại token không được để trống");
         }
         try {
             return TokenType.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại token không hợp lệ: " + value);
+            throw InvalidUserOperationException.invalidTokenType(value);
         }
     }
 }

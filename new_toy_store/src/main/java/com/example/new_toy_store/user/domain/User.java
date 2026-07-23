@@ -55,16 +55,24 @@ public class User extends BaseRootEntity {
     protected User() {}
 
     public User(String email, String password, String fullName, String phoneNumber, UserRole role) {
-        if (email == null || email.trim().isEmpty()) throw new IllegalArgumentException("Email is required");
-        if (password == null || password.trim().isEmpty()) throw new IllegalArgumentException("Password is required");
-        if (fullName == null || fullName.trim().isEmpty()) throw new IllegalArgumentException("Full name is required");
+        if (email == null || email.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("email", "Email không được để trống");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("password", "Mật khẩu không được để trống");
+        }
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("fullName", "Họ và tên không được để trống");
+        }
         this.email = email; this.password = password; this.fullName = fullName; this.phoneNumber = phoneNumber;
         this.role = role != null ? role : UserRole.CUSTOMER;
         this.status = UserStatus.UNVERIFIED;
     }
 
     private void checkIfModificationIsAllowed() {
-        if (this.status == null || !this.status.canModifyData()) throw new IllegalStateException("Tài khoản đang bị khóa, không thể thực hiện thay đổi dữ liệu.");
+        if (this.status == null || !this.status.canModifyData()) {
+            throw InvalidUserOperationException.accountModificationBlocked(this.status != null ? this.status.getDisplayName() : "");
+        }
     }
 
     public void updateProfile(String fullName, String phoneNumber, String avatarUrl) {
@@ -76,12 +84,16 @@ public class User extends BaseRootEntity {
 
     public void updatePassword(String newPassword) {
         checkIfModificationIsAllowed();
-        if (newPassword == null || newPassword.trim().isEmpty()) throw new IllegalArgumentException("Password cannot be empty");
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("password", "Mật khẩu không được để trống");
+        }
         this.password = newPassword;
     }
 
     public void activate() {
-        if (this.status != UserStatus.UNVERIFIED) throw new IllegalStateException("Chỉ tài khoản chưa xác thực mới có thể tiến hành kích hoạt.");
+        if (this.status != UserStatus.UNVERIFIED) {
+            throw InvalidUserOperationException.activationConflict(this.status.getDisplayName());
+        }
         this.status = UserStatus.ACTIVE;
     }
 
@@ -122,7 +134,7 @@ public class User extends BaseRootEntity {
                 address.makeDefault(); found = true;
             } else { address.removeDefault(); }
         }
-        if (!found) throw new IllegalArgumentException("Address not found");
+        if (!found) throw InvalidUserOperationException.addressNotFound(addressId);
     }
 
     private void clearDefaultAddresses() { for (Address address : this.addresses) { address.removeDefault(); } }

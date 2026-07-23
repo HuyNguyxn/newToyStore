@@ -1,5 +1,6 @@
 package com.example.new_toy_store.user.domain;
 
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -38,10 +39,10 @@ public class VerificationToken {
 
     public VerificationToken(String tokenValue, TokenType tokenType, User user) {
         if (tokenValue == null || tokenValue.trim().isEmpty()) {
-            throw new IllegalArgumentException("Token value cannot be empty");
+            throw InvalidUserOperationException.inputDataInvalid("tokenValue", "Giá trị token không được để trống");
         }
         if (tokenType == null) {
-            throw new IllegalArgumentException("Token type is required");
+            throw InvalidUserOperationException.inputDataInvalid("tokenType", "Loại token không được để trống");
         }
         this.tokenValue = tokenValue;
         this.tokenType = tokenType;

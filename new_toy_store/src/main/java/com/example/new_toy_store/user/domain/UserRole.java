@@ -2,6 +2,7 @@ package com.example.new_toy_store.user.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 
 import java.util.List;
 
@@ -101,12 +102,12 @@ public enum UserRole {
     @JsonCreator
     public static UserRole from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vai trò người dùng không được để trống.");
+            throw InvalidUserOperationException.inputDataInvalid("role", "Vai trò người dùng không được để trống");
         }
         try {
             return UserRole.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Vai trò người dùng không hợp lệ: " + value);
+            throw InvalidUserOperationException.invalidRole(value);
         }
     }
 }

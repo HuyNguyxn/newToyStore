@@ -2,6 +2,7 @@ package com.example.new_toy_store.user.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 
 import java.util.List;
 
@@ -100,12 +101,12 @@ public enum UserStatus {
     @JsonCreator
     public static UserStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("Trạng thái người dùng không được để trống");
+            throw InvalidUserOperationException.inputDataInvalid("status", "Trạng thái người dùng không được để trống");
         }
         try {
             return UserStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái người dùng không hợp lệ: " + value);
+            throw InvalidUserOperationException.invalidStatus(value);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.new_toy_store.user.domain;
 
 import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
+import com.example.new_toy_store.user.domain.exception.InvalidUserOperationException;
 import jakarta.persistence.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLRestriction;
@@ -36,9 +37,15 @@ public class Address extends BaseSoftDeleteEntity {
     protected Address() {}
 
     public Address(String receiverName, String receiverPhone, String detailAddress, boolean isDefault) {
-        if (receiverName == null || receiverName.trim().isEmpty()) throw new IllegalArgumentException("Receiver name is required");
-        if (receiverPhone == null || receiverPhone.trim().isEmpty()) throw new IllegalArgumentException("Receiver phone is required");
-        if (detailAddress == null || detailAddress.trim().isEmpty()) throw new IllegalArgumentException("Detail address is required");
+        if (receiverName == null || receiverName.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("receiverName", "Tên người nhận không được để trống");
+        }
+        if (receiverPhone == null || receiverPhone.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("receiverPhone", "Số điện thoại người nhận không được để trống");
+        }
+        if (detailAddress == null || detailAddress.trim().isEmpty()) {
+            throw InvalidUserOperationException.inputDataInvalid("detailAddress", "Địa chỉ chi tiết không được để trống");
+        }
         this.receiverName = receiverName; this.receiverPhone = receiverPhone; this.detailAddress = detailAddress; this.isDefault = isDefault;
     }
 
