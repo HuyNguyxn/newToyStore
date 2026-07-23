@@ -2,9 +2,9 @@ package com.example.new_toy_store.category.application.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
 
 public class CategoryCreateRequest {
 
@@ -20,7 +20,7 @@ public class CategoryCreateRequest {
     @Size(max = 500, message = "Mô tả không vượt quá 500 ký tự")
     private String description;
 
-    @Size(max = 255, message = "Đường dẫn icon không hợp lệ")
+    @Size(max = 255, message = "Đường dẫn icon không vượt quá 255 ký tự")
     private String iconUrl;
 
     @Min(value = 0, message = "Thứ tự hiển thị phải lớn hơn hoặc bằng 0")

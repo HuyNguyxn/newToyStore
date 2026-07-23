@@ -2,8 +2,8 @@ package com.example.new_toy_store.category.application.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class CategoryUpdateInfoRequest {
 
@@ -19,10 +19,10 @@ public class CategoryUpdateInfoRequest {
     @Size(max = 500, message = "Mô tả không vượt quá 500 ký tự")
     private String description;
 
-    @Size(max = 255, message = "Đường dẫn icon không hợp lệ")
+    @Size(max = 255, message = "Đường dẫn icon không vượt quá 255 ký tự")
     private String iconUrl;
 
-    @NotNull(message = "Version là bắt buộc để tránh ghi đè dữ liệu (Optimistic Locking)")
+    @NotNull(message = "Version là bắt buộc để tránh ghi đè dữ liệu")
     private Long version;
 
     public CategoryUpdateInfoRequest() {}

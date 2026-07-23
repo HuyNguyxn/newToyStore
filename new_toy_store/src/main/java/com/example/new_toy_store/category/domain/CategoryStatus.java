@@ -1,10 +1,10 @@
 package com.example.new_toy_store.category.domain;
 
+import com.example.new_toy_store.category.domain.exception.InvalidCategoryDataException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.example.new_toy_store.category.domain.exception.InvalidCategoryDataException;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.util.Collections;
 import java.util.List;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
@@ -30,13 +30,13 @@ public enum CategoryStatus {
         }
     },
 
-    DELETED("Đã bị xóa (xóa mềm), không thể khôi phục") {
+    DELETED("Đã bị xóa mềm, không thể khôi phục") {
         @Override
         public boolean isVisible() { return false; }
 
         @Override
         public List<CategoryStatus> getNextValidStates() {
-            return Collections.emptyList();
+            return List.of();
         }
     };
 
@@ -46,23 +46,20 @@ public enum CategoryStatus {
         this.description = description;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getName() {
-        return this.name();
-    }
+    public String getCode() { return name(); }
+    public String getName() { return name(); }
+    public String getDescription() { return description; }
 
     public abstract boolean isVisible();
 
+    @JsonIgnore
     public abstract List<CategoryStatus> getNextValidStates();
 
     public boolean canTransitionTo(CategoryStatus nextState) {
-        return getNextValidStates().contains(nextState);
+        return nextState != null && getNextValidStates().contains(nextState);
     }
 
-    @JsonCreator
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static CategoryStatus from(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw InvalidCategoryDataException.emptyStatus();

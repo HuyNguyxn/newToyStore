@@ -12,6 +12,9 @@ import java.util.List;
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "categories",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_category_slug", columnNames = "slug")
+        },
         indexes = {
                 @Index(name = "idx_category_slug", columnList = "slug"),
                 @Index(name = "idx_category_status", columnList = "status"),
@@ -29,7 +32,7 @@ public class Category extends BaseRootEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(nullable = false, length = 150)
     private String slug;
 
     @Column(length = 500)

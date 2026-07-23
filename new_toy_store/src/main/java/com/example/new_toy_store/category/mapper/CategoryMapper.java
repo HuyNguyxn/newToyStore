@@ -4,72 +4,53 @@ import com.example.new_toy_store.category.application.dto.request.CategoryCreate
 import com.example.new_toy_store.category.application.dto.response.CategoryDetailResponse;
 import com.example.new_toy_store.category.application.dto.response.CategorySummaryResponse;
 import com.example.new_toy_store.category.domain.Category;
+import com.example.new_toy_store.category.domain.CategoryStatus;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class CategoryMapper {
 
-    public CategorySummaryResponse toSummaryResponse(Category entity) {
-        if (entity == null) {
+    public CategorySummaryResponse toSummaryResponse(Category category) {
+        if (category == null) {
             return null;
         }
 
-        Integer parentId = null;
-        String parentName = null;
-        if (entity.getParent() != null) {
-            parentId = entity.getParent().getId();
-            parentName = entity.getParent().getName();
-        }
+        ParentInfo parentInfo = toParentInfo(category);
 
         return new CategorySummaryResponse(
-                entity.getId(),
-                entity.getName(),
-                entity.getSlug(),
-                entity.getLevel(),
-                entity.getStatus(),
-                parentId,
-                parentName
+                category.getId(),
+                category.getName(),
+                category.getSlug(),
+                category.getLevel(),
+                category.getStatus(),
+                parentInfo.id(),
+                parentInfo.name()
         );
     }
 
-    public CategoryDetailResponse toDetailResponse(Category entity) {
-        if (entity == null) {
+    public CategoryDetailResponse toDetailResponse(Category category) {
+        if (category == null) {
             return null;
         }
 
-        Integer parentId = null;
-        String parentName = null;
-        if (entity.getParent() != null) {
-            parentId = entity.getParent().getId();
-            parentName = entity.getParent().getName();
-        }
-
-        List<CategoryDetailResponse> mappedChildren = Collections.emptyList();
-
-        if (entity.getSubCategories() != null && !entity.getSubCategories().isEmpty()) {
-            mappedChildren = entity.getSubCategories().stream()
-                    .map(this::toDetailResponse)
-                    .collect(Collectors.toList());
-        }
+        ParentInfo parentInfo = toParentInfo(category);
 
         return new CategoryDetailResponse(
-                entity.getId(),
-                entity.getName(),
-                entity.getSlug(),
-                entity.getDescription(),
-                entity.getIconUrl(),
-                entity.getDisplayOrder(),
-                entity.getLevel(),
-                entity.getPath(),
-                entity.getStatus(),
-                entity.getStatus().getNextValidStates(),
-                parentId,
-                parentName,
-                mappedChildren
+                category.getId(),
+                category.getName(),
+                category.getSlug(),
+                category.getDescription(),
+                category.getIconUrl(),
+                category.getDisplayOrder(),
+                category.getLevel(),
+                category.getPath(),
+                category.getStatus(),
+                toAllowedNextActions(category.getStatus()),
+                parentInfo.id(),
+                parentInfo.name(),
+                toSubCategoryResponses(category)
         );
     }
 
@@ -86,4 +67,31 @@ public class CategoryMapper {
                 request.getDisplayOrder()
         );
     }
+
+    private ParentInfo toParentInfo(Category category) {
+        Category parent = category.getParent();
+        if (parent == null) {
+            return new ParentInfo(null, null);
+        }
+        return new ParentInfo(parent.getId(), parent.getName());
+    }
+
+    private List<CategoryDetailResponse> toSubCategoryResponses(Category category) {
+        if (category.getSubCategories() == null || category.getSubCategories().isEmpty()) {
+            return List.of();
+        }
+
+        return category.getSubCategories().stream()
+                .map(this::toDetailResponse)
+                .toList();
+    }
+
+    private List<CategoryStatus> toAllowedNextActions(CategoryStatus status) {
+        if (status == null) {
+            return List.of();
+        }
+        return status.getNextValidStates();
+    }
+
+    private record ParentInfo(Integer id, String name) {}
 }
