@@ -69,6 +69,14 @@ public class InvalidCategoryOperationException extends RuntimeException {
         );
     }
 
+    public static InvalidCategoryOperationException invalidStatusTransition(String currentStatus, String targetStatus) {
+        return new InvalidCategoryOperationException(
+                "Không thể chuyển trạng thái danh mục từ " + currentStatus + " sang " + targetStatus + ".",
+                "CHANGE_STATUS",
+                targetStatus
+        );
+    }
+
     public String getOperation() { return operation; }
     public Object getInvalidValue() { return invalidValue; }
 }

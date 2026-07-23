@@ -54,7 +54,7 @@ public class CategoryService {
         }
 
         repository.save(category);
-        eventPublisher.publishEvent(new CategoryCreatedEvent(category.getId(), category.getSlug(), category.getPath()));
+        eventPublisher.publishEvent(CategoryCreatedEvent.now(category.getId(), category.getSlug(), category.getPath()));
 
         return categoryMapper.toDetailResponse(category);
     }
@@ -79,7 +79,7 @@ public class CategoryService {
 
         repository.save(category);
         boolean pathChanged = oldPath != null && !oldPath.equals(category.getPath());
-        eventPublisher.publishEvent(new CategoryUpdatedEvent(category.getId(), oldPath, category.getPath(), pathChanged));
+        eventPublisher.publishEvent(CategoryUpdatedEvent.now(category.getId(), oldPath, category.getPath(), pathChanged));
 
         return categoryMapper.toDetailResponse(category);
     }
@@ -105,7 +105,7 @@ public class CategoryService {
         repository.save(category);
         boolean pathChanged = oldPath != null && !oldPath.equals(category.getPath());
         if (pathChanged) {
-            eventPublisher.publishEvent(new CategoryUpdatedEvent(category.getId(), oldPath, category.getPath(), true));
+            eventPublisher.publishEvent(CategoryUpdatedEvent.now(category.getId(), oldPath, category.getPath(), true));
         }
 
         return categoryMapper.toDetailResponse(category);
@@ -114,8 +114,16 @@ public class CategoryService {
     @Transactional
     public void hideCategory(Integer id) {
         Category category = getCategoryEntity(id);
-        updateStatusWithOptimisticLock(category, CategoryStatus.HIDDEN);
-        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "HIDDEN"));
+        CategoryStatus previousStatus = category.getStatus();
+        if (!updateStatusWithOptimisticLock(category, CategoryStatus.HIDDEN)) {
+            return;
+        }
+        eventPublisher.publishEvent(CategoryStateChangedEvent.now(
+                id,
+                previousStatus,
+                CategoryStatus.HIDDEN,
+                category.getPath()
+        ));
     }
 
     @Transactional
@@ -124,16 +132,30 @@ public class CategoryService {
         if (category.getParent() != null && category.getParent().getStatus() == CategoryStatus.HIDDEN) {
             throw InvalidCategoryOperationException.parentIsHidden(id);
         }
-        updateStatusWithOptimisticLock(category, CategoryStatus.VISIBLE);
-        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "VISIBLE"));
+        CategoryStatus previousStatus = category.getStatus();
+        if (!updateStatusWithOptimisticLock(category, CategoryStatus.VISIBLE)) {
+            return;
+        }
+        eventPublisher.publishEvent(CategoryStateChangedEvent.now(
+                id,
+                previousStatus,
+                CategoryStatus.VISIBLE,
+                category.getPath()
+        ));
     }
 
     @Transactional
     public void delete(Integer id) {
         Category category = getCategoryEntity(id);
+        CategoryStatus previousStatus = category.getStatus();
         category.delete();
         repository.save(category);
-        eventPublisher.publishEvent(new CategoryStateChangedEvent(id, "DELETED"));
+        eventPublisher.publishEvent(CategoryStateChangedEvent.now(
+                id,
+                previousStatus,
+                CategoryStatus.DELETED,
+                category.getPath()
+        ));
     }
 
     @Transactional(readOnly = true)
@@ -190,9 +212,16 @@ public class CategoryService {
         }
     }
 
-    private void updateStatusWithOptimisticLock(Category category, CategoryStatus targetStatus) {
+    private boolean updateStatusWithOptimisticLock(Category category, CategoryStatus targetStatus) {
         if (category.getStatus() == targetStatus) {
-            return;
+            return false;
+        }
+
+        if (!category.getStatus().canTransitionTo(targetStatus)) {
+            throw InvalidCategoryOperationException.invalidStatusTransition(
+                    category.getStatus().getName(),
+                    targetStatus.getName()
+            );
         }
 
         int updatedRows = repository.updateStatusWithVersion(
@@ -204,5 +233,7 @@ public class CategoryService {
         if (updatedRows == 0) {
             throw new ObjectOptimisticLockingFailureException(Category.class, category.getId());
         }
+
+        return true;
     }
 }

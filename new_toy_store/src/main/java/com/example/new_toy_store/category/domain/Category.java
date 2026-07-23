@@ -111,6 +111,7 @@ public class Category extends BaseRootEntity {
 
     @Override
     public void delete() {
+        this.status = CategoryStatus.DELETED;
         super.delete();
         this.slug = this.slug + "-da_xoa-" + System.currentTimeMillis();
         this.subCategories.forEach(Category::delete);
