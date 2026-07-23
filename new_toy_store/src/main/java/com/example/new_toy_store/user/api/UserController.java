@@ -1,6 +1,6 @@
 package com.example.new_toy_store.user.api;
 
-import com.example.new_toy_store.user.application.UserService;
+import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
@@ -12,7 +12,6 @@ import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
-import com.example.new_toy_store.user.domain.User;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.data.domain.Page;
@@ -37,31 +36,30 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class UserController {
 
-    private final UserService service;
+    private final UserFacade facade;
 
-    public UserController(UserService service) {
-        this.service = service;
+    public UserController(UserFacade facade) {
+        this.facade = facade;
     }
 
     @PostMapping("/register")
     public UserProfileResponse register(@Valid @RequestBody RegisterRequest request) {
-        return service.register(request);
+        return facade.register(request);
     }
 
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return service.login(request);
+        return facade.login(request);
     }
 
     @GetMapping("/verify")
     public void verifyEmail(@RequestParam String token) {
-        service.verifyEmailToken(token);
+        facade.verifyEmailToken(token);
     }
 
     @GetMapping("/me")
     public UserProfileResponse getMe(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = getAuthenticatedUser(userDetails);
-        return service.getProfile(user.getId());
+        return facade.getCurrentProfile(userDetails.getUsername());
     }
 
     @PutMapping("/me")
@@ -69,8 +67,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ProfileUpdateRequest request
     ) {
-        User user = getAuthenticatedUser(userDetails);
-        return service.updateProfile(user.getId(), request);
+        return facade.updateCurrentProfile(userDetails.getUsername(), request);
     }
 
     @PatchMapping("/me/password")
@@ -78,8 +75,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ChangePasswordRequest request
     ) {
-        User user = getAuthenticatedUser(userDetails);
-        service.changePassword(user.getId(), request);
+        facade.changeCurrentPassword(userDetails.getUsername(), request);
     }
 
     @GetMapping("/me/profile")
@@ -108,8 +104,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody AddressRequest request
     ) {
-        User user = getAuthenticatedUser(userDetails);
-        return service.addAddress(user.getId(), request);
+        return facade.addCurrentAddress(userDetails.getUsername(), request);
     }
 
     @PatchMapping("/me/addresses/{addressId}/default")
@@ -117,8 +112,7 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable @Positive(message = "ID địa chỉ phải lớn hơn 0") Integer addressId
     ) {
-        User user = getAuthenticatedUser(userDetails);
-        return service.setAddressDefault(user.getId(), addressId);
+        return facade.setCurrentDefaultAddress(userDetails.getUsername(), addressId);
     }
 
     @DeleteMapping("/me/addresses/{addressId}")
@@ -126,20 +120,19 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable @Positive(message = "ID địa chỉ phải lớn hơn 0") Integer addressId
     ) {
-        User user = getAuthenticatedUser(userDetails);
-        return service.removeAddress(user.getId(), addressId);
+        return facade.removeCurrentAddress(userDetails.getUsername(), addressId);
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
-        return service.getUsers(request, pageable);
+        return facade.getUsers(request, pageable);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserAdminResponse getUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
-        return service.getUserForAdmin(id);
+        return facade.getUserForAdmin(id);
     }
 
     @PatchMapping("/{id}/role")
@@ -148,7 +141,7 @@ public class UserController {
             @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
             @Valid @RequestBody UpdateUserRoleRequest request
     ) {
-        return service.updateUserRole(id, request);
+        return facade.updateUserRole(id, request);
     }
 
     @PatchMapping("/{id}/status")
@@ -157,28 +150,24 @@ public class UserController {
             @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
             @Valid @RequestBody UpdateUserStatusRequest request
     ) {
-        return service.updateUserStatus(id, request);
+        return facade.updateUserStatus(id, request);
     }
 
     @PatchMapping("/{id}/lock")
     @PreAuthorize("hasRole('ADMIN')")
     public void lockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
-        service.lockAccount(id);
+        facade.lockAccount(id);
     }
 
     @PatchMapping("/{id}/unlock")
     @PreAuthorize("hasRole('ADMIN')")
     public void unlockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
-        service.unlockAccount(id);
+        facade.unlockAccount(id);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
-        service.deleteAccount(id);
-    }
-
-    private User getAuthenticatedUser(UserDetails userDetails) {
-        return service.getAuthenticatedUser(userDetails.getUsername());
+        facade.deleteAccount(id);
     }
 }
