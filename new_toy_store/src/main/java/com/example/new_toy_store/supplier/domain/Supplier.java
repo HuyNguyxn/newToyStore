@@ -2,22 +2,35 @@ package com.example.new_toy_store.supplier.domain;
 
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.supplier.domain.exception.InvalidSupplierOperationException;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "suppliers",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_supplier_phone_number", columnNames = "phone_number")
+        },
         indexes = {
-                @Index(name = "idx_supplier_phone", columnList = "phone_number", unique = true),
+                @Index(name = "idx_supplier_phone", columnList = "phone_number"),
                 @Index(name = "idx_supplier_name", columnList = "name"),
                 @Index(name = "idx_supplier_status", columnList = "status")
         }
 )
 public class Supplier extends BaseRootEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(nullable = false, length = 150)
@@ -39,18 +52,34 @@ public class Supplier extends BaseRootEntity {
     protected Supplier() {}
 
     public Supplier(String name, String phoneNumber, String email, String address) {
-        if (name == null || name.trim().isEmpty()) throw InvalidSupplierOperationException.emptyField("Tên nhà cung cấp");
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) throw InvalidSupplierOperationException.emptyField("Số điện thoại");
-        this.name = name; this.phoneNumber = phoneNumber; this.email = email; this.address = address;
+        if (name == null || name.trim().isEmpty()) {
+            throw InvalidSupplierOperationException.emptyField("Tên nhà cung cấp");
+        }
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw InvalidSupplierOperationException.emptyField("Số điện thoại");
+        }
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.address = address;
     }
 
     public void updateInfo(String name, String phoneNumber, String email, String address) {
-        if (name != null && !name.trim().isEmpty()) this.name = name;
-        if (phoneNumber != null && !phoneNumber.trim().isEmpty()) this.phoneNumber = phoneNumber;
-        this.email = email; this.address = address;
+        if (name != null && !name.trim().isEmpty()) {
+            this.name = name;
+        }
+        if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            this.phoneNumber = phoneNumber;
+        }
+        this.email = email;
+        this.address = address;
     }
 
-    public void setStatus(SupplierStatus status) { if (status != null) this.status = status; }
+    public void setStatus(SupplierStatus status) {
+        if (status != null) {
+            this.status = status;
+        }
+    }
 
     public Integer getId() { return id; }
     public String getName() { return name; }
@@ -59,6 +88,13 @@ public class Supplier extends BaseRootEntity {
     public String getAddress() { return address; }
     public SupplierStatus getStatus() { return status; }
 
-    @Override public boolean equals(Object o) { return this == o || (o instanceof Supplier u && id != null && id.equals(u.id)); }
-    @Override public int hashCode() { return getClass().hashCode(); }
+    @Override
+    public boolean equals(Object o) {
+        return this == o || (o instanceof Supplier supplier && id != null && id.equals(supplier.id));
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

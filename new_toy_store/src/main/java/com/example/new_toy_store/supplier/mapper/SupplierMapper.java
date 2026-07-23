@@ -3,13 +3,15 @@ package com.example.new_toy_store.supplier.mapper;
 import com.example.new_toy_store.supplier.application.dto.request.SupplierCreateRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.Supplier;
+import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class SupplierMapper {
+public final class SupplierMapper {
 
-    public static Supplier toEntity(SupplierCreateRequest request) {
+    private SupplierMapper() {}
+
+    public static Supplier toNewSupplier(SupplierCreateRequest request) {
         return new Supplier(
                 request.getName(),
                 request.getPhoneNumber(),
@@ -18,24 +20,28 @@ public class SupplierMapper {
         );
     }
 
+    public static Supplier toEntity(SupplierCreateRequest request) {
+        return toNewSupplier(request);
+    }
+
     public static SupplierResponse toResponse(Supplier supplier) {
-        SupplierResponse response = new SupplierResponse(
+        SupplierStatus status = supplier.getStatus();
+
+        return new SupplierResponse(
                 supplier.getId(),
                 supplier.getName(),
                 supplier.getPhoneNumber(),
                 supplier.getEmail(),
                 supplier.getAddress(),
-                supplier.getStatus().name(),
-                supplier.getStatus().getDisplayName()
+                status,
+                toAvailableActions(status)
         );
+    }
 
-        if (supplier.getStatus() != null) {
-            List<String> actions = supplier.getStatus().getNextValidStates().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
-            response.setAvailableActions(actions);
+    private static List<SupplierStatus> toAvailableActions(SupplierStatus status) {
+        if (status == null) {
+            return List.of();
         }
-
-        return response;
+        return status.getNextValidStates();
     }
 }

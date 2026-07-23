@@ -14,6 +14,7 @@ import com.example.new_toy_store.product.application.dto.request.ImportedStockRe
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
+import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -75,7 +76,7 @@ public class ImportService {
     @Transactional
     public ImportNoteResponse createImportNote(ImportNoteRequest request) {
         SupplierResponse supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
-        if (!"ACTIVE".equals(supplier.getStatus())) {
+        if (supplier.getStatus() != SupplierStatus.ACTIVE) {
             throw InvalidImportOperationException.supplierInactive(supplier.getStatusDisplayName());
         }
 

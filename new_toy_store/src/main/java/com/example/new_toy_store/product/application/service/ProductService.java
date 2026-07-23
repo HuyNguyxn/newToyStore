@@ -205,7 +205,7 @@ public class ProductService {
         SupplierResponse supplier = null;
         if (request.getSupplierId() != null) {
             supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
-            if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
+            if (!supplier.getStatus().canBeAssignedToProduct()) {
                 throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
             }
         }
@@ -238,7 +238,7 @@ public class ProductService {
         if (request.getSupplierId() != null) {
             supplier = supplierFacade.getSupplierDetails(request.getSupplierId());
             if (!request.getSupplierId().equals(product.getSupplierId())) {
-                if (!SupplierStatus.from(supplier.getStatus()).canBeAssignedToProduct()) {
+                if (!supplier.getStatus().canBeAssignedToProduct()) {
                     throw InvalidProductOperationException.supplierInactive(supplier.getStatusDisplayName());
                 }
                 product.assignSupplier(request.getSupplierId());
