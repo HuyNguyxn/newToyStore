@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="84bde215-7df7-441f-a834-2e58da1f686e" name="Changes" comment="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Enum" />
+        <option value="Exception" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;HuyNguyxn&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/HuyNguyxn/newToyStore&quot;,
+    &quot;accountId&quot;: &quot;97b57bbf-92d9-43f7-8a0c-06694220343f&quot;
+  }
+}</component>
+  <component name="HierarchyBrowserManager">
+    <option name="SORT_ALPHABETICALLY" value="true" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="3EsoRTyKhaBQVNnHgCk7Mf1uMKo" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.projectsettings.compiler.annotationProcessors&quot;
+  }
+}</component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="84bde215-7df7-441f-a834-2e58da1f686e" name="Changes" comment="" />
+      <created>1780976630857</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1780976630857</updated>
+    </task>
+    <task id="LOCAL-00124" summary="tach rieng exception ra khoi entity, enum, service">
+      <option name="closed" value="true" />
+      <created>1783502558572</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
+      <option name="project" value="LOCAL" />
+      <updated>1783502558572</updated>
+    </task>
+    <task id="LOCAL-00125" summary="bo sung chuc nang bo loc dong cho order.&#10;bo sung them luong huy don tu dong voi schedule khi het han thoi gian thanh toan tu dong hoan lay product vao kho.&#10;bo sung them @Version tranh ghi de du lieu.&#10;them tinh nang sua dia chi giao hang.&#10;bo sung them Index cho cot status">
+      <option name="closed" value="true" />
+      <created>1783642459491</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1783642459493</updated>
+    </task>
+    <task id="LOCAL-00126" summary="bo sung them cac truong du lieu cho OrderHistoryResponse, OrderItemResponse&#10;nang cap rich enum OrderStatus va tich hop co che availableActions dieu huong cho hanh dong tiep theo.&#10;bo sung @JsonCreator de bao ve API tranh du lieu rac lam loi 500">
+      <option name="closed" value="true" />
+      <created>1783652271058</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1783652271058</updated>
+    </task>
+    <task id="LOCAL-00127" summary="tach rieng exception ra khoi entity, enum, service">
+      <option name="closed" value="true" />
+      <created>1783677184761</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
+      <option name="project" value="LOCAL" />
+      <updated>1783677184762</updated>
+    </task>
+    <task id="LOCAL-00128" summary="them ham mapReviewsToResponsesWithBatchUsers va dung cac Map de gom cac userId de goi mot the tranh N+1">
+      <option name="closed" value="true" />
+      <created>1783688772368</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
+      <option name="project" value="LOCAL" />
+      <updated>1783688772368</updated>
+    </task>
+    <task id="LOCAL-00129" summary="nang cap rich enum OrderStatus va tich hop co che availableActions dieu huong cho hanh dong tiep theo.&#10;bo sung @JsonCreator de bao ve API tranh du lieu rac lam loi 500">
+      <option name="closed" value="true" />
+      <created>1783690226543</created>
+      <option name="number" value="00129" />
+      <option name="presentableId" value="LOCAL-00129" />
+      <option name="project" value="LOCAL" />
+      <updated>1783690226543</updated>
+    </task>
+    <task id="LOCAL-00130" summary="bo sung ham getCompletedOrderItemForReview trong service&#10;chuyen doi lien ket bang prioductId sang OrderId. Nguoi dung co the danh gia san pham o &#10;bo sung ham variantAttributesSnapshot vao Review luu lai &#10;sua lai ReviewService lay thong tin cua OrderService thay vi lay du lieu tu frontend tranh gia du lieu.">
+      <option name="closed" value="true" />
+      <created>1783698089050</created>
+      <option name="number" value="00130" />
+      <option name="presentableId" value="LOCAL-00130" />
+      <option name="project" value="LOCAL" />
+      <updated>1783698089051</updated>
+    </task>
+    <task id="LOCAL-00131" summary="1. API CHANGES:&#10;- ADD API: `GET /reviews/admin/all` - Fetch all platform reviews for the admin global dashboard.&#10;- UPDATE API: `GET /reviews/me` and other list APIs - Response payload now includes `productName`.&#10;&#10;2. CODE CHANGES:&#10;* In `ReviewResponse.java`:&#10;- ADD: `productName` field and its getter.&#10;- UPDATE: Constructor to initialize `productName`.&#10;&#10;* In `ReviewMapper.java`:&#10;- UPDATE: `toResponse()` method to accept a `Product` object and safely map `product.getName()` into the DTO.&#10;&#10;* In `ReviewService.java`:&#10;- ADD: `getGlobalReviewsForAdmin()` method to serve the new admin API.&#10;- UPDATE: Replaced the old batching method with `mapReviewsToResponsesWithBatchData()` to perform Dual Batch Fetching (fetching both `User` and `Product` in O(1)) to completely resolve N+1 query issues.&#10;- UPDATE: `getMyReviews`, `getPublicReviewsForProduct`, `getAllReviewsForAdmin`, `createReview`, and `updateReview` methods to apply the new dual batch fetching algorithm and updated mapper.&#10;&#10;* In `ReviewController.java`:&#10;- ADD: `getGlobalReviewsForAdmin()` method to expose the new endpoint.">
+      <option name="closed" value="true" />
+      <created>1783701370815</created>
+      <option name="number" value="00131" />
+      <option name="presentableId" value="LOCAL-00131" />
+      <option name="project" value="LOCAL" />
+      <updated>1783701370816</updated>
+    </task>
+    <task id="LOCAL-00132" summary="[REVIEW] Implement dynamic filtering for Admin Dashboard and enforce data validation&#10;&#10;1. API CHANGES:&#10;- UPDATE API: GET /reviews/admin/all - Support dynamic filtering criteria for administrators.&#10;&#10;2. CODE CHANGES:&#10;ReviewFilterRequest.java:&#10;- ADD: DTO class with validation to handle filter inputs.&#10;&#10;ReviewSpecification.java:&#10;- ADD: filter method to build dynamic queries.&#10;&#10;ReviewRepository.java:&#10;- UPDATE: Repository interface to support dynamic query execution.&#10;&#10;ReviewService.java:&#10;- ADD: filterGlobalReviewsForAdmin method to process filtered results.&#10;- REMOVE: getGlobalReviewsForAdmin method to clean up obsolete code.&#10;&#10;ReviewController.java:&#10;- UPDATE: getGlobalReviewsForAdmin method to accept filter requests with valid.&#10;&#10;ImportedStockRequest.java and OrderFilterRequest.java:&#10;- ADD: validation to prevent invalid data inputs.">
+      <option name="closed" value="true" />
+      <created>1783729942694</created>
+      <option name="number" value="00132" />
+      <option name="presentableId" value="LOCAL-00132" />
+      <option name="project" value="LOCAL" />
+      <updated>1783729942694</updated>
+    </task>
+    <task id="LOCAL-00133" summary="[REVIEW] Implement time window policy for product reviews&#10;&#10;1. API CHANGES:&#10;UPDATE API: POST /reviews - Enforce 7-day time limit for creating reviews.&#10;&#10;2. CODE CHANGES:&#10;ReviewService.java:&#10;ADD: validation in createReview method to block submissions after 7 days of order completion.">
+      <option name="closed" value="true" />
+      <created>1783733474120</created>
+      <option name="number" value="00133" />
+      <option name="presentableId" value="LOCAL-00133" />
+      <option name="project" value="LOCAL" />
+      <updated>1783733474121</updated>
+    </task>
+    <task id="LOCAL-00134" summary="[MODERATION] Build complete word moderation domain with in-memory cache and custom exceptions&#10;&#10;API CHANGES&#10;Add endpoints for searching, creating, updating, soft deleting, restoring, and hard deleting blacklisted words under moderation path.&#10;&#10;CODE CHANGES&#10;&#10;WordCategory.java&#10;Create rich enum with validation for JSON parsing and polymorphic moderation behavior.&#10;&#10;BlacklistedWord.java&#10;Create entity with index and unique constraint for database, including domain validation.&#10;&#10;BlacklistedWordRepository.java&#10;Create data access interface with native queries to handle soft delete constraint.&#10;&#10;BlacklistedWordSpecification.java&#10;Add dynamic filtering logic for database search operations.&#10;&#10;BlacklistedWordNotFoundException.java&#10;Define exception for missing data scenarios.&#10;&#10;InvalidModerationOperationException.java&#10;Define exception for validation failures using static factories.&#10;&#10;ModerationConflictException.java&#10;Define exception for data constraint conflicts.&#10;&#10;ModerationAccessDeniedException.java&#10;Define exception for access denial scenarios.&#10;&#10;ModerationExceptionHandler.java&#10;Implement centralized error handling for moderation domain.&#10;&#10;BlacklistedWordRequest.java&#10;Define payload structure with input validation.&#10;&#10;BlacklistedWordFilterRequest.java&#10;Define search payload with input validation.&#10;&#10;BlacklistedWordResponse.java&#10;Define output structure to prevent entity leakage.&#10;&#10;BlacklistedWordMapper.java&#10;Implement data conversion logic from entity to response.&#10;&#10;BlacklistWordService.java&#10;Implement business logic integrating in-memory cache and regex pattern matching.&#10;&#10;BlacklistController.java&#10;Expose moderation endpoints mapping to service layer.">
+      <option name="closed" value="true" />
+      <created>1783756156926</created>
+      <option name="number" value="00134" />
+      <option name="presentableId" value="LOCAL-00134" />
+      <option name="project" value="LOCAL" />
+      <updated>1783756156926</updated>
+    </task>
+    <task id="LOCAL-00135" summary="BaseAuditEntity&#10;Add version field to enable optimistic locking.&#10;&#10;Entities&#10;Remove redundant version field and accessors to utilize base class inheritance.">
+      <option name="closed" value="true" />
+      <created>1783757793725</created>
+      <option name="number" value="00135" />
+      <option name="presentableId" value="LOCAL-00135" />
+      <option name="project" value="LOCAL" />
+      <updated>1783757793729</updated>
+    </task>
+    <task id="LOCAL-00136" summary="ReviewService integrate blacklist validation to block inappropriate content">
+      <option name="closed" value="true" />
+      <created>1783775122645</created>
+      <option name="number" value="00136" />
+      <option name="presentableId" value="LOCAL-00136" />
+      <option name="project" value="LOCAL" />
+      <updated>1783775122645</updated>
+    </task>
+    <task id="LOCAL-00137" summary="[REVIEW] Implement domain specific exceptions with context data&#10;&#10;ReviewNotFoundException define exception for missing data&#10;ReviewAccessDeniedException define exception for authorization failures&#10;ReviewConflictException define exception for data conflicts&#10;InvalidReviewOperationException define exception for validation failures&#10;ReviewExceptionHandler implement error handler for review domain&#10;Review update entity to throw domain exceptions&#10;ReviewStatus update enum to throw domain exceptions&#10;ReviewService update service to throw domain exceptions">
+      <option name="closed" value="true" />
+      <created>1783776264151</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
+      <option name="project" value="LOCAL" />
+      <updated>1783776264152</updated>
+    </task>
+    <task id="LOCAL-00138" summary="[SUPPLIER] Enhance domain with state machine, dynamic filter and soft delete conflict resolution&#10;&#10;SupplierStatus add state machine transitions and safe json creator to block invalid inputs&#10;SupplierResponse append available actions to guide frontend interface&#10;SupplierMapper apply safe enum parsing and map valid state actions&#10;SupplierFilterRequest define search payload with size constraints to prevent buffer overflow&#10;SupplierSpecification implement dynamic criteria query for advanced filtering&#10;SupplierRepository add native queries to resolve soft delete unique constraint conflicts&#10;SupplierService integrate dynamic filter, resolve unique constraint conflicts, add restore and status toggle&#10;SupplierController expose endpoints for filtering, restore, and atomic status updates">
+      <option name="closed" value="true" />
+      <created>1783785832479</created>
+      <option name="number" value="00138" />
+      <option name="presentableId" value="LOCAL-00138" />
+      <option name="project" value="LOCAL" />
+      <updated>1783785832479</updated>
+    </task>
+    <task id="LOCAL-00139" summary="[INTEGRATION] Implement cross-domain communication and eliminate N+1 queries&#10;&#10;SupplierStatus separate canBeAssignedToProduct from canImport for fine-grained domain authorization&#10;ImportService replace hardcoded status checks with SupplierStatus rich enum validation&#10;ProductService integrate SupplierStatus rich enum validation for product assignment&#10;ProductService implement in-memory batch fetching to eliminate N+1 queries for supplier data&#10;ProductMapper implement method overloading to safely inject supplier and promotion contexts&#10;ProductResponse append supplierName property to optimize frontend data delivery">
+      <option name="closed" value="true" />
+      <created>1783815276238</created>
+      <option name="number" value="00139" />
+      <option name="presentableId" value="LOCAL-00139" />
+      <option name="project" value="LOCAL" />
+      <updated>1783815276239</updated>
+    </task>
+    <task id="LOCAL-00140" summary="[REFACTOR] Implement domain-specific contextual exceptions for Supplier&#10;&#10;- domain/exception: Create custom exceptions (SupplierNotFoundException, DuplicateSupplierException, SupplierDeletedConflictException, SupplierAccessDeniedException, InvalidSupplierOperationException) carrying rich contextual data.&#10;- api/advice: Add SupplierExceptionHandler to map domain exceptions to standard REST JSON responses with context objects.&#10;- application/SupplierService: Refactor error handling to throw explicitly typed domain exceptions instead of generic Java exceptions.&#10;- domain/Supplier &amp; SupplierStatus: Update internal validation to throw domain-specific InvalidSupplierOperationException with detailed error types.">
+      <option name="closed" value="true" />
+      <created>1783845145115</created>
+      <option name="number" value="00140" />
+      <option name="presentableId" value="LOCAL-00140" />
+      <option name="project" value="LOCAL" />
+      <updated>1783845145116</updated>
+    </task>
+    <task id="LOCAL-00141" summary="ADD: 3 separated files from BaseAuditEntity&#10;BaseTimeEntity to manage creation and update time&#10;BaseSoftDeleteEntity inherits BaseTimeEntity to handle soft delete&#10;BaseRootEntity inherits BaseSoftDeleteEntity to manage version&#10;UPDATE: 19 entity files to modify inheritance&#10;Cart, Category, ImportNote, BlacklistedWord, Order, Product, Promotion, Review, Supplier, User inherit BaseRootEntity&#10;Address, Inventory, OrderHistory, OrderItem, ProductAttributeValue, ProductImage, ProductVariant inherit BaseSoftDeleteEntity&#10;CartItem, ImportNoteItem remove inheritance&#10;DELETE: BaseAuditEntity to optimize inheritance structure">
+      <option name="closed" value="true" />
+      <created>1783954003396</created>
+      <option name="number" value="00141" />
+      <option name="presentableId" value="LOCAL-00141" />
+      <option name="project" value="LOCAL" />
+      <updated>1783954003397</updated>
+    </task>
+    <task id="LOCAL-00142" summary="feat(customer-return): build core domain, entities and exceptions from scratch&#10;ReturnReasonCode.java:&#10;ADD: ReturnReasonCode enum to manage return reasons&#10;CustomerReturnStatus.java:&#10;ADD: CustomerReturnStatus enum to manage state machine&#10;CustomerReturnImage.java:&#10;ADD: CustomerReturnImage class to manage proof images&#10;CustomerReturnItem.java:&#10;ADD: CustomerReturnItem class to manage return items&#10;CustomerReturnHistory.java:&#10;ADD: CustomerReturnHistory class to manage state history&#10;CustomerReturn.java:&#10;ADD: CustomerReturn class to manage aggregate root&#10;CustomerReturnRepository.java:&#10;ADD: CustomerReturnRepository interface to manage database operations&#10;CustomerReturnSpecification.java:&#10;ADD: CustomerReturnSpecification class to manage search criteria&#10;InvalidCustomerReturnDataException.java:&#10;ADD: InvalidCustomerReturnDataException class to handle validation errors&#10;InvalidCustomerReturnTransitionException.java:&#10;ADD: InvalidCustomerReturnTransitionException class to handle state errors&#10;CustomerReturnAccessDeniedException.java:&#10;ADD: CustomerReturnAccessDeniedException class to handle permission errors&#10;CustomerReturnNotFoundException.java:&#10;ADD: CustomerReturnNotFoundException class to handle missing records&#10;DuplicateReturnRequestException.java:&#10;ADD: DuplicateReturnRequestException class to handle duplicate constraints&#10;ReturnRequestDeletedConflictException.java:&#10;ADD: ReturnRequestDeletedConflictException class to handle soft deleted constraints">
+      <option name="closed" value="true" />
+      <created>1783991059375</created>
+      <option name="number" value="00142" />
+      <option name="presentableId" value="LOCAL-00142" />
+      <option name="project" value="LOCAL" />
+      <updated>1783991059376</updated>
+    </task>
+    <task id="LOCAL-00143" summary="feat(customer-return): build data transfer objects and mapper&#10;CustomerReturnItemRequest.java:&#10;ADD: CustomerReturnItemRequest class to manage item request data&#10;CustomerReturnRequest.java:&#10;ADD: CustomerReturnRequest class to manage return request data&#10;CustomerReturnItemResponse.java:&#10;ADD: CustomerReturnItemResponse class to manage item response data&#10;CustomerReturnHistoryResponse.java:&#10;ADD: CustomerReturnHistoryResponse class to manage history response data&#10;CustomerReturnResponse.java:&#10;ADD: CustomerReturnResponse class to manage return response data&#10;CustomerReturnMapper.java:&#10;ADD: CustomerReturnMapper class to convert between dto and entity">
+      <option name="closed" value="true" />
+      <created>1783991105985</created>
+      <option name="number" value="00143" />
+      <option name="presentableId" value="LOCAL-00143" />
+      <option name="project" value="LOCAL" />
+      <updated>1783991105987</updated>
+    </task>
+    <task id="LOCAL-00144" summary="feat(customer-return): build business service and presentation layer&#10;ADD API: GET /api/returns - filter customer returns&#10;ADD API: POST /api/returns - create customer return&#10;ADD API: PATCH /api/returns/{id}/cancel - cancel customer return&#10;ADD API: PATCH /api/returns/{id}/update-info - update return info&#10;ADD API: PATCH /api/returns/{id}/require-info - require extra info&#10;ADD API: PATCH /api/returns/{id}/receive - mark return as received&#10;ADD API: PATCH /api/returns/{id}/inspect - inspect return quality&#10;ADD API: PATCH /api/returns/{id}/dispute - open return dispute&#10;ADD API: PATCH /api/returns/{id}/resolve-dispute - resolve return dispute&#10;CustomerReturnService.java:&#10;ADD: CustomerReturnService class to manage business logic&#10;CustomerReturnController.java:&#10;ADD: CustomerReturnController class to manage incoming requests&#10;CustomerReturnExceptionHandler.java:&#10;ADD: CustomerReturnExceptionHandler class to manage global error responses">
+      <option name="closed" value="true" />
+      <created>1783991130630</created>
+      <option name="number" value="00144" />
+      <option name="presentableId" value="LOCAL-00144" />
+      <option name="project" value="LOCAL" />
+      <updated>1783991130630</updated>
+    </task>
+    <task id="LOCAL-00145" summary="feat(integration): sync customer return process with order domain&#10;OrderStatus.java:&#10;ADD: PARTIALLY_REFUNDED and FULLY_REFUNDED states&#10;ADD: refundPartially and refundFully state transitions&#10;Order.java:&#10;ADD: refundPartially and refundFully wrapper methods&#10;OrderService.java:&#10;UPDATE: fix compilation error by replacing orderRepository with repository&#10;UPDATE: updateOrderRefundStatus to apply state pattern for order refunds&#10;UPDATE: getOrderStatus to provide current state for validation&#10;InvalidCustomerReturnDataException.java:&#10;ADD: invalidOrderStatus method to validate COMPLETED state requirement&#10;CustomerReturnService.java:&#10;UPDATE: constructor to inject OrderService&#10;UPDATE: createRequest to validate order status via OrderService&#10;UPDATE: finalizeRefundProcess and resolveDisputeToRefund to trigger order refund sync">
+      <option name="closed" value="true" />
+      <created>1783993999033</created>
+      <option name="number" value="00145" />
+      <option name="presentableId" value="LOCAL-00145" />
+      <option name="project" value="LOCAL" />
+      <updated>1783993999034</updated>
+    </task>
+    <task id="LOCAL-00146" summary="feat(integration): sync customer return qc with product inventory&#10;CustomerReturnItemRequest.java:&#10;ADD: productId and variantId fields to avoid cross-domain database queries&#10;CustomerReturnItemResponse.java:&#10;ADD: productId and variantId fields for client response&#10;CustomerReturnItem.java:&#10;ADD: productId and variantId columns for inventory tracking&#10;UPDATE: constructor to require product and variant identifiers&#10;CustomerReturnMapper.java:&#10;UPDATE: toItemEntity to map new identifiers from request&#10;UPDATE: mapItems to map new identifiers to response&#10;CustomerReturnService.java:&#10;UPDATE: constructor to inject ProductService&#10;UPDATE: inspectQuality method to automatically restore stock for sellable items">
+      <option name="closed" value="true" />
+      <created>1784024201391</created>
+      <option name="number" value="00146" />
+      <option name="presentableId" value="LOCAL-00146" />
+      <option name="project" value="LOCAL" />
+      <updated>1784024201393</updated>
+    </task>
+    <task id="LOCAL-00147" summary="refactor(security): upgrade to stateless JWT and enforce data-level security&quot; -m &quot;CustomUserDetails.java:&#10;UPDATE: redesign to hold JWT claims directly without database calls&#10;JwtAuthenticationFilter.java:&#10;UPDATE: extract claims and assemble CustomUserDetails to bypass database&#10;CustomUserDetailsService.java:&#10;UPDATE: return CustomUserDetails containing ID on initial login&#10;OrderService.java:&#10;ADD: verifyOrderOwnership method to check IDOR authorization&#10;CustomerReturnService.java:&#10;UPDATE: method signatures to require customerId for ownership validation&#10;DELETE: obsolete internal validateActionAccess method&#10;CustomerReturnController.java:&#10;UPDATE: inject CustomUserDetails and pass ID to service for secure operations">
+      <option name="closed" value="true" />
+      <created>1784043423818</created>
+      <option name="number" value="00147" />
+      <option name="presentableId" value="LOCAL-00147" />
+      <option name="project" value="LOCAL" />
+      <updated>1784043423819</updated>
+    </task>
+    <task id="LOCAL-00148" summary="feat(customer-return): implement fraud prevention radar and appeal workflow&#10;InvalidCustomerReturnOperationException.java:&#10;ADD: new exception class to handle business rule violations cleanly&#10;OrderRepository.java &amp; OrderService.java:&#10;ADD: JPQL counts and isHighRiskCustomer logic to evaluate &gt;30% return rates&#10;CustomerReturn.java:&#10;ADD: isHighRisk flag and system logging for fraudulent accounts&#10;UPDATE: openDispute to enforce strictly transitioning from REJECTED/FAILED states&#10;ADD: resolveDispute to allow admins to approve or permanently reject appeals&#10;CustomerReturnService.java:&#10;UPDATE: createRequest to automatically flag high-risk customers upon creation&#10;CustomerReturnController.java:&#10;UPDATE: remove hardcoded demo users and enforce JWT @AuthenticationPrincipal">
+      <option name="closed" value="true" />
+      <created>1784079440253</created>
+      <option name="number" value="00148" />
+      <option name="presentableId" value="LOCAL-00148" />
+      <option name="project" value="LOCAL" />
+      <updated>1784079440254</updated>
+    </task>
+    <task id="LOCAL-00149" summary="feat(supplier-return): implement core domain entities, rich enums, and domain exceptions&#10;* ENUMS:&#10;  - `SupplierReturnStatus.java`: Add State Machine to manage next valid states and enforce `isReadOnly` data mutation constraints.&#10;  - `SupplierReturnReason.java`: Add Rich Enum to categorize return reasons, integrating the `isRestockable()` logic for inventory routing.&#10;&#10;* ENTITIES:&#10;  - `SupplierReturn.java` (Aggregate Root): Extend `BaseRootEntity` (Version + Soft Delete). Encapsulate strict financial recalculations and block external data mutations via internal Business Methods.&#10;  - `SupplierReturnItem.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store item details, tax rates, and discount amounts.&#10;  - `SupplierReturnImage.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store proof image URLs.&#10;  - `SupplierReturnHistory.java` (Child Entity): Extend `BaseTimeEntity`. Maintain a strict audit trail (Immutable: no soft delete or update allowed).&#10;&#10;* EXCEPTIONS (Domain Level):&#10;  - `InvalidSupplierReturnOperationException.java`: Add exception to handle all input validations and business logic violations (invalid state transitions, negative financials). Attach Context Data (Map) to support dynamic Frontend UI handling.">
+      <option name="closed" value="true" />
+      <created>1784132332702</created>
+      <option name="number" value="00149" />
+      <option name="presentableId" value="LOCAL-00149" />
+      <option name="project" value="LOCAL" />
+      <updated>1784132332702</updated>
+    </task>
+    <task id="LOCAL-00150" summary="feat(supplier-return): build strictly separated DTOs and SRP-compliant mapper&#10;* REQUEST DTOs:&#10;  - `SupplierReturnRequest.java` &amp; `SupplierReturnItemRequest.java`: Add input DTOs fortified with strict Jakarta Validations (@NotNull, @Min, @NotBlank) to reject invalid payloads at the controller layer.&#10;&#10;* RESPONSE DTOs:&#10;  - `SupplierReturnResponse.java` &amp; `SupplierReturnItemResponse.java`: Add output DTOs. Introduce the `availableNextActions` array to dynamically route UI actions based on current status.&#10;  - `SupplierReturnHistoryResponse.java` &amp; `SupplierReturnImageResponse.java`: Add DTOs to extract audit and image data from child entities.&#10;&#10;* MAPPER:&#10;  - `SupplierReturnMapper.java`: Decompose the mapper into micro private methods (Create Entity, Map Full Response, Map specific Child Lists) ensuring only one reason to change this utility class.">
+      <option name="closed" value="true" />
+      <created>1784132424679</created>
+      <option name="number" value="00150" />
+      <option name="presentableId" value="LOCAL-00150" />
+      <option name="project" value="LOCAL" />
+      <updated>1784132424679</updated>
+    </task>
+    <task id="LOCAL-00151" summary="feat(supplier-return): implement repository, dynamic spec, and business service logic&#10;* REPOSITORY &amp; SPECIFICATION:&#10;  - `SupplierReturnRepository.java`: Apply `@EntityGraph` to eagerly fetch collections (items, histories, images), eliminating N+1 Query issues. Add `existsByImportNoteIdAndStatusNotIn` for duplication checks.&#10;  - `SupplierReturnSpecification.java`: Add Criteria API to support dynamic filtering by Supplier, Status, and Date Range.&#10;&#10;* SERVICE EXCEPTIONS:&#10;  - `SupplierReturnNotFoundException.java`: Handle 404 Not Found errors.&#10;  - `DuplicateSupplierReturnException.java`: Handle 409 Conflict errors (e.g., creating multiple active returns for a single import note).&#10;  - `SupplierReturnDeletedConflictException.java`: Handle 409 Conflict errors when interacting with soft-deleted records.&#10;  - `SupplierReturnAccessDeniedException.java`: Handle 403 Forbidden RBAC errors.&#10;&#10;* SERVICE:&#10;  - `SupplierReturnService.java`: Wrap the entire RMA lifecycle in `@Transactional`. Orchestrate the state machine and directly invoke `ProductService.deductStockForOrder` to safely deduct inventory, ensuring atomic rollback on cross-domain failures.">
+      <option name="closed" value="true" />
+      <created>1784132496521</created>
+      <option name="number" value="00151" />
+      <option name="presentableId" value="LOCAL-00151" />
+      <option name="project" value="LOCAL" />
+      <updated>1784132496521</updated>
+    </task>
+    <task id="LOCAL-00152" summary="feat(supplier-return): implement secured API endpoints and custom exception handler&#10;* EXCEPTION HANDLER:&#10;  - `SupplierReturnExceptionHandler.java`: Add a dedicated `RestControllerAdvice` for the SupplierReturn domain. Catch all custom exceptions, standardize the JSON output to match the Global ErrorResponse, and inject `Context Data` payloads for flexible UI handling.&#10;&#10;* CONTROLLER:&#10;  - `SupplierReturnController.java`: Expose endpoints (Create, Submit, Approve, Reject, Ship, Complete). Integrate stateless JWT security via `@AuthenticationPrincipal` and build an internal RBAC mechanism to strictly enforce separation of duties between ADMIN and WAREHOUSE_MANAGER roles.">
+      <option name="closed" value="true" />
+      <created>1784132517791</created>
+      <option name="number" value="00152" />
+      <option name="presentableId" value="LOCAL-00152" />
+      <option name="project" value="LOCAL" />
+      <updated>1784132517791</updated>
+    </task>
+    <task id="LOCAL-00153" summary="implement SLA cronjob with fail-fast config and persistent blocking alerts&#10; - **Fail-Fast Configuration**: Enforce explicit scheduling configurations (`cron`, `zone`, `warning-hours`, `critical-hours`) in `application.yml` by removing `@Value` defaults, preventing silent fallback failures.&#10; - **Timezone Strictness**: Bind `zone=&quot;Asia/Ho_Chi_Minh&quot;` directly to `@Scheduled` to neutralize cloud server UTC discrepancies.&#10; - **Escalation Mechanism**: Build a multi-tier alert system in `SupplierReturnScheduler` using clean, semantic time boundaries:&#10;   - Warning Alert: Triggers internal reminders after a configurable threshold.&#10;   - Critical Alert: Triggers executive escalations after a strict threshold.&#10; - **Persistent Blocking UI**: Expose `GET /sla/critical-alerts` API to feed the frontend with critically overdue records, enforcing mandatory administrative resolution (Approve/Reject) to unblock the system.&#10; - **Architecture Reusability**: Seamlessly integrate the SLA features by fully reusing existing DTOs (`SupplierReturnResponse`), mappers, and domain exceptions, strictly adhering to the Open-Closed Principle (OCP).">
+      <option name="closed" value="true" />
+      <created>1784166628980</created>
+      <option name="number" value="00153" />
+      <option name="presentableId" value="LOCAL-00153" />
+      <option name="project" value="LOCAL" />
+      <updated>1784166628981</updated>
+    </task>
+    <task id="LOCAL-00154" summary="feat(supplier-return): implement discrepancy handling, B2B financial model, and global exception integration&#10;- Physical Flow: Add `acceptedQuantity`, `discrepancyReason`, and `PATCH /inspect` API.&#10;- Financial Flow: Remove unused tax fields (VAT); add `freightCost`, `restockingFee`. Update refund formula based on accepted quantity.&#10;- Exceptions: Add `details` to `ErrorResponse` and handle `InvalidSupplierReturnOperationException` globally without breaking old code.&#10;- Mapper: Sync all mappings including images and histories.">
+      <option name="closed" value="true" />
+      <created>1784218393504</created>
+      <option name="number" value="00154" />
+      <option name="presentableId" value="LOCAL-00154" />
+      <option name="project" value="LOCAL" />
+      <updated>1784218393504</updated>
+    </task>
+    <task id="LOCAL-00155" summary="refactor(product): optimize services and finalize inventory batches&#10;- Add `ProductVariantRepository` to resolve N+1 queries and support SKU lookups.&#10;- Refactor `ProductService` &amp; `InventoryService` to improve performance.&#10;- Fix `ProductNotFoundException` by adding a String constructor.&#10;- Finalize `Inventory` and `InventoryBatch` architecture for FEFO tracking.&#10;- Implement event-driven stock deduction via `InventoryEventListener`.">
+      <option name="closed" value="true" />
+      <created>1784294723117</created>
+      <option name="number" value="00155" />
+      <option name="presentableId" value="LOCAL-00155" />
+      <option name="project" value="LOCAL" />
+      <updated>1784294723118</updated>
+    </task>
+    <task id="LOCAL-00156" summary="refactor(product): optimize services and finalize inventory batches&#10;- Add `ProductVariantRepository` to resolve N+1 queries and support SKU lookups.&#10;- Refactor `ProductService` &amp; `InventoryService` to improve performance.&#10;- Fix `ProductNotFoundException` by adding a String constructor.&#10;- Finalize `Inventory` and `InventoryBatch` architecture for FEFO tracking.&#10;- Implement event-driven stock deduction via `InventoryEventListener`.">
+      <option name="closed" value="true" />
+      <created>1784294740117</created>
+      <option name="number" value="00156" />
+      <option name="presentableId" value="LOCAL-00156" />
+      <option name="project" value="LOCAL" />
+      <updated>1784294740117</updated>
+    </task>
+    <task id="LOCAL-00157" summary="refactor(specification): standardize domain filters and centralize query logic&#10;&#10;* GLOBAL&#10;  BaseSpecification.java: Added core utility methods (contains, isEqual, dateBetween, isDistinct) to centralize database query logic and enable reusability across all modules.&#10;&#10;* SPECIFICATION&#10;  BlacklistedWordSpecification.java: Modified filter structure to utilize shared base methods to eliminate boilerplate code.&#10;  CustomerReturnSpecification.java: Modified query logic to use distinct and base methods to ensure a clean and unified architecture.&#10;  OrderSpecification.java: Modified filter conditions to use date between and base methods to align with the centralized composition pattern.&#10;  ReviewSpecification.java: Modified query implementation to adopt the fluent composition pattern and base methods to maintain architectural consistency.&#10;  SupplierReturnSpecification.java: Modified query structure to leverage shared base methods to streamline domain filtering.&#10;  SupplierSpecification.java: Modified package location and filter logic to fully unify with the shared infrastructure specifications.">
+      <option name="closed" value="true" />
+      <created>1784368471986</created>
+      <option name="number" value="00157" />
+      <option name="presentableId" value="LOCAL-00157" />
+      <option name="project" value="LOCAL" />
+      <updated>1784368471986</updated>
+    </task>
+    <task id="LOCAL-00158" summary="ENTITY:&#10;Cart.java: Inherit root entity properties and add maximum items threshold.&#10;CartItem.java: Add partial checkout property and initial price field to protect prices.  &#10;REPOSITORY:&#10;CartRepository.java: Add graph query mechanism to optimize retrieval and version update function.&#10;CartItemRepository.java: Inherit dynamic specification filter executor and add batch delete function to clean up old data.  &#10;INFRASTRUCTURE:&#10;CartItemSpecification.java: Create dynamic filters to query cart items based on date and selection status.  SERVICE AND MAPPER:&#10;CartService.java: Replace cart clearing mechanism with smart accumulation algorithm and add partial checkout toggle logic.&#10;CartMapper.java: Modify mapping logic to compare initial price fluctuations with current prices and issue warnings.&#10;CartItemResponse.java: Add data transfer fields to represent price changes and item selection status.  &#10;CONTROLLER:&#10;CartController.java: Add endpoint for toggling item selection and apply validation constraints for incoming requests.">
+      <option name="closed" value="true" />
+      <created>1784442106719</created>
+      <option name="number" value="00158" />
+      <option name="presentableId" value="LOCAL-00158" />
+      <option name="project" value="LOCAL" />
+      <updated>1784442106720</updated>
+    </task>
+    <task id="LOCAL-00159" summary="refactor(cart): implement UI state machine and apply SRP to mapper&#10;&#10;DTO AND RESPONSE:&#10;CartResponse.java: Add allowedActions array to coordinate and control the state of frontend UI buttons.&#10;MAPPER:&#10;CartMapper.java: Refactor monolithic functions following SRP and add cart state analysis algorithm to generate UI coordination commands.">
+      <option name="closed" value="true" />
+      <created>1784444344009</created>
+      <option name="number" value="00159" />
+      <option name="presentableId" value="LOCAL-00159" />
+      <option name="project" value="LOCAL" />
+      <updated>1784444344010</updated>
+    </task>
+    <task id="LOCAL-00160" summary="refactor(cart): implement event-driven checkout flow and maintenance logic&#10;&#10;EVENT:&#10;CartCheckoutRequestedEvent.java: Add event with Integer ID, address, promo code, and product snapshot to request orders.&#10;OrderCreatedEvent.java: Add event for successful orders to trigger cart cleanup and inventory deduction.&#10;OrderCreationFailedEvent.java: Add event for failed orders to trigger cart unlocking.&#10;ProductUpdatedEvent.java: Add event to receive product price update notifications.&#10;OrderCancelledEvent.java: Add event with product list to support inventory restock upon cancellation.&#10;CartItemExpiringEvent.java: Modified data types to ensure consistency with cart domain entities.&#10;&#10;FACADE:&#10;CartFacade.java: Add class to orchestrate checkout flow, aggregate product data, generate snapshots, and safely publish events.&#10;&#10;SERVICE:&#10;CartService.java: Remove direct checkout logic, update IDs to Integer, and add cart locking methods to support facade orchestration.&#10;CartEventListener.java: Update listener logic to clear or unlock carts based on the new event payload.&#10;CartMaintenanceService.java: Updated scanning logic to use the new time range query for finding expired cart items.&#10;&#10;REPOSITORY:&#10;CartItemRepository.java: Added time range query method to support the automated maintenance scanning process.&#10;&#10;CONTROLLER AND DTO:&#10;CheckoutRequest.java: Add request class for shipping info and promo code with validation.&#10;CartController.java: Add checkout API with validation to receive user requests and delegate processing to the facade.">
+      <option name="closed" value="true" />
+      <created>1784471651020</created>
+      <option name="number" value="00160" />
+      <option name="presentableId" value="LOCAL-00160" />
+      <option name="project" value="LOCAL" />
+      <updated>1784471651021</updated>
+    </task>
+    <task id="LOCAL-00161" summary="refactor(cart): establish domain exception hierarchy and implement global exception handler&#10;&#10;EXCEPTION:&#10;CartAccessDeniedException.java: Add to handle unauthorized access scenarios for cart resources.&#10;CartCrossModuleException.java: Add to standardize error communication when interacting with external domains like Product and Inventory.&#10;CartDataConflictException.java: Add with nested enum and descriptions to handle business conflicts such as price changes and soft-deleted products.&#10;CartDomainException.java: Add base abstract class to unify and track all cart-related domain exceptions.&#10;CartItemNotFoundException.java: Modify to inherit from base domain exception for consistent error tracking.&#10;CartNotFoundException.java: Add factory methods to support dynamic lookups by both user ID and cart ID.&#10;InvalidCartOperationException.java: Add factory methods to handle cart merge limits, empty carts, and block invalid checkout transitions.&#10;EXCEPTION HANDLER:&#10;CartExceptionHandler.java: Add global advice to catch CartDomainException hierarchy and map them to standardized JSON error responses.&#10;ENTITY:&#10;Cart.java: Replace generic state exceptions with domain exceptions to enforce strict business rules during status transitions.&#10;SERVICE:&#10;CartService.java: Replace standard runtime exceptions with domain-specific not-found exceptions to ensure consistent error handling during cart lifecycle events.&#10;CartFacade.java: Replace illegal state exceptions with cross-module and data conflict exceptions to properly handle price changes and stock validation during checkout.">
+      <option name="closed" value="true" />
+      <created>1784476595678</created>
+      <option name="number" value="00161" />
+      <option name="presentableId" value="LOCAL-00161" />
+      <option name="project" value="LOCAL" />
+      <updated>1784476595679</updated>
+    </task>
+    <task id="LOCAL-00162" summary="feat(category): enhance architecture with materialized path, display order, and domain events&#10;&#10;ENTITY &amp; EVENT:&#10;Category.java: Add iconUrl, displayOrder, level, and materialized path fields with new database indexes to support hierarchical querying and prevent deep nesting.&#10;CategoryHiddenOrDeletedEvent.java: Add domain event to enable loose coupling for cross-module interactions when category state changes.&#10;&#10;REPOSITORY &amp; SPECIFICATION:&#10;CategoryRepository.java: Extend specification executor and implement entity graph to resolve N+1 query issues for category tree retrieval.&#10;CategorySpecification.java: Add dynamic filtering logic to replace monolithic queries and maintain single responsibility.&#10;&#10;EXCEPTION:&#10;InvalidCategoryOperationException.java: Add max depth exception to enforce structural constraint validation limits.&#10;&#10;DTO &amp; MAPPER:&#10;CategoryRequest.java: Add UI configuration fields and version field to enforce strict optimistic locking validation.&#10;CategoryResponse.java: Add metadata fields to expose complete category structure and display information.&#10;CategoryMapper.java: Update mapping logic to process new fields and sort tree branches by display order.&#10;&#10;SERVICE:&#10;CategoryService.java: Integrate specification for dynamic search, validate optimistic locking version, and publish lifecycle events.">
+      <option name="closed" value="true" />
+      <created>1784477737191</created>
+      <option name="number" value="00162" />
+      <option name="presentableId" value="LOCAL-00162" />
+      <option name="project" value="LOCAL" />
+      <updated>1784477737192</updated>
+    </task>
+    <task id="LOCAL-00163" summary="refactor(category): implement CQRS and event-driven architecture for inter-domain communication&#10;&#10;EVENT:&#10;CategoryCreatedEvent.java: Add event to notify downstream domains upon new category generation.&#10;CategoryUpdatedEvent.java: Add event to broadcast structural path modifications for external synchronization.&#10;CategoryStateChangedEvent.java: Add unified lifecycle event to manage visibility and deletion state transitions across the system.&#10;FACADE:&#10;CategoryFacade.java: Add concrete facade class to expose read-only query operations for other modules to prevent direct repository access.&#10;SERVICE:&#10;CategoryService.java: Update command operations to publish domain events and enforce optimistic locking validation.&#10;REPOSITORY:&#10;CategoryRepository.java: Update tree retrieval methods with query optimization to prevent database N+1 issues.">
+      <option name="closed" value="true" />
+      <created>1784505515200</created>
+      <option name="number" value="00163" />
+      <option name="presentableId" value="LOCAL-00163" />
+      <option name="project" value="LOCAL" />
+      <updated>1784505515200</updated>
+    </task>
+    <task id="LOCAL-00164" summary="refactor(domain): standardize status enums and data validation&#10;&#10;DOMAIN:&#10;CategoryStatus.java: Modified state initialization and added data validation to resolve circular references and ensure safe state transitions.&#10;CartStatus.java: Added descriptive properties and strict data validation to provide richer status data and prevent invalid inputs.&#10;&#10;EXCEPTION:&#10;InvalidCategoryDataException.java: Added custom exception class to handle category data validation errors explicitly.&#10;InvalidCartDataException.java: Added custom exception class to standardize cart data validation errors across the module.">
+      <option name="closed" value="true" />
+      <created>1784508022043</created>
+      <option name="number" value="00164" />
+      <option name="presentableId" value="LOCAL-00164" />
+      <option name="project" value="LOCAL" />
+      <updated>1784508022043</updated>
+    </task>
+    <task id="LOCAL-00165" summary="refactor(category-cart): integrate state machine transitions and optimize data fetching&#10;&#10;DTO&#10;CategoryResponse.java: Added status, allowed next actions, and parent context fields to support frontend state-driven logic.&#10;CartResponse.java: Added domain status and next valid states to align with the state machine architecture.&#10;&#10;MAPPER&#10;CategoryMapper.java: Updated mapping logic to extract state transitions, map parent details safely, and process sub-categories.&#10;CartMapper.java: Updated mapping execution to include the current state and valid transitions from the domain entity.&#10;&#10;REPOSITORY&#10;CategoryRepository.java: Modified query constraints to eagerly fetch related records to prevent N+1 performance issues.">
+      <option name="closed" value="true" />
+      <created>1784510047978</created>
+      <option name="number" value="00165" />
+      <option name="presentableId" value="LOCAL-00165" />
+      <option name="project" value="LOCAL" />
+      <updated>1784510047978</updated>
+    </task>
+    <task id="LOCAL-00166" summary="perf(category): optimize database index for hierarchical sorting&#10;ENTITY:&#10;Category.java: Modified index to a composite structure containing parent reference and display order to eliminate in-memory sorting overhead when retrieving the category tree.">
+      <option name="closed" value="true" />
+      <created>1784510384309</created>
+      <option name="number" value="00166" />
+      <option name="presentableId" value="LOCAL-00166" />
+      <option name="project" value="LOCAL" />
+      <updated>1784510384309</updated>
+    </task>
+    <task id="LOCAL-00167" summary="refactor(category): split request/response DTOs, enhance error handling and service logic&#10;* EXCEPTION:&#10;  GlobalExceptionHandler.java: Update to handle general validation errors.&#10;  CategoryExceptionHandler.java: Add specific handlers for category exceptions to return standard error response.&#10;  InvalidCategoryOperationException.java: Add static factory methods to encapsulate specific error cases.&#10;  ErrorResponse.java: Standardize payload structure for API errors.&#10;* DTO:&#10;  CategoryCreateRequest.java: Create specific request with validation to handle category creation.&#10;  CategoryUpdateInfoRequest.java: Create specific request with validation and constraint to handle updating details.&#10;  CategoryMoveRequest.java: Create specific request with validation and constraint to safely move categories in tree.&#10;  CategorySummaryResponse.java: Create lightweight response to optimize data size for lists and paths.&#10;  CategoryDetailResponse.java: Create detailed response to support recursive structure for tree views.&#10;  CategoryRequest.java: Delete monolithic request class.&#10;  CategoryResponse.java: Delete monolithic response class.&#10;* MAPPER:&#10;  CategoryMapper.java: Update mapping methods to support summary response and recursive tree generation for detail response.&#10;* SERVICE:&#10;  CategoryService.java: Update methods to use new DTOs, integrate new exceptions, and handle constraint logic accurately.&#10;* CONTROLLER:&#10;  CategoryController.java: Update endpoints to map to correct request and response DTOs and enforce validation.">
+      <option name="closed" value="true" />
+      <created>1784558472866</created>
+      <option name="number" value="00167" />
+      <option name="presentableId" value="LOCAL-00167" />
+      <option name="project" value="LOCAL" />
+      <updated>1784558472867</updated>
+    </task>
+    <task id="LOCAL-00168" summary="refactor(customer_return): optimize query performance and split specification logic&#10;&#10;REPOSITORY:&#10;  CustomerReturnRepository.java: Update fetch strategy to prevent memory overflow and let batch fetching handle lazy relations.&#10;SPECIFICATION:&#10;  CustomerReturnSpecification.java: Split monolithic query filter into static methods to apply single responsibility principle.">
+      <option name="closed" value="true" />
+      <created>1784559505530</created>
+      <option name="number" value="00168" />
+      <option name="presentableId" value="LOCAL-00168" />
+      <option name="project" value="LOCAL" />
+      <updated>1784559505533</updated>
+    </task>
+    <task id="LOCAL-00169" summary="refactor(customer_return): enhance enum serialization with object shape formatting&#10;* ENUM:&#10;  CustomerReturnStatus.java: Apply object structure formatting to provide full context to frontend and encapsulate state machine logic.&#10;  ReturnReasonCode.java: Apply object structure formatting and expose internal code for rich API responses.">
+      <option name="closed" value="true" />
+      <created>1784560807618</created>
+      <option name="number" value="00169" />
+      <option name="presentableId" value="LOCAL-00169" />
+      <option name="project" value="LOCAL" />
+      <updated>1784560807621</updated>
+    </task>
+    <task id="LOCAL-00170" summary="refactor(customer_return): simplify response structure and mapping logic using enum objects&#10;* DTO:&#10;  CustomerReturnResponse.java: Replace raw strings with enum object for status and available actions.&#10;  CustomerReturnItemResponse.java: Replace raw strings with enum object for return reason code.&#10;  CustomerReturnHistoryResponse.java: Replace raw strings with enum object for history states.&#10;* MAPPER:&#10;  CustomerReturnMapper.java: Remove redundant string mapping and pass enum directly to response layer to support dynamic frontend UI.">
+      <option name="closed" value="true" />
+      <created>1784560940757</created>
+      <option name="number" value="00170" />
+      <option name="presentableId" value="LOCAL-00170" />
+      <option name="project" value="LOCAL" />
+      <updated>1784560940757</updated>
+    </task>
+    <task id="LOCAL-00171" summary="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance.">
+      <option name="closed" value="true" />
+      <created>1784598943086</created>
+      <option name="number" value="00171" />
+      <option name="presentableId" value="LOCAL-00171" />
+      <option name="project" value="LOCAL" />
+      <updated>1784598943086</updated>
+    </task>
+    <task id="LOCAL-00172" summary="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance.">
+      <option name="closed" value="true" />
+      <created>1784729100466</created>
+      <option name="number" value="00172" />
+      <option name="presentableId" value="LOCAL-00172" />
+      <option name="project" value="LOCAL" />
+      <updated>1784729100468</updated>
+    </task>
+    <option name="localTasksCounter" value="173" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="feat(customer-return): implement fraud prevention radar and appeal workflow&#10;InvalidCustomerReturnOperationException.java:&#10;ADD: new exception class to handle business rule violations cleanly&#10;OrderRepository.java &amp; OrderService.java:&#10;ADD: JPQL counts and isHighRiskCustomer logic to evaluate &gt;30% return rates&#10;CustomerReturn.java:&#10;ADD: isHighRisk flag and system logging for fraudulent accounts&#10;UPDATE: openDispute to enforce strictly transitioning from REJECTED/FAILED states&#10;ADD: resolveDispute to allow admins to approve or permanently reject appeals&#10;CustomerReturnService.java:&#10;UPDATE: createRequest to automatically flag high-risk customers upon creation&#10;CustomerReturnController.java:&#10;UPDATE: remove hardcoded demo users and enforce JWT @AuthenticationPrincipal" />
+    <MESSAGE value="feat(supplier-return): implement core domain entities, rich enums, and domain exceptions&#10;* ENUMS:&#10;  - `SupplierReturnStatus.java`: Add State Machine to manage next valid states and enforce `isReadOnly` data mutation constraints.&#10;  - `SupplierReturnReason.java`: Add Rich Enum to categorize return reasons, integrating the `isRestockable()` logic for inventory routing.&#10;&#10;* ENTITIES:&#10;  - `SupplierReturn.java` (Aggregate Root): Extend `BaseRootEntity` (Version + Soft Delete). Encapsulate strict financial recalculations and block external data mutations via internal Business Methods.&#10;  - `SupplierReturnItem.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store item details, tax rates, and discount amounts.&#10;  - `SupplierReturnImage.java` (Child Entity): Extend `BaseSoftDeleteEntity`. Store proof image URLs.&#10;  - `SupplierReturnHistory.java` (Child Entity): Extend `BaseTimeEntity`. Maintain a strict audit trail (Immutable: no soft delete or update allowed).&#10;&#10;* EXCEPTIONS (Domain Level):&#10;  - `InvalidSupplierReturnOperationException.java`: Add exception to handle all input validations and business logic violations (invalid state transitions, negative financials). Attach Context Data (Map) to support dynamic Frontend UI handling." />
+    <MESSAGE value="feat(supplier-return): build strictly separated DTOs and SRP-compliant mapper&#10;* REQUEST DTOs:&#10;  - `SupplierReturnRequest.java` &amp; `SupplierReturnItemRequest.java`: Add input DTOs fortified with strict Jakarta Validations (@NotNull, @Min, @NotBlank) to reject invalid payloads at the controller layer.&#10;&#10;* RESPONSE DTOs:&#10;  - `SupplierReturnResponse.java` &amp; `SupplierReturnItemResponse.java`: Add output DTOs. Introduce the `availableNextActions` array to dynamically route UI actions based on current status.&#10;  - `SupplierReturnHistoryResponse.java` &amp; `SupplierReturnImageResponse.java`: Add DTOs to extract audit and image data from child entities.&#10;&#10;* MAPPER:&#10;  - `SupplierReturnMapper.java`: Decompose the mapper into micro private methods (Create Entity, Map Full Response, Map specific Child Lists) ensuring only one reason to change this utility class." />
+    <MESSAGE value="feat(supplier-return): implement repository, dynamic spec, and business service logic&#10;* REPOSITORY &amp; SPECIFICATION:&#10;  - `SupplierReturnRepository.java`: Apply `@EntityGraph` to eagerly fetch collections (items, histories, images), eliminating N+1 Query issues. Add `existsByImportNoteIdAndStatusNotIn` for duplication checks.&#10;  - `SupplierReturnSpecification.java`: Add Criteria API to support dynamic filtering by Supplier, Status, and Date Range.&#10;&#10;* SERVICE EXCEPTIONS:&#10;  - `SupplierReturnNotFoundException.java`: Handle 404 Not Found errors.&#10;  - `DuplicateSupplierReturnException.java`: Handle 409 Conflict errors (e.g., creating multiple active returns for a single import note).&#10;  - `SupplierReturnDeletedConflictException.java`: Handle 409 Conflict errors when interacting with soft-deleted records.&#10;  - `SupplierReturnAccessDeniedException.java`: Handle 403 Forbidden RBAC errors.&#10;&#10;* SERVICE:&#10;  - `SupplierReturnService.java`: Wrap the entire RMA lifecycle in `@Transactional`. Orchestrate the state machine and directly invoke `ProductService.deductStockForOrder` to safely deduct inventory, ensuring atomic rollback on cross-domain failures." />
+    <MESSAGE value="feat(supplier-return): implement secured API endpoints and custom exception handler&#10;* EXCEPTION HANDLER:&#10;  - `SupplierReturnExceptionHandler.java`: Add a dedicated `RestControllerAdvice` for the SupplierReturn domain. Catch all custom exceptions, standardize the JSON output to match the Global ErrorResponse, and inject `Context Data` payloads for flexible UI handling.&#10;&#10;* CONTROLLER:&#10;  - `SupplierReturnController.java`: Expose endpoints (Create, Submit, Approve, Reject, Ship, Complete). Integrate stateless JWT security via `@AuthenticationPrincipal` and build an internal RBAC mechanism to strictly enforce separation of duties between ADMIN and WAREHOUSE_MANAGER roles." />
+    <MESSAGE value="implement SLA cronjob with fail-fast config and persistent blocking alerts&#10; - **Fail-Fast Configuration**: Enforce explicit scheduling configurations (`cron`, `zone`, `warning-hours`, `critical-hours`) in `application.yml` by removing `@Value` defaults, preventing silent fallback failures.&#10; - **Timezone Strictness**: Bind `zone=&quot;Asia/Ho_Chi_Minh&quot;` directly to `@Scheduled` to neutralize cloud server UTC discrepancies.&#10; - **Escalation Mechanism**: Build a multi-tier alert system in `SupplierReturnScheduler` using clean, semantic time boundaries:&#10;   - Warning Alert: Triggers internal reminders after a configurable threshold.&#10;   - Critical Alert: Triggers executive escalations after a strict threshold.&#10; - **Persistent Blocking UI**: Expose `GET /sla/critical-alerts` API to feed the frontend with critically overdue records, enforcing mandatory administrative resolution (Approve/Reject) to unblock the system.&#10; - **Architecture Reusability**: Seamlessly integrate the SLA features by fully reusing existing DTOs (`SupplierReturnResponse`), mappers, and domain exceptions, strictly adhering to the Open-Closed Principle (OCP)." />
+    <MESSAGE value="feat(supplier-return): implement discrepancy handling, B2B financial model, and global exception integration&#10;- Physical Flow: Add `acceptedQuantity`, `discrepancyReason`, and `PATCH /inspect` API.&#10;- Financial Flow: Remove unused tax fields (VAT); add `freightCost`, `restockingFee`. Update refund formula based on accepted quantity.&#10;- Exceptions: Add `details` to `ErrorResponse` and handle `InvalidSupplierReturnOperationException` globally without breaking old code.&#10;- Mapper: Sync all mappings including images and histories." />
+    <MESSAGE value="refactor(product): redesign Inventory architecture and implement event-driven approach&#10;&#10;- Extract inventory management logic: Introduce `Inventory` and `InventoryBatch` entities to support batch tracking and traceability using the FEFO principle.&#10;- Refactor `ProductVariant`: Delegate physical stock calculation and Moving Average Cost (MAC) valuation to the Inventory domain.&#10;- Implement Event-Driven Architecture: Add `InventoryEventListener` to handle `SupplierReturnCompletedEvent` for asynchronous stock deduction, ensuring loose coupling between modules.&#10;- Expose inventory APIs: Add `InventoryController` and related DTOs (`InventoryBatchResponse`) to provide available batch data for the frontend.&#10;- Standardize exception handling: Centralize and update error handling for the Product domain via `InvalidProductOperationException`." />
+    <MESSAGE value="refactor(product): optimize services and finalize inventory batches&#10;- Add `ProductVariantRepository` to resolve N+1 queries and support SKU lookups.&#10;- Refactor `ProductService` &amp; `InventoryService` to improve performance.&#10;- Fix `ProductNotFoundException` by adding a String constructor.&#10;- Finalize `Inventory` and `InventoryBatch` architecture for FEFO tracking.&#10;- Implement event-driven stock deduction via `InventoryEventListener`." />
+    <MESSAGE value="refactor(specification): standardize domain filters and centralize query logic&#10;&#10;* GLOBAL&#10;  BaseSpecification.java: Added core utility methods (contains, isEqual, dateBetween, isDistinct) to centralize database query logic and enable reusability across all modules.&#10;&#10;* SPECIFICATION&#10;  BlacklistedWordSpecification.java: Modified filter structure to utilize shared base methods to eliminate boilerplate code.&#10;  CustomerReturnSpecification.java: Modified query logic to use distinct and base methods to ensure a clean and unified architecture.&#10;  OrderSpecification.java: Modified filter conditions to use date between and base methods to align with the centralized composition pattern.&#10;  ReviewSpecification.java: Modified query implementation to adopt the fluent composition pattern and base methods to maintain architectural consistency.&#10;  SupplierReturnSpecification.java: Modified query structure to leverage shared base methods to streamline domain filtering.&#10;  SupplierSpecification.java: Modified package location and filter logic to fully unify with the shared infrastructure specifications." />
+    <MESSAGE value="ENTITY:&#10;Cart.java: Inherit root entity properties and add maximum items threshold.&#10;CartItem.java: Add partial checkout property and initial price field to protect prices.  &#10;REPOSITORY:&#10;CartRepository.java: Add graph query mechanism to optimize retrieval and version update function.&#10;CartItemRepository.java: Inherit dynamic specification filter executor and add batch delete function to clean up old data.  &#10;INFRASTRUCTURE:&#10;CartItemSpecification.java: Create dynamic filters to query cart items based on date and selection status.  SERVICE AND MAPPER:&#10;CartService.java: Replace cart clearing mechanism with smart accumulation algorithm and add partial checkout toggle logic.&#10;CartMapper.java: Modify mapping logic to compare initial price fluctuations with current prices and issue warnings.&#10;CartItemResponse.java: Add data transfer fields to represent price changes and item selection status.  &#10;CONTROLLER:&#10;CartController.java: Add endpoint for toggling item selection and apply validation constraints for incoming requests." />
+    <MESSAGE value="refactor(cart): implement UI state machine and apply SRP to mapper&#10;&#10;DTO AND RESPONSE:&#10;CartResponse.java: Add allowedActions array to coordinate and control the state of frontend UI buttons.&#10;MAPPER:&#10;CartMapper.java: Refactor monolithic functions following SRP and add cart state analysis algorithm to generate UI coordination commands." />
+    <MESSAGE value="refactor(cart): implement event-driven checkout flow and standardize events&#10;&#10;EVENT:&#10;CartCheckoutRequestedEvent.java: Add event with Integer ID, address, promo code, and product snapshot to request orders.&#10;OrderCreatedEvent.java: Add event for successful orders to trigger cart cleanup and inventory deduction.&#10;OrderCreationFailedEvent.java: Add event for failed orders to trigger cart unlocking.&#10;ProductUpdatedEvent.java: Add event to receive product price update notifications.&#10;OrderCancelledEvent.java: Add event with product list to support inventory restock upon cancellation.&#10;&#10;FACADE:&#10;CartFacade.java: Add class to orchestrate checkout flow, aggregate product data, generate snapshots, and safely publish events.&#10;&#10;SERVICE:&#10;CartService.java: Remove direct checkout logic, update IDs to Integer, and add cart locking methods to support facade orchestration.&#10;CartEventListener.java: Update listener logic to clear or unlock carts based on the new event payload.&#10;&#10;CONTROLLER AND DTO:&#10;CheckoutRequest.java: Add request class for shipping info and promo code with validation.&#10;CartController.java: Add checkout API with validation to receive user requests and delegate processing to the facade." />
+    <MESSAGE value="refactor(cart): implement event-driven checkout flow and maintenance logic&#10;&#10;EVENT:&#10;CartCheckoutRequestedEvent.java: Add event with Integer ID, address, promo code, and product snapshot to request orders.&#10;OrderCreatedEvent.java: Add event for successful orders to trigger cart cleanup and inventory deduction.&#10;OrderCreationFailedEvent.java: Add event for failed orders to trigger cart unlocking.&#10;ProductUpdatedEvent.java: Add event to receive product price update notifications.&#10;OrderCancelledEvent.java: Add event with product list to support inventory restock upon cancellation.&#10;CartItemExpiringEvent.java: Modified data types to ensure consistency with cart domain entities.&#10;&#10;FACADE:&#10;CartFacade.java: Add class to orchestrate checkout flow, aggregate product data, generate snapshots, and safely publish events.&#10;&#10;SERVICE:&#10;CartService.java: Remove direct checkout logic, update IDs to Integer, and add cart locking methods to support facade orchestration.&#10;CartEventListener.java: Update listener logic to clear or unlock carts based on the new event payload.&#10;CartMaintenanceService.java: Updated scanning logic to use the new time range query for finding expired cart items.&#10;&#10;REPOSITORY:&#10;CartItemRepository.java: Added time range query method to support the automated maintenance scanning process.&#10;&#10;CONTROLLER AND DTO:&#10;CheckoutRequest.java: Add request class for shipping info and promo code with validation.&#10;CartController.java: Add checkout API with validation to receive user requests and delegate processing to the facade." />
+    <MESSAGE value="refactor(cart): establish domain exception hierarchy and implement global exception handler&#10;&#10;EXCEPTION:&#10;CartAccessDeniedException.java: Add to handle unauthorized access scenarios for cart resources.&#10;CartCrossModuleException.java: Add to standardize error communication when interacting with external domains like Product and Inventory.&#10;CartDataConflictException.java: Add with nested enum and descriptions to handle business conflicts such as price changes and soft-deleted products.&#10;CartDomainException.java: Add base abstract class to unify and track all cart-related domain exceptions.&#10;CartItemNotFoundException.java: Modify to inherit from base domain exception for consistent error tracking.&#10;CartNotFoundException.java: Add factory methods to support dynamic lookups by both user ID and cart ID.&#10;InvalidCartOperationException.java: Add factory methods to handle cart merge limits, empty carts, and block invalid checkout transitions.&#10;EXCEPTION HANDLER:&#10;CartExceptionHandler.java: Add global advice to catch CartDomainException hierarchy and map them to standardized JSON error responses.&#10;ENTITY:&#10;Cart.java: Replace generic state exceptions with domain exceptions to enforce strict business rules during status transitions.&#10;SERVICE:&#10;CartService.java: Replace standard runtime exceptions with domain-specific not-found exceptions to ensure consistent error handling during cart lifecycle events.&#10;CartFacade.java: Replace illegal state exceptions with cross-module and data conflict exceptions to properly handle price changes and stock validation during checkout." />
+    <MESSAGE value="feat(category): enhance architecture with materialized path, display order, and domain events&#10;&#10;ENTITY &amp; EVENT:&#10;Category.java: Add iconUrl, displayOrder, level, and materialized path fields with new database indexes to support hierarchical querying and prevent deep nesting.&#10;CategoryHiddenOrDeletedEvent.java: Add domain event to enable loose coupling for cross-module interactions when category state changes.&#10;&#10;REPOSITORY &amp; SPECIFICATION:&#10;CategoryRepository.java: Extend specification executor and implement entity graph to resolve N+1 query issues for category tree retrieval.&#10;CategorySpecification.java: Add dynamic filtering logic to replace monolithic queries and maintain single responsibility.&#10;&#10;EXCEPTION:&#10;InvalidCategoryOperationException.java: Add max depth exception to enforce structural constraint validation limits.&#10;&#10;DTO &amp; MAPPER:&#10;CategoryRequest.java: Add UI configuration fields and version field to enforce strict optimistic locking validation.&#10;CategoryResponse.java: Add metadata fields to expose complete category structure and display information.&#10;CategoryMapper.java: Update mapping logic to process new fields and sort tree branches by display order.&#10;&#10;SERVICE:&#10;CategoryService.java: Integrate specification for dynamic search, validate optimistic locking version, and publish lifecycle events." />
+    <MESSAGE value="refactor(category): implement CQRS and event-driven architecture for inter-domain communication&#10;&#10;EVENT:&#10;CategoryCreatedEvent.java: Add event to notify downstream domains upon new category generation.&#10;CategoryUpdatedEvent.java: Add event to broadcast structural path modifications for external synchronization.&#10;CategoryStateChangedEvent.java: Add unified lifecycle event to manage visibility and deletion state transitions across the system.&#10;FACADE:&#10;CategoryFacade.java: Add concrete facade class to expose read-only query operations for other modules to prevent direct repository access.&#10;SERVICE:&#10;CategoryService.java: Update command operations to publish domain events and enforce optimistic locking validation.&#10;REPOSITORY:&#10;CategoryRepository.java: Update tree retrieval methods with query optimization to prevent database N+1 issues." />
+    <MESSAGE value="refactor(domain): standardize status enums and data validation&#10;&#10;DOMAIN:&#10;CategoryStatus.java: Modified state initialization and added data validation to resolve circular references and ensure safe state transitions.&#10;CartStatus.java: Added descriptive properties and strict data validation to provide richer status data and prevent invalid inputs.&#10;&#10;EXCEPTION:&#10;InvalidCategoryDataException.java: Added custom exception class to handle category data validation errors explicitly.&#10;InvalidCartDataException.java: Added custom exception class to standardize cart data validation errors across the module." />
+    <MESSAGE value="refactor(category-cart): integrate state machine transitions and optimize data fetching&#10;&#10;DTO&#10;CategoryResponse.java: Added status, allowed next actions, and parent context fields to support frontend state-driven logic.&#10;CartResponse.java: Added domain status and next valid states to align with the state machine architecture.&#10;&#10;MAPPER&#10;CategoryMapper.java: Updated mapping logic to extract state transitions, map parent details safely, and process sub-categories.&#10;CartMapper.java: Updated mapping execution to include the current state and valid transitions from the domain entity.&#10;&#10;REPOSITORY&#10;CategoryRepository.java: Modified query constraints to eagerly fetch related records to prevent N+1 performance issues." />
+    <MESSAGE value="perf(category): optimize database index for hierarchical sorting&#10;ENTITY:&#10;Category.java: Modified index to a composite structure containing parent reference and display order to eliminate in-memory sorting overhead when retrieving the category tree." />
+    <MESSAGE value="refactor(category): split request/response DTOs, enhance error handling and service logic&#10;* EXCEPTION:&#10;  GlobalExceptionHandler.java: Update to handle general validation errors.&#10;  CategoryExceptionHandler.java: Add specific handlers for category exceptions to return standard error response.&#10;  InvalidCategoryOperationException.java: Add static factory methods to encapsulate specific error cases.&#10;  ErrorResponse.java: Standardize payload structure for API errors.&#10;* DTO:&#10;  CategoryCreateRequest.java: Create specific request with validation to handle category creation.&#10;  CategoryUpdateInfoRequest.java: Create specific request with validation and constraint to handle updating details.&#10;  CategoryMoveRequest.java: Create specific request with validation and constraint to safely move categories in tree.&#10;  CategorySummaryResponse.java: Create lightweight response to optimize data size for lists and paths.&#10;  CategoryDetailResponse.java: Create detailed response to support recursive structure for tree views.&#10;  CategoryRequest.java: Delete monolithic request class.&#10;  CategoryResponse.java: Delete monolithic response class.&#10;* MAPPER:&#10;  CategoryMapper.java: Update mapping methods to support summary response and recursive tree generation for detail response.&#10;* SERVICE:&#10;  CategoryService.java: Update methods to use new DTOs, integrate new exceptions, and handle constraint logic accurately.&#10;* CONTROLLER:&#10;  CategoryController.java: Update endpoints to map to correct request and response DTOs and enforce validation." />
+    <MESSAGE value="refactor(customer_return): optimize query performance and split specification logic&#10;&#10;REPOSITORY:&#10;  CustomerReturnRepository.java: Update fetch strategy to prevent memory overflow and let batch fetching handle lazy relations.&#10;SPECIFICATION:&#10;  CustomerReturnSpecification.java: Split monolithic query filter into static methods to apply single responsibility principle." />
+    <MESSAGE value="refactor(customer_return): enhance enum serialization with object shape formatting&#10;* ENUM:&#10;  CustomerReturnStatus.java: Apply object structure formatting to provide full context to frontend and encapsulate state machine logic.&#10;  ReturnReasonCode.java: Apply object structure formatting and expose internal code for rich API responses." />
+    <MESSAGE value="refactor(customer_return): simplify response structure and mapping logic using enum objects&#10;* DTO:&#10;  CustomerReturnResponse.java: Replace raw strings with enum object for status and available actions.&#10;  CustomerReturnItemResponse.java: Replace raw strings with enum object for return reason code.&#10;  CustomerReturnHistoryResponse.java: Replace raw strings with enum object for history states.&#10;* MAPPER:&#10;  CustomerReturnMapper.java: Remove redundant string mapping and pass enum directly to response layer to support dynamic frontend UI." />
+    <MESSAGE value="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor(product): enhance inventory concurrency and apply specification pattern&#10;&#10;ENTITY:&#10;Inventory.java: Added version control to prevent data conflicts and overselling during concurrent stock updates.&#10;InventoryBatch.java: Added version control to ensure data consistency for batch-level stock operations.&#10;&#10;SPECIFICATION:&#10;ProductSpecification.java: Created dynamic query builders to isolate and handle flexible product filtering logic.&#10;&#10;REPOSITORY:&#10;ProductRepository.java: Integrated specification executor and optimized data fetching strategies to replace raw monolithic queries and resolve N+1 issues.&#10;&#10;SERVICE:&#10;ProductService.java: Refactored search and filter methods to utilize dynamic specifications for better maintainability and performance." />
+  </component>
+</project>
