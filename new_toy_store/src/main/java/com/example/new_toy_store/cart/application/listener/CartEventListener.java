@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class CartEventListener {
@@ -31,7 +33,7 @@ public class CartEventListener {
         cartService.unlockCart(event.getCartId());
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleProductUpdated(ProductUpdatedEvent event) {
         log.info("Product Variant {} price updated. Syncing carts...", event.getVariantId());
         cartService.syncProductChanges(event.getVariantId(), event.getNewPrice());

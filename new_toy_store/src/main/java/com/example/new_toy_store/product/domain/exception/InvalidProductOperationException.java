@@ -22,6 +22,10 @@ public class InvalidProductOperationException extends RuntimeException {
         return new InvalidProductOperationException("Trạng thái sản phẩm không hợp lệ: " + value);
     }
 
+    public static InvalidProductOperationException invalidStatusTransition(String currentStatus, String targetStatus) {
+        return new InvalidProductOperationException("Không thể chuyển trạng thái sản phẩm từ " + currentStatus + " sang " + targetStatus);
+    }
+
     public static InvalidProductOperationException emptyVariantType() {
         return new InvalidProductOperationException("Loại biến thể không được để trống");
     }

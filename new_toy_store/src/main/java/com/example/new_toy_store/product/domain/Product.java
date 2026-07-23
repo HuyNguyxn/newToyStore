@@ -70,7 +70,18 @@ public class Product extends BaseRootEntity {
 
     public void assignSupplier(Integer supplierId) { this.supplierId = supplierId; }
     public void updateInfo(String name, double basePrice) { if (name != null && !name.trim().isEmpty()) this.name = name; if (basePrice >= 0) this.basePrice = basePrice; }
-    public void changeStatus(ProductStatus newStatus) { if (newStatus != null) this.status = newStatus; }
+    public void changeStatus(ProductStatus newStatus) {
+        if (newStatus == null) {
+            return;
+        }
+        if (!this.status.canTransitionTo(newStatus)) {
+            throw InvalidProductOperationException.invalidStatusTransition(
+                    this.status.getDisplayName(),
+                    newStatus.getDisplayName()
+            );
+        }
+        this.status = newStatus;
+    }
     public void addCategory(Category category) { if (category != null) this.categories.add(category); }
     public void removeCategory(Category category) { if (category != null) this.categories.remove(category); }
 

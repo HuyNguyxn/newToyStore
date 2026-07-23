@@ -14,10 +14,12 @@ import com.example.new_toy_store.product.domain.exception.InvalidProductOperatio
 import com.example.new_toy_store.product.domain.exception.ProductNotFoundException;
 import com.example.new_toy_store.infrastructure.specification.ProductSpecification;
 import com.example.new_toy_store.product.mapper.ProductMapper;
+import com.example.new_toy_store.global.event.ProductUpdatedEvent;
 import com.example.new_toy_store.supplier.application.SupplierService;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -37,16 +39,19 @@ public class ProductService {
     private final ProductVariantRepository variantRepository;
     private final CategoryRepository categoryRepository;
     private final SupplierService supplierService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProductService(
             ProductRepository repository,
             ProductVariantRepository variantRepository,
             CategoryRepository categoryRepository,
-            SupplierService supplierService) {
+            SupplierService supplierService,
+            ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.variantRepository = variantRepository;
         this.categoryRepository = categoryRepository;
         this.supplierService = supplierService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -125,6 +130,7 @@ public class ProductService {
         ProductVariant variant = variantRepository.findById(variantId)
                 .orElseThrow(InvalidProductOperationException::variantNotFound);
         variant.updatePrice(newPrice);
+        eventPublisher.publishEvent(new ProductUpdatedEvent(productId, variantId, newPrice));
     }
 
     @Transactional(readOnly = true)
