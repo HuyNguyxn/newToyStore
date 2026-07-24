@@ -1,6 +1,8 @@
 package com.example.new_toy_store.order.application;
 
 import com.example.new_toy_store.cart.application.service.CartService;
+import com.example.new_toy_store.global.event.OrderCancelledEvent;
+import com.example.new_toy_store.global.event.OrderCreatedEvent;
 import com.example.new_toy_store.infrastructure.specification.OrderSpecification;
 import com.example.new_toy_store.order.application.dto.request.OrderFilterRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
@@ -22,9 +24,12 @@ import com.example.new_toy_store.user.domain.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,15 +42,18 @@ public class OrderService {
     private final CartService cartService;
     private final UserRepository userRepository;
     private final PromotionService promotionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(OrderRepository repository, ProductService productService,
                         CartService cartService, UserRepository userRepository,
-                        PromotionService promotionService) {
+                        PromotionService promotionService,
+                        ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.productService = productService;
         this.cartService = cartService;
         this.userRepository = userRepository;
         this.promotionService = promotionService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -55,8 +63,8 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderDetails(Integer id) {
-        Order order = repository.findByIdWithItems(id);
-        if (order == null) throw new OrderNotFoundException(id);
+        Order order = repository.findByIdWithItemsAndHistories(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
         return OrderMapper.toResponse(order);
     }
 
@@ -135,6 +143,12 @@ public class OrderService {
         }
 
         repository.save(order);
+        eventPublisher.publishEvent(new OrderCreatedEvent(
+                order.getId(),
+                null,
+                order.getUserId(),
+                toOrderCreatedItemPayloads(order)
+        ));
         cartService.clearCart(request.getUserId());
         return OrderMapper.toResponse(order);
     }
@@ -185,13 +199,33 @@ public class OrderService {
         });
 
         repository.save(order);
+        eventPublisher.publishEvent(new OrderCancelledEvent(
+                order.getId(),
+                order.getUserId(),
+                note,
+                toOrderCancelledItemPayloads(order)
+        ));
         return OrderMapper.toResponse(order);
     }
 
     @Transactional
     public void delete(Integer id) {
         Order order = getOrder(id);
-        order.delete();
+        if (!order.getStatus().canBeDeleted()) {
+            throw new InvalidOrderOperationException(order.getStatus().getDisplayName(), "Xóa đơn hàng");
+        }
+
+        repository.softDeleteItemsByOrderId(id);
+        repository.softDeleteHistoriesByOrderId(id);
+        int updatedRows = repository.softDeleteOrderWithVersion(
+                id,
+                order.getVersion(),
+                List.of(OrderStatus.PENDING, OrderStatus.CANCELLED)
+        );
+
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Order.class, id);
+        }
     }
 
     private Order getOrder(Integer id) {
@@ -266,5 +300,17 @@ public class OrderService {
         long refundedOrders = repository.countRefundedOrders(userId);
         double returnRate = (double) refundedOrders / totalOrders;
         return returnRate >= 0.3;
+    }
+
+    private List<OrderCreatedEvent.OrderItemPayload> toOrderCreatedItemPayloads(Order order) {
+        return order.getItems().stream()
+                .map(item -> new OrderCreatedEvent.OrderItemPayload(item.getVariantId(), item.getQuantity()))
+                .toList();
+    }
+
+    private List<OrderCancelledEvent.OrderItemPayload> toOrderCancelledItemPayloads(Order order) {
+        return order.getItems().stream()
+                .map(item -> new OrderCancelledEvent.OrderItemPayload(item.getVariantId(), item.getQuantity()))
+                .toList();
     }
 }

@@ -2,8 +2,11 @@ package com.example.new_toy_store.order.domain;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,11 +16,23 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpecificationExecutor<Order> {
 
+    @EntityGraph(attributePaths = {"items", "histories"})
     Page<Order> findByUserId(Integer userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"items", "histories"})
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id")
-    Order findByIdWithItems(@Param("id") Integer id);
+    @Override
+    @EntityGraph(attributePaths = {"items", "histories"})
+    Page<Order> findAll(Specification<Order> spec, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"items", "histories"})
+    Optional<Order> findById(Integer id);
+
+    @EntityGraph(attributePaths = {"items", "histories"})
+    @Query("SELECT o FROM Order o WHERE o.id = :id")
+    Optional<Order> findByIdWithItemsAndHistories(@Param("id") Integer id);
 
     @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.items i WHERE o.userId = :userId AND i.productId = :productId AND o.status = 'COMPLETED'")
     boolean existsCompletedOrderByUserAndProduct(@Param("userId") Integer userId, @Param("productId") Integer productId);
@@ -35,4 +50,38 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN ('PARTIALLY_REFUNDED', 'FULLY_REFUNDED')")
     long countRefundedOrders(@Param("userId") Integer userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Order o
+               SET o.deletedAt = CURRENT_TIMESTAMP,
+                   o.updatedAt = CURRENT_TIMESTAMP,
+                   o.version = o.version + 1
+             WHERE o.id = :id
+               AND o.version = :version
+               AND o.status IN :deletableStatuses
+            """)
+    int softDeleteOrderWithVersion(
+            @Param("id") Integer id,
+            @Param("version") Long version,
+            @Param("deletableStatuses") List<OrderStatus> deletableStatuses
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE OrderItem item
+               SET item.deletedAt = CURRENT_TIMESTAMP,
+                   item.updatedAt = CURRENT_TIMESTAMP
+             WHERE item.order.id = :orderId
+            """)
+    int softDeleteItemsByOrderId(@Param("orderId") Integer orderId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE OrderHistory history
+               SET history.deletedAt = CURRENT_TIMESTAMP,
+                   history.updatedAt = CURRENT_TIMESTAMP
+             WHERE history.order.id = :orderId
+            """)
+    int softDeleteHistoriesByOrderId(@Param("orderId") Integer orderId);
 }

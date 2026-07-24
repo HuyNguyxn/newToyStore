@@ -5,18 +5,33 @@ import com.example.new_toy_store.order.application.dto.request.OrderFilterReques
 import com.example.new_toy_store.order.domain.Order;
 import org.springframework.data.jpa.domain.Specification;
 
-public class OrderSpecification {
+public final class OrderSpecification {
+
+    private OrderSpecification() {}
 
     public static Specification<Order> filter(OrderFilterRequest request) {
         if (request == null) return Specification.where(null);
 
-        return Specification.where(BaseSpecification.<Order>isEqual("userId", request.getUserId()))
-                .and(BaseSpecification.isEqual("status", request.getStatus()))
-                .and(BaseSpecification.dateBetween("createdAt", request.getFromDate(), request.getToDate()))
+        return Specification.where(hasUserId(request.getUserId()))
+                .and(hasStatus(request.getStatus()))
+                .and(createdBetween(request))
                 .and(amountBetween(request.getMinAmount(), request.getMaxAmount()));
     }
 
-    private static Specification<Order> amountBetween(Double minAmount, Double maxAmount) {
+    public static Specification<Order> hasUserId(Integer userId) {
+        return BaseSpecification.isEqual("userId", userId);
+    }
+
+    public static Specification<Order> hasStatus(Object status) {
+        return BaseSpecification.isEqual("status", status);
+    }
+
+    public static Specification<Order> createdBetween(OrderFilterRequest request) {
+        if (request == null) return Specification.where(null);
+        return BaseSpecification.dateBetween("createdAt", request.getFromDate(), request.getToDate());
+    }
+
+    public static Specification<Order> amountBetween(Double minAmount, Double maxAmount) {
         return (root, query, cb) -> {
             if (minAmount == null && maxAmount == null) return null;
 
