@@ -116,7 +116,11 @@ public class BlacklistWordService {
             throw new ObjectOptimisticLockingFailureException(BlacklistedWord.class, id);
         }
 
-        eventPublisher.publishEvent(BlacklistedWordDeletedEvent.softDeleted(entity.getId(), entity.getWord()));
+        eventPublisher.publishEvent(BlacklistedWordDeletedEvent.softDeleted(
+                entity.getId(),
+                entity.getWord(),
+                entity.getCategory()
+        ));
     }
 
     @Transactional
@@ -130,7 +134,11 @@ public class BlacklistWordService {
             throw new ObjectOptimisticLockingFailureException(BlacklistedWord.class, id);
         }
 
-        eventPublisher.publishEvent(BlacklistedWordRestoredEvent.now(entity.getId(), entity.getWord()));
+        eventPublisher.publishEvent(BlacklistedWordRestoredEvent.now(
+                entity.getId(),
+                entity.getWord(),
+                entity.getCategory()
+        ));
     }
 
     @Transactional
@@ -144,7 +152,11 @@ public class BlacklistWordService {
             throw new ObjectOptimisticLockingFailureException(BlacklistedWord.class, id);
         }
 
-        eventPublisher.publishEvent(BlacklistedWordDeletedEvent.hardDeleted(entity.getId(), entity.getWord()));
+        eventPublisher.publishEvent(BlacklistedWordDeletedEvent.hardDeleted(
+                entity.getId(),
+                entity.getWord(),
+                entity.getCategory()
+        ));
     }
 
     private String normalizeWord(String word) {

@@ -1,10 +1,11 @@
 package com.example.new_toy_store.global.event;
 
+import com.example.new_toy_store.moderation.domain.WordCategory;
+
 import java.time.Instant;
 
 public record BlacklistedWordDeletedEvent(
-        Integer wordId,
-        String word,
+        BlacklistedWordPayload payload,
         DeleteMode deleteMode,
         Instant occurredAt
 ) {
@@ -13,11 +14,19 @@ public record BlacklistedWordDeletedEvent(
         HARD_DELETE
     }
 
-    public static BlacklistedWordDeletedEvent softDeleted(Integer wordId, String word) {
-        return new BlacklistedWordDeletedEvent(wordId, word, DeleteMode.SOFT_DELETE, Instant.now());
+    public static BlacklistedWordDeletedEvent softDeleted(Integer wordId, String word, WordCategory category) {
+        return new BlacklistedWordDeletedEvent(
+                BlacklistedWordPayload.of(wordId, word, category),
+                DeleteMode.SOFT_DELETE,
+                Instant.now()
+        );
     }
 
-    public static BlacklistedWordDeletedEvent hardDeleted(Integer wordId, String word) {
-        return new BlacklistedWordDeletedEvent(wordId, word, DeleteMode.HARD_DELETE, Instant.now());
+    public static BlacklistedWordDeletedEvent hardDeleted(Integer wordId, String word, WordCategory category) {
+        return new BlacklistedWordDeletedEvent(
+                BlacklistedWordPayload.of(wordId, word, category),
+                DeleteMode.HARD_DELETE,
+                Instant.now()
+        );
     }
 }

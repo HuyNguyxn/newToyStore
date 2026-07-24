@@ -19,21 +19,21 @@ public class BlacklistedWordCacheListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCreated(BlacklistedWordCreatedEvent event) {
-        cache.add(event.word());
+        cache.add(event.payload().word());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleUpdated(BlacklistedWordUpdatedEvent event) {
-        cache.replace(event.previousWord(), event.currentWord());
+        cache.replace(event.previous().word(), event.current().word());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleDeleted(BlacklistedWordDeletedEvent event) {
-        cache.remove(event.word());
+        cache.remove(event.payload().word());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleRestored(BlacklistedWordRestoredEvent event) {
-        cache.add(event.word());
+        cache.add(event.payload().word());
     }
 }

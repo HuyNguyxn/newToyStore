@@ -5,7 +5,7 @@ import com.example.new_toy_store.global.event.ReviewDeletedEvent;
 import com.example.new_toy_store.global.event.ReviewRepliedEvent;
 import com.example.new_toy_store.global.event.ReviewStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
-import com.example.new_toy_store.moderation.application.BlacklistWordService;
+import com.example.new_toy_store.moderation.application.facade.ModerationFacade;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
 import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.product.application.facade.ProductFacade;
@@ -52,7 +52,7 @@ public class ReviewService {
     private final OrderFacade orderFacade;
     private final ProductFacade productFacade;
     private final UserFacade userFacade;
-    private final BlacklistWordService blacklistWordService;
+    private final ModerationFacade moderationFacade;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
 
@@ -60,14 +60,14 @@ public class ReviewService {
                          OrderFacade orderFacade,
                          ProductFacade productFacade,
                          UserFacade userFacade,
-                         BlacklistWordService blacklistWordService,
+                         ModerationFacade moderationFacade,
                          ApplicationEventPublisher eventPublisher,
                          EntityManager entityManager) {
         this.repository = repository;
         this.orderFacade = orderFacade;
         this.productFacade = productFacade;
         this.userFacade = userFacade;
-        this.blacklistWordService = blacklistWordService;
+        this.moderationFacade = moderationFacade;
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
     }
@@ -76,7 +76,7 @@ public class ReviewService {
     public ReviewResponse createReview(Integer userId, ReviewCreateRequest request) {
         User user = validateUser(userId);
 
-        if (blacklistWordService.containsBadWord(request.getComment())) {
+        if (moderationFacade.containsProhibitedWord(request.getComment())) {
             throw InvalidReviewOperationException.prohibitedContent("comment");
         }
 
@@ -109,7 +109,7 @@ public class ReviewService {
     public ReviewResponse updateReview(Integer userId, Integer reviewId, ReviewUpdateRequest request) {
         User user = validateUser(userId);
 
-        if (blacklistWordService.containsBadWord(request.getComment())) {
+        if (moderationFacade.containsProhibitedWord(request.getComment())) {
             throw InvalidReviewOperationException.prohibitedContent("comment");
         }
 
