@@ -16,9 +16,11 @@ import com.example.new_toy_store.order.domain.OrderItem;
 import com.example.new_toy_store.order.domain.OrderRepository;
 import com.example.new_toy_store.order.domain.OrderStatus;
 import com.example.new_toy_store.order.domain.exception.InsufficientStockException;
+import com.example.new_toy_store.order.domain.exception.DuplicateActiveOrderException;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
 import com.example.new_toy_store.order.domain.exception.OrderAccessDeniedException;
+import com.example.new_toy_store.order.domain.exception.OrderCrossModuleException;
 import com.example.new_toy_store.order.domain.exception.OrderNotFoundException;
 import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.product.application.service.ProductService;
@@ -78,7 +80,7 @@ public class OrderService {
     @Transactional
     public OrderResponse create(OrderRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new InvalidOrderDataException("userId", "Không tìm thấy thông tin khách hàng"));
+                .orElseThrow(() -> OrderCrossModuleException.missingCustomer(request.getUserId()));
 
         if (!user.getStatus().canPlaceOrder()) {
             throw new InvalidOrderOperationException(user.getStatus().getDisplayName(), "Tạo đơn hàng");
@@ -197,7 +199,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderItem getCompletedOrderItemForReview(Integer orderItemId, Integer userId) {
         return repository.findCompletedOrderItem(orderItemId, userId)
-                .orElseThrow(() -> new IllegalStateException("Thao tác bị từ chối: sản phẩm này chưa được giao thành công hoặc không thuộc về đơn hàng của bạn."));
+                .orElseThrow(() -> new InvalidOrderOperationException("NOT_COMPLETED_OR_NOT_OWNER", "Tạo đánh giá sản phẩm"));
     }
 
     @Transactional(readOnly = true)
@@ -257,7 +259,7 @@ public class OrderService {
                 request.getUserId(), sanitizedCode, OrderStatus.CANCELLED);
 
         if (isPromoUsed) {
-            throw new InvalidOrderDataException("promoCode", "Bạn đã sử dụng mã khuyến mãi '" + sanitizedCode + "' cho một đơn hàng khác.");
+            throw DuplicateActiveOrderException.promoAlreadyUsed(request.getUserId(), sanitizedCode);
         }
     }
 
@@ -275,7 +277,7 @@ public class OrderService {
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
             if (product == null || !product.isAvailableForPurchase()) {
-                throw new InvalidOrderDataException("productId", "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh");
+                throw OrderCrossModuleException.missingProduct(itemRequest.getProductId());
             }
 
             ProductVariant variant = findVariant(product, itemRequest.getVariantId());
@@ -307,7 +309,7 @@ public class OrderService {
         return product.getVariants().stream()
                 .filter(variant -> variant.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> new InvalidOrderDataException("variantId", "Không tìm thấy mẫu mã sản phẩm này"));
+                .orElseThrow(() -> OrderCrossModuleException.missingVariant(variantId));
     }
 
     private void applyPromotionIfPresent(Order order, OrderRequest request) {

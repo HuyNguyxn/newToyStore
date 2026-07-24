@@ -1,12 +1,26 @@
 package com.example.new_toy_store.order.domain.exception;
 
-public class OrderAccessDeniedException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class OrderAccessDeniedException extends OrderDomainException {
+
     private final Integer orderId;
     private final Integer currentUserId;
     private final String action;
 
     public OrderAccessDeniedException(Integer orderId, Integer currentUserId, String action) {
-        super(String.format("Người dùng ID [%d] không có quyền %s đơn hàng ID [%d].", currentUserId, action, orderId));
+        super(
+                HttpStatus.FORBIDDEN,
+                "ORDER_ACCESS_DENIED",
+                "Người dùng ID " + currentUserId + " không có quyền " + action + " đơn hàng ID " + orderId + ".",
+                Map.of(
+                        "orderId", orderId,
+                        "currentUserId", currentUserId,
+                        "action", action
+                )
+        );
         this.orderId = orderId;
         this.currentUserId = currentUserId;
         this.action = action;

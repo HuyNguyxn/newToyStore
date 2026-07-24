@@ -5,6 +5,7 @@ import com.example.new_toy_store.order.application.dto.request.OrderFilterReques
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
+import com.example.new_toy_store.order.domain.exception.OrderAccessDeniedException;
 import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import jakarta.validation.Valid;
@@ -49,7 +50,7 @@ public class OrderController {
         OrderResponse order = service.getOrderDetails(id);
 
         if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
-            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng của người khác");
+            throw new OrderAccessDeniedException(id, user.getId(), "xem");
         }
         return order;
     }
@@ -89,7 +90,7 @@ public class OrderController {
         OrderResponse order = service.getOrderDetails(id);
 
         if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
-            throw new IllegalArgumentException("Bạn không có quyền hủy đơn hàng của người khác");
+            throw new OrderAccessDeniedException(id, user.getId(), "hủy");
         }
         return service.cancel(id, note);
     }
