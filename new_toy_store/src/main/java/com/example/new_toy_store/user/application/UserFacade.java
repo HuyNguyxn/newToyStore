@@ -16,6 +16,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Set;
+
 @Component
 public class UserFacade {
 
@@ -40,6 +43,14 @@ public class UserFacade {
     public UserProfileResponse getCurrentProfile(String email) {
         User user = userService.getAuthenticatedUser(email);
         return userService.getProfile(user.getId());
+    }
+
+    public User getRequiredUser(Integer id) {
+        return userService.getUserEntity(id);
+    }
+
+    public List<User> getUsersByIds(Set<Integer> ids) {
+        return userService.getUsersByIds(ids);
     }
 
     public UserProfileResponse updateCurrentProfile(String email, ProfileUpdateRequest request) {

@@ -3,11 +3,12 @@ package com.example.new_toy_store.review.application;
 import com.example.new_toy_store.global.event.ReviewDeletedEvent;
 import com.example.new_toy_store.global.event.ReviewRepliedEvent;
 import com.example.new_toy_store.global.event.ReviewStatusChangedEvent;
+import com.example.new_toy_store.global.event.ProductReviewRatingChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
 import com.example.new_toy_store.moderation.application.BlacklistWordService;
-import com.example.new_toy_store.order.application.OrderService;
+import com.example.new_toy_store.order.application.facade.OrderFacade;
 import com.example.new_toy_store.order.domain.OrderItem;
-import com.example.new_toy_store.product.application.service.ProductService;
+import com.example.new_toy_store.product.application.facade.ProductFacade;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.review.application.dto.request.AdminReplyRequest;
 import com.example.new_toy_store.review.application.dto.request.ReviewCreateRequest;
@@ -23,8 +24,9 @@ import com.example.new_toy_store.review.domain.exception.ReviewAccessDeniedExcep
 import com.example.new_toy_store.review.domain.exception.ReviewConflictException;
 import com.example.new_toy_store.review.domain.exception.ReviewNotFoundException;
 import com.example.new_toy_store.review.mapper.ReviewMapper;
+import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
+import com.example.new_toy_store.user.domain.exception.UserNotFoundException;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -47,24 +49,24 @@ public class ReviewService {
     private static final int REVIEW_TIME_WINDOW_DAYS = 7;
 
     private final ReviewRepository repository;
-    private final OrderService orderService;
-    private final ProductService productService;
-    private final UserRepository userRepository;
+    private final OrderFacade orderFacade;
+    private final ProductFacade productFacade;
+    private final UserFacade userFacade;
     private final BlacklistWordService blacklistWordService;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
 
     public ReviewService(ReviewRepository repository,
-                         OrderService orderService,
-                         ProductService productService,
-                         UserRepository userRepository,
+                         OrderFacade orderFacade,
+                         ProductFacade productFacade,
+                         UserFacade userFacade,
                          BlacklistWordService blacklistWordService,
                          ApplicationEventPublisher eventPublisher,
                          EntityManager entityManager) {
         this.repository = repository;
-        this.orderService = orderService;
-        this.productService = productService;
-        this.userRepository = userRepository;
+        this.orderFacade = orderFacade;
+        this.productFacade = productFacade;
+        this.userFacade = userFacade;
         this.blacklistWordService = blacklistWordService;
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
@@ -78,7 +80,7 @@ public class ReviewService {
             throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
         }
 
-        OrderItem orderItem = orderService.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
+        OrderItem orderItem = orderFacade.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
 
         if (orderItem.getUpdatedAt() != null && orderItem.getUpdatedAt().plusDays(REVIEW_TIME_WINDOW_DAYS).isBefore(LocalDateTime.now())) {
             throw InvalidReviewOperationException.timeWindowExpired(REVIEW_TIME_WINDOW_DAYS);
@@ -98,7 +100,7 @@ public class ReviewService {
         );
         repository.save(review);
 
-        syncProductRating(orderItem.getProductId());
+        publishProductRatingChanged(orderItem.getProductId());
         return ReviewMapper.toResponse(review, user, null);
     }
 
@@ -119,7 +121,7 @@ public class ReviewService {
         review.updateByUser(request.getRating(), request.getComment());
         repository.save(review);
 
-        syncProductRating(review.getProductId());
+        publishProductRatingChanged(review.getProductId());
         return ReviewMapper.toResponse(review, user, null);
     }
 
@@ -139,7 +141,7 @@ public class ReviewService {
             throw new ObjectOptimisticLockingFailureException(Review.class, reviewId);
         }
         eventPublisher.publishEvent(ReviewDeletedEvent.now(review.getId(), review.getUserId(), productId));
-        syncProductRating(review.getProductId());
+        publishProductRatingChanged(review.getProductId());
     }
 
     @Transactional(readOnly = true)
@@ -212,7 +214,7 @@ public class ReviewService {
                     newStatus
             ));
         }
-        syncProductRating(review.getProductId());
+        publishProductRatingChanged(review.getProductId());
     }
 
     @Transactional
@@ -240,10 +242,10 @@ public class ReviewService {
                 .map(Review::getProductId)
                 .collect(Collectors.toSet());
 
-        Map<Integer, User> userMap = userRepository.findAllById(userIds).stream()
+        Map<Integer, User> userMap = userFacade.getUsersByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, user -> user));
 
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds).stream()
+        Map<Integer, Product> productMap = productFacade.getProductsByIdsWithDetails(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
         return reviewPage.map(review -> ReviewMapper.toResponse(
@@ -253,18 +255,22 @@ public class ReviewService {
         ));
     }
 
-    private void syncProductRating(Integer productId) {
+    private void publishProductRatingChanged(Integer productId) {
         Double avgRating = repository.calculateAverageRating(productId);
         Integer totalReviews = repository.countPublishedReviews(productId);
         double rawAvg = (avgRating != null) ? avgRating : 0.0;
         int count = (totalReviews != null) ? totalReviews : 0;
         double safeAverage = Math.max(0.0, Math.round(rawAvg * 10.0) / 10.0);
-        productService.updateProductRating(productId, safeAverage, count);
+        eventPublisher.publishEvent(ProductReviewRatingChangedEvent.now(productId, safeAverage, count));
     }
 
     private User validateUser(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> ReviewAccessDeniedException.userNotFound(userId));
+        User user;
+        try {
+            user = userFacade.getRequiredUser(userId);
+        } catch (UserNotFoundException ex) {
+            throw ReviewAccessDeniedException.userNotFound(userId);
+        }
         if (!user.getStatus().canModifyData()) {
             throw ReviewAccessDeniedException.userAccountLocked(userId, user.getStatus().getDisplayName());
         }

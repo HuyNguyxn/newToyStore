@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserService {
@@ -250,9 +251,16 @@ public class UserService {
                 .orElseThrow(() -> InvalidUserOperationException.authenticatedUserMissing(email));
     }
 
-    private User getUserEntity(Integer id) {
+    public User getUserEntity(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    public List<User> getUsersByIds(Set<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(ids);
     }
 
     private User getUserEntityWithAddresses(Integer id) {
