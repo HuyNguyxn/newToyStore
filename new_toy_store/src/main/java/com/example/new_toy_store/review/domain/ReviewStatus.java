@@ -3,6 +3,7 @@ package com.example.new_toy_store.review.domain;
 import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -60,6 +61,7 @@ public enum ReviewStatus {
         return nextStatus != null && nextStatuses().contains(nextStatus);
     }
 
+    @JsonIgnore
     public List<ReviewStatus> getNextValidStates() {
         return nextStatuses().stream().toList();
     }

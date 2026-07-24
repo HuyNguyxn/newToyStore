@@ -17,15 +17,35 @@ public class ReviewFilterRequest {
     @Pattern(regexp = "^(PUBLISHED|HIDDEN)$", message = "Trạng thái lọc chỉ chấp nhận PUBLISHED hoặc HIDDEN")
     private String status;
 
-    public Integer getProductId() { return productId; }
-    public void setProductId(Integer productId) { this.productId = productId; }
+    public Integer getProductId() {
+        return productId;
+    }
 
-    public Integer getRating() { return rating; }
-    public void setRating(Integer rating) { this.rating = rating; }
+    public void setProductId(Integer productId) {
+        this.productId = productId;
+    }
 
-    public Boolean getHasAdminReplied() { return hasAdminReplied; }
-    public void setHasAdminReplied(Boolean hasAdminReplied) { this.hasAdminReplied = hasAdminReplied; }
+    public Integer getRating() {
+        return rating;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public Boolean getHasAdminReplied() {
+        return hasAdminReplied;
+    }
+
+    public void setHasAdminReplied(Boolean hasAdminReplied) {
+        this.hasAdminReplied = hasAdminReplied;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

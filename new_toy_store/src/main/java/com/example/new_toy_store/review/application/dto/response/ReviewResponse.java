@@ -1,5 +1,7 @@
 package com.example.new_toy_store.review.application.dto.response;
 
+import com.example.new_toy_store.review.domain.ReviewStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,13 +19,27 @@ public class ReviewResponse {
     private int rating;
     private String comment;
     private String adminReply;
-    private String status;
+    private ReviewStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private List<String> availableActions;
+    private List<ReviewActionResponse> availableActions;
 
-    public ReviewResponse(Integer id, Integer userId, String userFullName, String userAvatar, Integer productId, String productName, Integer orderItemId, String variantAttributesSnapshot, int rating, String comment, String adminReply, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public ReviewResponse(Integer id,
+                          Integer userId,
+                          String userFullName,
+                          String userAvatar,
+                          Integer productId,
+                          String productName,
+                          Integer orderItemId,
+                          String variantAttributesSnapshot,
+                          int rating,
+                          String comment,
+                          String adminReply,
+                          ReviewStatus status,
+                          LocalDateTime createdAt,
+                          LocalDateTime updatedAt,
+                          List<ReviewActionResponse> availableActions) {
         this.id = id;
         this.userId = userId;
         this.userFullName = userFullName;
@@ -38,6 +54,7 @@ public class ReviewResponse {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.availableActions = availableActions;
     }
 
     public Integer getId() { return id; }
@@ -45,16 +62,14 @@ public class ReviewResponse {
     public String getUserFullName() { return userFullName; }
     public String getUserAvatar() { return userAvatar; }
     public Integer getProductId() { return productId; }
-    public String getProductName() { return productName; } // 🔥 [SỰ THAY ĐỔI]
+    public String getProductName() { return productName; }
     public Integer getOrderItemId() { return orderItemId; }
     public String getVariantAttributesSnapshot() { return variantAttributesSnapshot; }
     public int getRating() { return rating; }
     public String getComment() { return comment; }
     public String getAdminReply() { return adminReply; }
-    public String getStatus() { return status; }
+    public ReviewStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-
-    public List<String> getAvailableActions() { return availableActions; }
-    public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
+    public List<ReviewActionResponse> getAvailableActions() { return availableActions; }
 }

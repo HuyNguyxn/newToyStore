@@ -8,5 +8,7 @@ public class AdminReplyRequest {
     @Size(max = 1000, message = "Nội dung phản hồi không được vượt quá 1000 ký tự")
     private String reply;
 
-    public String getReply() { return reply; }
+    public String getReply() {
+        return reply;
+    }
 }

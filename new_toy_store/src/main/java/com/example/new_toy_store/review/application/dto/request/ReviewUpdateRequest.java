@@ -12,6 +12,11 @@ public class ReviewUpdateRequest {
     @Size(max = 1000, message = "Nội dung bình luận không được vượt quá 1000 ký tự")
     private String comment;
 
-    public int getRating() { return rating; }
-    public String getComment() { return comment; }
+    public int getRating() {
+        return rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
 }

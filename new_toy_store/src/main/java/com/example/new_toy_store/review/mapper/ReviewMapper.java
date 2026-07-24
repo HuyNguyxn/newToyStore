@@ -1,24 +1,46 @@
 package com.example.new_toy_store.review.mapper;
 
 import com.example.new_toy_store.product.domain.Product;
+import com.example.new_toy_store.review.application.dto.response.ReviewActionResponse;
 import com.example.new_toy_store.review.application.dto.response.ReviewResponse;
 import com.example.new_toy_store.review.domain.Review;
+import com.example.new_toy_store.review.domain.ReviewStatus;
 import com.example.new_toy_store.user.domain.User;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ReviewMapper {
-    public static ReviewResponse toResponse(Review review, User user, Product product) {
-        String fullName = user != null ? user.getFullName() : "Khách hàng ẩn danh";
-        String avatar = (user != null && user.getAvatarUrl() != null) ? user.getAvatarUrl() : "";
-        String productName = product != null ? product.getName() : "Sản phẩm không còn tồn tại";
 
-        ReviewResponse response = new ReviewResponse(
+    private static final String ANONYMOUS_CUSTOMER = "Khách hàng ẩn danh";
+    private static final String UNKNOWN_PRODUCT = "Sản phẩm không còn tồn tại";
+
+    private ReviewMapper() {
+    }
+
+    public static ReviewResponse toResponse(Review review, User user, Product product) {
+        return toDetailResponse(review, user, product);
+    }
+
+    public static ReviewResponse toDetailResponse(Review review, User user, Product product) {
+        return createReviewResponse(
+                review,
+                resolveUserName(user),
+                resolveUserAvatar(user),
+                resolveProductName(product),
+                mapAvailableActions(review.getStatus())
+        );
+    }
+
+    private static ReviewResponse createReviewResponse(Review review,
+                                                       String userFullName,
+                                                       String userAvatar,
+                                                       String productName,
+                                                       List<ReviewActionResponse> availableActions) {
+        return new ReviewResponse(
                 review.getId(),
                 review.getUserId(),
-                fullName,
-                avatar,
+                userFullName,
+                userAvatar,
                 review.getProductId(),
                 productName,
                 review.getOrderItemId(),
@@ -26,18 +48,42 @@ public class ReviewMapper {
                 review.getRating(),
                 review.getComment(),
                 review.getAdminReply(),
-                review.getStatus().name(),
+                review.getStatus(),
                 review.getCreatedAt(),
-                review.getUpdatedAt()
+                review.getUpdatedAt(),
+                availableActions
         );
+    }
 
-        if (review.getStatus() != null) {
-            List<String> actions = review.getStatus().getNextValidStates().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
-            response.setAvailableActions(actions);
+    private static List<ReviewActionResponse> mapAvailableActions(ReviewStatus status) {
+        if (status == null) {
+            return List.of();
         }
 
-        return response;
+        return status.getAllowedNextStatusCodes().stream()
+                .map(ReviewMapper::mapStatusAction)
+                .toList();
+    }
+
+    private static ReviewActionResponse mapStatusAction(String targetStatus) {
+        if (ReviewStatus.PUBLISHED.getCode().equals(targetStatus)) {
+            return new ReviewActionResponse("PUBLISH", targetStatus, "Hiển thị đánh giá");
+        }
+        if (ReviewStatus.HIDDEN.getCode().equals(targetStatus)) {
+            return new ReviewActionResponse("HIDE", targetStatus, "Ẩn đánh giá");
+        }
+        return new ReviewActionResponse("CHANGE_STATUS", targetStatus, "Chuyển trạng thái");
+    }
+
+    private static String resolveUserName(User user) {
+        return user != null ? user.getFullName() : ANONYMOUS_CUSTOMER;
+    }
+
+    private static String resolveUserAvatar(User user) {
+        return user != null && user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
+    }
+
+    private static String resolveProductName(Product product) {
+        return product != null ? product.getName() : UNKNOWN_PRODUCT;
     }
 }

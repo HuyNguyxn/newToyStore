@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class ReviewCreateRequest {
-    @NotNull(message = "Mã chi tiết đơn hàng (OrderItemId) không được để trống")
+    @NotNull(message = "Mã chi tiết đơn hàng (orderItemId) không được để trống")
     private Integer orderItemId;
 
     @Min(value = 1, message = "Điểm đánh giá thấp nhất là 1 sao")
@@ -16,7 +16,15 @@ public class ReviewCreateRequest {
     @Size(max = 1000, message = "Nội dung bình luận không được vượt quá 1000 ký tự")
     private String comment;
 
-    public Integer getOrderItemId() { return orderItemId; }
-    public int getRating() { return rating; }
-    public String getComment() { return comment; }
+    public Integer getOrderItemId() {
+        return orderItemId;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public String getComment() {
+        return comment;
+    }
 }
