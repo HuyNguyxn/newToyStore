@@ -207,7 +207,7 @@ public final class CartMapper {
     }
 
     private static boolean isPercentagePromotion(PromotionResponse promotion) {
-        return "PERCENTAGE".equalsIgnoreCase(promotion.getType()) || "PERCENT".equalsIgnoreCase(promotion.getType());
+        return promotion.getType() != null && "PERCENTAGE".equalsIgnoreCase(promotion.getType().getCode());
     }
 
     private static OrderPromotionResult applyOrderPromotion(String promoCode,

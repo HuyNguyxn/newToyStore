@@ -1,6 +1,14 @@
 package com.example.new_toy_store.promotion.application.dto.request;
 
-import jakarta.validation.constraints.*;
+import com.example.new_toy_store.promotion.domain.PromotionScope;
+import com.example.new_toy_store.promotion.domain.PromotionType;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 
 public class PromotionRequest {
@@ -14,11 +22,11 @@ public class PromotionRequest {
     @Size(max = 255, message = "Tên chương trình không được vượt quá 255 ký tự")
     private String name;
 
-    @NotBlank(message = "Loại khuyến mãi không được để trống")
-    private String type;
+    @NotNull(message = "Loại khuyến mãi không được để trống")
+    private PromotionType type;
 
-    @NotBlank(message = "Phạm vi áp dụng không được để trống")
-    private String scope;
+    @NotNull(message = "Phạm vi áp dụng không được để trống")
+    private PromotionScope scope;
 
     @NotNull(message = "Giá trị giảm giá không được để trống")
     @Min(value = 0, message = "Giá trị giảm không được âm")
@@ -43,8 +51,8 @@ public class PromotionRequest {
 
     public String getCode() { return code; }
     public String getName() { return name; }
-    public String getType() { return type; }
-    public String getScope() { return scope; }
+    public PromotionType getType() { return type; }
+    public PromotionScope getScope() { return scope; }
     public Double getDiscountValue() { return discountValue; }
     public Double getMaxDiscountAmount() { return maxDiscountAmount; }
     public Double getMinOrderValue() { return minOrderValue; }

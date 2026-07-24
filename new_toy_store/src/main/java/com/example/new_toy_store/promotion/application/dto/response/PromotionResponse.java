@@ -1,16 +1,18 @@
 package com.example.new_toy_store.promotion.application.dto.response;
 
+import com.example.new_toy_store.promotion.domain.PromotionScope;
+import com.example.new_toy_store.promotion.domain.PromotionType;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class PromotionResponse {
     private Integer id;
     private Long version;
     private String code;
     private String name;
-    private String type;
-    private String typeDescription;
-    private String scope;
-    private String scopeDescription;
+    private PromotionType type;
+    private PromotionScope scope;
     private double discountValue;
     private Double maxDiscountAmount;
     private Double minOrderValue;
@@ -20,16 +22,30 @@ public class PromotionResponse {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private boolean isActive;
+    private List<PromotionActionResponse> allowedNextActions;
 
-    public PromotionResponse(Integer id, Long version, String code, String name, String type, String typeDescription, String scope, String scopeDescription, double discountValue, Double maxDiscountAmount, Double minOrderValue, Integer targetProductId, Integer usageLimit, Integer usedCount, LocalDateTime startDate, LocalDateTime endDate, boolean isActive) {
+    public PromotionResponse(Integer id,
+                             Long version,
+                             String code,
+                             String name,
+                             PromotionType type,
+                             PromotionScope scope,
+                             double discountValue,
+                             Double maxDiscountAmount,
+                             Double minOrderValue,
+                             Integer targetProductId,
+                             Integer usageLimit,
+                             Integer usedCount,
+                             LocalDateTime startDate,
+                             LocalDateTime endDate,
+                             boolean isActive,
+                             List<PromotionActionResponse> allowedNextActions) {
         this.id = id;
         this.version = version;
         this.code = code;
         this.name = name;
         this.type = type;
-        this.typeDescription = typeDescription;
         this.scope = scope;
-        this.scopeDescription = scopeDescription;
         this.discountValue = discountValue;
         this.maxDiscountAmount = maxDiscountAmount;
         this.minOrderValue = minOrderValue;
@@ -39,16 +55,15 @@ public class PromotionResponse {
         this.startDate = startDate;
         this.endDate = endDate;
         this.isActive = isActive;
+        this.allowedNextActions = allowedNextActions;
     }
 
     public Integer getId() { return id; }
     public Long getVersion() { return version; }
     public String getCode() { return code; }
     public String getName() { return name; }
-    public String getType() { return type; }
-    public String getTypeDescription() { return typeDescription; }
-    public String getScope() { return scope; }
-    public String getScopeDescription() { return scopeDescription; }
+    public PromotionType getType() { return type; }
+    public PromotionScope getScope() { return scope; }
     public double getDiscountValue() { return discountValue; }
     public Double getMaxDiscountAmount() { return maxDiscountAmount; }
     public Double getMinOrderValue() { return minOrderValue; }
@@ -58,4 +73,5 @@ public class PromotionResponse {
     public LocalDateTime getStartDate() { return startDate; }
     public LocalDateTime getEndDate() { return endDate; }
     public boolean isActive() { return isActive; }
+    public List<PromotionActionResponse> getAllowedNextActions() { return allowedNextActions; }
 }
