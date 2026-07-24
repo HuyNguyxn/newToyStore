@@ -10,6 +10,7 @@ import com.example.new_toy_store.imports.application.dto.response.ImportNoteResp
 import com.example.new_toy_store.imports.domain.ImportNote;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.imports.domain.ImportStatus;
+import com.example.new_toy_store.imports.domain.exception.ImportCrossModuleException;
 import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundException;
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
@@ -101,7 +102,7 @@ public class ImportService {
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
         if (productMap.size() != productIds.size()) {
-            throw InvalidImportOperationException.invalidProducts();
+            throw ImportCrossModuleException.missingProducts(productIds, productMap.keySet());
         }
 
         ImportNote note = new ImportNote(request.getSupplierId(), request.getNote());
@@ -112,7 +113,11 @@ public class ImportService {
                     .anyMatch(v -> v.getId().equals(itemReq.getVariantId()));
 
             if (!isValidVariant) {
-                throw InvalidImportOperationException.invalidVariant(itemReq.getVariantId(), product.getName());
+                throw ImportCrossModuleException.invalidProduct(
+                        itemReq.getProductId(),
+                        itemReq.getVariantId(),
+                        "VARIANT_NOT_BELONG_TO_PRODUCT"
+                );
             }
             note.addItem(
                     itemReq.getProductId(),
