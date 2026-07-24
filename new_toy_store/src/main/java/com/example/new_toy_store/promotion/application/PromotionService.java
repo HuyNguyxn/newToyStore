@@ -1,5 +1,8 @@
 package com.example.new_toy_store.promotion.application;
 
+import com.example.new_toy_store.global.event.PromotionStateChangedEvent;
+import com.example.new_toy_store.global.event.PromotionUsageChangedEvent;
+import com.example.new_toy_store.infrastructure.specification.PromotionSpecification;
 import com.example.new_toy_store.promotion.application.dto.request.PromotionRequest;
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
 import com.example.new_toy_store.promotion.domain.Promotion;
@@ -8,8 +11,11 @@ import com.example.new_toy_store.promotion.domain.PromotionScope;
 import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
 import com.example.new_toy_store.promotion.domain.exception.PromotionNotFoundException;
 import com.example.new_toy_store.promotion.mapper.PromotionMapper;
+import jakarta.persistence.EntityManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +28,15 @@ import java.util.stream.Collectors;
 public class PromotionService {
 
     private final PromotionRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
-    public PromotionService(PromotionRepository repository) {
+    public PromotionService(PromotionRepository repository,
+                            ApplicationEventPublisher eventPublisher,
+                            EntityManager entityManager) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -63,24 +75,41 @@ public class PromotionService {
     public void activatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new PromotionNotFoundException(id));
-        promotion.activate();
-        repository.save(promotion);
+        if (promotion.isActive()) {
+            return;
+        }
+
+        boolean previousActive = promotion.isActive();
+        entityManager.detach(promotion);
+        updateActiveOrFail(promotion, true);
+        publishStateChanged(promotion, previousActive, true, "ACTIVATE");
     }
 
     @Transactional
     public void deactivatePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new PromotionNotFoundException(id));
-        promotion.deactivate();
-        repository.save(promotion);
+        if (!promotion.isActive()) {
+            return;
+        }
+
+        boolean previousActive = promotion.isActive();
+        entityManager.detach(promotion);
+        updateActiveOrFail(promotion, false);
+        publishStateChanged(promotion, previousActive, false, "DEACTIVATE");
     }
 
     @Transactional
     public void deletePromotion(Integer id) {
         Promotion promotion = repository.findById(id)
                 .orElseThrow(() -> new PromotionNotFoundException(id));
-        promotion.delete();
-        repository.save(promotion);
+        boolean previousActive = promotion.isActive();
+        entityManager.detach(promotion);
+        int updatedRows = repository.softDeleteWithVersion(id, promotion.getVersion());
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Promotion.class, id);
+        }
+        publishStateChanged(promotion, previousActive, false, "DELETE");
     }
 
     @Transactional
@@ -91,8 +120,19 @@ public class PromotionService {
         String cleanCode = promoCode.toUpperCase().trim();
         Promotion promotion = repository.findByCode(cleanCode)
                 .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
+        int previousUsedCount = promotion.getUsedCount();
         promotion.incrementUsedCount();
-        repository.save(promotion);
+        entityManager.detach(promotion);
+
+        int updatedRows = repository.incrementUsedCountWithVersion(
+                promotion.getId(),
+                promotion.getVersion(),
+                LocalDateTime.now()
+        );
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Promotion.class, promotion.getId());
+        }
+        publishUsageChanged(promotion, previousUsedCount, promotion.getUsedCount(), "CONSUME");
     }
 
     @Transactional
@@ -103,8 +143,15 @@ public class PromotionService {
         String cleanCode = promoCode.toUpperCase().trim();
         Promotion promotion = repository.findByCode(cleanCode)
                 .orElseThrow(() -> new PromotionNotFoundException(cleanCode));
+        int previousUsedCount = promotion.getUsedCount();
         promotion.decrementUsedCount();
-        repository.save(promotion);
+        entityManager.detach(promotion);
+
+        int updatedRows = repository.decrementUsedCountWithVersion(promotion.getId(), promotion.getVersion());
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Promotion.class, promotion.getId());
+        }
+        publishUsageChanged(promotion, previousUsedCount, promotion.getUsedCount(), "RELEASE");
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +179,7 @@ public class PromotionService {
             scope = PromotionScope.from(scopeStr);
         }
         String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
-        return repository.findAllWithFilters(scope, isActive, cleanKeyword, pageable)
+        return repository.findAll(PromotionSpecification.filter(scope, isActive, cleanKeyword), pageable)
                 .map(PromotionMapper::toResponse);
     }
 
@@ -206,5 +253,42 @@ public class PromotionService {
                 .filter(Promotion::isCurrentlyValid)
                 .map(PromotionMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void updateActiveOrFail(Promotion promotion, boolean active) {
+        int updatedRows = repository.updateActiveWithVersion(
+                promotion.getId(),
+                promotion.getVersion(),
+                active
+        );
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Promotion.class, promotion.getId());
+        }
+    }
+
+    private void publishStateChanged(Promotion promotion,
+                                     boolean previousActive,
+                                     boolean currentActive,
+                                     String action) {
+        eventPublisher.publishEvent(PromotionStateChangedEvent.now(
+                promotion.getId(),
+                promotion.getCode(),
+                previousActive,
+                currentActive,
+                action
+        ));
+    }
+
+    private void publishUsageChanged(Promotion promotion,
+                                     int previousUsedCount,
+                                     int currentUsedCount,
+                                     String action) {
+        eventPublisher.publishEvent(PromotionUsageChangedEvent.now(
+                promotion.getId(),
+                promotion.getCode(),
+                previousUsedCount,
+                currentUsedCount,
+                action
+        ));
     }
 }
