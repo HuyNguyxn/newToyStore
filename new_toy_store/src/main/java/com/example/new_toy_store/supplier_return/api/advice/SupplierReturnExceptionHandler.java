@@ -1,8 +1,13 @@
 package com.example.new_toy_store.supplier_return.api.advice;
 
-import com.example.new_toy_store.supplier_return.api.SupplierReturnController;
-import com.example.new_toy_store.supplier_return.domain.exception.*;
+import com.example.new_toy_store.supplier_return.domain.exception.DuplicateSupplierReturnException;
+import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
+import com.example.new_toy_store.supplier_return.domain.exception.SupplierReturnAccessDeniedException;
+import com.example.new_toy_store.supplier_return.domain.exception.SupplierReturnDeletedConflictException;
+import com.example.new_toy_store.supplier_return.domain.exception.SupplierReturnNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,93 +17,64 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = SupplierReturnController.class)
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice(basePackages = "com.example.new_toy_store.supplier_return.api")
 public class SupplierReturnExceptionHandler {
 
     @ExceptionHandler(InvalidSupplierReturnOperationException.class)
-    public ResponseEntity<Object> handleInvalidOperation(
+    public ResponseEntity<Map<String, Object>> handleInvalidOperation(
             InvalidSupplierReturnOperationException ex,
             HttpServletRequest request) {
-        return buildResponse(
-                HttpStatus.BAD_REQUEST,
-                ex.getErrorType(),
-                ex.getMessage(),
-                ex.getContextData(),
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getErrorType(), ex.getMessage(), ex.getContextData(), request);
     }
 
     @ExceptionHandler(SupplierReturnNotFoundException.class)
-    public ResponseEntity<Object> handleNotFound(
+    public ResponseEntity<Map<String, Object>> handleNotFound(
             SupplierReturnNotFoundException ex,
             HttpServletRequest request) {
-        return buildResponse(
-                HttpStatus.NOT_FOUND,
-                "SUPPLIER_RETURN_NOT_FOUND",
-                ex.getMessage(),
-                ex.getContext(),
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getErrorType(), ex.getMessage(), ex.getContextData(), request);
     }
 
     @ExceptionHandler(SupplierReturnAccessDeniedException.class)
-    public ResponseEntity<Object> handleAccessDenied(
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
             SupplierReturnAccessDeniedException ex,
             HttpServletRequest request) {
-        return buildResponse(
-                HttpStatus.FORBIDDEN,
-                "ACCESS_DENIED",
-                ex.getMessage(),
-                ex.getContext(),
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getErrorType(), ex.getMessage(), ex.getContextData(), request);
     }
 
     @ExceptionHandler(DuplicateSupplierReturnException.class)
-    public ResponseEntity<Object> handleDuplicate(
+    public ResponseEntity<Map<String, Object>> handleDuplicate(
             DuplicateSupplierReturnException ex,
             HttpServletRequest request) {
-        return buildResponse(
-                HttpStatus.CONFLICT,
-                "DUPLICATE_ACTIVE_RECORD",
-                ex.getMessage(),
-                ex.getContext(),
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.CONFLICT, ex.getErrorType(), ex.getMessage(), ex.getContextData(), request);
     }
 
     @ExceptionHandler(SupplierReturnDeletedConflictException.class)
-    public ResponseEntity<Object> handleDeletedConflict(
+    public ResponseEntity<Map<String, Object>> handleDeletedConflict(
             SupplierReturnDeletedConflictException ex,
             HttpServletRequest request) {
-        return buildResponse(
-                HttpStatus.CONFLICT,
-                "SOFT_DELETED_CONFLICT",
-                ex.getMessage(),
-                ex.getContext(),
-                request.getRequestURI()
-        );
+        return buildResponse(HttpStatus.CONFLICT, ex.getErrorType(), ex.getMessage(), ex.getContextData(), request);
     }
 
-    private ResponseEntity<Object> buildResponse(
+    private ResponseEntity<Map<String, Object>> buildResponse(
             HttpStatus status,
             String errorType,
             String message,
             Map<String, Object> context,
-            String path) {
+            HttpServletRequest request) {
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("timestamp", LocalDateTime.now());
         body.put("status", status.value());
         body.put("error", status.getReasonPhrase());
         body.put("errorType", errorType);
         body.put("message", message);
-        body.put("path", path);
+        body.put("path", request.getRequestURI());
 
         if (context != null && !context.isEmpty()) {
             body.put("context", context);
         }
 
-        return new ResponseEntity<>(body, status);
+        return ResponseEntity.status(status).body(body);
     }
 }

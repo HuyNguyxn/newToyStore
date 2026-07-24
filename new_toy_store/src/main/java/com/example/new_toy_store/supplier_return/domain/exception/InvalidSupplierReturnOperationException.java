@@ -1,6 +1,6 @@
 package com.example.new_toy_store.supplier_return.domain.exception;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class InvalidSupplierReturnOperationException extends RuntimeException {
@@ -23,91 +23,105 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
     }
 
     public static InvalidSupplierReturnOperationException emptyField(String fieldName) {
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new LinkedHashMap<>();
         context.put("fieldName", fieldName);
-
+        context.put("validation", "required");
         return new InvalidSupplierReturnOperationException(
-                "Trường bắt buộc không được để trống: " + fieldName,
-                "EMPTY_FIELD",
+                "Trường bắt buộc không được để trống: " + fieldName + ".",
+                "SUPPLIER_RETURN_EMPTY_FIELD",
                 context
         );
     }
 
     public static InvalidSupplierReturnOperationException invalidStatus(String invalidValue) {
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fieldName", "status");
         context.put("invalidValue", invalidValue);
-
+        context.put("enumName", "SupplierReturnStatus");
         return new InvalidSupplierReturnOperationException(
-                "Trạng thái Phiếu trả hàng không hợp lệ: '" + invalidValue + "'.",
-                "INVALID_ENUM_STATUS",
+                "Trạng thái phiếu trả hàng nhà cung cấp không hợp lệ: '" + invalidValue + "'.",
+                "SUPPLIER_RETURN_INVALID_STATUS",
                 context
         );
     }
 
     public static InvalidSupplierReturnOperationException invalidReason(String invalidValue) {
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fieldName", "reason");
         context.put("invalidValue", invalidValue);
-
+        context.put("enumName", "SupplierReturnReason");
         return new InvalidSupplierReturnOperationException(
-                "Lý do trả hàng không hợp lệ: '" + invalidValue + "'.",
-                "INVALID_ENUM_REASON",
+                "Lý do trả hàng nhà cung cấp không hợp lệ: '" + invalidValue + "'.",
+                "SUPPLIER_RETURN_INVALID_REASON",
                 context
         );
     }
 
     public static InvalidSupplierReturnOperationException negativeFinancialValue() {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fields", "shippingFee, taxAmount, discountAmount");
+        context.put("validation", "mustBeGreaterThanOrEqualZero");
         return new InvalidSupplierReturnOperationException(
-                "Các giá trị tài chính (Phí, Thuế, Chiết khấu) không được là số âm.",
-                "NEGATIVE_FINANCIAL_VALUE",
-                new HashMap<>()
+                "Các giá trị tài chính như phí vận chuyển, thuế hoặc chiết khấu không được là số âm.",
+                "SUPPLIER_RETURN_NEGATIVE_FINANCIAL_VALUE",
+                context
         );
     }
 
     public static InvalidSupplierReturnOperationException invalidQuantity() {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fieldName", "quantity");
+        context.put("minValue", 1);
         return new InvalidSupplierReturnOperationException(
                 "Số lượng xuất trả phải lớn hơn 0.",
-                "INVALID_QUANTITY",
-                new HashMap<>()
+                "SUPPLIER_RETURN_INVALID_QUANTITY",
+                context
         );
     }
 
     public static InvalidSupplierReturnOperationException emptyItems() {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fieldName", "items");
+        context.put("minRequired", 1);
         return new InvalidSupplierReturnOperationException(
-                "Không thể xử lý Phiếu trả hàng không có sản phẩm nào.",
-                "EMPTY_ITEMS",
-                new HashMap<>()
+                "Không thể xử lý phiếu trả hàng nhà cung cấp khi chưa có sản phẩm nào.",
+                "SUPPLIER_RETURN_EMPTY_ITEMS",
+                context
         );
     }
 
     public static InvalidSupplierReturnOperationException invalidTransition(String currentState, String nextState) {
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new LinkedHashMap<>();
         context.put("currentState", currentState);
         context.put("attemptedState", nextState);
-
+        context.put("businessRule", "SupplierReturnStatus.canTransitionTo");
         return new InvalidSupplierReturnOperationException(
-                "Vi phạm máy trạng thái: Không thể chuyển từ [" + currentState + "] sang [" + nextState + "].",
-                "INVALID_STATE_TRANSITION",
+                "Không thể chuyển trạng thái phiếu trả hàng nhà cung cấp từ '" + currentState + "' sang '" + nextState + "'.",
+                "SUPPLIER_RETURN_INVALID_STATE_TRANSITION",
                 context
         );
     }
 
     public static InvalidSupplierReturnOperationException readOnlyState(String action, String currentState) {
-        Map<String, Object> context = new HashMap<>();
+        Map<String, Object> context = new LinkedHashMap<>();
         context.put("action", action);
         context.put("currentState", currentState);
-
         return new InvalidSupplierReturnOperationException(
-                "Từ chối thao tác: " + action + ". Phiếu đang bị khóa ở trạng thái: " + currentState,
-                "READ_ONLY_VIOLATION",
+                "Không thể thực hiện thao tác '" + action + "' vì phiếu trả hàng nhà cung cấp đang bị khóa ở trạng thái '" + currentState + "'.",
+                "SUPPLIER_RETURN_READ_ONLY_STATE",
                 context
         );
     }
 
     public static InvalidSupplierReturnOperationException invalidAcceptedQuantity(int maxQty) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("fieldName", "acceptedQuantity");
+        context.put("minValue", 0);
+        context.put("maxAllowedQuantity", maxQty);
         return new InvalidSupplierReturnOperationException(
-                "Số lượng NCC chấp nhận không hợp lệ (Phải từ 0 đến tối đa là " + maxQty + ").",
-                "INVALID_ACCEPTED_QUANTITY",
-                Map.of("maxAllowedQuantity", maxQty)
+                "Số lượng nhà cung cấp chấp nhận không hợp lệ. Giá trị phải nằm trong khoảng từ 0 đến " + maxQty + ".",
+                "SUPPLIER_RETURN_INVALID_ACCEPTED_QUANTITY",
+                context
         );
     }
 }
