@@ -2,17 +2,20 @@ package com.example.new_toy_store.supplier_return.domain;
 
 import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum SupplierReturnStatus {
 
-    DRAFT("Bản nháp") {
+    DRAFT("DRAFT", "Bản nháp") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Arrays.asList(PENDING_APPROVAL, CANCELLED);
         }
 
@@ -22,9 +25,9 @@ public enum SupplierReturnStatus {
         }
     },
 
-    PENDING_APPROVAL("Chờ duyệt") {
+    PENDING_APPROVAL("PENDING_APPROVAL", "Chờ duyệt") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Arrays.asList(APPROVED, REJECTED);
         }
 
@@ -34,9 +37,9 @@ public enum SupplierReturnStatus {
         }
     },
 
-    APPROVED("Đã duyệt - Chờ xuất kho") {
+    APPROVED("APPROVED", "Đã duyệt - Chờ xuất kho") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Arrays.asList(SHIPPED, CANCELLED);
         }
 
@@ -46,10 +49,10 @@ public enum SupplierReturnStatus {
         }
     },
 
-    SHIPPED("Đang xuất trả") {
+    SHIPPED("SHIPPED", "Đang xuất trả") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
-            return Collections.singletonList(COMPLETED);
+        protected List<SupplierReturnStatus> nextStates() {
+            return List.of(COMPLETED);
         }
 
         @Override
@@ -58,9 +61,9 @@ public enum SupplierReturnStatus {
         }
     },
 
-    COMPLETED("Hoàn thành") {
+    COMPLETED("COMPLETED", "Hoàn thành") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Collections.emptyList();
         }
 
@@ -70,9 +73,9 @@ public enum SupplierReturnStatus {
         }
     },
 
-    REJECTED("Từ chối duyệt") {
+    REJECTED("REJECTED", "Từ chối duyệt") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Collections.emptyList();
         }
 
@@ -82,9 +85,9 @@ public enum SupplierReturnStatus {
         }
     },
 
-    CANCELLED("Đã hủy") {
+    CANCELLED("CANCELLED", "Đã hủy") {
         @Override
-        public List<SupplierReturnStatus> getNextValidStates() {
+        protected List<SupplierReturnStatus> nextStates() {
             return Collections.emptyList();
         }
 
@@ -94,39 +97,75 @@ public enum SupplierReturnStatus {
         }
     };
 
+    private final String code;
     private final String displayName;
 
-    SupplierReturnStatus(String displayName) {
+    SupplierReturnStatus(String code, String displayName) {
+        this.code = code;
         this.displayName = displayName;
+    }
+
+    protected abstract List<SupplierReturnStatus> nextStates();
+
+    public abstract boolean isReadOnly();
+
+    @JsonIgnore
+    public List<SupplierReturnStatus> getNextValidStates() {
+        return nextStates();
+    }
+
+    public List<String> getAllowedNextStatusCodes() {
+        return nextStates().stream()
+                .map(SupplierReturnStatus::getCode)
+                .toList();
+    }
+
+    public boolean canTransitionTo(SupplierReturnStatus nextState) {
+        return nextState != null && nextStates().contains(nextState);
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getDisplayName() {
         return displayName;
     }
 
-    public abstract List<SupplierReturnStatus> getNextValidStates();
-
-    public abstract boolean isReadOnly();
-
-    public boolean canTransitionTo(SupplierReturnStatus nextState) {
-        return getNextValidStates().contains(nextState);
-    }
-
-    public List<String> getNextValidStateNames() {
-        return getNextValidStates().stream()
-                .map(Enum::name)
-                .collect(Collectors.toList());
-    }
-
-    @JsonCreator
-    public static SupplierReturnStatus from(String value) {
-        if (value == null || value.trim().isEmpty()) {
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static SupplierReturnStatus from(Object input) {
+        if (input == null) {
             throw InvalidSupplierReturnOperationException.emptyField("Trạng thái");
         }
-        try {
-            return SupplierReturnStatus.valueOf(value.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw InvalidSupplierReturnOperationException.invalidStatus(value);
+
+        if (input instanceof Map<?, ?> objectValue) {
+            Object codeValue = objectValue.get("code");
+            if (codeValue == null) {
+                codeValue = objectValue.get("name");
+            }
+            if (codeValue == null) {
+                codeValue = objectValue.get("status");
+            }
+            return fromText(String.valueOf(codeValue));
         }
+
+        return fromText(String.valueOf(input));
+    }
+
+    public static SupplierReturnStatus from(String value) {
+        return fromText(value);
+    }
+
+    private static SupplierReturnStatus fromText(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            throw InvalidSupplierReturnOperationException.emptyField("Trạng thái");
+        }
+        String normalized = value.trim().toUpperCase();
+        for (SupplierReturnStatus status : values()) {
+            if (status.name().equals(normalized) || status.code.equalsIgnoreCase(value.trim())) {
+                return status;
+            }
+        }
+        throw InvalidSupplierReturnOperationException.invalidStatus(value);
     }
 }

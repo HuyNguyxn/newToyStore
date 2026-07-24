@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 public class CustomerReturnRequest {
@@ -25,13 +26,10 @@ public class CustomerReturnRequest {
 
     public Integer getOrderId() { return orderId; }
     public void setOrderId(Integer orderId) { this.orderId = orderId; }
-
     public List<CustomerReturnItemRequest> getItems() { return items; }
     public void setItems(List<CustomerReturnItemRequest> items) { this.items = items; }
-
     public List<String> getProofImageUrls() { return proofImageUrls; }
     public void setProofImageUrls(List<String> proofImageUrls) { this.proofImageUrls = proofImageUrls; }
-
     public String getReasonNote() { return reasonNote; }
     public void setReasonNote(String reasonNote) { this.reasonNote = reasonNote; }
 }

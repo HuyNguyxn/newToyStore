@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
 
 public class SupplierReturnInspectionRequest {
@@ -22,7 +23,7 @@ public class SupplierReturnInspectionRequest {
 
     public static class ItemInspection {
 
-        @NotNull(message = "Item ID không được rỗng")
+        @NotNull(message = "Mã dòng hàng không được rỗng")
         private Integer itemId;
 
         @Min(value = 0, message = "Số lượng chấp nhận không được nhỏ hơn 0")
@@ -30,28 +31,11 @@ public class SupplierReturnInspectionRequest {
 
         private String discrepancyReason;
 
-        public Integer getItemId() {
-            return itemId;
-        }
-
-        public void setItemId(Integer itemId) {
-            this.itemId = itemId;
-        }
-
-        public int getAcceptedQuantity() {
-            return acceptedQuantity;
-        }
-
-        public void setAcceptedQuantity(int acceptedQuantity) {
-            this.acceptedQuantity = acceptedQuantity;
-        }
-
-        public String getDiscrepancyReason() {
-            return discrepancyReason;
-        }
-
-        public void setDiscrepancyReason(String discrepancyReason) {
-            this.discrepancyReason = discrepancyReason;
-        }
+        public Integer getItemId() { return itemId; }
+        public void setItemId(Integer itemId) { this.itemId = itemId; }
+        public int getAcceptedQuantity() { return acceptedQuantity; }
+        public void setAcceptedQuantity(int acceptedQuantity) { this.acceptedQuantity = acceptedQuantity; }
+        public String getDiscrepancyReason() { return discrepancyReason; }
+        public void setDiscrepancyReason(String discrepancyReason) { this.discrepancyReason = discrepancyReason; }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.new_toy_store.supplier_return.application.dto.response;
 
+import com.example.new_toy_store.supplier_return.domain.SupplierReturnStatus;
+
 import java.util.List;
 
 public class SupplierReturnResponse {
@@ -7,13 +9,12 @@ public class SupplierReturnResponse {
     private Integer id;
     private Integer supplierId;
     private Integer importNoteId;
-    private String status;
-    private String statusDisplayName;
+    private SupplierReturnStatus status;
     private double freightCost;
     private double restockingFee;
     private double totalRefundAmount;
     private String note;
-    private List<String> availableNextActions;
+    private List<SupplierReturnActionResponse> availableActions;
     private List<SupplierReturnItemResponse> items;
     private List<SupplierReturnHistoryResponse> histories;
     private List<SupplierReturnImageResponse> images;
@@ -42,20 +43,12 @@ public class SupplierReturnResponse {
         this.importNoteId = importNoteId;
     }
 
-    public String getStatus() {
+    public SupplierReturnStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(SupplierReturnStatus status) {
         this.status = status;
-    }
-
-    public String getStatusDisplayName() {
-        return statusDisplayName;
-    }
-
-    public void setStatusDisplayName(String statusDisplayName) {
-        this.statusDisplayName = statusDisplayName;
     }
 
     public double getFreightCost() {
@@ -90,12 +83,12 @@ public class SupplierReturnResponse {
         this.note = note;
     }
 
-    public List<String> getAvailableNextActions() {
-        return availableNextActions;
+    public List<SupplierReturnActionResponse> getAvailableActions() {
+        return availableActions;
     }
 
-    public void setAvailableNextActions(List<String> availableNextActions) {
-        this.availableNextActions = availableNextActions;
+    public void setAvailableActions(List<SupplierReturnActionResponse> availableActions) {
+        this.availableActions = availableActions;
     }
 
     public List<SupplierReturnItemResponse> getItems() {

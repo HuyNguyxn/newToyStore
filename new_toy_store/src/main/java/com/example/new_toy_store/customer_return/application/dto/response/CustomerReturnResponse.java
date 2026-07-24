@@ -9,7 +9,7 @@ public class CustomerReturnResponse {
     private double returnShippingFee;
     private double totalRefundAmount;
     private CustomerReturnStatus status;
-    private List<CustomerReturnStatus> availableActions;
+    private List<CustomerReturnActionResponse> availableActions;
 
     private List<String> proofImages;
     private List<CustomerReturnItemResponse> items;
@@ -35,8 +35,8 @@ public class CustomerReturnResponse {
     public void setTotalRefundAmount(double totalRefundAmount) { this.totalRefundAmount = totalRefundAmount; }
     public CustomerReturnStatus getStatus() { return status; }
     public void setStatus(CustomerReturnStatus status) { this.status = status; }
-    public List<CustomerReturnStatus> getAvailableActions() { return availableActions; }
-    public void setAvailableActions(List<CustomerReturnStatus> availableActions) { this.availableActions = availableActions; }
+    public List<CustomerReturnActionResponse> getAvailableActions() { return availableActions; }
+    public void setAvailableActions(List<CustomerReturnActionResponse> availableActions) { this.availableActions = availableActions; }
     public List<String> getProofImages() { return proofImages; }
     public void setProofImages(List<String> proofImages) { this.proofImages = proofImages; }
     public List<CustomerReturnItemResponse> getItems() { return items; }
