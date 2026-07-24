@@ -1,6 +1,9 @@
 package com.example.new_toy_store.product.application.listener;
 
+import com.example.new_toy_store.global.event.ImportNoteCompletedEvent;
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
+import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
+import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Inventory;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.ProductVariantRepository;
@@ -8,13 +11,30 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+
 @Component
 public class InventoryEventListener {
 
     private final ProductVariantRepository variantRepository;
+    private final ProductService productService;
 
-    public InventoryEventListener(ProductVariantRepository variantRepository) {
+    public InventoryEventListener(ProductVariantRepository variantRepository, ProductService productService) {
         this.variantRepository = variantRepository;
+        this.productService = productService;
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void onImportNoteCompleted(ImportNoteCompletedEvent event) {
+        List<ImportedStockRequest> stockUpdates = event.items().stream()
+                .map(item -> new ImportedStockRequest(
+                        item.variantId(),
+                        item.quantity(),
+                        item.importPrice()
+                ))
+                .toList();
+
+        productService.processImportedStock(stockUpdates);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)

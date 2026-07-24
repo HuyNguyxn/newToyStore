@@ -1,5 +1,7 @@
 package com.example.new_toy_store.imports.application;
 
+import com.example.new_toy_store.global.event.ImportNoteCompletedEvent;
+import com.example.new_toy_store.global.event.ImportNoteCompletedItemPayload;
 import com.example.new_toy_store.global.event.ImportNoteStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.ImportNoteSpecification;
 import com.example.new_toy_store.imports.application.dto.request.ImportNoteItemRequest;
@@ -11,8 +13,7 @@ import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.imports.domain.exception.ImportNoteNotFoundException;
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.imports.mapper.ImportNoteMapper;
-import com.example.new_toy_store.product.application.service.ProductService;
-import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
+import com.example.new_toy_store.product.application.facade.ProductFacade;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
@@ -35,18 +36,18 @@ import java.util.stream.Collectors;
 public class ImportService {
 
     private final ImportNoteRepository repository;
-    private final ProductService productService;
+    private final ProductFacade productFacade;
     private final SupplierFacade supplierFacade;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
 
     public ImportService(ImportNoteRepository repository,
-                         ProductService productService,
+                         ProductFacade productFacade,
                          SupplierFacade supplierFacade,
                          ApplicationEventPublisher eventPublisher,
                          EntityManager entityManager) {
         this.repository = repository;
-        this.productService = productService;
+        this.productFacade = productFacade;
         this.supplierFacade = supplierFacade;
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
@@ -95,7 +96,7 @@ public class ImportService {
                 .map(ImportNoteItemRequest::getProductId)
                 .collect(Collectors.toSet());
 
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
+        Map<Integer, Product> productMap = productFacade.getProductsByIdsWithDetails(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
@@ -133,18 +134,18 @@ public class ImportService {
 
         ImportStatus previousStatus = note.getStatus();
         note.complete();
-        entityManager.detach(note);
 
-        List<ImportedStockRequest> stockUpdates = note.getItems().stream()
-                .map(item -> new ImportedStockRequest(
+        List<ImportNoteCompletedItemPayload> completedItems = note.getItems().stream()
+                .map(item -> new ImportNoteCompletedItemPayload(
                         item.getVariantId(),
                         item.getQuantity(),
                         item.getImportPrice()
                 ))
                 .collect(Collectors.toList());
 
-        productService.processImportedStock(stockUpdates);
+        entityManager.detach(note);
         updateStatusOrFail(noteId, note.getVersion(), previousStatus, note.getStatus());
+        publishCompleted(note, completedItems);
         publishStatusChanged(note, previousStatus, note.getStatus());
 
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
@@ -181,6 +182,14 @@ public class ImportService {
                 note.getSupplierId(),
                 previousStatus,
                 nextStatus
+        ));
+    }
+
+    private void publishCompleted(ImportNote note, List<ImportNoteCompletedItemPayload> items) {
+        eventPublisher.publishEvent(ImportNoteCompletedEvent.now(
+                note.getId(),
+                note.getSupplierId(),
+                items
         ));
     }
 }

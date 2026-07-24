@@ -4,9 +4,13 @@ import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
+import com.example.new_toy_store.product.domain.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Set;
 
 @Component
 public class ProductFacade {
@@ -40,6 +44,10 @@ public class ProductFacade {
 
     public ProductResponse getProductDetails(Integer id) {
         return productService.getProductDetails(id);
+    }
+
+    public List<Product> getProductsByIdsWithDetails(Set<Integer> ids) {
+        return productService.getProductsByIdsWithDetails(ids);
     }
 
     public ProductResponse create(CreateProductRequest request) {
