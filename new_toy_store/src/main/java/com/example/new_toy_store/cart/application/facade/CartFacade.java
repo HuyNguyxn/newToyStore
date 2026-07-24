@@ -19,8 +19,8 @@ import com.example.new_toy_store.global.event.CartCheckoutRequestedEvent;
 import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
-import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
+import com.example.new_toy_store.promotion.application.facade.PromotionFacade;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,14 +36,14 @@ public class CartFacade {
 
     private final CartService cartService;
     private final ProductService productService;
-    private final PromotionService promotionService;
+    private final PromotionFacade promotionFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public CartFacade(CartService cartService, ProductService productService,
-                      PromotionService promotionService, ApplicationEventPublisher eventPublisher) {
+                      PromotionFacade promotionFacade, ApplicationEventPublisher eventPublisher) {
         this.cartService = cartService;
         this.productService = productService;
-        this.promotionService = promotionService;
+        this.promotionFacade = promotionFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -209,7 +209,7 @@ public class CartFacade {
 
     private CartResponse buildCartResponse(Cart cart, String promoCode) {
         if (cart.getItems().isEmpty()) {
-            return CartMapper.toCartResponse(cart, Map.of(), List.of(), promoCode, promotionService);
+            return CartMapper.toCartResponse(cart, Map.of(), List.of(), promoCode, promotionFacade);
         }
 
         Set<Integer> productIds = cart.getItems().stream()
@@ -217,8 +217,8 @@ public class CartFacade {
                 .collect(Collectors.toSet());
 
         Map<Integer, Product> productMap = loadProductMap(productIds);
-        List<PromotionResponse> activePromotions = promotionService.getActivePromotionsForProducts(productIds);
+        List<PromotionResponse> activePromotions = promotionFacade.getActivePromotionsForProducts(productIds);
 
-        return CartMapper.toCartResponse(cart, productMap, activePromotions, promoCode, promotionService);
+        return CartMapper.toCartResponse(cart, productMap, activePromotions, promoCode, promotionFacade);
     }
 }

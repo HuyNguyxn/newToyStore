@@ -8,8 +8,8 @@ import com.example.new_toy_store.cart.domain.CartStatus;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductVariant;
-import com.example.new_toy_store.promotion.application.PromotionService;
 import com.example.new_toy_store.promotion.application.dto.response.PromotionResponse;
+import com.example.new_toy_store.promotion.application.facade.PromotionFacade;
 
 import java.util.List;
 import java.util.Map;
@@ -22,11 +22,11 @@ public final class CartMapper {
 
     public static CartResponse toCartResponse(Cart cart, Map<Integer, Product> productMap,
                                               List<PromotionResponse> activePromotions,
-                                              String promoCode, PromotionService promotionService) {
+                                              String promoCode, PromotionFacade promotionFacade) {
 
         Map<Integer, List<PromotionResponse>> promotionsByProduct = groupPromotionsByProduct(activePromotions);
         List<CartItemResponse> itemResponses = toCartItemResponses(cart.getItems(), productMap, promotionsByProduct);
-        CartSummary summary = buildCartSummary(itemResponses, promoCode, promotionService);
+        CartSummary summary = buildCartSummary(itemResponses, promoCode, promotionFacade);
         CartNavigation navigation = buildCartNavigation(cart.getStatus(), itemResponses);
 
         return buildCartResponse(cart, itemResponses, summary, navigation);
@@ -114,9 +114,9 @@ public final class CartMapper {
 
     private static CartSummary buildCartSummary(List<CartItemResponse> itemResponses,
                                                 String promoCode,
-                                                PromotionService promotionService) {
+                                                PromotionFacade promotionFacade) {
         double cartTotal = calculateSelectedItemsTotal(itemResponses);
-        OrderPromotionResult promotionResult = applyOrderPromotion(promoCode, cartTotal, promotionService);
+        OrderPromotionResult promotionResult = applyOrderPromotion(promoCode, cartTotal, promotionFacade);
         double finalTotal = roundMoney(Math.max(0.0, cartTotal - promotionResult.discountAmount()));
 
         return new CartSummary(
@@ -212,13 +212,13 @@ public final class CartMapper {
 
     private static OrderPromotionResult applyOrderPromotion(String promoCode,
                                                            double cartTotal,
-                                                           PromotionService promotionService) {
-        if (promoCode == null || promoCode.trim().isEmpty() || promotionService == null) {
+                                                           PromotionFacade promotionFacade) {
+        if (promoCode == null || promoCode.trim().isEmpty() || promotionFacade == null) {
             return new OrderPromotionResult(null, 0.0, null);
         }
 
         try {
-            double discountAmount = promotionService.calculateOrderDiscount(promoCode, cartTotal);
+            double discountAmount = promotionFacade.calculateOrderDiscount(promoCode, cartTotal);
             if (discountAmount > 0) {
                 return new OrderPromotionResult(promoCode.toUpperCase().trim(), discountAmount, "Áp dụng mã giảm giá thành công");
             }

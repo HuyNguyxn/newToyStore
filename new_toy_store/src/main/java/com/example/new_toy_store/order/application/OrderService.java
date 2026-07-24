@@ -26,7 +26,7 @@ import com.example.new_toy_store.order.mapper.OrderMapper;
 import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
-import com.example.new_toy_store.promotion.application.PromotionService;
+import com.example.new_toy_store.promotion.application.facade.PromotionFacade;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,20 +48,20 @@ public class OrderService {
     private final OrderRepository repository;
     private final ProductService productService;
     private final UserRepository userRepository;
-    private final PromotionService promotionService;
+    private final PromotionFacade promotionFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(
             OrderRepository repository,
             ProductService productService,
             UserRepository userRepository,
-            PromotionService promotionService,
+            PromotionFacade promotionFacade,
             ApplicationEventPublisher eventPublisher
     ) {
         this.repository = repository;
         this.productService = productService;
         this.userRepository = userRepository;
-        this.promotionService = promotionService;
+        this.promotionFacade = promotionFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -319,7 +319,7 @@ public class OrderService {
 
         try {
             double rawTotal = order.getTotalAmount();
-            double discount = promotionService.calculateOrderDiscount(request.getPromoCode(), rawTotal);
+            double discount = promotionFacade.calculateOrderDiscount(request.getPromoCode(), rawTotal);
             if (discount > 0) {
                 order.applyPromoCode(request.getPromoCode().toUpperCase().trim(), discount);
             }

@@ -9,7 +9,7 @@ import com.example.new_toy_store.product.domain.ProductAttributeValue;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.VariantType;
-import com.example.new_toy_store.promotion.application.PromotionService;
+import com.example.new_toy_store.promotion.application.facade.PromotionFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 
 import java.util.List;
@@ -51,16 +51,16 @@ public final class ProductMapper {
         return toProductResponse(product, null, supplier);
     }
 
-    public static ProductResponse toResponseWithPromotion(Product product, PromotionService promotionService) {
-        return toProductResponse(product, promotionService, null);
+    public static ProductResponse toResponseWithPromotion(Product product, PromotionFacade promotionFacade) {
+        return toProductResponse(product, promotionFacade, null);
     }
 
-    public static ProductResponse toFullResponse(Product product, PromotionService promotionService, SupplierResponse supplier) {
-        return toProductResponse(product, promotionService, supplier);
+    public static ProductResponse toFullResponse(Product product, PromotionFacade promotionFacade, SupplierResponse supplier) {
+        return toProductResponse(product, promotionFacade, supplier);
     }
 
-    private static ProductResponse toProductResponse(Product product, PromotionService promotionService, SupplierResponse supplier) {
-        List<ProductVariantResponse> variants = toVariantResponses(product, promotionService);
+    private static ProductResponse toProductResponse(Product product, PromotionFacade promotionFacade, SupplierResponse supplier) {
+        List<ProductVariantResponse> variants = toVariantResponses(product, promotionFacade);
         ProductStatus status = product.getStatus();
 
         ProductResponse response = new ProductResponse(
@@ -91,20 +91,20 @@ public final class ProductMapper {
                 .collect(Collectors.toList());
     }
 
-    private static List<ProductVariantResponse> toVariantResponses(Product product, PromotionService promotionService) {
+    private static List<ProductVariantResponse> toVariantResponses(Product product, PromotionFacade promotionFacade) {
         return product.getVariants()
                 .stream()
-                .map(variant -> toVariantResponse(product.getId(), variant, promotionService))
+                .map(variant -> toVariantResponse(product.getId(), variant, promotionFacade))
                 .collect(Collectors.toList());
     }
 
     private static ProductVariantResponse toVariantResponse(
             Integer productId,
             ProductVariant variant,
-            PromotionService promotionService
+            PromotionFacade promotionFacade
     ) {
         double originalPrice = variant.getPrice();
-        double discountedPrice = calculateDiscountedPrice(productId, originalPrice, promotionService);
+        double discountedPrice = calculateDiscountedPrice(productId, originalPrice, promotionFacade);
         VariantType type = variant.getType();
 
         return new ProductVariantResponse(
@@ -128,9 +128,9 @@ public final class ProductMapper {
                 ));
     }
 
-    private static double calculateDiscountedPrice(Integer productId, double originalPrice, PromotionService promotionService) {
-        double discountAmount = promotionService != null
-                ? promotionService.calculateProductDiscount(productId, originalPrice)
+    private static double calculateDiscountedPrice(Integer productId, double originalPrice, PromotionFacade promotionFacade) {
+        double discountAmount = promotionFacade != null
+                ? promotionFacade.calculateProductDiscount(productId, originalPrice)
                 : 0.0;
         return roundMoney(Math.max(0.0, originalPrice - discountAmount));
     }
