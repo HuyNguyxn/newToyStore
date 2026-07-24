@@ -1,18 +1,41 @@
 package com.example.new_toy_store.promotion.domain.exception;
 
-public class InvalidPromotionOperationException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import java.util.Map;
+
+public class InvalidPromotionOperationException extends PromotionDomainException {
 
     private final String operation;
     private final Object invalidValue;
 
-    private InvalidPromotionOperationException(String message, String operation, Object invalidValue) {
-        super(message);
+    private InvalidPromotionOperationException(
+            HttpStatus status,
+            String errorCode,
+            String message,
+            String operation,
+            Object invalidValue
+    ) {
+        super(
+                status,
+                errorCode,
+                message,
+                buildContext(operation, invalidValue)
+        );
         this.operation = operation;
         this.invalidValue = invalidValue;
     }
 
+    private static Map<String, Object> buildContext(String operation, Object invalidValue) {
+        if (invalidValue == null) {
+            return Map.of("operation", operation);
+        }
+        return Map.of("operation", operation, "invalidValue", invalidValue);
+    }
+
     public static InvalidPromotionOperationException nullScope() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_SCOPE_REQUIRED",
                 "Phạm vi khuyến mãi không được để trống.",
                 "PARSE_SCOPE",
                 null
@@ -20,15 +43,17 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException invalidScope(String value) {
-        return new InvalidPromotionOperationException(
-                "Phạm vi không hợp lệ: " + value,
+        return badRequest(
+                "PROMOTION_INVALID_SCOPE",
+                "Phạm vi khuyến mãi không hợp lệ: " + value + ".",
                 "PARSE_SCOPE",
                 value
         );
     }
 
     public static InvalidPromotionOperationException missingTargetProduct() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_TARGET_PRODUCT_REQUIRED",
                 "Khuyến mãi cấp sản phẩm bắt buộc phải có ID sản phẩm mục tiêu.",
                 "VALIDATE_SCOPE",
                 null
@@ -36,23 +61,26 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException invalidTargetProductForOrder() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_ORDER_SCOPE_TARGET_FORBIDDEN",
                 "Khuyến mãi cấp đơn hàng không được gắn với một sản phẩm cụ thể.",
                 "VALIDATE_SCOPE",
-                null
+                "targetProductId"
         );
     }
 
     public static InvalidPromotionOperationException invalidTargetProductForShipping() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_SHIPPING_SCOPE_TARGET_FORBIDDEN",
                 "Khuyến mãi phí vận chuyển không được gắn với một sản phẩm cụ thể.",
                 "VALIDATE_SCOPE",
-                null
+                "targetProductId"
         );
     }
 
     public static InvalidPromotionOperationException nullType() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_TYPE_REQUIRED",
                 "Loại khuyến mãi không được để trống.",
                 "PARSE_TYPE",
                 null
@@ -60,15 +88,17 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException invalidType(String value) {
-        return new InvalidPromotionOperationException(
-                "Loại khuyến mãi không hợp lệ: " + value,
+        return badRequest(
+                "PROMOTION_INVALID_TYPE",
+                "Loại khuyến mãi không hợp lệ: " + value + ".",
                 "PARSE_TYPE",
                 value
         );
     }
 
     public static InvalidPromotionOperationException nullPromoCode() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_CODE_REQUIRED",
                 "Mã khuyến mãi không được để trống.",
                 "VALIDATE_PROMOTION",
                 null
@@ -76,7 +106,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException nullPromoName() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_NAME_REQUIRED",
                 "Tên chương trình không được để trống.",
                 "VALIDATE_PROMOTION",
                 null
@@ -84,7 +115,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException nullPromoTypeOrScope() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_TYPE_OR_SCOPE_REQUIRED",
                 "Loại và phạm vi khuyến mãi không được để trống.",
                 "VALIDATE_PROMOTION",
                 null
@@ -92,7 +124,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException invalidDateRange() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_INVALID_DATE_RANGE",
                 "Ngày bắt đầu không được vượt quá ngày kết thúc.",
                 "VALIDATE_DATE",
                 null
@@ -100,7 +133,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException negativeDiscountValue(double value) {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_NEGATIVE_DISCOUNT",
                 "Giá trị giảm giá không được âm.",
                 "VALIDATE_VALUE",
                 value
@@ -108,7 +142,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException percentageExceeded(double value) {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_PERCENTAGE_EXCEEDED",
                 "Giảm giá phần trăm không được vượt quá 100%.",
                 "VALIDATE_PERCENTAGE",
                 value
@@ -116,7 +151,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException negativeUsedCount(int value) {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_NEGATIVE_USED_COUNT",
                 "Số lượt sử dụng không được âm.",
                 "VALIDATE_VALUE",
                 value
@@ -124,15 +160,17 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException invalidUsageLimit(int currentUsedCount) {
-        return new InvalidPromotionOperationException(
-                "Giới hạn lượt sử dụng không được nhỏ hơn số lượt đã được áp dụng (" + currentUsedCount + ").",
+        return badRequest(
+                "PROMOTION_INVALID_USAGE_LIMIT",
+                "Giới hạn lượt sử dụng không được nhỏ hơn số lượt đã áp dụng (" + currentUsedCount + ").",
                 "SETUP_LIMIT",
                 currentUsedCount
         );
     }
 
     public static InvalidPromotionOperationException quotaExceeded() {
-        return new InvalidPromotionOperationException(
+        return conflict(
+                "PROMOTION_QUOTA_EXCEEDED",
                 "Chương trình khuyến mãi đã hết hiệu lực hoặc đã đạt giới hạn lượt sử dụng tối đa.",
                 "INCREMENT_QUOTA",
                 null
@@ -140,7 +178,8 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException quotaZero() {
-        return new InvalidPromotionOperationException(
+        return conflict(
+                "PROMOTION_USAGE_ALREADY_ZERO",
                 "Số lượt sử dụng đã bằng 0, không thể hoàn trả thêm.",
                 "DECREMENT_QUOTA",
                 null
@@ -148,15 +187,17 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException codeExists(String code) {
-        return new InvalidPromotionOperationException(
-                "Mã khuyến mãi đã tồn tại trong hệ thống.",
+        return conflict(
+                "DUPLICATE_ACTIVE_PROMOTION_CODE",
+                "Mã khuyến mãi " + code + " đã tồn tại trong hệ thống.",
                 "CREATE_PROMOTION",
                 code
         );
     }
 
     public static InvalidPromotionOperationException scopeMismatch() {
-        return new InvalidPromotionOperationException(
+        return badRequest(
+                "PROMOTION_SCOPE_MISMATCH",
                 "Mã khuyến mãi không áp dụng cho tổng đơn hàng.",
                 "CALCULATE_DISCOUNT",
                 null
@@ -164,11 +205,30 @@ public class InvalidPromotionOperationException extends RuntimeException {
     }
 
     public static InvalidPromotionOperationException minOrderNotMet() {
-        return new InvalidPromotionOperationException(
+        return conflict(
+                "PROMOTION_MIN_ORDER_NOT_MET",
                 "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã khuyến mãi này.",
                 "CALCULATE_DISCOUNT",
                 null
         );
+    }
+
+    private static InvalidPromotionOperationException badRequest(
+            String errorCode,
+            String message,
+            String operation,
+            Object invalidValue
+    ) {
+        return new InvalidPromotionOperationException(HttpStatus.BAD_REQUEST, errorCode, message, operation, invalidValue);
+    }
+
+    private static InvalidPromotionOperationException conflict(
+            String errorCode,
+            String message,
+            String operation,
+            Object invalidValue
+    ) {
+        return new InvalidPromotionOperationException(HttpStatus.CONFLICT, errorCode, message, operation, invalidValue);
     }
 
     public String getOperation() { return operation; }

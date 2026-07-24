@@ -8,6 +8,7 @@ import com.example.new_toy_store.promotion.application.dto.response.PromotionRes
 import com.example.new_toy_store.promotion.domain.Promotion;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.promotion.domain.PromotionScope;
+import com.example.new_toy_store.promotion.domain.exception.DuplicateActivePromotionException;
 import com.example.new_toy_store.promotion.domain.exception.InvalidPromotionOperationException;
 import com.example.new_toy_store.promotion.domain.exception.PromotionNotFoundException;
 import com.example.new_toy_store.promotion.mapper.PromotionMapper;
@@ -43,7 +44,7 @@ public class PromotionService {
     public PromotionResponse createPromotion(PromotionRequest request) {
         String cleanCode = request.getCode().toUpperCase().trim();
         if (repository.findByCode(cleanCode).isPresent()) {
-            throw InvalidPromotionOperationException.codeExists(cleanCode);
+            throw new DuplicateActivePromotionException(cleanCode);
         }
 
         Promotion promotion = PromotionMapper.toEntity(request);
