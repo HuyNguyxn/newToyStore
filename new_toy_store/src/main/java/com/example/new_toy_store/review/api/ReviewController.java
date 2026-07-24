@@ -7,8 +7,7 @@ import com.example.new_toy_store.review.application.dto.request.ReviewFilterRequ
 import com.example.new_toy_store.review.application.dto.request.ReviewUpdateRequest;
 import com.example.new_toy_store.review.application.dto.response.ReviewResponse;
 import com.example.new_toy_store.review.application.dto.response.ReviewSummaryResponse;
-import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
+import com.example.new_toy_store.user.application.UserFacade;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,11 +23,11 @@ import org.springframework.web.bind.annotation.*;
 public class ReviewController {
 
     private final ReviewService service;
-    private final UserRepository userRepository;
+    private final UserFacade userFacade;
 
-    public ReviewController(ReviewService service, UserRepository userRepository) {
+    public ReviewController(ReviewService service, UserFacade userFacade) {
         this.service = service;
-        this.userRepository = userRepository;
+        this.userFacade = userFacade;
     }
 
     @PostMapping

@@ -45,6 +45,10 @@ public class UserFacade {
         return userService.getProfile(user.getId());
     }
 
+    public Integer getAuthenticatedUserId(String email) {
+        return userService.getAuthenticatedUser(email).getId();
+    }
+
     public User getRequiredUser(Integer id) {
         return userService.getUserEntity(id);
     }
