@@ -13,8 +13,19 @@ public class BlacklistedWordRequest {
     @NotNull(message = "Loại từ khóa không được để trống")
     private WordCategory category;
 
-    public String getWord() { return word; }
-    public void setWord(String word) { this.word = word; }
-    public WordCategory getCategory() { return category; }
-    public void setCategory(WordCategory category) { this.category = category; }
+    public String getWord() {
+        return word;
+    }
+
+    public void setWord(String word) {
+        this.word = word;
+    }
+
+    public WordCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(WordCategory category) {
+        this.category = category;
+    }
 }
