@@ -1,9 +1,9 @@
 package com.example.new_toy_store.review.application;
 
+import com.example.new_toy_store.global.event.ProductReviewRatingChangedEvent;
 import com.example.new_toy_store.global.event.ReviewDeletedEvent;
 import com.example.new_toy_store.global.event.ReviewRepliedEvent;
 import com.example.new_toy_store.global.event.ReviewStatusChangedEvent;
-import com.example.new_toy_store.global.event.ProductReviewRatingChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
 import com.example.new_toy_store.moderation.application.BlacklistWordService;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
@@ -77,12 +77,13 @@ public class ReviewService {
         User user = validateUser(userId);
 
         if (blacklistWordService.containsBadWord(request.getComment())) {
-            throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
+            throw InvalidReviewOperationException.prohibitedContent("comment");
         }
 
         OrderItem orderItem = orderFacade.getCompletedOrderItemForReview(request.getOrderItemId(), userId);
 
-        if (orderItem.getUpdatedAt() != null && orderItem.getUpdatedAt().plusDays(REVIEW_TIME_WINDOW_DAYS).isBefore(LocalDateTime.now())) {
+        if (orderItem.getUpdatedAt() != null
+                && orderItem.getUpdatedAt().plusDays(REVIEW_TIME_WINDOW_DAYS).isBefore(LocalDateTime.now())) {
             throw InvalidReviewOperationException.timeWindowExpired(REVIEW_TIME_WINDOW_DAYS);
         }
 
@@ -109,7 +110,7 @@ public class ReviewService {
         User user = validateUser(userId);
 
         if (blacklistWordService.containsBadWord(request.getComment())) {
-            throw new IllegalArgumentException("Nội dung đánh giá chứa từ ngữ vi phạm tiêu chuẩn cộng đồng. Vui lòng chỉnh sửa lại.");
+            throw InvalidReviewOperationException.prohibitedContent("comment");
         }
 
         Review review = getReviewEntity(reviewId);
@@ -246,7 +247,7 @@ public class ReviewService {
                 .collect(Collectors.toMap(User::getId, user -> user));
 
         Map<Integer, Product> productMap = productFacade.getProductsByIdsWithDetails(productIds).stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .collect(Collectors.toMap(Product::getId, product -> product));
 
         return reviewPage.map(review -> ReviewMapper.toResponse(
                 review,

@@ -1,5 +1,7 @@
 package com.example.new_toy_store.review.domain.exception;
 
+import java.util.Map;
+
 public class ReviewNotFoundException extends RuntimeException {
     private final Integer reviewId;
 
@@ -8,5 +10,11 @@ public class ReviewNotFoundException extends RuntimeException {
         this.reviewId = reviewId;
     }
 
-    public Integer getReviewId() { return reviewId; }
+    public Map<String, ?> getContextData() {
+        return Map.of("reviewId", reviewId);
+    }
+
+    public Integer getReviewId() {
+        return reviewId;
+    }
 }
