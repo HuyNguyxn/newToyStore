@@ -1,18 +1,25 @@
 package com.example.new_toy_store.imports.domain;
 
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum ImportStatus {
 
-    PENDING("Chờ kiểm đếm") {
+    PENDING(
+            "PENDING",
+            "Chờ kiểm đếm",
+            "Phiếu nhập mới tạo, còn được phép chỉnh sửa item."
+    ) {
         @Override
-        public boolean canComplete() {
-            return true;
-        }
-
-        @Override
-        public boolean canCancel() {
-            return true;
+        protected Set<ImportStatus> nextStatuses() {
+            return EnumSet.of(COMPLETED, CANCELLED);
         }
 
         @Override
@@ -21,62 +28,114 @@ public enum ImportStatus {
         }
     },
 
-    COMPLETED("Đã nhập kho") {
+    COMPLETED(
+            "COMPLETED",
+            "Đã nhập kho",
+            "Phiếu nhập đã hoàn tất và hàng đã được cộng vào kho."
+    ) {
         @Override
-        public boolean canComplete() {
-            return false;
-        }
-
-        @Override
-        public boolean canCancel() {
-            return false;
-        }
-
-        @Override
-        public boolean canModifyItems() {
-            return false;
+        protected Set<ImportStatus> nextStatuses() {
+            return EnumSet.noneOf(ImportStatus.class);
         }
     },
 
-    CANCELLED("Đã hủy") {
+    CANCELLED(
+            "CANCELLED",
+            "Đã hủy",
+            "Phiếu nhập đã bị hủy và không còn được xử lý tiếp."
+    ) {
         @Override
-        public boolean canComplete() {
-            return false;
-        }
-
-        @Override
-        public boolean canCancel() {
-            return false;
-        }
-
-        @Override
-        public boolean canModifyItems() {
-            return false;
+        protected Set<ImportStatus> nextStatuses() {
+            return EnumSet.noneOf(ImportStatus.class);
         }
     };
 
+    private final String code;
     private final String displayName;
+    private final String description;
 
-    ImportStatus(String displayName) {
+    ImportStatus(String code, String displayName, String description) {
+        this.code = code;
         this.displayName = displayName;
+        this.description = description;
+    }
+
+    protected abstract Set<ImportStatus> nextStatuses();
+
+    public boolean canModifyItems() {
+        return false;
+    }
+
+    public boolean canTransitionTo(ImportStatus nextStatus) {
+        return nextStatus != null && nextStatuses().contains(nextStatus);
+    }
+
+    public boolean canComplete() {
+        return canTransitionTo(COMPLETED);
+    }
+
+    public boolean canCancel() {
+        return canTransitionTo(CANCELLED);
+    }
+
+    public List<String> getAllowedNextStatuses() {
+        return nextStatuses().stream()
+                .map(ImportStatus::getCode)
+                .toList();
+    }
+
+    public boolean isTerminal() {
+        return nextStatuses().isEmpty();
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getDisplayName() {
         return displayName;
     }
 
-    public abstract boolean canComplete();
-    public abstract boolean canCancel();
-    public abstract boolean canModifyItems();
+    public String getDescription() {
+        return description;
+    }
 
-    public static ImportStatus from(String value) {
-        if (value == null || value.trim().isEmpty()) {
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static ImportStatus from(Object input) {
+        if (input == null) {
             throw InvalidImportOperationException.emptyStatus();
         }
-        try {
-            return ImportStatus.valueOf(value.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw InvalidImportOperationException.invalidStatus(value);
+
+        if (input instanceof Map<?, ?> objectValue) {
+            Object codeValue = objectValue.get("code");
+            if (codeValue == null) {
+                codeValue = objectValue.get("name");
+            }
+            if (codeValue == null) {
+                codeValue = objectValue.get("status");
+            }
+            return fromText(String.valueOf(codeValue));
         }
+
+        return fromText(String.valueOf(input));
+    }
+
+    public static ImportStatus from(String value) {
+        return fromText(value);
+    }
+
+    private static ImportStatus fromText(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            throw InvalidImportOperationException.emptyStatus();
+        }
+
+        String normalized = value.trim().toUpperCase();
+        for (ImportStatus status : values()) {
+            if (status.name().equals(normalized) || status.code.equalsIgnoreCase(value.trim())) {
+                return status;
+            }
+        }
+
+        throw InvalidImportOperationException.invalidStatus(value);
     }
 }

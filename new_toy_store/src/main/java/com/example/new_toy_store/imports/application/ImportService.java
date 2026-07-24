@@ -67,14 +67,14 @@ public class ImportService {
                 .collect(Collectors.toSet());
 
         if (supplierIds.isEmpty()) {
-            return notes.map(note -> ImportNoteMapper.toFlatResponse(note, null));
+            return notes.map(note -> ImportNoteMapper.toSummaryResponse(note, null));
         }
 
         Map<Integer, SupplierResponse> supplierMap = supplierFacade.getSuppliersByIds(supplierIds)
                 .stream()
                 .collect(Collectors.toMap(SupplierResponse::getId, s -> s));
 
-        return notes.map(note -> ImportNoteMapper.toFlatResponse(note, supplierMap.get(note.getSupplierId())));
+        return notes.map(note -> ImportNoteMapper.toSummaryResponse(note, supplierMap.get(note.getSupplierId())));
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +82,7 @@ public class ImportService {
         ImportNote note = repository.findByIdWithItems(id)
                 .orElseThrow(() -> new ImportNoteNotFoundException(id));
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
-        return ImportNoteMapper.toResponse(note, supplier);
+        return ImportNoteMapper.toDetailResponse(note, supplier);
     }
 
     @Transactional
@@ -124,7 +124,7 @@ public class ImportService {
         }
 
         repository.save(note);
-        return ImportNoteMapper.toResponse(note, supplier);
+        return ImportNoteMapper.toDetailResponse(note, supplier);
     }
 
     @Transactional
@@ -149,7 +149,7 @@ public class ImportService {
         publishStatusChanged(note, previousStatus, note.getStatus());
 
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
-        return ImportNoteMapper.toResponse(note, supplier);
+        return ImportNoteMapper.toDetailResponse(note, supplier);
     }
 
     @Transactional
@@ -163,7 +163,7 @@ public class ImportService {
         publishStatusChanged(note, previousStatus, note.getStatus());
 
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
-        return ImportNoteMapper.toResponse(note, supplier);
+        return ImportNoteMapper.toDetailResponse(note, supplier);
     }
 
     private void updateStatusOrFail(Integer noteId,

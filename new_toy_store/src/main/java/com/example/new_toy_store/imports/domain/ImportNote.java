@@ -62,13 +62,17 @@ public class ImportNote extends BaseRootEntity {
     }
 
     public void complete() {
-        if (!this.status.canComplete()) throw InvalidImportOperationException.invalidStatusTransition("hoàn thành");
+        if (!this.status.canTransitionTo(ImportStatus.COMPLETED)) {
+            throw InvalidImportOperationException.invalidStatusTransition("hoàn thành");
+        }
         if (this.items.isEmpty()) throw InvalidImportOperationException.emptyItems();
         this.status = ImportStatus.COMPLETED;
     }
 
     public void cancel() {
-        if (!this.status.canCancel()) throw InvalidImportOperationException.invalidStatusTransition("hủy");
+        if (!this.status.canTransitionTo(ImportStatus.CANCELLED)) {
+            throw InvalidImportOperationException.invalidStatusTransition("hủy");
+        }
         this.status = ImportStatus.CANCELLED;
     }
 
