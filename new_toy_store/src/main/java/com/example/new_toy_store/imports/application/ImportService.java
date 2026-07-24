@@ -1,5 +1,7 @@
 package com.example.new_toy_store.imports.application;
 
+import com.example.new_toy_store.global.event.ImportNoteStatusChangedEvent;
+import com.example.new_toy_store.infrastructure.specification.ImportNoteSpecification;
 import com.example.new_toy_store.imports.application.dto.request.ImportNoteItemRequest;
 import com.example.new_toy_store.imports.application.dto.request.ImportNoteRequest;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
@@ -16,8 +18,11 @@ import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.domain.SupplierStatus;
 
+import jakarta.persistence.EntityManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +37,19 @@ public class ImportService {
     private final ImportNoteRepository repository;
     private final ProductService productService;
     private final SupplierFacade supplierFacade;
+    private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
-    public ImportService(ImportNoteRepository repository, ProductService productService, SupplierFacade supplierFacade) {
+    public ImportService(ImportNoteRepository repository,
+                         ProductService productService,
+                         SupplierFacade supplierFacade,
+                         ApplicationEventPublisher eventPublisher,
+                         EntityManager entityManager) {
         this.repository = repository;
         this.productService = productService;
         this.supplierFacade = supplierFacade;
+        this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
@@ -46,7 +59,7 @@ public class ImportService {
             status = ImportStatus.from(statusValue);
         }
 
-        Page<ImportNote> notes = repository.searchImports(supplierId, status, pageable);
+        Page<ImportNote> notes = repository.findAll(ImportNoteSpecification.filter(supplierId, status), pageable);
 
         Set<Integer> supplierIds = notes.stream()
                 .map(ImportNote::getSupplierId)
@@ -65,10 +78,8 @@ public class ImportService {
 
     @Transactional(readOnly = true)
     public ImportNoteResponse getImportNoteDetails(Integer id) {
-        ImportNote note = repository.findByIdWithItems(id);
-        if (note == null) {
-            throw new ImportNoteNotFoundException(id);
-        }
+        ImportNote note = repository.findByIdWithItems(id)
+                .orElseThrow(() -> new ImportNoteNotFoundException(id));
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
     }
@@ -117,13 +128,12 @@ public class ImportService {
 
     @Transactional
     public ImportNoteResponse completeImportNote(Integer noteId) {
-        ImportNote note = repository.findByIdWithItems(noteId);
-        if (note == null) {
-            throw new ImportNoteNotFoundException(noteId);
-        }
+        ImportNote note = repository.findByIdWithItems(noteId)
+                .orElseThrow(() -> new ImportNoteNotFoundException(noteId));
 
+        ImportStatus previousStatus = note.getStatus();
         note.complete();
-        repository.save(note);
+        entityManager.detach(note);
 
         List<ImportedStockRequest> stockUpdates = note.getItems().stream()
                 .map(item -> new ImportedStockRequest(
@@ -134,6 +144,8 @@ public class ImportService {
                 .collect(Collectors.toList());
 
         productService.processImportedStock(stockUpdates);
+        updateStatusOrFail(noteId, note.getVersion(), previousStatus, note.getStatus());
+        publishStatusChanged(note, previousStatus, note.getStatus());
 
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
@@ -143,10 +155,32 @@ public class ImportService {
     public ImportNoteResponse cancelImportNote(Integer noteId) {
         ImportNote note = repository.findById(noteId)
                 .orElseThrow(() -> new ImportNoteNotFoundException(noteId));
+        ImportStatus previousStatus = note.getStatus();
         note.cancel();
-        repository.save(note);
+        entityManager.detach(note);
+        updateStatusOrFail(noteId, note.getVersion(), previousStatus, note.getStatus());
+        publishStatusChanged(note, previousStatus, note.getStatus());
 
         SupplierResponse supplier = supplierFacade.getSupplierDetails(note.getSupplierId());
         return ImportNoteMapper.toResponse(note, supplier);
+    }
+
+    private void updateStatusOrFail(Integer noteId,
+                                    Long version,
+                                    ImportStatus previousStatus,
+                                    ImportStatus nextStatus) {
+        int updatedRows = repository.updateStatusWithVersion(noteId, version, previousStatus, nextStatus);
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(ImportNote.class, noteId);
+        }
+    }
+
+    private void publishStatusChanged(ImportNote note, ImportStatus previousStatus, ImportStatus nextStatus) {
+        eventPublisher.publishEvent(ImportNoteStatusChangedEvent.now(
+                note.getId(),
+                note.getSupplierId(),
+                previousStatus,
+                nextStatus
+        ));
     }
 }
