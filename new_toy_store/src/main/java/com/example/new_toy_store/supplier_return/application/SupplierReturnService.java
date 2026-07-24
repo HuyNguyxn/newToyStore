@@ -1,6 +1,8 @@
 package com.example.new_toy_store.supplier_return.application;
 
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
+import com.example.new_toy_store.global.event.SupplierReturnStatusChangedEvent;
+import com.example.new_toy_store.infrastructure.specification.SupplierReturnSpecification;
 import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnRequest;
@@ -11,7 +13,6 @@ import com.example.new_toy_store.supplier_return.domain.SupplierReturnRepository
 import com.example.new_toy_store.supplier_return.domain.SupplierReturnStatus;
 import com.example.new_toy_store.supplier_return.domain.exception.DuplicateSupplierReturnException;
 import com.example.new_toy_store.supplier_return.domain.exception.SupplierReturnNotFoundException;
-import com.example.new_toy_store.infrastructure.specification.SupplierReturnSpecification;
 import com.example.new_toy_store.supplier_return.mapper.SupplierReturnMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,16 +34,12 @@ public class SupplierReturnService {
     private static final Logger log = LoggerFactory.getLogger(SupplierReturnService.class);
 
     private final SupplierReturnRepository repository;
-
     private final SupplierFacade supplierFacade;
-
     private final ApplicationEventPublisher eventPublisher;
 
-    public SupplierReturnService(
-            SupplierReturnRepository repository,
-            SupplierFacade supplierFacade,
-            ApplicationEventPublisher eventPublisher) {
-
+    public SupplierReturnService(SupplierReturnRepository repository,
+                                 SupplierFacade supplierFacade,
+                                 ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.supplierFacade = supplierFacade;
         this.eventPublisher = eventPublisher;
@@ -58,7 +55,7 @@ public class SupplierReturnService {
                 SupplierReturnStatus.PENDING_APPROVAL, criticalCutoffTime);
 
         for (SupplierReturn returnNote : criticalAlertReturns) {
-            log.error("[SLA CRITICAL] Phiếu trả hàng ID {} đã kẹt quá {} giờ! Cần can thiệp khẩn cấp.",
+            log.error("[SLA CRITICAL] Phiếu trả hàng ID {} đã kẹt quá {} giờ. Cần can thiệp khẩn cấp.",
                     returnNote.getId(), criticalHours);
         }
 
@@ -80,7 +77,11 @@ public class SupplierReturnService {
     }
 
     @Transactional(readOnly = true)
-    public Page<SupplierReturnResponse> filterReturns(Integer supplierId, String status, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+    public Page<SupplierReturnResponse> filterReturns(Integer supplierId,
+                                                      String status,
+                                                      LocalDate startDate,
+                                                      LocalDate endDate,
+                                                      Pageable pageable) {
         return repository.findAll(SupplierReturnSpecification.filter(supplierId, status, startDate, endDate), pageable)
                 .map(SupplierReturnMapper::mapEntityToResponse);
     }
@@ -106,37 +107,43 @@ public class SupplierReturnService {
         }
 
         SupplierReturn entity = SupplierReturnMapper.mapRequestToNewEntity(request, adminUsername);
-
         return SupplierReturnMapper.mapEntityToResponse(repository.save(entity));
     }
 
     @Transactional
     public SupplierReturnResponse submitForApproval(Integer id, String adminUsername) {
         SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.submitForApproval(adminUsername, "Trình duyệt phiếu trả hàng");
-
-        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, adminUsername);
+        return SupplierReturnMapper.mapEntityToResponse(saved);
     }
 
     @Transactional
     public SupplierReturnResponse approve(Integer id, String managerUsername) {
         SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.approve(managerUsername, "Quản lý đã duyệt xuất trả");
-
-        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, managerUsername);
+        return SupplierReturnMapper.mapEntityToResponse(saved);
     }
 
     @Transactional
     public SupplierReturnResponse reject(Integer id, String managerUsername, String reason) {
         SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.reject(managerUsername, "Từ chối: " + reason);
-
-        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, managerUsername);
+        return SupplierReturnMapper.mapEntityToResponse(saved);
     }
 
     @Transactional
     public SupplierReturnResponse shipAndDeductStock(Integer id, String warehouseUsername) {
         SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.ship(warehouseUsername, "Xuất kho trả nhà cung cấp");
 
         List<SupplierReturnCompletedEvent.ReturnItemDetail> eventItems = returnNote.getItems().stream()
@@ -147,9 +154,11 @@ public class SupplierReturnService {
                 ))
                 .collect(Collectors.toList());
 
-        eventPublisher.publishEvent(new SupplierReturnCompletedEvent(returnNote.getId(), eventItems));
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, warehouseUsername);
+        eventPublisher.publishEvent(new SupplierReturnCompletedEvent(saved.getId(), eventItems));
 
-        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+        return SupplierReturnMapper.mapEntityToResponse(saved);
     }
 
     @Transactional
@@ -176,9 +185,26 @@ public class SupplierReturnService {
     @Transactional
     public SupplierReturnResponse complete(Integer id, String accountantUsername) {
         SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.complete(accountantUsername, "Xác nhận nhận tiền/cấn trừ công nợ hoàn tất");
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, accountantUsername);
+        return SupplierReturnMapper.mapEntityToResponse(saved);
+    }
 
-        return SupplierReturnMapper.mapEntityToResponse(repository.save(returnNote));
+    private void publishStatusChanged(SupplierReturn returnNote,
+                                      SupplierReturnStatus previousStatus,
+                                      String actionBy) {
+        if (previousStatus != returnNote.getStatus()) {
+            eventPublisher.publishEvent(SupplierReturnStatusChangedEvent.now(
+                    returnNote.getId(),
+                    returnNote.getSupplierId(),
+                    returnNote.getImportNoteId(),
+                    previousStatus,
+                    returnNote.getStatus(),
+                    actionBy
+            ));
+        }
     }
 
     private SupplierReturn getEntity(Integer id) {

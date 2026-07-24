@@ -1,5 +1,8 @@
 package com.example.new_toy_store.supplier_return.domain;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -10,6 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SupplierReturnRepository extends JpaRepository<SupplierReturn, Integer>, JpaSpecificationExecutor<SupplierReturn> {
+
+    @EntityGraph(attributePaths = {"items", "histories", "images"})
+    Page<SupplierReturn> findAll(Specification<SupplierReturn> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = {"items", "histories", "images"})
     Optional<SupplierReturn> findById(Integer id);

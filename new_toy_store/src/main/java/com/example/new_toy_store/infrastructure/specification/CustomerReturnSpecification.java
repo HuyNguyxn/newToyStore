@@ -5,7 +5,10 @@ import com.example.new_toy_store.customer_return.domain.CustomerReturnStatus;
 import com.example.new_toy_store.global.specification.BaseSpecification;
 import org.springframework.data.jpa.domain.Specification;
 
-public class CustomerReturnSpecification {
+public final class CustomerReturnSpecification {
+
+    private CustomerReturnSpecification() {
+    }
 
     public static Specification<CustomerReturn> filter(String status, Integer orderId) {
         return Specification.where(BaseSpecification.<CustomerReturn>isDistinct())
@@ -13,14 +16,18 @@ public class CustomerReturnSpecification {
                 .and(hasOrderId(orderId));
     }
 
-    private static Specification<CustomerReturn> hasStatus(String status) {
+    public static Specification<CustomerReturn> hasStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
-            return null;
+            return Specification.where(null);
         }
-        return BaseSpecification.isEqual("status", CustomerReturnStatus.from(status));
+        return hasStatus(CustomerReturnStatus.from(status));
     }
 
-    private static Specification<CustomerReturn> hasOrderId(Integer orderId) {
+    public static Specification<CustomerReturn> hasStatus(CustomerReturnStatus status) {
+        return BaseSpecification.isEqual("status", status);
+    }
+
+    public static Specification<CustomerReturn> hasOrderId(Integer orderId) {
         return BaseSpecification.isEqual("orderId", orderId);
     }
 }
