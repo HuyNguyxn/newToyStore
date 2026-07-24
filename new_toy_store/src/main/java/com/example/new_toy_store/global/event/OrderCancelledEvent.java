@@ -6,9 +6,9 @@ public class OrderCancelledEvent {
     private Integer orderId;
     private Integer userId;
     private String reason;
-    private List<OrderItemPayload> items;
+    private List<OrderCancelledItemPayload> items;
 
-    public OrderCancelledEvent(Integer orderId, Integer userId, String reason, List<OrderItemPayload> items) {
+    public OrderCancelledEvent(Integer orderId, Integer userId, String reason, List<OrderCancelledItemPayload> items) {
         this.orderId = orderId;
         this.userId = userId;
         this.reason = reason;
@@ -18,18 +18,5 @@ public class OrderCancelledEvent {
     public Integer getOrderId() { return orderId; }
     public Integer getUserId() { return userId; }
     public String getReason() { return reason; }
-    public List<OrderItemPayload> getItems() { return items; }
-
-    public static class OrderItemPayload {
-        private Integer variantId;
-        private int quantity;
-
-        public OrderItemPayload(Integer variantId, int quantity) {
-            this.variantId = variantId;
-            this.quantity = quantity;
-        }
-
-        public Integer getVariantId() { return variantId; }
-        public int getQuantity() { return quantity; }
-    }
+    public List<OrderCancelledItemPayload> getItems() { return items; }
 }

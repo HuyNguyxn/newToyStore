@@ -25,7 +25,11 @@ public class CartEventListener {
     @EventListener
     public void handleOrderCreated(OrderCreatedEvent event) {
         log.info("Order {} created successfully. Clearing cart {}", event.getOrderId(), event.getCartId());
-        cartService.clearCheckedOutItems(event.getCartId());
+        if (event.getCartId() != null) {
+            cartService.clearCheckedOutItems(event.getCartId());
+            return;
+        }
+        cartService.clearCart(event.getUserId());
     }
 
     @EventListener

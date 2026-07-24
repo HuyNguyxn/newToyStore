@@ -6,9 +6,9 @@ public class OrderCreatedEvent {
     private Integer orderId;
     private Integer cartId;
     private Integer userId;
-    private List<OrderItemPayload> items;
+    private List<OrderCreatedItemPayload> items;
 
-    public OrderCreatedEvent(Integer orderId, Integer cartId, Integer userId, List<OrderItemPayload> items) {
+    public OrderCreatedEvent(Integer orderId, Integer cartId, Integer userId, List<OrderCreatedItemPayload> items) {
         this.orderId = orderId;
         this.cartId = cartId;
         this.userId = userId;
@@ -18,18 +18,5 @@ public class OrderCreatedEvent {
     public Integer getOrderId() { return orderId; }
     public Integer getCartId() { return cartId; }
     public Integer getUserId() { return userId; }
-    public List<OrderItemPayload> getItems() { return items; }
-
-    public static class OrderItemPayload {
-        private Integer variantId;
-        private int quantity;
-
-        public OrderItemPayload(Integer variantId, int quantity) {
-            this.variantId = variantId;
-            this.quantity = quantity;
-        }
-
-        public Integer getVariantId() { return variantId; }
-        public int getQuantity() { return quantity; }
-    }
+    public List<OrderCreatedItemPayload> getItems() { return items; }
 }

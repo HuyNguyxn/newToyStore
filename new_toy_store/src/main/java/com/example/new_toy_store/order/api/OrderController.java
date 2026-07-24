@@ -5,8 +5,8 @@ import com.example.new_toy_store.order.application.dto.request.OrderFilterReques
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
-import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
+import com.example.new_toy_store.user.application.UserFacade;
+import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +14,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/orders")
@@ -22,25 +30,25 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService service;
-    private final UserRepository userRepository;
+    private final UserFacade userFacade;
 
-    public OrderController(OrderService service, UserRepository userRepository) {
+    public OrderController(OrderService service, UserFacade userFacade) {
         this.service = service;
-        this.userRepository = userRepository;
+        this.userFacade = userFacade;
     }
 
     @GetMapping("/my-orders")
     public Page<OrderResponse> getUserOrders(@AuthenticationPrincipal UserDetails userDetails, Pageable pageable) {
-        User user = getAuthenticatedUser(userDetails);
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
         return service.getUserOrders(user.getId(), pageable);
     }
 
     @GetMapping("/{id}")
     public OrderResponse getOrderDetails(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer id) {
-        User user = getAuthenticatedUser(userDetails);
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
         OrderResponse order = service.getOrderDetails(id);
 
-        if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+        if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng của người khác");
         }
         return order;
@@ -48,7 +56,7 @@ public class OrderController {
 
     @PostMapping
     public OrderResponse create(@AuthenticationPrincipal UserDetails userDetails, @Valid @RequestBody OrderRequest request) {
-        User user = getAuthenticatedUser(userDetails);
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
         request.setUserId(user.getId());
         return service.create(request);
     }
@@ -72,11 +80,15 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/cancel")
-    public OrderResponse cancel(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Integer id, @RequestParam(required = false) String note) {
-        User user = getAuthenticatedUser(userDetails);
+    public OrderResponse cancel(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Integer id,
+            @RequestParam(required = false) String note
+    ) {
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
         OrderResponse order = service.getOrderDetails(id);
 
-        if (!order.getUserId().equals(user.getId()) && !user.getRole().name().equals("ADMIN")) {
+        if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new IllegalArgumentException("Bạn không có quyền hủy đơn hàng của người khác");
         }
         return service.cancel(id, note);
@@ -86,11 +98,6 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
-    }
-
-    private User getAuthenticatedUser(UserDetails userDetails) {
-        return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng"));
     }
 
     @GetMapping("/admin/filter")
@@ -103,9 +110,14 @@ public class OrderController {
     public OrderResponse updateShippingAddress(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Integer id,
-            @Valid @RequestBody UpdateShippingRequest request) {
-        User user = getAuthenticatedUser(userDetails);
-        boolean isAdmin = user.getRole().name().equals("ADMIN");
+            @Valid @RequestBody UpdateShippingRequest request
+    ) {
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
+        boolean isAdmin = "ADMIN".equals(user.getRole());
         return service.updateShippingAddress(id, request, user.getId(), isAdmin);
+    }
+
+    private UserProfileResponse getAuthenticatedUser(UserDetails userDetails) {
+        return userFacade.getCurrentProfile(userDetails.getUsername());
     }
 }

@@ -90,6 +90,12 @@ public class Order extends BaseRootEntity {
     }
 
     public void changeStatus(OrderStatus newStatus, String note) {
+        if (newStatus == null) {
+            throw new InvalidOrderDataException("status", "Trạng thái đơn hàng không được để trống");
+        }
+        if (!this.status.canTransitionTo(newStatus)) {
+            throw new InvalidOrderOperationException(this.status.getDisplayName(), "Chuyển sang " + newStatus.getDisplayName());
+        }
         this.status = newStatus;
         recordHistory(this.status, note != null && !note.trim().isEmpty() ? note : "Cập nhật trạng thái: " + newStatus.getDisplayName());
     }
@@ -100,12 +106,12 @@ public class Order extends BaseRootEntity {
         this.histories.add(history);
     }
 
-    public void confirm(String note) { status.confirm(this, note); }
-    public void ship(String note) { status.ship(this, note); }
-    public void complete(String note) { status.complete(this, note); }
-    public void cancel(String note) { status.cancel(this, note); }
-    public void refundPartially(String note) { status.refundPartially(this, note); }
-    public void refundFully(String note) { status.refundFully(this, note); }
+    public void confirm(String note) { changeStatus(OrderStatus.CONFIRMED, note); }
+    public void ship(String note) { changeStatus(OrderStatus.SHIPPED, note); }
+    public void complete(String note) { changeStatus(OrderStatus.COMPLETED, note); }
+    public void cancel(String note) { changeStatus(OrderStatus.CANCELLED, note); }
+    public void refundPartially(String note) { changeStatus(OrderStatus.PARTIALLY_REFUNDED, note); }
+    public void refundFully(String note) { changeStatus(OrderStatus.FULLY_REFUNDED, note); }
 
     @Override
     public void delete() {
