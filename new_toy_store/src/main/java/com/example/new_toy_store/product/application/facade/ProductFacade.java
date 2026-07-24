@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -72,6 +73,10 @@ public class ProductFacade {
 
     public void updateStock(Integer productId, Integer variantId, int amount) {
         productService.updateStock(productId, variantId, amount);
+    }
+
+    public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {
+        productService.restoreStockForCancelledOrder(orderItems);
     }
 
     public void setThumbnail(Integer productId, Integer imageId) {

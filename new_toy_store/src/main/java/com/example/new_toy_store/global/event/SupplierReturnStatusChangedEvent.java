@@ -5,12 +5,7 @@ import com.example.new_toy_store.supplier_return.domain.SupplierReturnStatus;
 import java.time.Instant;
 
 public record SupplierReturnStatusChangedEvent(
-        Integer returnId,
-        Integer supplierId,
-        Integer importNoteId,
-        SupplierReturnStatus previousStatus,
-        SupplierReturnStatus currentStatus,
-        String actionBy,
+        SupplierReturnStatusChangedPayload payload,
         Instant occurredAt
 ) {
     public static SupplierReturnStatusChangedEvent now(Integer returnId,
@@ -20,12 +15,14 @@ public record SupplierReturnStatusChangedEvent(
                                                        SupplierReturnStatus currentStatus,
                                                        String actionBy) {
         return new SupplierReturnStatusChangedEvent(
-                returnId,
-                supplierId,
-                importNoteId,
-                previousStatus,
-                currentStatus,
-                actionBy,
+                SupplierReturnStatusChangedPayload.of(
+                        returnId,
+                        supplierId,
+                        importNoteId,
+                        previousStatus,
+                        currentStatus,
+                        actionBy
+                ),
                 Instant.now()
         );
     }

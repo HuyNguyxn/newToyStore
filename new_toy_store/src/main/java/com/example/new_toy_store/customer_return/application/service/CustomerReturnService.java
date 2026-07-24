@@ -13,8 +13,8 @@ import com.example.new_toy_store.customer_return.domain.exception.InvalidCustome
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
 import com.example.new_toy_store.global.event.CustomerReturnStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
-import com.example.new_toy_store.order.application.OrderService;
-import com.example.new_toy_store.product.application.service.ProductService;
+import com.example.new_toy_store.order.application.facade.OrderFacade;
+import com.example.new_toy_store.product.application.facade.ProductFacade;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -32,20 +32,20 @@ import java.util.stream.Collectors;
 public class CustomerReturnService {
 
     private final CustomerReturnRepository repository;
-    private final OrderService orderService;
-    private final ProductService productService;
+    private final OrderFacade orderFacade;
+    private final ProductFacade productFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.customer-return.auto-reject.expiration-days:7}")
     private int expirationDays;
 
     public CustomerReturnService(CustomerReturnRepository repository,
-                                 OrderService orderService,
-                                 ProductService productService,
+                                 OrderFacade orderFacade,
+                                 ProductFacade productFacade,
                                  ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
-        this.orderService = orderService;
-        this.productService = productService;
+        this.orderFacade = orderFacade;
+        this.productFacade = productFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -57,9 +57,9 @@ public class CustomerReturnService {
 
     @Transactional
     public CustomerReturnResponse createRequest(CustomerReturnRequest request, Integer customerId, String customerUsername) {
-        orderService.verifyOrderOwnership(request.getOrderId(), customerId);
+        orderFacade.verifyOrderOwnership(request.getOrderId(), customerId);
 
-        String currentOrderStatus = orderService.getOrderStatus(request.getOrderId());
+        String currentOrderStatus = orderFacade.getOrderStatus(request.getOrderId());
         if (!"COMPLETED".equals(currentOrderStatus)) {
             throw InvalidCustomerReturnDataException.invalidOrderStatus(currentOrderStatus);
         }
@@ -78,7 +78,7 @@ public class CustomerReturnService {
 
         CustomerReturn rma = CustomerReturnMapper.toEntity(request, customerUsername);
 
-        if (orderService.isHighRiskCustomer(customerId)) {
+        if (orderFacade.isHighRiskCustomer(customerId)) {
             rma.markAsHighRisk("CẢNH BÁO: Tài khoản này có tỷ lệ hoàn hàng >= 30%. Vui lòng kiểm định minh chứng hình ảnh nghiêm ngặt.");
         }
 
@@ -88,7 +88,7 @@ public class CustomerReturnService {
     @Transactional
     public CustomerReturnResponse cancelRequest(Integer id, Integer customerId, String customerUsername) {
         CustomerReturn rma = getEntity(id);
-        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+        orderFacade.verifyOrderOwnership(rma.getOrderId(), customerId);
         CustomerReturnStatus previousStatus = rma.getStatus();
         rma.cancelByUser(customerUsername, "Khách hàng tự hủy yêu cầu");
         CustomerReturn saved = repository.save(rma);
@@ -99,7 +99,7 @@ public class CustomerReturnService {
     @Transactional
     public CustomerReturnResponse updateInfoByCustomer(Integer id, Integer customerId, String customerUsername, String newReasonNote) {
         CustomerReturn rma = getEntity(id);
-        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+        orderFacade.verifyOrderOwnership(rma.getOrderId(), customerId);
         CustomerReturnStatus previousStatus = rma.getStatus();
         rma.updateInfoFromCustomer(customerUsername, newReasonNote);
         CustomerReturn saved = repository.save(rma);
@@ -143,7 +143,7 @@ public class CustomerReturnService {
                     ));
 
             if (!sellableItems.isEmpty()) {
-                productService.restoreStockForCancelledOrder(sellableItems);
+                productFacade.restoreStockForCancelledOrder(sellableItems);
             }
         } else {
             rma.failQualityControl(qcUsername, qcNote);
@@ -157,7 +157,7 @@ public class CustomerReturnService {
     @Transactional
     public CustomerReturnResponse createDispute(Integer id, Integer customerId, String customerUsername, String disputeReason) {
         CustomerReturn rma = getEntity(id);
-        orderService.verifyOrderOwnership(rma.getOrderId(), customerId);
+        orderFacade.verifyOrderOwnership(rma.getOrderId(), customerId);
         CustomerReturnStatus previousStatus = rma.getStatus();
         rma.openDispute(customerUsername, disputeReason);
         CustomerReturn saved = repository.save(rma);
@@ -204,7 +204,7 @@ public class CustomerReturnService {
                         CustomerReturnItem::getOrderItemId,
                         CustomerReturnItem::getQuantity
                 ));
-        orderService.updateOrderRefundStatus(rma.getOrderId(), returnedItemsQty);
+        orderFacade.updateOrderRefundStatus(rma.getOrderId(), returnedItemsQty);
     }
 
     private void publishStatusChanged(CustomerReturn rma, CustomerReturnStatus previousStatus, String actionBy) {
