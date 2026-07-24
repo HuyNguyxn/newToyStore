@@ -1,5 +1,8 @@
 package com.example.new_toy_store.review.application;
 
+import com.example.new_toy_store.global.event.ReviewDeletedEvent;
+import com.example.new_toy_store.global.event.ReviewRepliedEvent;
+import com.example.new_toy_store.global.event.ReviewStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.ReviewSpecification;
 import com.example.new_toy_store.moderation.application.BlacklistWordService;
 import com.example.new_toy_store.order.application.OrderService;
@@ -22,9 +25,12 @@ import com.example.new_toy_store.review.domain.exception.ReviewNotFoundException
 import com.example.new_toy_store.review.mapper.ReviewMapper;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
+import jakarta.persistence.EntityManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,17 +51,23 @@ public class ReviewService {
     private final ProductService productService;
     private final UserRepository userRepository;
     private final BlacklistWordService blacklistWordService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
     public ReviewService(ReviewRepository repository,
                          OrderService orderService,
                          ProductService productService,
                          UserRepository userRepository,
-                         BlacklistWordService blacklistWordService) {
+                         BlacklistWordService blacklistWordService,
+                         ApplicationEventPublisher eventPublisher,
+                         EntityManager entityManager) {
         this.repository = repository;
         this.orderService = orderService;
         this.productService = productService;
         this.userRepository = userRepository;
         this.blacklistWordService = blacklistWordService;
+        this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -120,8 +132,13 @@ public class ReviewService {
             throw ReviewAccessDeniedException.notOwner(userId);
         }
 
-        review.delete();
-        repository.save(review);
+        Integer productId = review.getProductId();
+        entityManager.detach(review);
+        int updatedRows = repository.softDeleteWithVersion(reviewId, review.getVersion());
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Review.class, reviewId);
+        }
+        eventPublisher.publishEvent(ReviewDeletedEvent.now(review.getId(), review.getUserId(), productId));
         syncProductRating(review.getProductId());
     }
 
@@ -178,9 +195,23 @@ public class ReviewService {
     @Transactional
     public void changeReviewStatus(Integer id, String statusStr) {
         Review review = getReviewEntity(id);
+        ReviewStatus previousStatus = review.getStatus();
         ReviewStatus newStatus = ReviewStatus.from(statusStr);
         review.changeStatus(newStatus);
-        repository.save(review);
+        entityManager.detach(review);
+        int updatedRows = repository.updateStatusWithVersion(id, review.getVersion(), newStatus);
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Review.class, id);
+        }
+        if (previousStatus != newStatus) {
+            eventPublisher.publishEvent(ReviewStatusChangedEvent.now(
+                    review.getId(),
+                    review.getUserId(),
+                    review.getProductId(),
+                    previousStatus,
+                    newStatus
+            ));
+        }
         syncProductRating(review.getProductId());
     }
 
@@ -188,7 +219,12 @@ public class ReviewService {
     public void replyToReview(Integer id, AdminReplyRequest request) {
         Review review = getReviewEntity(id);
         review.replyByAdmin(request.getReply());
-        repository.save(review);
+        entityManager.detach(review);
+        int updatedRows = repository.updateAdminReplyWithVersion(id, review.getVersion(), request.getReply());
+        if (updatedRows == 0) {
+            throw new ObjectOptimisticLockingFailureException(Review.class, id);
+        }
+        eventPublisher.publishEvent(ReviewRepliedEvent.now(review.getId(), review.getUserId(), review.getProductId()));
     }
 
     private Page<ReviewResponse> mapReviewsToResponsesWithBatchData(Page<Review> reviewPage) {

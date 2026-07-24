@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,4 +30,41 @@ public interface ReviewRepository extends JpaRepository<Review, Integer>, JpaSpe
     Optional<Review> findByOrderItemId(Integer orderItemId);
 
     Page<Review> findByUserId(Integer userId, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Review r
+               SET r.deletedAt = CURRENT_TIMESTAMP,
+                   r.updatedAt = CURRENT_TIMESTAMP,
+                   r.version = r.version + 1
+             WHERE r.id = :id
+               AND r.version = :version
+            """)
+    int softDeleteWithVersion(@Param("id") Integer id, @Param("version") Long version);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Review r
+               SET r.status = :status,
+                   r.updatedAt = CURRENT_TIMESTAMP,
+                   r.version = r.version + 1
+             WHERE r.id = :id
+               AND r.version = :version
+            """)
+    int updateStatusWithVersion(@Param("id") Integer id,
+                                @Param("version") Long version,
+                                @Param("status") ReviewStatus status);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Review r
+               SET r.adminReply = :reply,
+                   r.updatedAt = CURRENT_TIMESTAMP,
+                   r.version = r.version + 1
+             WHERE r.id = :id
+               AND r.version = :version
+            """)
+    int updateAdminReplyWithVersion(@Param("id") Integer id,
+                                    @Param("version") Long version,
+                                    @Param("reply") String reply);
 }
