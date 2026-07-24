@@ -2,7 +2,17 @@ package com.example.new_toy_store.order.domain;
 
 import com.example.new_toy_store.global.common.BaseSoftDeleteEntity;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -49,7 +59,12 @@ public class OrderItem extends BaseSoftDeleteEntity {
         if (variantId == null) throw new InvalidOrderDataException("variantId", "ID biến thể không được để trống");
         if (quantity <= 0) throw new InvalidOrderDataException("quantity", "Số lượng phải lớn hơn 0");
         if (price < 0) throw new InvalidOrderDataException("price", "Giá không hợp lệ");
-        this.productId = productId; this.variantId = variantId; this.productName = productName; this.variantAttributesSnapshot = variantAttributesSnapshot; this.quantity = quantity; this.price = price;
+        this.productId = productId;
+        this.variantId = variantId;
+        this.productName = productName;
+        this.variantAttributesSnapshot = variantAttributesSnapshot;
+        this.quantity = quantity;
+        this.price = price;
     }
 
     void setOrder(Order order) { this.order = order; }

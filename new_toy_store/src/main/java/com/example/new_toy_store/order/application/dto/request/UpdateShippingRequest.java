@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class UpdateShippingRequest {
+
     @NotBlank(message = "Địa chỉ giao hàng mới không được để trống")
     @Size(max = 255, message = "Địa chỉ giao hàng không được vượt quá 255 ký tự")
     private String newAddress;

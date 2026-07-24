@@ -17,6 +17,7 @@ public class OrderResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<String> availableActions;
+    private List<OrderStatus> allowedNextActions;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -42,4 +43,6 @@ public class OrderResponse {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public List<String> getAvailableActions() { return availableActions; }
     public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
+    public List<OrderStatus> getAllowedNextActions() { return allowedNextActions; }
+    public void setAllowedNextActions(List<OrderStatus> allowedNextActions) { this.allowedNextActions = allowedNextActions; }
 }

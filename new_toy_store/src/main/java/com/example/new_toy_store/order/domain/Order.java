@@ -3,8 +3,19 @@ package com.example.new_toy_store.order.domain;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderDataException;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLRestriction;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +27,8 @@ import java.util.List;
         indexes = {
                 @Index(name = "idx_order_created_at", columnList = "created_at"),
                 @Index(name = "idx_order_user_id", columnList = "user_id"),
-                @Index(name = "idx_order_status", columnList = "status")
+                @Index(name = "idx_order_status", columnList = "status"),
+                @Index(name = "idx_order_user_status_created", columnList = "user_id, status, created_at")
         }
 )
 public class Order extends BaseRootEntity {
