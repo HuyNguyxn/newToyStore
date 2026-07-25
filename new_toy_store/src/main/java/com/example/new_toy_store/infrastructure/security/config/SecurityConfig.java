@@ -77,6 +77,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/orders/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/orders/**").hasAnyRole("MANAGER", "ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/payments/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/payments/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/payments/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/payments/**").hasAnyRole("MANAGER", "ADMIN")
+
                         .requestMatchers("/suppliers/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 

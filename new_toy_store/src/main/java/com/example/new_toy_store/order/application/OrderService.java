@@ -10,6 +10,7 @@ import com.example.new_toy_store.order.application.dto.request.OrderFilterReques
 import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
 import com.example.new_toy_store.order.domain.OrderItem;
@@ -206,6 +207,12 @@ public class OrderService {
     public String getOrderStatus(Integer orderId) {
         Order order = getOrder(orderId);
         return order.getStatus().name();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderPaymentSnapshot getPaymentSnapshot(Integer orderId) {
+        Order order = getOrder(orderId);
+        return new OrderPaymentSnapshot(order.getId(), order.getUserId(), order.getStatus(), order.getTotalAmount());
     }
 
     @Transactional
