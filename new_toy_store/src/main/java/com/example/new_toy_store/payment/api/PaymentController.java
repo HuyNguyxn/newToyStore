@@ -7,8 +7,11 @@ import com.example.new_toy_store.payment.application.dto.request.PaymentConfirmR
 import com.example.new_toy_store.payment.application.dto.request.PaymentFailureRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFilterRequest;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
+import com.example.new_toy_store.payment.application.dto.response.VnpayReturnResponse;
+import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
 import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +26,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/payments")
@@ -41,10 +47,21 @@ public class PaymentController {
     @PostMapping("/checkout")
     public PaymentResponse checkout(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody PaymentCheckoutRequest request
+            @Valid @RequestBody PaymentCheckoutRequest request,
+            HttpServletRequest servletRequest
     ) {
         UserProfileResponse user = getAuthenticatedUser(userDetails);
-        return service.checkout(request, user.getId(), isAdmin(user));
+        return service.checkout(request, user.getId(), isAdmin(user), getClientIp(servletRequest));
+    }
+
+    @GetMapping("/vnpay-return")
+    public VnpayReturnResponse handleVnpayReturn(@RequestParam Map<String, String> params) {
+        return service.handleVnpayReturn(params);
+    }
+
+    @GetMapping("/vnpay-ipn")
+    public VnpayIpnResponse handleVnpayIpn(@RequestParam Map<String, String> params) {
+        return service.handleVnpayIpn(params);
     }
 
     @GetMapping("/my-payments")
@@ -111,5 +128,13 @@ public class PaymentController {
 
     private boolean isAdmin(UserProfileResponse user) {
         return "ADMIN".equals(user.getRole());
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

@@ -21,6 +21,8 @@ public class PaymentResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String paymentUrl;
+    private String gatewayMessage;
     private List<String> availableActions;
     private List<PaymentStatus> allowedNextStatuses;
     private List<PaymentActionResponse> nextActions;
@@ -51,6 +53,10 @@ public class PaymentResponse {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getPaymentUrl() { return paymentUrl; }
+    public void setPaymentUrl(String paymentUrl) { this.paymentUrl = paymentUrl; }
+    public String getGatewayMessage() { return gatewayMessage; }
+    public void setGatewayMessage(String gatewayMessage) { this.gatewayMessage = gatewayMessage; }
     public List<String> getAvailableActions() { return availableActions; }
     public void setAvailableActions(List<String> availableActions) { this.availableActions = availableActions; }
     public List<PaymentStatus> getAllowedNextStatuses() { return allowedNextStatuses; }

@@ -31,7 +31,7 @@ public class InvalidPaymentDataException extends PaymentDomainException {
     public static InvalidPaymentDataException unsupportedMethod(PaymentMethod method) {
         return new InvalidPaymentDataException(
                 "method",
-                "Payment method [" + method.name() + "] is not available yet. VNPay will be integrated in a separate phase."
+                "Payment method [" + method.name() + "] is not available."
         );
     }
 

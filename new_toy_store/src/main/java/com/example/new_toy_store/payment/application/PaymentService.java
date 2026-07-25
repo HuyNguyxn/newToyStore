@@ -13,6 +13,8 @@ import com.example.new_toy_store.payment.application.dto.request.PaymentConfirmR
 import com.example.new_toy_store.payment.application.dto.request.PaymentFailureRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFilterRequest;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
+import com.example.new_toy_store.payment.application.dto.response.VnpayReturnResponse;
+import com.example.new_toy_store.payment.domain.PaymentMethod;
 import com.example.new_toy_store.payment.domain.PaymentRepository;
 import com.example.new_toy_store.payment.domain.PaymentStatus;
 import com.example.new_toy_store.payment.domain.PaymentTransaction;
@@ -22,6 +24,8 @@ import com.example.new_toy_store.payment.domain.exception.PaymentAccessDeniedExc
 import com.example.new_toy_store.payment.domain.exception.PaymentCrossModuleException;
 import com.example.new_toy_store.payment.domain.exception.PaymentDeletedConflictException;
 import com.example.new_toy_store.payment.domain.exception.PaymentNotFoundException;
+import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
+import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayService;
 import com.example.new_toy_store.payment.mapper.PaymentMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -31,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PaymentService {
@@ -40,19 +45,22 @@ public class PaymentService {
     private final PaymentRepository repository;
     private final OrderFacade orderFacade;
     private final ApplicationEventPublisher eventPublisher;
+    private final VnpayService vnpayService;
 
     public PaymentService(
             PaymentRepository repository,
             OrderFacade orderFacade,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            VnpayService vnpayService
     ) {
         this.repository = repository;
         this.orderFacade = orderFacade;
         this.eventPublisher = eventPublisher;
+        this.vnpayService = vnpayService;
     }
 
     @Transactional
-    public PaymentResponse checkout(PaymentCheckoutRequest request, Integer currentUserId, boolean isAdmin) {
+    public PaymentResponse checkout(PaymentCheckoutRequest request, Integer currentUserId, boolean isAdmin, String clientIp) {
         OrderPaymentSnapshot order = orderFacade.getPaymentSnapshot(request.getOrderId());
         validateOrderCanBePaid(order);
         validateOwnership(order.getOrderId(), order.getUserId(), currentUserId, isAdmin, "checkout");
@@ -66,6 +74,10 @@ public class PaymentService {
         );
 
         repository.save(payment);
+        if (payment.getMethod() == PaymentMethod.VNPAY) {
+            String paymentUrl = vnpayService.createPaymentUrl(payment, clientIp);
+            return PaymentMapper.toCheckoutResponse(payment, paymentUrl, "Open this paymentUrl to pay with VNPay sandbox.");
+        }
         return PaymentMapper.toResponse(payment);
     }
 
@@ -156,6 +168,71 @@ public class PaymentService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public VnpayReturnResponse handleVnpayReturn(Map<String, String> params) {
+        boolean validSignature = vnpayService.isValidSignature(params);
+        Integer paymentId = vnpayService.extractPaymentId(params);
+        PaymentTransaction payment = getPayment(paymentId);
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionStatus = params.get("vnp_TransactionStatus");
+        String message = validSignature
+                ? resolveVnpayMessage(responseCode, transactionStatus)
+                : "VNPay signature is invalid. Do not trust this payment result.";
+
+        return new VnpayReturnResponse(
+                validSignature,
+                responseCode,
+                transactionStatus,
+                message,
+                PaymentMapper.toResponse(payment)
+        );
+    }
+
+    @Transactional
+    public VnpayIpnResponse handleVnpayIpn(Map<String, String> params) {
+        if (!vnpayService.isValidSignature(params)) {
+            return new VnpayIpnResponse("97", "Invalid signature");
+        }
+
+        Integer paymentId;
+        try {
+            paymentId = vnpayService.extractPaymentId(params);
+        } catch (RuntimeException ex) {
+            return new VnpayIpnResponse("01", "Order not found");
+        }
+
+        PaymentTransaction payment = repository.findByIdForUpdate(paymentId).orElse(null);
+        if (payment == null) {
+            return new VnpayIpnResponse("01", "Order not found");
+        }
+
+        if (vnpayService.toVnpayAmount(payment.getAmount()) != vnpayService.extractAmount(params)) {
+            return new VnpayIpnResponse("04", "Invalid amount");
+        }
+
+        if (payment.getStatus() == PaymentStatus.SUCCEEDED) {
+            return new VnpayIpnResponse("00", "Order already confirmed");
+        }
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            return new VnpayIpnResponse("02", "Order already confirmed");
+        }
+
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionStatus = params.get("vnp_TransactionStatus");
+        if ("00".equals(responseCode) && "00".equals(transactionStatus)) {
+            payment.succeed(params.get("vnp_TransactionNo"));
+            repository.save(payment);
+            publishPaymentCompleted(payment);
+        } else {
+            payment.fail(resolveVnpayMessage(responseCode, transactionStatus));
+            repository.save(payment);
+            publishPaymentFailed(payment);
+        }
+
+        return new VnpayIpnResponse("00", "Confirm success");
+    }
+
     private PaymentTransaction getPayment(Integer paymentId) {
         return repository.findById(paymentId).orElseThrow(() -> new PaymentNotFoundException(paymentId));
     }
@@ -180,6 +257,35 @@ public class PaymentService {
         if (repository.existsByOrderIdAndStatusIn(orderId, ACTIVE_PAYMENT_STATUSES)) {
             throw new DuplicateActivePaymentException(orderId);
         }
+    }
+
+    private void publishPaymentCompleted(PaymentTransaction payment) {
+        eventPublisher.publishEvent(PaymentCompletedEvent.now(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getUserId(),
+                payment.getMethod(),
+                payment.getAmount(),
+                payment.getProviderTransactionId()
+        ));
+    }
+
+    private void publishPaymentFailed(PaymentTransaction payment) {
+        eventPublisher.publishEvent(PaymentFailedEvent.now(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getUserId(),
+                payment.getMethod(),
+                payment.getAmount(),
+                payment.getFailureReason()
+        ));
+    }
+
+    private String resolveVnpayMessage(String responseCode, String transactionStatus) {
+        if ("00".equals(responseCode) && "00".equals(transactionStatus)) {
+            return "VNPay payment was successful.";
+        }
+        return "VNPay payment was not successful. responseCode=" + responseCode + ", transactionStatus=" + transactionStatus;
     }
 
     private void validateOwnership(Integer targetId, Integer ownerId, Integer currentUserId, boolean isAdmin, String action) {

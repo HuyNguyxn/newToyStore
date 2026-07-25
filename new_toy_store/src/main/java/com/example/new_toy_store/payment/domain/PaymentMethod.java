@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 public enum PaymentMethod {
 
     COD("Cash on delivery", "Customer pays when receiving the order", true),
-    VNPAY("VNPay", "Online payment through VNPay gateway", false);
+    VNPAY("VNPay", "Online payment through VNPay gateway", true);
 
     private final String displayName;
     private final String description;

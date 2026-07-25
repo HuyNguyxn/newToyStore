@@ -20,6 +20,14 @@ public final class PaymentMapper {
         return response;
     }
 
+    public static PaymentResponse toCheckoutResponse(PaymentTransaction payment, String paymentUrl, String gatewayMessage) {
+        PaymentResponse response = toResponse(payment);
+        if (response == null) return null;
+        response.setPaymentUrl(paymentUrl);
+        response.setGatewayMessage(gatewayMessage);
+        return response;
+    }
+
     private static void mapCoreFields(PaymentTransaction payment, PaymentResponse response) {
         response.setId(payment.getId());
         response.setOrderId(payment.getOrderId());
