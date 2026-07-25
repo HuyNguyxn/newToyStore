@@ -92,6 +92,13 @@ public class PaymentTransaction extends BaseRootEntity {
         this.paidAt = LocalDateTime.now();
     }
 
+    public void collectCod(String collectionReference) {
+        if (this.method != PaymentMethod.COD) {
+            throw new InvalidPaymentOperationException("collectCod", "Only COD payments can be collected manually after delivery.");
+        }
+        succeed(collectionReference);
+    }
+
     public void fail(String reason) {
         changeStatus(PaymentStatus.FAILED);
         this.failureReason = requireReason(reason, "Failure reason must not be empty");

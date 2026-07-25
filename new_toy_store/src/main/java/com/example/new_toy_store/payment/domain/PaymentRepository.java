@@ -27,6 +27,8 @@ public interface PaymentRepository extends JpaRepository<PaymentTransaction, Int
 
     Optional<PaymentTransaction> findByOrderId(Integer orderId);
 
+    Optional<PaymentTransaction> findByOrderIdAndMethod(Integer orderId, PaymentMethod method);
+
     boolean existsByOrderIdAndStatusIn(Integer orderId, Collection<PaymentStatus> statuses);
 
     @Override

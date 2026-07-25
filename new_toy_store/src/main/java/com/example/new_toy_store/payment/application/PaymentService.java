@@ -4,6 +4,7 @@ import com.example.new_toy_store.global.event.PaymentCancelledEvent;
 import com.example.new_toy_store.global.event.PaymentCompletedEvent;
 import com.example.new_toy_store.global.event.PaymentFailedEvent;
 import com.example.new_toy_store.global.event.PaymentRefundedEvent;
+import com.example.new_toy_store.global.event.ShipmentDeliveredEvent;
 import com.example.new_toy_store.infrastructure.specification.PaymentSpecification;
 import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
@@ -204,6 +205,12 @@ public class PaymentService {
     @Transactional
     public PaymentResponse markSucceeded(Integer paymentId, PaymentConfirmRequest request) {
         PaymentTransaction payment = getPaymentForUpdate(paymentId);
+        if (payment.getMethod() == PaymentMethod.COD) {
+            throw new InvalidPaymentOperationException(
+                    "markSucceeded",
+                    "COD payment can only be marked succeeded after shipment delivery."
+            );
+        }
         payment.succeed(request == null ? null : request.getProviderTransactionId());
         repository.save(payment);
 
@@ -216,6 +223,29 @@ public class PaymentService {
                 payment.getProviderTransactionId()
         ));
         return PaymentMapper.toResponse(payment);
+    }
+
+    @Transactional
+    public void recordCodCollected(ShipmentDeliveredEvent event) {
+        if (event.codAmount() <= 0) {
+            return;
+        }
+
+        PaymentTransaction payment = repository.findByOrderIdAndMethod(event.orderId(), PaymentMethod.COD)
+                .orElse(null);
+        if (payment == null || payment.getStatus() == PaymentStatus.SUCCEEDED) {
+            return;
+        }
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new InvalidPaymentOperationException(
+                    "collectCod",
+                    "COD payment must be pending before collection can be recorded."
+            );
+        }
+
+        payment.collectCod("COD-" + event.trackingCode());
+        repository.save(payment);
+        publishPaymentCompleted(payment);
     }
 
     @Transactional
