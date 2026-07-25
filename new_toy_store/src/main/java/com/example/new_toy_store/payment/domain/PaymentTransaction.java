@@ -109,6 +109,18 @@ public class PaymentTransaction extends BaseRootEntity {
         changeStatus(PaymentStatus.EXPIRED);
     }
 
+    public void requestRefund() {
+        changeStatus(PaymentStatus.REFUND_PENDING);
+    }
+
+    public void completeRefund() {
+        changeStatus(PaymentStatus.REFUNDED);
+    }
+
+    public void failRefund() {
+        changeStatus(PaymentStatus.REFUND_FAILED);
+    }
+
     public void changeStatus(PaymentStatus nextStatus) {
         if (nextStatus == null) {
             throw InvalidPaymentDataException.emptyStatus();

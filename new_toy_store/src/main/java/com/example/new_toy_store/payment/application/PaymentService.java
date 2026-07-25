@@ -3,6 +3,7 @@ package com.example.new_toy_store.payment.application;
 import com.example.new_toy_store.global.event.PaymentCancelledEvent;
 import com.example.new_toy_store.global.event.PaymentCompletedEvent;
 import com.example.new_toy_store.global.event.PaymentFailedEvent;
+import com.example.new_toy_store.global.event.PaymentRefundedEvent;
 import com.example.new_toy_store.infrastructure.specification.PaymentSpecification;
 import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
@@ -12,19 +13,30 @@ import com.example.new_toy_store.payment.application.dto.request.PaymentCheckout
 import com.example.new_toy_store.payment.application.dto.request.PaymentConfirmRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFailureRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFilterRequest;
+import com.example.new_toy_store.payment.application.dto.request.PaymentRefundDecisionRequest;
+import com.example.new_toy_store.payment.application.dto.request.PaymentRefundRequest;
+import com.example.new_toy_store.payment.application.dto.response.PaymentRefundResponse;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
 import com.example.new_toy_store.payment.application.dto.response.VnpayReturnResponse;
 import com.example.new_toy_store.payment.domain.PaymentMethod;
+import com.example.new_toy_store.payment.domain.PaymentRefund;
+import com.example.new_toy_store.payment.domain.PaymentRefundRepository;
 import com.example.new_toy_store.payment.domain.PaymentRepository;
 import com.example.new_toy_store.payment.domain.PaymentStatus;
 import com.example.new_toy_store.payment.domain.PaymentTransaction;
+import com.example.new_toy_store.payment.domain.RefundMethod;
+import com.example.new_toy_store.payment.domain.RefundStatus;
 import com.example.new_toy_store.payment.domain.exception.DuplicateActivePaymentException;
+import com.example.new_toy_store.payment.domain.exception.DuplicatePaymentRefundException;
 import com.example.new_toy_store.payment.domain.exception.InvalidPaymentOperationException;
 import com.example.new_toy_store.payment.domain.exception.PaymentAccessDeniedException;
 import com.example.new_toy_store.payment.domain.exception.PaymentCrossModuleException;
 import com.example.new_toy_store.payment.domain.exception.PaymentDeletedConflictException;
 import com.example.new_toy_store.payment.domain.exception.PaymentNotFoundException;
+import com.example.new_toy_store.payment.domain.exception.PaymentRefundDeletedConflictException;
+import com.example.new_toy_store.payment.domain.exception.PaymentRefundNotFoundException;
 import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
+import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayRefundResponse;
 import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayService;
 import com.example.new_toy_store.payment.mapper.PaymentMapper;
 import org.springframework.context.ApplicationEventPublisher;
@@ -43,17 +55,20 @@ public class PaymentService {
     private static final List<PaymentStatus> ACTIVE_PAYMENT_STATUSES = List.of(PaymentStatus.PENDING, PaymentStatus.SUCCEEDED);
 
     private final PaymentRepository repository;
+    private final PaymentRefundRepository refundRepository;
     private final OrderFacade orderFacade;
     private final ApplicationEventPublisher eventPublisher;
     private final VnpayService vnpayService;
 
     public PaymentService(
             PaymentRepository repository,
+            PaymentRefundRepository refundRepository,
             OrderFacade orderFacade,
             ApplicationEventPublisher eventPublisher,
             VnpayService vnpayService
     ) {
         this.repository = repository;
+        this.refundRepository = refundRepository;
         this.orderFacade = orderFacade;
         this.eventPublisher = eventPublisher;
         this.vnpayService = vnpayService;
@@ -102,6 +117,88 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public boolean hasSucceededPaymentForOrder(Integer orderId) {
         return repository.existsByOrderIdAndStatusIn(orderId, List.of(PaymentStatus.SUCCEEDED));
+    }
+
+    @Transactional
+    public PaymentRefundResponse requestRefund(Integer paymentId, PaymentRefundRequest request) {
+        PaymentTransaction payment = getPaymentForUpdate(paymentId);
+        validateRefundablePayment(payment);
+        validateRefundMethod(payment, request.getMethod());
+        validateRefundAmount(payment, request.getAmount());
+
+        PaymentRefund refund = new PaymentRefund(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getUserId(),
+                generateRefundCode(payment.getId()),
+                request.getMethod(),
+                request.getAmount(),
+                request.getReason()
+        );
+
+        payment.requestRefund();
+        refundRepository.save(refund);
+        repository.save(payment);
+        return PaymentMapper.toRefundResponse(refund);
+    }
+
+    @Transactional
+    public PaymentRefundResponse processRefund(Integer refundId, String adminEmail, String clientIp) {
+        PaymentRefund refund = getRefundForUpdate(refundId);
+        PaymentTransaction payment = getPaymentForUpdate(refund.getPaymentId());
+
+        if (payment.getStatus() == PaymentStatus.REFUND_FAILED) {
+            payment.requestRefund();
+        }
+        refund.startProcessing();
+        if (refund.getMethod() == RefundMethod.VNPAY) {
+            VnpayRefundResponse gatewayResponse = vnpayService.requestRefund(payment, refund, adminEmail, clientIp);
+            if (gatewayResponse.isSuccess()) {
+                refund.succeed(gatewayResponse.getProviderRefundId());
+                payment.completeRefund();
+                publishPaymentRefunded(refund);
+            } else {
+                refund.fail(gatewayResponse.getMessage());
+                payment.failRefund();
+            }
+        } else {
+            refund.succeed(refund.getRefundCode());
+            payment.completeRefund();
+            publishPaymentRefunded(refund);
+        }
+
+        refundRepository.save(refund);
+        repository.save(payment);
+        return PaymentMapper.toRefundResponse(refund);
+    }
+
+    @Transactional
+    public PaymentRefundResponse rejectRefund(Integer refundId, PaymentRefundDecisionRequest request) {
+        PaymentRefund refund = getRefundForUpdate(refundId);
+        PaymentTransaction payment = getPaymentForUpdate(refund.getPaymentId());
+        refund.reject(request.getReason());
+        payment.failRefund();
+        refundRepository.save(refund);
+        repository.save(payment);
+        return PaymentMapper.toRefundResponse(refund);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentRefundResponse> getRefunds(Integer paymentId, Pageable pageable) {
+        return refundRepository.findByPaymentId(paymentId, pageable).map(PaymentMapper::toRefundResponse);
+    }
+
+    @Transactional
+    public void deleteRefund(Integer refundId) {
+        PaymentRefund refund = getRefund(refundId);
+        int updatedRows = refundRepository.softDeleteWithVersion(
+                refundId,
+                refund.getVersion(),
+                List.of(RefundStatus.REJECTED, RefundStatus.CANCELLED, RefundStatus.FAILED)
+        );
+        if (updatedRows == 0) {
+            throw new PaymentRefundDeletedConflictException(refundId);
+        }
     }
 
     @Transactional
@@ -246,6 +343,40 @@ public class PaymentService {
         return repository.findByIdForUpdate(paymentId).orElseThrow(() -> new PaymentNotFoundException(paymentId));
     }
 
+    private PaymentRefund getRefund(Integer refundId) {
+        return refundRepository.findById(refundId).orElseThrow(() -> new PaymentRefundNotFoundException(refundId));
+    }
+
+    private PaymentRefund getRefundForUpdate(Integer refundId) {
+        return refundRepository.findByIdForUpdate(refundId).orElseThrow(() -> new PaymentRefundNotFoundException(refundId));
+    }
+
+    private void validateRefundablePayment(PaymentTransaction payment) {
+        if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
+            throw new InvalidPaymentOperationException("requestRefund", "Only succeeded payments can be refunded.");
+        }
+    }
+
+    private void validateRefundMethod(PaymentTransaction payment, RefundMethod refundMethod) {
+        if (payment.getMethod() == PaymentMethod.VNPAY && refundMethod != RefundMethod.VNPAY) {
+            throw new InvalidPaymentOperationException("requestRefund", "VNPay payment must be refunded through VNPay.");
+        }
+        if (payment.getMethod() == PaymentMethod.COD && refundMethod != RefundMethod.COD_MANUAL) {
+            throw new InvalidPaymentOperationException("requestRefund", "COD payment must be refunded manually.");
+        }
+    }
+
+    private void validateRefundAmount(PaymentTransaction payment, double requestedAmount) {
+        double alreadyRefunded = refundRepository.sumAmountByPaymentIdAndStatuses(
+                payment.getId(),
+                List.of(RefundStatus.PENDING, RefundStatus.PROCESSING, RefundStatus.SUCCEEDED)
+        );
+        double refundableAmount = Math.max(0.0, Math.round((payment.getAmount() - alreadyRefunded) * 100.0) / 100.0);
+        if (requestedAmount > refundableAmount) {
+            throw new DuplicatePaymentRefundException(payment.getId(), requestedAmount, refundableAmount);
+        }
+    }
+
     private void validateOrderCanBePaid(OrderPaymentSnapshot order) {
         if (order.getStatus() != OrderStatus.PENDING) {
             throw PaymentCrossModuleException.invalidOrder(
@@ -284,6 +415,26 @@ public class PaymentService {
                 payment.getAmount(),
                 payment.getFailureReason()
         ));
+    }
+
+    private void publishPaymentRefunded(PaymentRefund refund) {
+        eventPublisher.publishEvent(PaymentRefundedEvent.now(
+                refund.getId(),
+                refund.getPaymentId(),
+                refund.getOrderId(),
+                refund.getUserId(),
+                refund.getMethod(),
+                refund.getAmount(),
+                refund.getRefundCode()
+        ));
+    }
+
+    private String generateRefundCode(Integer paymentId) {
+        String code;
+        do {
+            code = "REF-" + paymentId + "-" + System.currentTimeMillis();
+        } while (refundRepository.existsByRefundCode(code));
+        return code;
     }
 
     private String resolveVnpayMessage(String responseCode, String transactionStatus) {

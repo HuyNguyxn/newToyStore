@@ -9,6 +9,7 @@ public class VnpayProperties {
 
     private boolean enabled;
     private String payUrl;
+    private String refundUrl;
     private String tmnCode;
     private String hashSecret;
     private String returnUrl;
@@ -23,6 +24,8 @@ public class VnpayProperties {
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public String getPayUrl() { return payUrl; }
     public void setPayUrl(String payUrl) { this.payUrl = payUrl; }
+    public String getRefundUrl() { return refundUrl; }
+    public void setRefundUrl(String refundUrl) { this.refundUrl = refundUrl; }
     public String getTmnCode() { return tmnCode; }
     public void setTmnCode(String tmnCode) { this.tmnCode = tmnCode; }
     public String getHashSecret() { return hashSecret; }

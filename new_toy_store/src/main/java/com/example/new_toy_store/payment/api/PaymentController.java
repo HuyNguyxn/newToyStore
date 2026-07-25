@@ -6,6 +6,9 @@ import com.example.new_toy_store.payment.application.dto.request.PaymentCheckout
 import com.example.new_toy_store.payment.application.dto.request.PaymentConfirmRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFailureRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentFilterRequest;
+import com.example.new_toy_store.payment.application.dto.request.PaymentRefundDecisionRequest;
+import com.example.new_toy_store.payment.application.dto.request.PaymentRefundRequest;
+import com.example.new_toy_store.payment.application.dto.response.PaymentRefundResponse;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
 import com.example.new_toy_store.payment.application.dto.response.VnpayReturnResponse;
 import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
@@ -86,6 +89,46 @@ public class PaymentController {
     @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public Page<PaymentResponse> filter(PaymentFilterRequest request, Pageable pageable) {
         return service.filter(request, pageable);
+    }
+
+    @PostMapping("/{id}/refunds")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public PaymentRefundResponse requestRefund(
+            @PathVariable Integer id,
+            @Valid @RequestBody PaymentRefundRequest request
+    ) {
+        return service.requestRefund(id, request);
+    }
+
+    @GetMapping("/{id}/refunds")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
+    public Page<PaymentRefundResponse> getRefunds(@PathVariable Integer id, Pageable pageable) {
+        return service.getRefunds(id, pageable);
+    }
+
+    @PatchMapping("/refunds/{refundId}/process")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public PaymentRefundResponse processRefund(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Integer refundId,
+            HttpServletRequest servletRequest
+    ) {
+        return service.processRefund(refundId, userDetails.getUsername(), getClientIp(servletRequest));
+    }
+
+    @PatchMapping("/refunds/{refundId}/reject")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public PaymentRefundResponse rejectRefund(
+            @PathVariable Integer refundId,
+            @Valid @RequestBody PaymentRefundDecisionRequest request
+    ) {
+        return service.rejectRefund(refundId, request);
+    }
+
+    @DeleteMapping("/refunds/{refundId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public void deleteRefund(@PathVariable Integer refundId) {
+        service.deleteRefund(refundId);
     }
 
     @PatchMapping("/{id}/succeed")

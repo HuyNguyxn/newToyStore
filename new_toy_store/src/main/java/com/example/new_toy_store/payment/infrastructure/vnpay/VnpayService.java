@@ -1,11 +1,18 @@
 package com.example.new_toy_store.payment.infrastructure.vnpay;
 
 import com.example.new_toy_store.payment.domain.PaymentTransaction;
+import com.example.new_toy_store.payment.domain.PaymentRefund;
 import com.example.new_toy_store.payment.domain.exception.InvalidPaymentDataException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -22,9 +29,13 @@ public class VnpayService {
     private static final DateTimeFormatter VNPAY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final VnpayProperties properties;
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
-    public VnpayService(VnpayProperties properties) {
+    public VnpayService(VnpayProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
+        this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     public String createPaymentUrl(PaymentTransaction payment, String clientIp) {
@@ -69,6 +80,50 @@ public class VnpayService {
         return expectedHash.equalsIgnoreCase(receivedHash);
     }
 
+    public VnpayRefundResponse requestRefund(PaymentTransaction payment, PaymentRefund refund, String adminUser, String clientIp) {
+        validateEnabled();
+        if (payment.getProviderTransactionId() == null || payment.getProviderTransactionId().isBlank()) {
+            throw new InvalidPaymentDataException("providerTransactionId", "VNPay transaction number is required to request refund.");
+        }
+        if (payment.getPaidAt() == null) {
+            throw new InvalidPaymentDataException("paidAt", "Original VNPay payment time is required to request refund.");
+        }
+
+        Map<String, String> params = new TreeMap<>();
+        params.put("vnp_RequestId", refund.getRefundCode());
+        params.put("vnp_Version", properties.getVersion());
+        params.put("vnp_Command", "refund");
+        params.put("vnp_TmnCode", properties.getTmnCode());
+        params.put("vnp_TransactionType", refund.getAmount() >= payment.getAmount() ? "02" : "03");
+        params.put("vnp_TxnRef", String.valueOf(payment.getId()));
+        params.put("vnp_Amount", String.valueOf(toVnpayAmount(refund.getAmount())));
+        params.put("vnp_OrderInfo", "Refund payment " + payment.getId() + " with refund " + refund.getId());
+        params.put("vnp_TransactionNo", payment.getProviderTransactionId());
+        params.put("vnp_TransactionDate", payment.getPaidAt().format(VNPAY_DATE_FORMAT));
+        params.put("vnp_CreateBy", adminUser == null || adminUser.isBlank() ? "system" : adminUser);
+        params.put("vnp_CreateDate", LocalDateTime.now(VN_ZONE).format(VNPAY_DATE_FORMAT));
+        params.put("vnp_IpAddr", resolveClientIp(clientIp));
+        params.put("vnp_SecureHash", hmacSha512(properties.getHashSecret(), buildRefundHashData(params)));
+
+        try {
+            String requestBody = objectMapper.writeValueAsString(params);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(properties.getRefundUrl()))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            Map<String, String> responseBody = objectMapper.readValue(response.body(), new TypeReference<>() {});
+            String responseCode = responseBody.getOrDefault("vnp_ResponseCode", "99");
+            String message = responseBody.getOrDefault("vnp_Message", "VNPay refund response code " + responseCode);
+            String providerRefundId = responseBody.getOrDefault("vnp_TransactionNo", refund.getRefundCode());
+            return new VnpayRefundResponse("00".equals(responseCode), providerRefundId, responseCode, message);
+        } catch (Exception ex) {
+            return new VnpayRefundResponse(false, null, "99", "Cannot call VNPay refund API: " + ex.getMessage());
+        }
+    }
+
     public Integer extractPaymentId(Map<String, String> params) {
         try {
             return Integer.valueOf(params.get("vnp_TxnRef"));
@@ -93,7 +148,7 @@ public class VnpayService {
         if (!properties.isEnabled()) {
             throw new InvalidPaymentDataException("method", "VNPay is disabled. Please enable app.payment.vnpay.enabled first.");
         }
-        if (isBlank(properties.getPayUrl()) || isBlank(properties.getTmnCode())
+        if (isBlank(properties.getPayUrl()) || isBlank(properties.getRefundUrl()) || isBlank(properties.getTmnCode())
                 || isPlaceholder(properties.getTmnCode()) || isBlank(properties.getHashSecret())
                 || isPlaceholder(properties.getHashSecret()) || isBlank(properties.getReturnUrl())
                 || isBlank(properties.getIpnUrl())) {
@@ -106,6 +161,24 @@ public class VnpayService {
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isBlank())
                 .map(entry -> encode(entry.getKey(), encoded) + "=" + encode(entry.getValue(), encoded))
                 .collect(Collectors.joining("&"));
+    }
+
+    private String buildRefundHashData(Map<String, String> params) {
+        return String.join("|",
+                params.getOrDefault("vnp_RequestId", ""),
+                params.getOrDefault("vnp_Version", ""),
+                params.getOrDefault("vnp_Command", ""),
+                params.getOrDefault("vnp_TmnCode", ""),
+                params.getOrDefault("vnp_TransactionType", ""),
+                params.getOrDefault("vnp_TxnRef", ""),
+                params.getOrDefault("vnp_Amount", ""),
+                params.getOrDefault("vnp_TransactionNo", ""),
+                params.getOrDefault("vnp_TransactionDate", ""),
+                params.getOrDefault("vnp_CreateBy", ""),
+                params.getOrDefault("vnp_CreateDate", ""),
+                params.getOrDefault("vnp_IpAddr", ""),
+                params.getOrDefault("vnp_OrderInfo", "")
+        );
     }
 
     private String encode(String value, boolean encoded) {

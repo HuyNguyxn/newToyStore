@@ -1,7 +1,9 @@
 package com.example.new_toy_store.payment.mapper;
 
 import com.example.new_toy_store.payment.application.dto.response.PaymentActionResponse;
+import com.example.new_toy_store.payment.application.dto.response.PaymentRefundResponse;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
+import com.example.new_toy_store.payment.domain.PaymentRefund;
 import com.example.new_toy_store.payment.domain.PaymentStatus;
 import com.example.new_toy_store.payment.domain.PaymentTransaction;
 
@@ -25,6 +27,29 @@ public final class PaymentMapper {
         if (response == null) return null;
         response.setPaymentUrl(paymentUrl);
         response.setGatewayMessage(gatewayMessage);
+        return response;
+    }
+
+    public static PaymentRefundResponse toRefundResponse(PaymentRefund refund) {
+        if (refund == null) return null;
+
+        PaymentRefundResponse response = new PaymentRefundResponse();
+        response.setId(refund.getId());
+        response.setPaymentId(refund.getPaymentId());
+        response.setOrderId(refund.getOrderId());
+        response.setUserId(refund.getUserId());
+        response.setRefundCode(refund.getRefundCode());
+        response.setMethod(refund.getMethod());
+        response.setStatus(refund.getStatus());
+        response.setAmount(refund.getAmount());
+        response.setReason(refund.getReason());
+        response.setProviderRefundId(refund.getProviderRefundId());
+        response.setFailedReason(refund.getFailedReason());
+        response.setProcessedAt(refund.getProcessedAt());
+        response.setCompletedAt(refund.getCompletedAt());
+        response.setCreatedAt(refund.getCreatedAt());
+        response.setUpdatedAt(refund.getUpdatedAt());
+        response.setAllowedNextStatuses(refund.getStatus().getNextValidStates());
         return response;
     }
 

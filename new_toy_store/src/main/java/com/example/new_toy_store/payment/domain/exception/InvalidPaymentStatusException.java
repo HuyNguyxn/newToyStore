@@ -24,4 +24,18 @@ public class InvalidPaymentStatusException extends PaymentDomainException {
                 Map.of("value", value, "allowedStatuses", allowedStatuses)
         );
     }
+
+    public static InvalidPaymentStatusException emptyRefundStatus() {
+        return new InvalidPaymentStatusException(
+                "Refund status must not be empty.",
+                Map.of("field", "refundStatus")
+        );
+    }
+
+    public static InvalidPaymentStatusException invalidRefundStatus(String value, List<String> allowedStatuses) {
+        return new InvalidPaymentStatusException(
+                "Refund status [" + value + "] is invalid.",
+                Map.of("value", value, "allowedStatuses", allowedStatuses)
+        );
+    }
 }

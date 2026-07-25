@@ -1,6 +1,7 @@
 package com.example.new_toy_store.payment.domain.exception;
 
 import com.example.new_toy_store.payment.domain.PaymentStatus;
+import com.example.new_toy_store.payment.domain.RefundStatus;
 import org.springframework.http.HttpStatus;
 
 import java.util.Map;
@@ -25,6 +26,18 @@ public class InvalidPaymentOperationException extends PaymentDomainException {
                 "changeStatus",
                 "Payment status cannot change from " + currentStatus.name() + " to " + nextStatus.name() + "."
         ).withContext(paymentId, currentStatus, nextStatus);
+    }
+
+    public static InvalidPaymentOperationException invalidRefundTransition(
+            Integer refundId,
+            RefundStatus currentStatus,
+            RefundStatus nextStatus
+    ) {
+        return new InvalidPaymentOperationException(
+                "changeRefundStatus",
+                "Refund status cannot change from " + currentStatus.name() + " to " + nextStatus.name() + ".",
+                Map.of("refundId", refundId, "currentStatus", currentStatus.name(), "nextStatus", nextStatus.name())
+        );
     }
 
     private InvalidPaymentOperationException withContext(
