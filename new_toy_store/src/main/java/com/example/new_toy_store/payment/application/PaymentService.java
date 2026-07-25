@@ -99,6 +99,11 @@ public class PaymentService {
         return repository.findAll(spec, pageable).map(PaymentMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasSucceededPaymentForOrder(Integer orderId) {
+        return repository.existsByOrderIdAndStatusIn(orderId, List.of(PaymentStatus.SUCCEEDED));
+    }
+
     @Transactional
     public PaymentResponse markSucceeded(Integer paymentId, PaymentConfirmRequest request) {
         PaymentTransaction payment = getPaymentForUpdate(paymentId);

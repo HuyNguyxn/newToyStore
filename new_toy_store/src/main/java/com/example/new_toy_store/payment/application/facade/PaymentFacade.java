@@ -16,4 +16,8 @@ public class PaymentFacade {
     public PaymentResponse getPaymentDetails(Integer paymentId, Integer currentUserId, boolean isAdmin) {
         return paymentService.getDetails(paymentId, currentUserId, isAdmin);
     }
+
+    public boolean hasSucceededPaymentForOrder(Integer orderId) {
+        return paymentService.hasSucceededPaymentForOrder(orderId);
+    }
 }

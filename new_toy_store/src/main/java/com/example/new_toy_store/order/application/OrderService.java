@@ -10,6 +10,8 @@ import com.example.new_toy_store.order.application.dto.request.OrderFilterReques
 import com.example.new_toy_store.order.application.dto.request.OrderItemRequest;
 import com.example.new_toy_store.order.application.dto.request.OrderRequest;
 import com.example.new_toy_store.order.application.dto.request.UpdateShippingRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderLogisticsItemSnapshot;
+import com.example.new_toy_store.order.application.dto.response.OrderLogisticsSnapshot;
 import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.Order;
@@ -213,6 +215,29 @@ public class OrderService {
     public OrderPaymentSnapshot getPaymentSnapshot(Integer orderId) {
         Order order = getOrder(orderId);
         return new OrderPaymentSnapshot(order.getId(), order.getUserId(), order.getStatus(), order.getTotalAmount());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderLogisticsSnapshot getLogisticsSnapshot(Integer orderId) {
+        Order order = repository.findByIdWithItemsAndHistories(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        List<OrderLogisticsItemSnapshot> items = order.getItems().stream()
+                .map(item -> new OrderLogisticsItemSnapshot(
+                        item.getProductId(),
+                        item.getVariantId(),
+                        item.getProductName(),
+                        item.getVariantAttributesSnapshot(),
+                        item.getQuantity()
+                ))
+                .toList();
+        return new OrderLogisticsSnapshot(
+                order.getId(),
+                order.getUserId(),
+                order.getStatus(),
+                order.getTotalAmount(),
+                order.getShippingAddress(),
+                items
+        );
     }
 
     @Transactional
