@@ -1,6 +1,6 @@
 package com.example.new_toy_store.statistics.api;
 
-import com.example.new_toy_store.statistics.application.StatisticsService;
+import com.example.new_toy_store.statistics.application.facade.StatisticsFacade;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
 import com.example.new_toy_store.statistics.domain.StatisticGroupBy;
@@ -24,10 +24,10 @@ import java.util.List;
 @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
 public class StatisticsController {
 
-    private final StatisticsService service;
+    private final StatisticsFacade facade;
 
-    public StatisticsController(StatisticsService service) {
-        this.service = service;
+    public StatisticsController(StatisticsFacade facade) {
+        this.facade = facade;
     }
 
     @GetMapping("/overview")
@@ -41,7 +41,7 @@ public class StatisticsController {
             @RequestParam(defaultValue = "5") @Min(0) int lowStockThreshold
     ) {
         StatisticPeriod period = StatisticPeriod.of(from, to, timezone, groupBy, compareWithPreviousPeriod);
-        return service.getOverview(period, topLimit, lowStockThreshold);
+        return facade.getOverview(period, topLimit, lowStockThreshold);
     }
 
     @GetMapping("/products/top-selling")
@@ -53,6 +53,6 @@ public class StatisticsController {
             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit
     ) {
         StatisticPeriod period = StatisticPeriod.of(from, to, timezone, groupBy, false);
-        return service.getTopSellingProducts(period, limit);
+        return facade.getTopSellingProducts(period, limit);
     }
 }
