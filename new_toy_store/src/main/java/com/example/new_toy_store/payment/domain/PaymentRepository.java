@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<PaymentTransaction, Integer>, JpaSpecificationExecutor<PaymentTransaction> {
@@ -37,6 +38,15 @@ public interface PaymentRepository extends JpaRepository<PaymentTransaction, Int
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status")
     double sumAmountByStatus(@Param("status") PaymentStatus status);
+
+    @Query("SELECT COUNT(p) FROM PaymentTransaction p WHERE p.status = :status AND p.createdAt >= :from AND p.createdAt < :to")
+    long countByStatusBetween(@Param("status") PaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status AND p.createdAt >= :from AND p.createdAt < :to")
+    double sumAmountByStatusBetween(@Param("status") PaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT p.method, COUNT(p), COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status AND p.createdAt >= :from AND p.createdAt < :to GROUP BY p.method")
+    java.util.List<Object[]> aggregateAmountByMethod(@Param("status") PaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Override
     Page<PaymentTransaction> findAll(Specification<PaymentTransaction> spec, Pageable pageable);

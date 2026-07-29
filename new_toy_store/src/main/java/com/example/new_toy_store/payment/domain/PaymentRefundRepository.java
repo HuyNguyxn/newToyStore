@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, Integer> {
@@ -22,6 +23,15 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
 
     @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.paymentId = :paymentId AND r.status IN :statuses")
     double sumAmountByPaymentIdAndStatuses(@Param("paymentId") Integer paymentId, @Param("statuses") Collection<RefundStatus> statuses);
+
+    @Query("SELECT COUNT(r) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to")
+    long countByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to")
+    double sumAmountByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to GROUP BY FUNCTION('date', r.createdAt)")
+    java.util.List<Object[]> aggregateDailyRefundAmount(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM PaymentRefund r WHERE r.id = :id")

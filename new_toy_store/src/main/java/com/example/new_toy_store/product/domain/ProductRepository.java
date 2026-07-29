@@ -7,12 +7,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
 public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
     long countByStatus(ProductStatus status);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.status = :status AND p.createdAt >= :from AND p.createdAt < :to")
+    long countByStatusBetween(@Param("status") ProductStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @EntityGraph(attributePaths = {"variants", "variants.inventory"})
     Optional<Product> findById(Integer id);

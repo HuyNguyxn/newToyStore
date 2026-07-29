@@ -56,17 +56,39 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status IN :statuses")
     double sumTotalAmountByStatuses(@Param("statuses") List<OrderStatus> statuses);
 
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status IN :statuses AND o.createdAt >= :from AND o.createdAt < :to")
+    double sumTotalAmountByStatusesBetween(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :from AND o.createdAt < :to")
     long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status AND o.createdAt >= :from AND o.createdAt < :to")
+    long countByStatusBetween(@Param("status") OrderStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status IN :statuses AND o.createdAt >= :from AND o.createdAt < :to")
+    long countByStatusesBetween(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM Order o JOIN o.items i WHERE o.status IN :statuses AND o.createdAt >= :from AND o.createdAt < :to")
+    long sumSoldQuantityBetween(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT FUNCTION('date', o.createdAt), COUNT(o), COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status IN :statuses AND o.createdAt >= :from AND o.createdAt < :to GROUP BY FUNCTION('date', o.createdAt)")
+    List<Object[]> aggregateDailyRevenue(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("""
-            SELECT i.productId, i.productName, SUM(i.quantity), SUM(i.quantity * i.price)
+            SELECT i.productId, i.productName, SUM(i.quantity), COUNT(DISTINCT o.id), SUM(i.quantity * i.price)
               FROM Order o JOIN o.items i
              WHERE o.status IN :statuses
+               AND o.createdAt >= :from
+               AND o.createdAt < :to
              GROUP BY i.productId, i.productName
              ORDER BY SUM(i.quantity) DESC
             """)
-    List<Object[]> findTopSellingProducts(@Param("statuses") List<OrderStatus> statuses, Pageable pageable);
+    List<Object[]> findTopSellingProducts(
+            @Param("statuses") List<OrderStatus> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

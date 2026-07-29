@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, JpaSpecificationExecutor<Shipment> {
@@ -27,6 +28,11 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     boolean existsByOrderId(Integer orderId);
 
     boolean existsByTrackingCode(String trackingCode);
+
+    long countByStatus(ShipmentStatus status);
+
+    @Query("SELECT COUNT(s) FROM Shipment s WHERE s.status = :status AND s.createdAt >= :from AND s.createdAt < :to")
+    long countByStatusBetween(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Override
     @EntityGraph(attributePaths = "items")

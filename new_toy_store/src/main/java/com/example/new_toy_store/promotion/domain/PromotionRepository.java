@@ -18,6 +18,11 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer>, 
 
     Optional<Promotion> findByCode(String code);
 
+    long countByIsActive(boolean active);
+
+    @Query("SELECT COALESCE(SUM(p.usedCount), 0) FROM Promotion p")
+    long sumUsedCount();
+
     Page<Promotion> findAll(Specification<Promotion> specification, Pageable pageable);
 
     @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND (p.startDate IS NULL OR p.startDate <= :now) AND (p.endDate IS NULL OR p.endDate >= :now) AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit) AND p.scope = 'PRODUCT' AND p.targetProductId = :productId")
