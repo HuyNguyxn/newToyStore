@@ -92,27 +92,6 @@ public record StatisticPeriod(
 
     private static StatisticGroupBy resolveGroupBy(LocalDate from, LocalDate to, StatisticGroupBy requested) {
         long days = ChronoUnit.DAYS.between(from, to) + 1;
-        StatisticGroupBy autoGroupBy = autoGroupBy(days);
-
-        if (requested == StatisticGroupBy.AUTO) {
-            return autoGroupBy;
-        }
-        if (requested == StatisticGroupBy.DAY && days > 366) {
-            return StatisticGroupBy.MONTH;
-        }
-        if (requested == StatisticGroupBy.WEEK && days > MAX_RANGE_DAYS) {
-            return StatisticGroupBy.MONTH;
-        }
-        return requested;
-    }
-
-    private static StatisticGroupBy autoGroupBy(long days) {
-        if (days <= 31) {
-            return StatisticGroupBy.DAY;
-        }
-        if (days <= 120) {
-            return StatisticGroupBy.WEEK;
-        }
-        return StatisticGroupBy.MONTH;
+        return requested.resolveFor(days);
     }
 }

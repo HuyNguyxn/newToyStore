@@ -36,9 +36,9 @@ import com.example.new_toy_store.payment.domain.exception.PaymentDeletedConflict
 import com.example.new_toy_store.payment.domain.exception.PaymentNotFoundException;
 import com.example.new_toy_store.payment.domain.exception.PaymentRefundDeletedConflictException;
 import com.example.new_toy_store.payment.domain.exception.PaymentRefundNotFoundException;
-import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
-import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayRefundResponse;
-import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayService;
+import com.example.new_toy_store.infrastructure.payment.vnpay.VnpayIpnResponse;
+import com.example.new_toy_store.infrastructure.payment.vnpay.VnpayRefundResponse;
+import com.example.new_toy_store.infrastructure.payment.vnpay.VnpayService;
 import com.example.new_toy_store.payment.mapper.PaymentMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;

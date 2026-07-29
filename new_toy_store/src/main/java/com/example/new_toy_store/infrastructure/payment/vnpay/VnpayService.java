@@ -1,4 +1,4 @@
-package com.example.new_toy_store.payment.infrastructure.vnpay;
+package com.example.new_toy_store.infrastructure.payment.vnpay;
 
 import com.example.new_toy_store.payment.domain.PaymentTransaction;
 import com.example.new_toy_store.payment.domain.PaymentRefund;

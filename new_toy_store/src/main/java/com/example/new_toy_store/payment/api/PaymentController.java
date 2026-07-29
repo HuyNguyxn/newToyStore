@@ -11,7 +11,7 @@ import com.example.new_toy_store.payment.application.dto.request.PaymentRefundRe
 import com.example.new_toy_store.payment.application.dto.response.PaymentRefundResponse;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
 import com.example.new_toy_store.payment.application.dto.response.VnpayReturnResponse;
-import com.example.new_toy_store.payment.infrastructure.vnpay.VnpayIpnResponse;
+import com.example.new_toy_store.infrastructure.payment.vnpay.VnpayIpnResponse;
 import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import jakarta.servlet.http.HttpServletRequest;

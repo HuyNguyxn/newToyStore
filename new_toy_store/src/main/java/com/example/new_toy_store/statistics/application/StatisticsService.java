@@ -29,10 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -328,34 +326,15 @@ public class StatisticsService {
     }
 
     private String bucketKey(LocalDate date, StatisticPeriod period) {
-        LocalDate start = bucketStart(date, period);
-        return switch (period.appliedGroupBy()) {
-            case DAY -> start.toString();
-            case WEEK -> start.getYear() + "-W" + String.format("%02d", start.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear()));
-            case MONTH -> start.getYear() + "-" + String.format("%02d", start.getMonthValue());
-            case QUARTER -> start.getYear() + "-Q" + (((start.getMonthValue() - 1) / 3) + 1);
-            case YEAR, AUTO -> String.valueOf(start.getYear());
-        };
+        return period.appliedGroupBy().bucketKey(date);
     }
 
     private LocalDate bucketStart(LocalDate date, StatisticPeriod period) {
-        return switch (period.appliedGroupBy()) {
-            case DAY -> date;
-            case WEEK -> date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            case MONTH -> date.withDayOfMonth(1);
-            case QUARTER -> LocalDate.of(date.getYear(), (((date.getMonthValue() - 1) / 3) * 3) + 1, 1);
-            case YEAR, AUTO -> LocalDate.of(date.getYear(), 1, 1);
-        };
+        return period.appliedGroupBy().bucketStart(date);
     }
 
     private LocalDate nextBucket(LocalDate date, StatisticPeriod period) {
-        return switch (period.appliedGroupBy()) {
-            case DAY -> date.plusDays(1);
-            case WEEK -> date.plusWeeks(1);
-            case MONTH -> date.plusMonths(1);
-            case QUARTER -> date.plusMonths(3);
-            case YEAR, AUTO -> date.plusYears(1);
-        };
+        return period.appliedGroupBy().nextBucket(date);
     }
 
     private record MetricValues(
