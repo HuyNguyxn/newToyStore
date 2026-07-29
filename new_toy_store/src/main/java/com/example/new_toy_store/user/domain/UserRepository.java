@@ -28,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     Optional<User> findByEmail(String email);
 
+    List<User> findAllByStatus(UserStatus status);
+
     @EntityGraph(attributePaths = "addresses")
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithAddresses(@Param("id") Integer id);

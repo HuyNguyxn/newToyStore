@@ -16,6 +16,7 @@ import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
+import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.domain.Address;
 import com.example.new_toy_store.user.domain.TokenType;
 import com.example.new_toy_store.user.domain.User;
@@ -311,6 +312,19 @@ public class UserService {
             return List.of();
         }
         return repository.findAllById(ids);
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationRecipientResponse getNotificationRecipient(Integer userId) {
+        User user = getUserEntity(userId);
+        return new NotificationRecipientResponse(user.getId(), user.getEmail(), user.getFullName());
+    }
+
+    @Transactional(readOnly = true)
+    public List<NotificationRecipientResponse> getActiveNotificationRecipients() {
+        return repository.findAllByStatus(UserStatus.ACTIVE).stream()
+                .map(user -> new NotificationRecipientResponse(user.getId(), user.getEmail(), user.getFullName()))
+                .toList();
     }
 
     private User getUserEntityWithAddresses(Integer id) {

@@ -58,3 +58,8 @@ app:
       hash-secret: "${VNPAY_HASH_SECRET:CQYTEUDFQWEVLEYFNYWGQQLPHJTPRYXN}"
       return-url: "${VNPAY_RETURN_URL:http://localhost:8080/payments/vnpay-return}"
       ipn-url: "${VNPAY_IPN_URL:http://localhost:8080/payments/vnpay-ipn}"
+  notification:
+    zone: "Asia/Ho_Chi_Minh"
+    retention-days: 90
+    cleanup:
+      cron: "0 30 2 * * ?"

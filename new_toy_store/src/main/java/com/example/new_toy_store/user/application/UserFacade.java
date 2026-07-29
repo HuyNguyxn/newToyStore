@@ -12,6 +12,7 @@ import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRe
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
+import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.domain.User;
@@ -66,6 +67,14 @@ public class UserFacade {
 
     public List<User> getUsersByIds(Set<Integer> ids) {
         return userService.getUsersByIds(ids);
+    }
+
+    public NotificationRecipientResponse getNotificationRecipient(Integer userId) {
+        return userService.getNotificationRecipient(userId);
+    }
+
+    public List<NotificationRecipientResponse> getActiveNotificationRecipients() {
+        return userService.getActiveNotificationRecipients();
     }
 
     public UserProfileResponse updateCurrentProfile(String email, ProfileUpdateRequest request) {
