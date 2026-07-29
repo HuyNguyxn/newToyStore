@@ -52,7 +52,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/register", "/users/login", "/users/verify").permitAll()
+                        .requestMatchers(
+                                "/users/register",
+                                "/users/login",
+                                "/users/verify",
+                                "/users/forgot-password",
+                                "/users/reset-password"
+                        ).permitAll()
                         .requestMatchers("/payments/vnpay-return", "/payments/vnpay-ipn").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
@@ -88,6 +94,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/shipments/**").hasAnyRole("MANAGER", "ADMIN")
 
                         .requestMatchers("/suppliers/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers("/statistics/**").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()

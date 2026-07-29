@@ -2,13 +2,16 @@ package com.example.new_toy_store.user.application;
 
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
+import com.example.new_toy_store.user.application.dto.request.ForgotPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
 import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.request.ResetPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.domain.User;
@@ -38,6 +41,14 @@ public class UserFacade {
 
     public void verifyEmailToken(String token) {
         userService.verifyEmailToken(token);
+    }
+
+    public PasswordResetTokenResponse requestPasswordReset(ForgotPasswordRequest request) {
+        return userService.requestPasswordReset(request);
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+        userService.resetPassword(request);
     }
 
     public UserProfileResponse getCurrentProfile(String email) {

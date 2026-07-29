@@ -16,6 +16,8 @@ import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpecificationExecutor<Order> {
 
+    long countByStatus(OrderStatus status);
+
     @EntityGraph(attributePaths = {"items", "histories"})
     Page<Order> findByUserId(Integer userId, Pageable pageable);
 
@@ -50,6 +52,21 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.userId = :userId AND o.status IN ('PARTIALLY_REFUNDED', 'FULLY_REFUNDED')")
     long countRefundedOrders(@Param("userId") Integer userId);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status IN :statuses")
+    double sumTotalAmountByStatuses(@Param("statuses") List<OrderStatus> statuses);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :from AND o.createdAt < :to")
+    long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT i.productId, i.productName, SUM(i.quantity), SUM(i.quantity * i.price)
+              FROM Order o JOIN o.items i
+             WHERE o.status IN :statuses
+             GROUP BY i.productId, i.productName
+             ORDER BY SUM(i.quantity) DESC
+            """)
+    List<Object[]> findTopSellingProducts(@Param("statuses") List<OrderStatus> statuses, Pageable pageable);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

@@ -21,6 +21,7 @@ public class PaymentResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String idempotencyKey;
     private String paymentUrl;
     private String gatewayMessage;
     private List<String> availableActions;
@@ -53,6 +54,8 @@ public class PaymentResponse {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
     public String getPaymentUrl() { return paymentUrl; }
     public void setPaymentUrl(String paymentUrl) { this.paymentUrl = paymentUrl; }
     public String getGatewayMessage() { return gatewayMessage; }

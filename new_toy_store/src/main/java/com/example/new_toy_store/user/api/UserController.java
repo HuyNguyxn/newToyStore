@@ -3,13 +3,16 @@ package com.example.new_toy_store.user.api;
 import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
+import com.example.new_toy_store.user.application.dto.request.ForgotPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
 import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.request.ResetPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import jakarta.validation.Valid;
@@ -55,6 +58,16 @@ public class UserController {
     @GetMapping("/verify")
     public void verifyEmail(@RequestParam String token) {
         facade.verifyEmailToken(token);
+    }
+
+    @PostMapping("/forgot-password")
+    public PasswordResetTokenResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return facade.requestPasswordReset(request);
+    }
+
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        facade.resetPassword(request);
     }
 
     @GetMapping("/me")

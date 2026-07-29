@@ -12,6 +12,8 @@ import java.util.Set;
 
 public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
+    long countByStatus(ProductStatus status);
+
     @EntityGraph(attributePaths = {"variants", "variants.inventory"})
     Optional<Product> findById(Integer id);
 

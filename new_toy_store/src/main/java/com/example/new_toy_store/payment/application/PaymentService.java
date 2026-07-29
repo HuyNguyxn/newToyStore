@@ -77,6 +77,11 @@ public class PaymentService {
 
     @Transactional
     public PaymentResponse checkout(PaymentCheckoutRequest request, Integer currentUserId, boolean isAdmin, String clientIp) {
+        PaymentResponse existingPayment = findExistingIdempotentPayment(request, currentUserId);
+        if (existingPayment != null) {
+            return existingPayment;
+        }
+
         OrderPaymentSnapshot order = orderFacade.getPaymentSnapshot(request.getOrderId());
         validateOrderCanBePaid(order);
         validateOwnership(order.getOrderId(), order.getUserId(), currentUserId, isAdmin, "checkout");
@@ -88,6 +93,7 @@ public class PaymentService {
                 request.getMethod(),
                 order.getPayableAmount()
         );
+        payment.attachIdempotencyKey(request.getIdempotencyKey());
 
         repository.save(payment);
         if (payment.getMethod() == PaymentMethod.VNPAY) {
@@ -95,6 +101,23 @@ public class PaymentService {
             return PaymentMapper.toCheckoutResponse(payment, paymentUrl, "Open this paymentUrl to pay with VNPay sandbox.");
         }
         return PaymentMapper.toResponse(payment);
+    }
+
+    private PaymentResponse findExistingIdempotentPayment(PaymentCheckoutRequest request, Integer currentUserId) {
+        String idempotencyKey = sanitizeIdempotencyKey(request.getIdempotencyKey());
+        if (idempotencyKey == null) {
+            return null;
+        }
+
+        return repository.findByUserIdAndIdempotencyKey(currentUserId, idempotencyKey)
+                .filter(payment -> payment.getOrderId().equals(request.getOrderId()))
+                .filter(payment -> payment.getMethod() == request.getMethod())
+                .map(PaymentMapper::toResponse)
+                .orElse(null);
+    }
+
+    private String sanitizeIdempotencyKey(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     @Transactional(readOnly = true)

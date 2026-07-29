@@ -16,6 +16,8 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<PaymentTransaction, Integer>, JpaSpecificationExecutor<PaymentTransaction> {
 
+    long countByStatus(PaymentStatus status);
+
     @Override
     Optional<PaymentTransaction> findById(Integer id);
 
@@ -29,7 +31,12 @@ public interface PaymentRepository extends JpaRepository<PaymentTransaction, Int
 
     Optional<PaymentTransaction> findByOrderIdAndMethod(Integer orderId, PaymentMethod method);
 
+    Optional<PaymentTransaction> findByUserIdAndIdempotencyKey(Integer userId, String idempotencyKey);
+
     boolean existsByOrderIdAndStatusIn(Integer orderId, Collection<PaymentStatus> statuses);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status")
+    double sumAmountByStatus(@Param("status") PaymentStatus status);
 
     @Override
     Page<PaymentTransaction> findAll(Specification<PaymentTransaction> spec, Pageable pageable);

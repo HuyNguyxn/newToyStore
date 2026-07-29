@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Check(constraints = "stock_quantity >= 0")
+@Check(constraints = "stock_quantity >= 0 AND reserved_quantity >= 0 AND reserved_quantity <= stock_quantity")
 @Table(
         name = "inventories",
         indexes = {@Index(name = "idx_inventory_variant_id", columnList = "variant_id")}
@@ -32,6 +32,9 @@ public class Inventory extends BaseSoftDeleteEntity {
 
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
+
+    @Column(name = "reserved_quantity", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int reservedQuantity;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
@@ -85,7 +88,38 @@ public class Inventory extends BaseSoftDeleteEntity {
         if (amount <= 0) {
             throw InvalidProductOperationException.invalidStockAmount();
         }
-        if (this.stockQuantity < amount) {
+        if (getAvailableQuantity() < amount) {
+            throw InvalidProductOperationException.insufficientStock();
+        }
+        reserveStock(amount);
+        commitReservedStock(amount);
+    }
+
+    public void reserveStock(int amount) {
+        if (amount <= 0) {
+            throw InvalidProductOperationException.invalidStockAmount();
+        }
+        if (getAvailableQuantity() < amount) {
+            throw InvalidProductOperationException.insufficientStock();
+        }
+        this.reservedQuantity += amount;
+    }
+
+    public void releaseReservedStock(int amount) {
+        if (amount <= 0) {
+            throw InvalidProductOperationException.invalidStockAmount();
+        }
+        if (this.reservedQuantity < amount) {
+            throw InvalidProductOperationException.insufficientStock();
+        }
+        this.reservedQuantity -= amount;
+    }
+
+    public void commitReservedStock(int amount) {
+        if (amount <= 0) {
+            throw InvalidProductOperationException.invalidStockAmount();
+        }
+        if (this.reservedQuantity < amount || this.stockQuantity < amount) {
             throw InvalidProductOperationException.insufficientStock();
         }
 
@@ -105,6 +139,7 @@ public class Inventory extends BaseSoftDeleteEntity {
         }
 
         this.stockQuantity -= amount;
+        this.reservedQuantity -= amount;
     }
 
     public void reduceStockFromBatch(int amount, String batchNumber) {
@@ -135,6 +170,14 @@ public class Inventory extends BaseSoftDeleteEntity {
 
     public int getStockQuantity() {
         return stockQuantity;
+    }
+
+    public int getReservedQuantity() {
+        return reservedQuantity;
+    }
+
+    public int getAvailableQuantity() {
+        return Math.max(0, stockQuantity - reservedQuantity);
     }
 
     public ProductVariant getVariant() {

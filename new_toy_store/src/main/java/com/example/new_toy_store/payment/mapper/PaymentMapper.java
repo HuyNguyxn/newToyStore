@@ -67,6 +67,7 @@ public final class PaymentMapper {
         response.setExpiredAt(payment.getExpiredAt());
         response.setCreatedAt(payment.getCreatedAt());
         response.setUpdatedAt(payment.getUpdatedAt());
+        response.setIdempotencyKey(payment.getIdempotencyKey());
     }
 
     private static void mapStatusActions(PaymentTransaction payment, PaymentResponse response) {

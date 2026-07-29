@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     boolean existsByEmail(String email);
 
+    long countByStatus(UserStatus status);
+
     Optional<User> findByEmail(String email);
 
     @EntityGraph(attributePaths = "addresses")

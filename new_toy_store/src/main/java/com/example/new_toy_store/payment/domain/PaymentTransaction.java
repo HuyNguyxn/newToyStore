@@ -12,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
@@ -25,8 +26,12 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_payment_user_id", columnList = "user_id"),
                 @Index(name = "idx_payment_status", columnList = "status"),
                 @Index(name = "idx_payment_method", columnList = "method"),
+                @Index(name = "idx_payment_idempotency_key", columnList = "idempotency_key"),
                 @Index(name = "idx_payment_created_at", columnList = "created_at"),
                 @Index(name = "idx_payment_user_status_created", columnList = "user_id, status, created_at")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_payment_user_idempotency_key", columnNames = {"user_id", "idempotency_key"})
         }
 )
 public class PaymentTransaction extends BaseRootEntity {
@@ -67,6 +72,9 @@ public class PaymentTransaction extends BaseRootEntity {
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 
+    @Column(name = "idempotency_key", length = 80)
+    private String idempotencyKey;
+
     protected PaymentTransaction() {}
 
     public PaymentTransaction(Integer orderId, Integer userId, PaymentMethod method, double amount) {
@@ -82,6 +90,10 @@ public class PaymentTransaction extends BaseRootEntity {
         this.status = PaymentStatus.PENDING;
         this.amount = roundAmount(amount);
         this.expiredAt = LocalDateTime.now().plusMinutes(30);
+    }
+
+    public void attachIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = sanitize(idempotencyKey);
     }
 
     public void succeed(String providerTransactionId) {
@@ -165,6 +177,7 @@ public class PaymentTransaction extends BaseRootEntity {
     public String getCancelReason() { return cancelReason; }
     public LocalDateTime getPaidAt() { return paidAt; }
     public LocalDateTime getExpiredAt() { return expiredAt; }
+    public String getIdempotencyKey() { return idempotencyKey; }
 
     @Override
     public boolean equals(Object o) {

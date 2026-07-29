@@ -94,7 +94,7 @@ public class OrderService {
         validateOrderItems(request, productMap);
 
         Order order = OrderMapper.toEntity(request);
-        addItemsAndReduceStock(order, request, productMap);
+        addItemsAndReserveStock(order, request, productMap);
         applyPromotionIfPresent(order, request);
 
         repository.save(order);
@@ -133,6 +133,7 @@ public class OrderService {
         OrderStatus previousStatus = order.getStatus();
         String resolvedNote = resolveNote(note, "Đơn hàng giao thành công");
         order.complete(resolvedNote);
+        commitReservedStockForOrder(order);
         publishStatusChanged(order, previousStatus, resolvedNote);
         return OrderMapper.toResponse(order);
     }
@@ -313,22 +314,22 @@ public class OrderService {
             }
 
             ProductVariant variant = findVariant(product, itemRequest.getVariantId());
-            if (variant.getInventory().getStockQuantity() < itemRequest.getQuantity()) {
+            if (variant.getInventory().getAvailableQuantity() < itemRequest.getQuantity()) {
                 throw new InsufficientStockException(
                         product.getId(), product.getName(),
-                        itemRequest.getQuantity(), variant.getInventory().getStockQuantity()
+                        itemRequest.getQuantity(), variant.getInventory().getAvailableQuantity()
                 );
             }
         }
     }
 
-    private void addItemsAndReduceStock(Order order, OrderRequest request, Map<Integer, Product> productMap) {
+    private void addItemsAndReserveStock(Order order, OrderRequest request, Map<Integer, Product> productMap) {
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
             ProductVariant variant = findVariant(product, itemRequest.getVariantId());
 
             String snapshot = variant.generateAttributesSnapshot();
-            variant.getInventory().reduceStock(itemRequest.getQuantity());
+            variant.getInventory().reserveStock(itemRequest.getQuantity());
 
             order.addItem(
                     product.getId(), variant.getId(), product.getName(),
@@ -378,7 +379,29 @@ public class OrderService {
             product.getVariants().stream()
                     .filter(variant -> variant.getId().equals(item.getVariantId()))
                     .findFirst()
-                    .ifPresent(variant -> variant.getInventory().addStock(item.getQuantity()));
+                    .ifPresent(variant -> variant.getInventory().releaseReservedStock(item.getQuantity()));
+        });
+    }
+
+    private void commitReservedStockForOrder(Order order) {
+        Set<Integer> productIds = order.getItems().stream()
+                .map(OrderItem::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+
+        order.getItems().forEach(item -> {
+            Product product = productMap.get(item.getProductId());
+            if (product == null) {
+                return;
+            }
+
+            product.getVariants().stream()
+                    .filter(variant -> variant.getId().equals(item.getVariantId()))
+                    .findFirst()
+                    .ifPresent(variant -> variant.getInventory().commitReservedStock(item.getQuantity()));
         });
     }
 

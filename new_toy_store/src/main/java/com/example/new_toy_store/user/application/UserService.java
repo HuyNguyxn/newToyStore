@@ -4,13 +4,16 @@ import com.example.new_toy_store.global.event.UserDeletedEvent;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
+import com.example.new_toy_store.user.application.dto.request.ForgotPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.LoginRequest;
 import com.example.new_toy_store.user.application.dto.request.ProfileUpdateRequest;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
+import com.example.new_toy_store.user.application.dto.request.ResetPasswordRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequest;
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.domain.Address;
@@ -38,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -122,6 +126,9 @@ public class UserService {
     public void verifyEmailToken(String tokenValue) {
         VerificationToken token = tokenRepository.findByTokenValue(tokenValue)
                 .orElseThrow(InvalidUserOperationException::invalidToken);
+        if (token.getTokenType() != TokenType.VERIFICATION) {
+            throw InvalidUserOperationException.invalidToken();
+        }
 
         if (token.isExpired()) {
             throw InvalidUserOperationException.expiredToken();
@@ -130,6 +137,49 @@ public class UserService {
         User user = token.getUser();
         user.activate();
         repository.save(user);
+        tokenRepository.delete(token);
+    }
+
+    @Transactional
+    public PasswordResetTokenResponse requestPasswordReset(ForgotPasswordRequest request) {
+        User user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException(request.getEmail()));
+
+        if (!user.getStatus().canLogin()) {
+            throw InvalidUserOperationException.accountCannotLogin(request.getEmail());
+        }
+
+        tokenRepository.deleteByUser_IdAndTokenType(user.getId(), TokenType.RESET_PASSWORD);
+        VerificationToken token = new VerificationToken(UUID.randomUUID().toString(), TokenType.RESET_PASSWORD, user);
+        tokenRepository.save(token);
+
+        return new PasswordResetTokenResponse(
+                user.getEmail(),
+                token.getTokenValue(),
+                token.getExpiryDate(),
+                "Use this reset token in POST /users/reset-password. In a real production app, this token should be sent by email."
+        );
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        VerificationToken token = tokenRepository.findByTokenValue(request.getToken())
+                .orElseThrow(InvalidUserOperationException::invalidToken);
+        if (token.getTokenType() != TokenType.RESET_PASSWORD) {
+            throw InvalidUserOperationException.invalidToken();
+        }
+        if (token.isExpired()) {
+            throw InvalidUserOperationException.expiredToken();
+        }
+
+        User user = token.getUser();
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw InvalidUserOperationException.duplicatedNewPassword();
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
+        repository.save(user);
+        tokenRepository.delete(token);
     }
 
     @Transactional
