@@ -95,6 +95,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/suppliers/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers("/statistics/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers("/notifications/broadcast").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers("/notifications/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
