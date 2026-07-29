@@ -226,6 +226,7 @@ public class CustomerReturnService {
             eventPublisher.publishEvent(CustomerReturnStatusChangedEvent.now(
                     rma.getId(),
                     rma.getOrderId(),
+                    orderFacade.getOrderUserId(rma.getOrderId()),
                     previousStatus,
                     rma.getStatus(),
                     actionBy

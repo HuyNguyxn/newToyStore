@@ -29,6 +29,10 @@ public class OrderFacade {
         return orderService.getOrderStatus(orderId);
     }
 
+    public Integer getOrderUserId(Integer orderId) {
+        return orderService.getOrderUserId(orderId);
+    }
+
     public OrderPaymentSnapshot getPaymentSnapshot(Integer orderId) {
         return orderService.getPaymentSnapshot(orderId);
     }

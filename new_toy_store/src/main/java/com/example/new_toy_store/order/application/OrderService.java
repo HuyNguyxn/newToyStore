@@ -213,6 +213,11 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Integer getOrderUserId(Integer orderId) {
+        return getOrder(orderId).getUserId();
+    }
+
+    @Transactional(readOnly = true)
     public OrderPaymentSnapshot getPaymentSnapshot(Integer orderId) {
         Order order = getOrder(orderId);
         return new OrderPaymentSnapshot(order.getId(), order.getUserId(), order.getStatus(), order.getTotalAmount());

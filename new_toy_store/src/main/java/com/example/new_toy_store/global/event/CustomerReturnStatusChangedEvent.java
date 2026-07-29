@@ -10,11 +10,12 @@ public record CustomerReturnStatusChangedEvent(
 ) {
     public static CustomerReturnStatusChangedEvent now(Integer returnId,
                                                        Integer orderId,
+                                                       Integer userId,
                                                        CustomerReturnStatus previousStatus,
                                                        CustomerReturnStatus currentStatus,
                                                        String actionBy) {
         return new CustomerReturnStatusChangedEvent(
-                CustomerReturnStatusChangedPayload.of(returnId, orderId, previousStatus, currentStatus, actionBy),
+                CustomerReturnStatusChangedPayload.of(returnId, orderId, userId, previousStatus, currentStatus, actionBy),
                 Instant.now()
         );
     }
