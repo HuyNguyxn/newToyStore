@@ -1,6 +1,6 @@
 package com.example.new_toy_store.payment.application.facade;
 
-import com.example.new_toy_store.payment.application.PaymentService;
+import com.example.new_toy_store.payment.application.service.PaymentService;
 import com.example.new_toy_store.payment.application.dto.response.PaymentResponse;
 import org.springframework.stereotype.Component;
 

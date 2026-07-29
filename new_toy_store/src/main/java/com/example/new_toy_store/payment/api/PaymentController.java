@@ -1,6 +1,6 @@
 package com.example.new_toy_store.payment.api;
 
-import com.example.new_toy_store.payment.application.PaymentService;
+import com.example.new_toy_store.payment.application.service.PaymentService;
 import com.example.new_toy_store.payment.application.dto.request.PaymentCancelRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentCheckoutRequest;
 import com.example.new_toy_store.payment.application.dto.request.PaymentConfirmRequest;

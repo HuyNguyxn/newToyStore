@@ -1,4 +1,4 @@
-package com.example.new_toy_store.payment.application;
+package com.example.new_toy_store.payment.application.service;
 
 import com.example.new_toy_store.global.event.PaymentCancelledEvent;
 import com.example.new_toy_store.global.event.PaymentCompletedEvent;

@@ -1,6 +1,7 @@
-package com.example.new_toy_store.payment.application;
+package com.example.new_toy_store.payment.application.listener;
 
 import com.example.new_toy_store.global.event.ShipmentDeliveredEvent;
+import com.example.new_toy_store.payment.application.service.PaymentService;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

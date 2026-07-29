@@ -11,10 +11,11 @@ import com.example.new_toy_store.customer_return.domain.exception.CustomerReturn
 import com.example.new_toy_store.customer_return.domain.exception.DuplicateReturnRequestException;
 import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnDataException;
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
+import com.example.new_toy_store.global.event.CustomerReturnRefundFinalizedEvent;
+import com.example.new_toy_store.global.event.CustomerReturnStockRestorationRequestedEvent;
 import com.example.new_toy_store.global.event.CustomerReturnStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
-import com.example.new_toy_store.product.application.facade.ProductFacade;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -33,7 +34,6 @@ public class CustomerReturnService {
 
     private final CustomerReturnRepository repository;
     private final OrderFacade orderFacade;
-    private final ProductFacade productFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.customer-return.auto-reject.expiration-days:7}")
@@ -41,11 +41,9 @@ public class CustomerReturnService {
 
     public CustomerReturnService(CustomerReturnRepository repository,
                                  OrderFacade orderFacade,
-                                 ProductFacade productFacade,
                                  ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.orderFacade = orderFacade;
-        this.productFacade = productFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -142,9 +140,10 @@ public class CustomerReturnService {
                             Integer::sum
                     ));
 
-            if (!sellableItems.isEmpty()) {
-                productFacade.restoreStockForCancelledOrder(sellableItems);
-            }
+            CustomerReturn saved = repository.save(rma);
+            publishStatusChanged(saved, previousStatus, qcUsername);
+            publishStockRestorationRequested(saved, sellableItems);
+            return CustomerReturnMapper.toResponse(saved);
         } else {
             rma.failQualityControl(qcUsername, qcNote);
         }
@@ -180,9 +179,9 @@ public class CustomerReturnService {
         CustomerReturn rma = getEntity(id);
         CustomerReturnStatus previousStatus = rma.getStatus();
         rma.finalizeRefund(adminUsername, note);
-        syncRefundStatusWithOrderDomain(rma);
         CustomerReturn saved = repository.save(rma);
         publishStatusChanged(saved, previousStatus, adminUsername);
+        publishRefundFinalized(saved);
         return CustomerReturnMapper.toResponse(saved);
     }
 
@@ -198,13 +197,28 @@ public class CustomerReturnService {
         repository.saveAll(expiredList);
     }
 
-    private void syncRefundStatusWithOrderDomain(CustomerReturn rma) {
+    private void publishRefundFinalized(CustomerReturn rma) {
         Map<Integer, Integer> returnedItemsQty = rma.getItems().stream()
                 .collect(Collectors.toMap(
                         CustomerReturnItem::getOrderItemId,
-                        CustomerReturnItem::getQuantity
+                        CustomerReturnItem::getQuantity,
+                        Integer::sum
                 ));
-        orderFacade.updateOrderRefundStatus(rma.getOrderId(), returnedItemsQty);
+        eventPublisher.publishEvent(CustomerReturnRefundFinalizedEvent.now(
+                rma.getId(),
+                rma.getOrderId(),
+                returnedItemsQty
+        ));
+    }
+
+    private void publishStockRestorationRequested(CustomerReturn rma, Map<Integer, Integer> sellableItems) {
+        if (!sellableItems.isEmpty()) {
+            eventPublisher.publishEvent(CustomerReturnStockRestorationRequestedEvent.now(
+                    rma.getId(),
+                    rma.getOrderId(),
+                    sellableItems
+            ));
+        }
     }
 
     private void publishStatusChanged(CustomerReturn rma, CustomerReturnStatus previousStatus, String actionBy) {
