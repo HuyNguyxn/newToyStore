@@ -7,9 +7,15 @@ spring:
     username: root
     password: Huynguyen_07
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    detect-encoding: true
+    baseline-on-migrate: false
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     open-in-view: false
     properties:
@@ -34,6 +40,25 @@ spring:
             enable: true
 
 app:
+  seed:
+    admin:
+      enabled: ${SEED_ADMIN_ENABLED:true}
+      email: ${SEED_ADMIN_EMAIL:admin@gmail.com}
+      password: ${SEED_ADMIN_PASSWORD:123456}
+      full-name: ${SEED_ADMIN_FULL_NAME:Admin}
+      phone-number: ${SEED_ADMIN_PHONE:0900000001}
+    staff:
+      enabled: ${SEED_STAFF_ENABLED:true}
+      email: ${SEED_STAFF_EMAIL:staff@gmail.com}
+      password: ${SEED_STAFF_PASSWORD:123456}
+      full-name: ${SEED_STAFF_FULL_NAME:Staff}
+      phone-number: ${SEED_STAFF_PHONE:0900000002}
+    customer:
+      enabled: ${SEED_CUSTOMER_ENABLED:true}
+      email: ${SEED_CUSTOMER_EMAIL:customer@gmail.com}
+      password: ${SEED_CUSTOMER_PASSWORD:123456}
+      full-name: ${SEED_CUSTOMER_FULL_NAME:Customer}
+      phone-number: ${SEED_CUSTOMER_PHONE:0900000003}
   cart:
     cleanup:
       cron: "0 0 0 * * ?"
