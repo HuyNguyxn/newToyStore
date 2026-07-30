@@ -88,3 +88,8 @@ app:
     retention-days: 90
     cleanup:
       cron: "0 30 2 * * ?"
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
+    folder: ${CLOUDINARY_FOLDER:new-toy-store}

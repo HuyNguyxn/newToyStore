@@ -1,0 +1,28 @@
+package com.example.new_toy_store.upload.api.advice;
+
+import com.example.new_toy_store.global.exception.ErrorResponse;
+import com.example.new_toy_store.upload.domain.exception.FileUploadException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice(basePackages = "com.example.new_toy_store.upload.api")
+public class UploadExceptionHandler {
+
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<ErrorResponse> handleFileUploadException(
+            FileUploadException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse response = new ErrorResponse(
+                ex.getStatus().value(),
+                ex.getErrorType(),
+                ex.getMessage(),
+                request.getRequestURI(),
+                ex.getContextData()
+        );
+
+        return ResponseEntity.status(ex.getStatus()).body(response);
+    }
+}
