@@ -79,7 +79,11 @@ public final class ProductMapper {
                 variants,
                 status,
                 status.getNextValidStates(),
-                determineProductActions(product, variants)
+                determineProductActions(product, variants),
+                product.isAvailableForPurchase(),
+                isQuickAddAvailable(product, variants),
+                findDefaultVariantId(variants),
+                findDefaultVariantStockQuantity(variants)
         );
 
         if (supplier != null) {
@@ -180,6 +184,27 @@ public final class ProductMapper {
             return List.of("UPDATE_PRICE", "UPDATE_STOCK", "SET_REGULAR");
         }
         return List.of("UPDATE_PRICE", "UPDATE_STOCK", "SET_MASTER");
+    }
+
+    private static boolean isQuickAddAvailable(Product product, List<ProductVariantResponse> variants) {
+        return product.isAvailableForPurchase()
+                && variants != null
+                && variants.size() == 1
+                && variants.get(0).getStockQuantity() > 0;
+    }
+
+    private static Integer findDefaultVariantId(List<ProductVariantResponse> variants) {
+        if (variants == null || variants.size() != 1) {
+            return null;
+        }
+        return variants.get(0).getId();
+    }
+
+    private static int findDefaultVariantStockQuantity(List<ProductVariantResponse> variants) {
+        if (variants == null || variants.size() != 1) {
+            return 0;
+        }
+        return variants.get(0).getStockQuantity();
     }
 
     private static double roundMoney(double amount) {

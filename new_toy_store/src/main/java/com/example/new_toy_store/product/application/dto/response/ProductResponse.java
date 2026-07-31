@@ -22,12 +22,18 @@ public class ProductResponse {
     private ProductStatus statusDetail;
     private List<ProductStatus> allowedNextStatuses;
     private List<String> allowedActions;
+    private boolean purchasable;
+    private boolean quickAddAvailable;
+    private Integer defaultVariantId;
+    private int defaultVariantStockQuantity;
 
     public ProductResponse(Integer id, String name, double basePrice, String status, Integer supplierId,
                            List<Integer> categoryIds, String thumbnailUrl, List<ProductImageResponse> images,
                            double averageRating, int reviewCount,
                            List<ProductVariantResponse> variants, ProductStatus statusDetail,
-                           List<ProductStatus> allowedNextStatuses, List<String> allowedActions) {
+                           List<ProductStatus> allowedNextStatuses, List<String> allowedActions,
+                           boolean purchasable, boolean quickAddAvailable,
+                           Integer defaultVariantId, int defaultVariantStockQuantity) {
         this.id = id;
         this.name = name;
         this.basePrice = basePrice;
@@ -42,6 +48,10 @@ public class ProductResponse {
         this.statusDetail = statusDetail;
         this.allowedNextStatuses = allowedNextStatuses == null ? List.of() : List.copyOf(allowedNextStatuses);
         this.allowedActions = allowedActions == null ? List.of() : List.copyOf(allowedActions);
+        this.purchasable = purchasable;
+        this.quickAddAvailable = quickAddAvailable;
+        this.defaultVariantId = defaultVariantId;
+        this.defaultVariantStockQuantity = defaultVariantStockQuantity;
     }
 
     public Integer getId() { return id; }
@@ -60,4 +70,8 @@ public class ProductResponse {
     public ProductStatus getStatusDetail() { return statusDetail; }
     public List<ProductStatus> getAllowedNextStatuses() { return allowedNextStatuses; }
     public List<String> getAllowedActions() { return allowedActions; }
+    public boolean isPurchasable() { return purchasable; }
+    public boolean isQuickAddAvailable() { return quickAddAvailable; }
+    public Integer getDefaultVariantId() { return defaultVariantId; }
+    public int getDefaultVariantStockQuantity() { return defaultVariantStockQuantity; }
 }
