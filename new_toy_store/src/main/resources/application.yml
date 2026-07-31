@@ -40,6 +40,8 @@ spring:
             enable: true
 
 app:
+  user:
+    default-avatar-url: ${DEFAULT_AVATAR_URL:}
   seed:
     admin:
       enabled: ${SEED_ADMIN_ENABLED:true}

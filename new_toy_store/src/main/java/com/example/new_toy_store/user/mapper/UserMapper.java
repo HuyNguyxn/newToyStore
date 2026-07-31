@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 public final class UserMapper {
 
+    private static final String FALLBACK_DEFAULT_AVATAR_URL = "";
+
     private UserMapper() {
     }
 
@@ -28,6 +30,10 @@ public final class UserMapper {
     }
 
     public static UserProfileResponse toProfileResponse(User user) {
+        return toProfileResponse(user, FALLBACK_DEFAULT_AVATAR_URL);
+    }
+
+    public static UserProfileResponse toProfileResponse(User user, String defaultAvatarUrl) {
         UserRole role = user.getRole();
         UserStatus status = user.getStatus();
 
@@ -36,7 +42,7 @@ public final class UserMapper {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhoneNumber(),
-                resolveAvatarUrl(user),
+                resolveAvatarUrl(user, defaultAvatarUrl),
                 role.name(),
                 role,
                 status.name(),
@@ -48,6 +54,10 @@ public final class UserMapper {
     }
 
     public static UserAdminResponse toAdminResponse(User user) {
+        return toAdminResponse(user, FALLBACK_DEFAULT_AVATAR_URL);
+    }
+
+    public static UserAdminResponse toAdminResponse(User user, String defaultAvatarUrl) {
         UserRole role = user.getRole();
         UserStatus status = user.getStatus();
 
@@ -56,7 +66,7 @@ public final class UserMapper {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhoneNumber(),
-                resolveAvatarUrl(user),
+                resolveAvatarUrl(user, defaultAvatarUrl),
                 role.name(),
                 role.getDisplayName(),
                 role,
@@ -72,7 +82,11 @@ public final class UserMapper {
     }
 
     public static UserResponse toResponse(User user) {
-        UserProfileResponse profile = toProfileResponse(user);
+        return toResponse(user, FALLBACK_DEFAULT_AVATAR_URL);
+    }
+
+    public static UserResponse toResponse(User user, String defaultAvatarUrl) {
+        UserProfileResponse profile = toProfileResponse(user, defaultAvatarUrl);
         return new UserResponse(
                 profile.getId(),
                 profile.getEmail(),
@@ -126,8 +140,10 @@ public final class UserMapper {
         return List.of("VIEW_USER", "LOCK_USER", "CHANGE_ROLE", "DELETE_USER");
     }
 
-    private static String resolveAvatarUrl(User user) {
-        String defaultAvatar = "/assets/default-avatar.png";
+    private static String resolveAvatarUrl(User user, String defaultAvatarUrl) {
+        String defaultAvatar = defaultAvatarUrl != null && !defaultAvatarUrl.trim().isEmpty()
+                ? defaultAvatarUrl.trim()
+                : FALLBACK_DEFAULT_AVATAR_URL;
         return user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()
                 ? user.getAvatarUrl()
                 : defaultAvatar;

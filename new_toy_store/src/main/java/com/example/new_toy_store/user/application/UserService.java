@@ -17,6 +17,7 @@ import com.example.new_toy_store.user.application.dto.response.PasswordResetToke
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
+import com.example.new_toy_store.user.application.config.UserProfileProperties;
 import com.example.new_toy_store.user.domain.Address;
 import com.example.new_toy_store.user.domain.TokenType;
 import com.example.new_toy_store.user.domain.User;
@@ -53,6 +54,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserProfileProperties profileProperties;
 
     public UserService(
             UserRepository repository,
@@ -60,7 +62,8 @@ public class UserService {
             JwtProvider jwtProvider,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            UserProfileProperties profileProperties
     ) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
@@ -68,6 +71,7 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.eventPublisher = eventPublisher;
+        this.profileProperties = profileProperties;
     }
 
     @Transactional
@@ -99,7 +103,7 @@ public class UserService {
         VerificationToken verificationToken = new VerificationToken(tokenValue, TokenType.VERIFICATION, user);
         tokenRepository.save(verificationToken);
 
-        return UserMapper.toProfileResponse(user);
+        return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +124,7 @@ public class UserService {
         }
 
         String token = jwtProvider.generateToken(user);
-        return new AuthResponse(token, jwtProvider.getAccessTokenExpirationSeconds(), UserMapper.toProfileResponse(user));
+        return new AuthResponse(token, jwtProvider.getAccessTokenExpirationSeconds(), UserMapper.toProfileResponse(user, getDefaultAvatarUrl()));
     }
 
     @Transactional
@@ -209,14 +213,14 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(Integer userId) {
-        return UserMapper.toProfileResponse(getUserEntityWithAddresses(userId));
+        return UserMapper.toProfileResponse(getUserEntityWithAddresses(userId), getDefaultAvatarUrl());
     }
 
     @Transactional
     public UserProfileResponse updateProfile(Integer userId, ProfileUpdateRequest request) {
         User user = getUserEntity(userId);
         user.updateProfile(request.getFullName(), request.getPhoneNumber(), request.getAvatarUrl());
-        return UserMapper.toProfileResponse(user);
+        return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -230,7 +234,7 @@ public class UserService {
         );
         user.addAddress(address);
         repository.save(user);
-        return UserMapper.toProfileResponse(user);
+        return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -238,7 +242,7 @@ public class UserService {
         User user = getUserEntityWithAddresses(userId);
         user.setDefaultAddress(addressId);
         repository.save(user);
-        return UserMapper.toProfileResponse(user);
+        return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -246,18 +250,18 @@ public class UserService {
         User user = getUserEntityWithAddresses(userId);
         user.removeAddress(addressId);
         repository.save(user);
-        return UserMapper.toProfileResponse(user);
+        return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional(readOnly = true)
     public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
         return repository.findAll(UserSpecification.filter(request), pageable)
-                .map(UserMapper::toAdminResponse);
+                .map(user -> UserMapper.toAdminResponse(user, getDefaultAvatarUrl()));
     }
 
     @Transactional(readOnly = true)
     public UserAdminResponse getUserForAdmin(Integer userId) {
-        return UserMapper.toAdminResponse(getUserEntity(userId));
+        return UserMapper.toAdminResponse(getUserEntity(userId), getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -265,7 +269,7 @@ public class UserService {
         User user = getUserEntity(userId);
         user.changeRole(request.getRole());
         repository.save(user);
-        return UserMapper.toAdminResponse(user);
+        return UserMapper.toAdminResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -273,7 +277,7 @@ public class UserService {
         User user = getUserEntity(userId);
         user.changeStatus(request.getStatus());
         repository.save(user);
-        return UserMapper.toAdminResponse(user);
+        return UserMapper.toAdminResponse(user, getDefaultAvatarUrl());
     }
 
     @Transactional
@@ -330,5 +334,9 @@ public class UserService {
     private User getUserEntityWithAddresses(Integer id) {
         return repository.findByIdWithAddresses(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    private String getDefaultAvatarUrl() {
+        return profileProperties.getDefaultAvatarUrl();
     }
 }

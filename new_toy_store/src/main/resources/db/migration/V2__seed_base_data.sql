@@ -5234,8 +5234,6 @@ VALUES
     (31007, NOW(6), NOW(6), NULL, 'SEED-1007-001', '2035-12-31', 58, 0, 21007),
     (31008, NOW(6), NOW(6), NULL, 'SEED-1008-001', '2035-12-31', 22, 0, 21008);
 
--- Placeholder thumbnails are retained for local/demo seeding.
--- Replace these URLs with project-owned Cloudinary/S3/CDN URLs for production.
 INSERT INTO product_images (
     id, created_at, updated_at, deleted_at,
     image_url, is_thumbnail, product_id
