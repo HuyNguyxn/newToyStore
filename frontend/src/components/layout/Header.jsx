@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth.js';
 
 function Header() {
+  const { isAuthenticated, user, logout } = useAuth();
+
   return (
     <header className="site-header">
       <div className="container site-header__inner">
@@ -19,7 +22,17 @@ function Header() {
             Gio hang
             <span className="cart-link__badge">3</span>
           </Link>
-          <Link to="/login" className="login-link">Dang nhap</Link>
+          {isAuthenticated ? (
+            <div className="user-menu">
+              <Link to="/profile" className="user-menu__profile">
+                <span>{user?.fullName?.charAt(0) || 'U'}</span>
+                <strong>{user?.fullName || 'Tai khoan'}</strong>
+              </Link>
+              <button type="button" onClick={logout}>Thoat</button>
+            </div>
+          ) : (
+            <Link to="/login" className="login-link">Dang nhap</Link>
+          )}
         </nav>
       </div>
     </header>

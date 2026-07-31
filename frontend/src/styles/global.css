@@ -129,6 +129,55 @@ body {
   color: #fff;
 }
 
+.user-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-menu__profile {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  background: #fff;
+}
+
+.user-menu__profile span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.user-menu__profile strong {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu button {
+  min-height: 38px;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .home-page {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
@@ -389,6 +438,164 @@ body {
   margin: 0;
 }
 
+.auth-page {
+  min-height: calc(100vh - 210px);
+  display: grid;
+  place-items: center;
+  padding: 30px 16px;
+}
+
+.auth-card {
+  width: min(100%, 430px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  background: var(--color-card);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-card__heading {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.auth-card__heading p {
+  margin: 0 0 8px;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.auth-card__heading h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.auth-form input {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  outline: 0;
+}
+
+.auth-form input:focus {
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.auth-form button {
+  min-height: 46px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.auth-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.auth-card__switch {
+  margin: 18px 0 0;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.auth-card__switch a {
+  color: var(--color-secondary);
+  font-weight: 900;
+}
+
+.form-alert {
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #fef2f2;
+  color: var(--color-danger);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-alert--success {
+  background: #ecfdf5;
+  color: var(--color-success);
+}
+
+.page-message {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.profile-page {
+  padding-top: 28px;
+}
+
+.profile-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  background: var(--color-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-card img {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-card p {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.profile-card h1 {
+  margin: 0 0 6px;
+}
+
+.profile-card span,
+.profile-card strong {
+  display: block;
+  color: var(--color-muted);
+}
+
+.profile-card button {
+  min-height: 40px;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 16px;
+  background: var(--color-secondary);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 @media (max-width: 960px) {
   .site-header__inner {
     grid-template-columns: 1fr;
@@ -446,5 +653,14 @@ body {
     align-items: flex-start;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .profile-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .profile-card img {
+    margin: 0 auto;
   }
 }
