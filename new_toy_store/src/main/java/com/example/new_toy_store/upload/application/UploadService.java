@@ -1,7 +1,7 @@
 package com.example.new_toy_store.upload.application;
 
 import com.example.new_toy_store.infrastructure.storage.cloudinary.CloudinaryStorageService;
-import com.example.new_toy_store.upload.application.dto.response.UploadImageResponse;
+import com.example.new_toy_store.upload.application.dto.response.UploadMediaResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,14 +16,23 @@ public class UploadService {
         this.storageService = storageService;
     }
 
-    public UploadImageResponse uploadImage(MultipartFile file, String folder) {
+    public UploadMediaResponse uploadImage(MultipartFile file, String folder) {
         Map<?, ?> result = storageService.uploadImage(file, folder);
+        return toResponse(result, file, "IMAGE");
+    }
 
-        return new UploadImageResponse(
+    public UploadMediaResponse uploadVideo(MultipartFile file, String folder) {
+        Map<?, ?> result = storageService.uploadVideo(file, folder);
+        return toResponse(result, file, "VIDEO");
+    }
+
+    private UploadMediaResponse toResponse(Map<?, ?> result, MultipartFile file, String mediaType) {
+        return new UploadMediaResponse(
                 String.valueOf(result.get("secure_url")),
                 String.valueOf(result.get("public_id")),
                 file.getOriginalFilename(),
                 file.getContentType(),
+                mediaType,
                 file.getSize()
         );
     }

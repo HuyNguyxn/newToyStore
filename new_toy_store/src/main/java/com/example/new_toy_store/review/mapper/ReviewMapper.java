@@ -2,8 +2,10 @@ package com.example.new_toy_store.review.mapper;
 
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.review.application.dto.response.ReviewActionResponse;
+import com.example.new_toy_store.review.application.dto.response.ReviewMediaResponse;
 import com.example.new_toy_store.review.application.dto.response.ReviewResponse;
 import com.example.new_toy_store.review.domain.Review;
+import com.example.new_toy_store.review.domain.ReviewMedia;
 import com.example.new_toy_store.review.domain.ReviewStatus;
 import com.example.new_toy_store.user.domain.User;
 
@@ -47,6 +49,7 @@ public class ReviewMapper {
                 review.getVariantAttributesSnapshot(),
                 review.getRating(),
                 review.getComment(),
+                mapMediaAttachments(review),
                 review.getAdminReply(),
                 review.getStatus(),
                 review.getCreatedAt(),
@@ -63,6 +66,25 @@ public class ReviewMapper {
         return status.getAllowedNextStatusCodes().stream()
                 .map(ReviewMapper::mapStatusAction)
                 .toList();
+    }
+
+    private static List<ReviewMediaResponse> mapMediaAttachments(Review review) {
+        if (review.getMediaAttachments() == null || review.getMediaAttachments().isEmpty()) {
+            return List.of();
+        }
+
+        return review.getMediaAttachments().stream()
+                .map(ReviewMapper::mapMediaAttachment)
+                .toList();
+    }
+
+    private static ReviewMediaResponse mapMediaAttachment(ReviewMedia media) {
+        return new ReviewMediaResponse(
+                media.getId(),
+                media.getMediaType(),
+                media.getMediaUrl(),
+                media.getDisplayOrder()
+        );
     }
 
     private static ReviewActionResponse mapStatusAction(String targetStatus) {

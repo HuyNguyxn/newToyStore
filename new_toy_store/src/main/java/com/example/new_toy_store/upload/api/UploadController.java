@@ -1,7 +1,7 @@
 package com.example.new_toy_store.upload.api;
 
 import com.example.new_toy_store.upload.application.UploadService;
-import com.example.new_toy_store.upload.application.dto.response.UploadImageResponse;
+import com.example.new_toy_store.upload.application.dto.response.UploadMediaResponse;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,10 +23,18 @@ public class UploadController {
     }
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public UploadImageResponse uploadImage(
+    public UploadMediaResponse uploadImage(
             @RequestPart("file") MultipartFile file,
             @RequestParam(defaultValue = "general") String folder
     ) {
         return uploadService.uploadImage(file, folder);
+    }
+
+    @PostMapping(value = "/videos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UploadMediaResponse uploadVideo(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(defaultValue = "general") String folder
+    ) {
+        return uploadService.uploadVideo(file, folder);
     }
 }

@@ -97,7 +97,9 @@ public class ReviewService {
                 orderItem.getId(),
                 orderItem.getVariantAttributesSnapshot(),
                 request.getRating(),
-                request.getComment()
+                request.getComment(),
+                request.getImageUrls(),
+                request.getVideoUrls()
         );
         repository.save(review);
 
@@ -120,6 +122,9 @@ public class ReviewService {
         }
 
         review.updateByUser(request.getRating(), request.getComment());
+        if (request.getImageUrls() != null || request.getVideoUrls() != null) {
+            review.replaceMediaAttachments(request.getImageUrls(), request.getVideoUrls());
+        }
         repository.save(review);
 
         publishProductRatingChanged(review.getProductId());

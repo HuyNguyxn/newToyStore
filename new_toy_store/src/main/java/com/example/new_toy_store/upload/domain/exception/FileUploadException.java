@@ -30,17 +30,21 @@ public class FileUploadException extends RuntimeException {
         return new FileUploadException(
                 HttpStatus.BAD_REQUEST,
                 "UPLOAD_EMPTY_FILE",
-                "File ảnh không được để trống.",
+                "File upload không được để trống.",
                 Map.of("field", "file")
         );
     }
 
-    public static FileUploadException invalidFileType(String filename, String contentType) {
+    public static FileUploadException invalidFileType(String filename, String contentType, String expectedType) {
         return new FileUploadException(
                 HttpStatus.BAD_REQUEST,
                 "UPLOAD_INVALID_FILE_TYPE",
-                "Chỉ cho phép upload file hình ảnh.",
-                Map.of("filename", filename, "contentType", contentType == null ? "unknown" : contentType)
+                "File upload không đúng định dạng.",
+                Map.of(
+                        "filename", filename,
+                        "contentType", contentType == null ? "unknown" : contentType,
+                        "expectedType", expectedType
+                )
         );
     }
 
@@ -48,7 +52,7 @@ public class FileUploadException extends RuntimeException {
         return new FileUploadException(
                 HttpStatus.BAD_REQUEST,
                 "UPLOAD_FILE_TOO_LARGE",
-                "File ảnh vượt quá dung lượng cho phép.",
+                "File upload vượt quá dung lượng cho phép.",
                 Map.of("filename", filename, "size", size, "maxSize", maxSize)
         );
     }
@@ -57,7 +61,7 @@ public class FileUploadException extends RuntimeException {
         return new FileUploadException(
                 HttpStatus.BAD_GATEWAY,
                 "CLOUDINARY_UPLOAD_FAILED",
-                "Upload ảnh lên Cloudinary thất bại. Vui lòng thử lại.",
+                "Upload file lên Cloudinary thất bại. Vui lòng thử lại.",
                 Map.of("filename", filename, "reason", reason == null ? "unknown" : reason)
         );
     }

@@ -77,6 +77,24 @@ public class InvalidReviewOperationException extends RuntimeException {
         );
     }
 
+    public static InvalidReviewOperationException emptyMediaUrl() {
+        return new InvalidReviewOperationException(
+                "URL media đánh giá không được để trống",
+                "mediaUrl",
+                "null/empty",
+                "EMPTY_REVIEW_MEDIA_URL"
+        );
+    }
+
+    public static InvalidReviewOperationException tooManyMedia(String fieldName, int actualCount, int maxCount) {
+        return new InvalidReviewOperationException(
+                String.format("Số lượng media trong %s vượt quá giới hạn cho phép", fieldName),
+                fieldName,
+                actualCount + "/" + maxCount,
+                "TOO_MANY_REVIEW_MEDIA"
+        );
+    }
+
     public Map<String, ?> getContextData() {
         return Map.of(
                 "field", field,

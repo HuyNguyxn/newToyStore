@@ -18,6 +18,7 @@ public class ReviewResponse {
 
     private int rating;
     private String comment;
+    private List<ReviewMediaResponse> mediaAttachments;
     private String adminReply;
     private ReviewStatus status;
     private LocalDateTime createdAt;
@@ -35,6 +36,7 @@ public class ReviewResponse {
                           String variantAttributesSnapshot,
                           int rating,
                           String comment,
+                          List<ReviewMediaResponse> mediaAttachments,
                           String adminReply,
                           ReviewStatus status,
                           LocalDateTime createdAt,
@@ -50,6 +52,7 @@ public class ReviewResponse {
         this.variantAttributesSnapshot = variantAttributesSnapshot;
         this.rating = rating;
         this.comment = comment;
+        this.mediaAttachments = mediaAttachments;
         this.adminReply = adminReply;
         this.status = status;
         this.createdAt = createdAt;
@@ -67,6 +70,7 @@ public class ReviewResponse {
     public String getVariantAttributesSnapshot() { return variantAttributesSnapshot; }
     public int getRating() { return rating; }
     public String getComment() { return comment; }
+    public List<ReviewMediaResponse> getMediaAttachments() { return mediaAttachments; }
     public String getAdminReply() { return adminReply; }
     public ReviewStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -1,21 +1,28 @@
 package com.example.new_toy_store.upload.application.dto.response;
 
-public class UploadImageResponse {
+public class UploadMediaResponse {
 
     private String url;
     private String publicId;
     private String originalFilename;
     private String contentType;
+    private String mediaType;
     private long size;
 
-    public UploadImageResponse() {
+    public UploadMediaResponse() {
     }
 
-    public UploadImageResponse(String url, String publicId, String originalFilename, String contentType, long size) {
+    public UploadMediaResponse(String url,
+                               String publicId,
+                               String originalFilename,
+                               String contentType,
+                               String mediaType,
+                               long size) {
         this.url = url;
         this.publicId = publicId;
         this.originalFilename = originalFilename;
         this.contentType = contentType;
+        this.mediaType = mediaType;
         this.size = size;
     }
 
@@ -49,6 +56,14 @@ public class UploadImageResponse {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
     }
 
     public long getSize() {

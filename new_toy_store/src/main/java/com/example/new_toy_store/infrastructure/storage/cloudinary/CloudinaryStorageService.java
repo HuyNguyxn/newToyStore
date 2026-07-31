@@ -12,7 +12,8 @@ import java.util.Map;
 @Service
 public class CloudinaryStorageService {
 
-    private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+    private static final long MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+    private static final long MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties properties;
@@ -24,14 +25,25 @@ public class CloudinaryStorageService {
 
     public Map<?, ?> uploadImage(MultipartFile file, String targetFolder) {
         validateConfiguration();
-        validateImageFile(file);
+        validateMediaFile(file, "image/", MAX_IMAGE_SIZE_BYTES);
 
+        return upload(file, targetFolder, "image");
+    }
+
+    public Map<?, ?> uploadVideo(MultipartFile file, String targetFolder) {
+        validateConfiguration();
+        validateMediaFile(file, "video/", MAX_VIDEO_SIZE_BYTES);
+
+        return upload(file, targetFolder, "video");
+    }
+
+    private Map<?, ?> upload(MultipartFile file, String targetFolder, String resourceType) {
         try {
             return cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
                             "folder", buildFolderPath(targetFolder),
-                            "resource_type", "image"
+                            "resource_type", resourceType
                     )
             );
         } catch (IOException ex) {
@@ -45,16 +57,16 @@ public class CloudinaryStorageService {
         }
     }
 
-    private void validateImageFile(MultipartFile file) {
+    private void validateMediaFile(MultipartFile file, String expectedContentTypePrefix, long maxFileSizeBytes) {
         if (file == null || file.isEmpty()) {
             throw FileUploadException.emptyFile();
         }
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw FileUploadException.fileTooLarge(file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE_BYTES);
+        if (file.getSize() > maxFileSizeBytes) {
+            throw FileUploadException.fileTooLarge(file.getOriginalFilename(), file.getSize(), maxFileSizeBytes);
         }
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw FileUploadException.invalidFileType(file.getOriginalFilename(), contentType);
+        if (contentType == null || !contentType.startsWith(expectedContentTypePrefix)) {
+            throw FileUploadException.invalidFileType(file.getOriginalFilename(), contentType, expectedContentTypePrefix + "*");
         }
     }
 

@@ -3,6 +3,7 @@ package com.example.new_toy_store.review.domain;
 import com.example.new_toy_store.global.common.BaseRootEntity;
 import com.example.new_toy_store.review.domain.exception.InvalidReviewOperationException;
 import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -10,9 +11,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.SQLRestriction;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -28,6 +35,9 @@ import org.hibernate.annotations.SQLRestriction;
         }
 )
 public class Review extends BaseRootEntity {
+
+    private static final int MAX_IMAGE_COUNT = 5;
+    private static final int MAX_VIDEO_COUNT = 2;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,6 +64,10 @@ public class Review extends BaseRootEntity {
     @Column(name = "admin_reply", length = 1000)
     private String adminReply;
 
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC, id ASC")
+    private List<ReviewMedia> mediaAttachments = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReviewStatus status = ReviewStatus.PUBLISHED;
@@ -66,7 +80,9 @@ public class Review extends BaseRootEntity {
                   Integer orderItemId,
                   String variantAttributesSnapshot,
                   int rating,
-                  String comment) {
+                  String comment,
+                  List<String> imageUrls,
+                  List<String> videoUrls) {
         if (userId == null) {
             throw InvalidReviewOperationException.missingRequirement("userId");
         }
@@ -86,6 +102,7 @@ public class Review extends BaseRootEntity {
         this.variantAttributesSnapshot = variantAttributesSnapshot != null ? variantAttributesSnapshot : "Mặc định";
         this.rating = rating;
         this.comment = comment;
+        replaceMediaAttachments(imageUrls, videoUrls);
     }
 
     public void updateByUser(int rating, String comment) {
@@ -96,6 +113,35 @@ public class Review extends BaseRootEntity {
         this.comment = comment;
         this.adminReply = null;
         this.status = ReviewStatus.PUBLISHED;
+    }
+
+    public void replaceMediaAttachments(List<String> imageUrls, List<String> videoUrls) {
+        validateMediaCount(imageUrls, MAX_IMAGE_COUNT, "imageUrls");
+        validateMediaCount(videoUrls, MAX_VIDEO_COUNT, "videoUrls");
+
+        this.mediaAttachments.clear();
+        int displayOrder = 0;
+        if (imageUrls != null) {
+            for (String imageUrl : imageUrls) {
+                addMediaAttachment(new ReviewMedia(ReviewMediaType.IMAGE, imageUrl, displayOrder++));
+            }
+        }
+        if (videoUrls != null) {
+            for (String videoUrl : videoUrls) {
+                addMediaAttachment(new ReviewMedia(ReviewMediaType.VIDEO, videoUrl, displayOrder++));
+            }
+        }
+    }
+
+    private void addMediaAttachment(ReviewMedia media) {
+        media.assignToReview(this);
+        this.mediaAttachments.add(media);
+    }
+
+    private void validateMediaCount(List<String> mediaUrls, int maxCount, String fieldName) {
+        if (mediaUrls != null && mediaUrls.size() > maxCount) {
+            throw InvalidReviewOperationException.tooManyMedia(fieldName, mediaUrls.size(), maxCount);
+        }
     }
 
     public void replyByAdmin(String reply) {
@@ -145,6 +191,10 @@ public class Review extends BaseRootEntity {
 
     public String getAdminReply() {
         return adminReply;
+    }
+
+    public List<ReviewMedia> getMediaAttachments() {
+        return Collections.unmodifiableList(mediaAttachments);
     }
 
     public ReviewStatus getStatus() {

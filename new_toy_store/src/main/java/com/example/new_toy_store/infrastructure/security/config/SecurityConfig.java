@@ -97,7 +97,7 @@ public class SecurityConfig {
                         .requestMatchers("/statistics/**").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/notifications/broadcast").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/notifications/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/uploads/images").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/uploads/images", "/uploads/videos").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
