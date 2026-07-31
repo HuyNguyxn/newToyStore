@@ -3,9 +3,9 @@ spring:
     name: new_toy_store
 
   datasource:
-    url: jdbc:mysql://localhost:3306/new_toy_store
-    username: root
-    password: Huynguyen_07
+    url: ${DB_URL:jdbc:mysql://localhost:3306/new_toy_store}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
 
   flyway:
     enabled: true
@@ -28,10 +28,10 @@ spring:
         order_updates: true
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: frocoding8888@gmail.com
-    password: izsl leeg scsg novm
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -44,21 +44,21 @@ app:
     default-avatar-url: ${DEFAULT_AVATAR_URL:}
   seed:
     admin:
-      enabled: ${SEED_ADMIN_ENABLED:true}
+      enabled: ${SEED_ADMIN_ENABLED:false}
       email: ${SEED_ADMIN_EMAIL:admin@gmail.com}
-      password: ${SEED_ADMIN_PASSWORD:123456}
+      password: ${SEED_ADMIN_PASSWORD:}
       full-name: ${SEED_ADMIN_FULL_NAME:Admin}
       phone-number: ${SEED_ADMIN_PHONE:0900000001}
     staff:
-      enabled: ${SEED_STAFF_ENABLED:true}
+      enabled: ${SEED_STAFF_ENABLED:false}
       email: ${SEED_STAFF_EMAIL:staff@gmail.com}
-      password: ${SEED_STAFF_PASSWORD:123456}
+      password: ${SEED_STAFF_PASSWORD:}
       full-name: ${SEED_STAFF_FULL_NAME:Staff}
       phone-number: ${SEED_STAFF_PHONE:0900000002}
     customer:
-      enabled: ${SEED_CUSTOMER_ENABLED:true}
+      enabled: ${SEED_CUSTOMER_ENABLED:false}
       email: ${SEED_CUSTOMER_EMAIL:customer@gmail.com}
-      password: ${SEED_CUSTOMER_PASSWORD:123456}
+      password: ${SEED_CUSTOMER_PASSWORD:}
       full-name: ${SEED_CUSTOMER_FULL_NAME:Customer}
       phone-number: ${SEED_CUSTOMER_PHONE:0900000003}
   cart:
@@ -78,11 +78,11 @@ app:
       critical-hours: 96
   payment:
     vnpay:
-      enabled: true
-      pay-url: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
-      refund-url: "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction"
-      tmn-code: "${VNPAY_TMN_CODE:K0FNJ3HC}"
-      hash-secret: "${VNPAY_HASH_SECRET:CQYTEUDFQWEVLEYFNYWGQQLPHJTPRYXN}"
+      enabled: ${VNPAY_ENABLED:false}
+      pay-url: "${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
+      refund-url: "${VNPAY_REFUND_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}"
+      tmn-code: "${VNPAY_TMN_CODE:}"
+      hash-secret: "${VNPAY_HASH_SECRET:}"
       return-url: "${VNPAY_RETURN_URL:http://localhost:8080/payments/vnpay-return}"
       ipn-url: "${VNPAY_IPN_URL:http://localhost:8080/payments/vnpay-ipn}"
   notification:
