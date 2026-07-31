@@ -3,6 +3,8 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
+import CartPage from './pages/cart/CartPage.jsx';
+import CheckoutPage from './pages/cart/CheckoutPage.jsx';
 import HomePage from './pages/home/HomePage.jsx';
 import ProductDetailPage from './pages/products/ProductDetailPage.jsx';
 import ProductListPage from './pages/products/ProductListPage.jsx';
@@ -16,6 +18,22 @@ function App() {
         <Route path="/products" element={<ProductListPage />} />
         <Route path="/products/category/:categoryId" element={<ProductListPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route
+          path="/cart"
+          element={(
+            <ProtectedRoute>
+              <CartPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/checkout"
+          element={(
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
