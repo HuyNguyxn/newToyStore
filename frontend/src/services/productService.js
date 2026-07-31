@@ -31,3 +31,7 @@ export function getProductsByCategory(categoryId, params = {}) {
   const query = toQueryString(params);
   return apiClient(`/products/category/${categoryId}${query ? `?${query}` : ''}`);
 }
+
+export function getProductDetails(productId) {
+  return apiClient(`/products/${productId}`);
+}
