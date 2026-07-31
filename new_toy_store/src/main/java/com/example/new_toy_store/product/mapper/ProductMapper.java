@@ -2,10 +2,12 @@ package com.example.new_toy_store.product.mapper;
 
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
+import com.example.new_toy_store.product.application.dto.response.ProductImageResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductVariantResponse;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductAttributeValue;
+import com.example.new_toy_store.product.domain.ProductImage;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.product.domain.VariantType;
@@ -70,6 +72,8 @@ public final class ProductMapper {
                 status.getDisplayName(),
                 product.getSupplierId(),
                 toCategoryIds(product),
+                findThumbnailUrl(product),
+                toImageResponses(product),
                 product.getAverageRating(),
                 product.getReviewCount(),
                 variants,
@@ -89,6 +93,28 @@ public final class ProductMapper {
         return product.getCategories().stream()
                 .map(Category::getId)
                 .collect(Collectors.toList());
+    }
+
+    private static List<ProductImageResponse> toImageResponses(Product product) {
+        return product.getImages().stream()
+                .map(ProductMapper::toImageResponse)
+                .collect(Collectors.toList());
+    }
+
+    private static ProductImageResponse toImageResponse(ProductImage image) {
+        return new ProductImageResponse(
+                image.getId(),
+                image.getImageUrl(),
+                image.isThumbnail()
+        );
+    }
+
+    private static String findThumbnailUrl(Product product) {
+        return product.getImages().stream()
+                .filter(ProductImage::isThumbnail)
+                .map(ProductImage::getImageUrl)
+                .findFirst()
+                .orElse("");
     }
 
     private static List<ProductVariantResponse> toVariantResponses(Product product, PromotionFacade promotionFacade) {

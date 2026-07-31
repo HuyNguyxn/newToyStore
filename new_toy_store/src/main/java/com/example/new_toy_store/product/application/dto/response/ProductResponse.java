@@ -14,6 +14,8 @@ public class ProductResponse {
     private String supplierName;
 
     private List<Integer> categoryIds;
+    private String thumbnailUrl;
+    private List<ProductImageResponse> images;
     private double averageRating;
     private int reviewCount;
     private List<ProductVariantResponse> variants;
@@ -22,7 +24,8 @@ public class ProductResponse {
     private List<String> allowedActions;
 
     public ProductResponse(Integer id, String name, double basePrice, String status, Integer supplierId,
-                           List<Integer> categoryIds, double averageRating, int reviewCount,
+                           List<Integer> categoryIds, String thumbnailUrl, List<ProductImageResponse> images,
+                           double averageRating, int reviewCount,
                            List<ProductVariantResponse> variants, ProductStatus statusDetail,
                            List<ProductStatus> allowedNextStatuses, List<String> allowedActions) {
         this.id = id;
@@ -31,6 +34,8 @@ public class ProductResponse {
         this.status = status;
         this.supplierId = supplierId;
         this.categoryIds = categoryIds;
+        this.thumbnailUrl = thumbnailUrl;
+        this.images = images == null ? List.of() : List.copyOf(images);
         this.averageRating = averageRating;
         this.reviewCount = reviewCount;
         this.variants = variants;
@@ -47,6 +52,8 @@ public class ProductResponse {
     public String getSupplierName() { return supplierName; }
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
     public List<Integer> getCategoryIds() { return categoryIds; }
+    public String getThumbnailUrl() { return thumbnailUrl; }
+    public List<ProductImageResponse> getImages() { return images; }
     public double getAverageRating() { return averageRating; }
     public int getReviewCount() { return reviewCount; }
     public List<ProductVariantResponse> getVariants() { return variants; }
