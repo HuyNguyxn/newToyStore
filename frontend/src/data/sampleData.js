@@ -1,0 +1,91 @@
+export const sampleCategories = [
+  {
+    id: 1,
+    name: 'Do choi lap rap',
+    subCategories: [
+      { id: 11, name: 'LEGO', subCategories: [] },
+      { id: 12, name: 'Khoi xay dung', subCategories: [] },
+      { id: 13, name: 'Lap rap co khi', subCategories: [] },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Phuong tien do choi',
+    subCategories: [
+      { id: 21, name: 'Xe dieu khien', subCategories: [] },
+      { id: 22, name: 'May bay mo hinh', subCategories: [] },
+      { id: 23, name: 'Tau thuyen', subCategories: [] },
+    ],
+  },
+  {
+    id: 3,
+    name: 'Do choi giao duc',
+    subCategories: [
+      { id: 31, name: 'Hoc chu cai', subCategories: [] },
+      { id: 32, name: 'Do choi STEM', subCategories: [] },
+    ],
+  },
+  { id: 4, name: 'Thu bong', subCategories: [] },
+  { id: 5, name: 'Mo hinh', subCategories: [] },
+];
+
+export const sampleProducts = [
+  {
+    id: 1,
+    name: 'Kham pha thi choi',
+    basePrice: 350000,
+    averageRating: 4.8,
+    reviewCount: 12,
+    status: 'ACTIVE',
+    purchasable: true,
+    quickAddAvailable: true,
+    defaultVariantId: 1,
+    defaultVariantStockQuantity: 20,
+    thumbnailUrl: '',
+    variants: [{ id: 1, price: 450000, discountedPrice: 350000, stockQuantity: 20 }],
+  },
+  {
+    id: 2,
+    name: 'Robot lap rap thong minh',
+    basePrice: 420000,
+    averageRating: 4.7,
+    reviewCount: 18,
+    status: 'ACTIVE',
+    purchasable: true,
+    quickAddAvailable: false,
+    thumbnailUrl: '',
+    variants: [
+      { id: 2, price: 520000, discountedPrice: 420000, stockQuantity: 8 },
+      { id: 3, price: 560000, discountedPrice: 450000, stockQuantity: 5 },
+    ],
+  },
+  {
+    id: 3,
+    name: 'Gau bong mem mini',
+    basePrice: 180000,
+    averageRating: 4.9,
+    reviewCount: 31,
+    status: 'ACTIVE',
+    purchasable: true,
+    quickAddAvailable: true,
+    defaultVariantId: 4,
+    defaultVariantStockQuantity: 50,
+    thumbnailUrl: '',
+    variants: [{ id: 4, price: 220000, discountedPrice: 180000, stockQuantity: 50 }],
+  },
+  {
+    id: 4,
+    name: 'Xe dieu khien dia hinh',
+    basePrice: 550000,
+    averageRating: 4.6,
+    reviewCount: 9,
+    status: 'ACTIVE',
+    purchasable: true,
+    quickAddAvailable: false,
+    thumbnailUrl: '',
+    variants: [
+      { id: 5, price: 650000, discountedPrice: 550000, stockQuantity: 4 },
+      { id: 6, price: 690000, discountedPrice: 590000, stockQuantity: 3 },
+    ],
+  },
+];

@@ -4,6 +4,7 @@ import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import HomePage from './pages/home/HomePage.jsx';
+import ProductListPage from './pages/products/ProductListPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
 
 function App() {
@@ -11,6 +12,8 @@ function App() {
     <Routes>
       <Route element={<CustomerLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ProductListPage />} />
+        <Route path="/products/category/:categoryId" element={<ProductListPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route

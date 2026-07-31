@@ -1,48 +1,42 @@
-import { useState } from 'react';
-
-const categoryTree = [
-  {
-    id: 1,
-    name: 'Do choi lap rap',
-    children: [
-      { id: 11, name: 'LEGO', children: [] },
-      { id: 12, name: 'Khoi xay dung', children: [] },
-      { id: 13, name: 'Lap rap co khi', children: [] },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Phuong tien do choi',
-    children: [
-      { id: 21, name: 'Xe dieu khien', children: [] },
-      { id: 22, name: 'May bay mo hinh', children: [] },
-      { id: 23, name: 'Tau thuyen', children: [] },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Do choi giao duc',
-    children: [
-      { id: 31, name: 'Hoc chu cai', children: [] },
-      { id: 32, name: 'Do choi STEM', children: [] },
-    ],
-  },
-  { id: 4, name: 'Thu bong', children: [] },
-  { id: 5, name: 'Mo hinh', children: [] },
-];
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { sampleCategories } from '../../../data/sampleData.js';
+import { getCategoryTree } from '../../../services/categoryService.js';
 
 function CategoryMenu() {
+  const navigate = useNavigate();
+  const [categoryTree, setCategoryTree] = useState([]);
   const [stack, setStack] = useState([]);
-  const currentCategories = stack.length === 0 ? categoryTree : stack[stack.length - 1].children;
+  const currentCategories = stack.length === 0 ? categoryTree : getChildren(stack[stack.length - 1]);
   const title = stack.length === 0 ? 'Danh muc san pham' : stack[stack.length - 1].name;
 
+  useEffect(() => {
+    let active = true;
+
+    getCategoryTree()
+      .then((result) => {
+        if (active) {
+          setCategoryTree(result || []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setCategoryTree(sampleCategories);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function handleCategoryClick(category) {
-    if (category.children && category.children.length > 0) {
+    if (getChildren(category).length > 0) {
       setStack([...stack, category]);
       return;
     }
 
-    window.location.href = `/products/category/${category.id}`;
+    navigate(`/products/category/${category.id}`);
   }
 
   function goBack() {
@@ -52,13 +46,13 @@ function CategoryMenu() {
   return (
     <nav className="category-menu" aria-label="Danh muc san pham">
       <div className="category-menu__title">
-        <span>☰</span>
+        <span>Menu</span>
         <span>{title}</span>
       </div>
 
       {stack.length > 0 && (
         <button className="category-menu__back" type="button" onClick={goBack}>
-          ‹ Quay lai
+          Quay lai
         </button>
       )}
 
@@ -67,13 +61,17 @@ function CategoryMenu() {
           <li key={category.id}>
             <button type="button" onClick={() => handleCategoryClick(category)}>
               <span>{category.name}</span>
-              {category.children && category.children.length > 0 && <span>›</span>}
+              {getChildren(category).length > 0 && <span>&gt;</span>}
             </button>
           </li>
         ))}
       </ul>
     </nav>
   );
+}
+
+function getChildren(category) {
+  return category?.subCategories || category?.children || [];
 }
 
 export default CategoryMenu;

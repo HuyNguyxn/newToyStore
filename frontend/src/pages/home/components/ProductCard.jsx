@@ -1,23 +1,38 @@
 import { Link } from 'react-router-dom';
-
-function formatPrice(value) {
-  return new Intl.NumberFormat('vi-VN').format(value) + 'd';
-}
+import {
+  formatPrice,
+  getProductOriginalPrice,
+  getProductPrice,
+  getProductStatusLabel,
+} from '../../../utils/formatters.js';
 
 function ProductCard({ product }) {
+  const price = getProductPrice(product);
+  const originalPrice = getProductOriginalPrice(product);
+  const showOriginalPrice = originalPrice > price;
+  const statusLabel = getProductStatusLabel(product);
+  const rating = product.averageRating || product.rating || 0;
+  const firstLetter = product.name?.charAt(0) || 'P';
+
   return (
     <article className="product-card">
       <div className="product-card__image">
-        <span>{product.name.charAt(0)}</span>
-        <strong>{product.status}</strong>
+        {product.thumbnailUrl ? (
+          <img src={product.thumbnailUrl} alt={product.name} />
+        ) : (
+          <span>{firstLetter}</span>
+        )}
+        <strong>{statusLabel}</strong>
       </div>
 
       <div className="product-card__body">
         <h3>{product.name}</h3>
-        <p className="product-card__rating">★★★★★ <span>({product.reviewCount} danh gia)</span></p>
+        <p className="product-card__rating">
+          {rating.toFixed(1)} sao <span>({product.reviewCount || 0} danh gia)</span>
+        </p>
         <p className="product-card__price">
-          <span>{formatPrice(product.oldPrice)}</span>
-          <strong>{formatPrice(product.price)}</strong>
+          {showOriginalPrice && <span>{formatPrice(originalPrice)}</span>}
+          <strong>{formatPrice(price)}</strong>
         </p>
 
         <div className="product-card__actions">

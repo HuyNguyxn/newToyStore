@@ -1,8 +1,21 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 
 function Header() {
+  const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+
+  function handleSearch(event) {
+    event.preventDefault();
+    const keyword = new FormData(event.currentTarget).get('keyword')?.toString().trim();
+
+    if (keyword) {
+      navigate(`/products?keyword=${encodeURIComponent(keyword)}&page=0`);
+      return;
+    }
+
+    navigate('/products');
+  }
 
   return (
     <header className="site-header">
@@ -12,8 +25,8 @@ function Header() {
           <span className="brand__name">New Toy Store</span>
         </Link>
 
-        <form className="search-box" role="search">
-          <input type="search" placeholder="Tim kiem do choi..." aria-label="Tim kiem do choi" />
+        <form className="search-box" role="search" onSubmit={handleSearch}>
+          <input name="keyword" type="search" placeholder="Tim kiem do choi..." aria-label="Tim kiem do choi" />
           <button type="submit">Tim</button>
         </form>
 
