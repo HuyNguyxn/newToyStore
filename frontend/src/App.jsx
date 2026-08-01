@@ -3,7 +3,7 @@ import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
-import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage.jsx';
+import AdminResourcePage from './pages/admin/AdminResourcePage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
@@ -103,18 +103,18 @@ function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
-        <Route path="products" element={<AdminPlaceholderPage />} />
-        <Route path="categories" element={<AdminPlaceholderPage />} />
-        <Route path="orders" element={<AdminPlaceholderPage />} />
-        <Route path="payments" element={<AdminPlaceholderPage />} />
-        <Route path="users" element={<AdminPlaceholderPage />} />
-        <Route path="promotions" element={<AdminPlaceholderPage />} />
-        <Route path="suppliers" element={<AdminPlaceholderPage />} />
-        <Route path="imports" element={<AdminPlaceholderPage />} />
-        <Route path="logistics" element={<AdminPlaceholderPage />} />
-        <Route path="returns" element={<AdminPlaceholderPage />} />
-        <Route path="reviews" element={<AdminPlaceholderPage />} />
-        <Route path="moderation" element={<AdminPlaceholderPage />} />
+        <Route path="products" element={<AdminResourcePage resource="products" />} />
+        <Route path="categories" element={<AdminResourcePage resource="categories" />} />
+        <Route path="orders" element={<AdminResourcePage resource="orders" />} />
+        <Route path="payments" element={<AdminResourcePage resource="payments" />} />
+        <Route path="users" element={<AdminResourcePage resource="users" />} />
+        <Route path="promotions" element={<AdminResourcePage resource="promotions" />} />
+        <Route path="suppliers" element={<AdminResourcePage resource="suppliers" />} />
+        <Route path="imports" element={<AdminResourcePage resource="imports" />} />
+        <Route path="logistics" element={<AdminResourcePage resource="logistics" />} />
+        <Route path="returns" element={<AdminResourcePage resource="returns" />} />
+        <Route path="reviews" element={<AdminResourcePage resource="reviews" />} />
+        <Route path="moderation" element={<AdminResourcePage resource="moderation" />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
