@@ -1494,6 +1494,23 @@ body {
   font-weight: 900;
 }
 
+.order-item-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.order-item-row__actions a {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .shipping-box,
 .order-history {
   border-top: 1px solid var(--color-border);
@@ -2286,6 +2303,105 @@ body {
   font-size: 13px;
 }
 
+.admin-tree {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.admin-tree__branch {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-tree__node {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--color-border) !important;
+  background: #fff !important;
+  color: var(--color-text) !important;
+  text-align: left;
+}
+
+.admin-tree__node span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.admin-tree__children {
+  display: grid;
+  gap: 8px;
+  margin-left: 18px;
+  padding-left: 12px;
+  border-left: 2px dashed var(--color-border);
+}
+
+.admin-line-items {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-line-items__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-line-items__title button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.admin-line-item {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(95px, 1fr)) 90px;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.admin-line-item .is-danger,
+.admin-api-console .is-danger {
+  background: #ef4444;
+}
+
+.admin-log-list {
+  display: grid;
+  gap: 10px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.admin-log-list__item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.admin-log-list__item span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.admin-log-list__item p {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+}
+
 .upload-result-card {
   display: grid;
   gap: 12px;
@@ -2789,6 +2905,7 @@ body {
   .admin-crud-grid,
   .admin-filter,
   .admin-api-console__row,
+  .admin-line-item,
   .admin-nav {
     grid-template-columns: 1fr;
   }

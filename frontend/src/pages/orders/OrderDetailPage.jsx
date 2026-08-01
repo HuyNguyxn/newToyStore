@@ -122,6 +122,10 @@ function OrderDetailPage() {
                 <div>
                   <strong>{item.productName}</strong>
                   <p>{item.variantAttributesSnapshot || 'Mac dinh'} x {item.quantity}</p>
+                  <div className="order-item-row__actions">
+                    <Link to={`/reviews/new?orderItemId=${item.id}`}>Viet danh gia</Link>
+                    <Link to={`/returns/new?orderId=${order.id}&orderItemId=${item.id}&productId=${item.productId || ''}&variantId=${item.variantId || ''}`}>Yeu cau tra hang</Link>
+                  </div>
                 </div>
                 <span>{formatPrice(item.price * item.quantity)}</span>
               </div>

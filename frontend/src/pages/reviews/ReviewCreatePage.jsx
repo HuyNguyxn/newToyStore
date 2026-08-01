@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createReview } from '../../services/reviewService.js';
 import { uploadImage, uploadVideo } from '../../services/uploadService.js';
 
 function ReviewCreatePage() {
-  const [form, setForm] = useState({ orderItemId: '', rating: '5', comment: '', imageUrls: '', videoUrls: '' });
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState({ orderItemId: searchParams.get('orderItemId') || '', rating: '5', comment: '', imageUrls: '', videoUrls: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);

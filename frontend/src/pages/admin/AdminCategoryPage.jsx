@@ -91,7 +91,7 @@ function AdminCategoryPage() {
           <div className="admin-api-console__row"><label>New parent ID<input value={moveForm.parentId} onChange={(e) => setMoveForm((c) => ({ ...c, parentId: e.target.value }))} /></label><label>Order<input value={moveForm.displayOrder} onChange={(e) => setMoveForm((c) => ({ ...c, displayOrder: e.target.value }))} /></label></div>
           <label>Version<input value={moveForm.version} onChange={(e) => setMoveForm((c) => ({ ...c, version: e.target.value }))} /></label>
           <button type="submit" disabled={!form.id}>Move category</button>
-          <pre>{JSON.stringify(tree, null, 2)}</pre>
+          <CategoryTree nodes={tree} onSelect={selectCategory} />
         </form>
       </div>
       <SimpleTable rows={categories} onSelect={selectCategory} onShow={(id) => doAction(() => showCategory(id), 'Da show category.')} onHide={(id) => doAction(() => hideCategory(id), 'Da hide category.')} onDelete={(id) => doAction(() => deleteCategory(id), 'Da xoa category.')} />
@@ -101,6 +101,36 @@ function AdminCategoryPage() {
 
 function SimpleTable({ rows, onSelect, onShow, onHide, onDelete }) {
   return <div className="admin-resource-table"><div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 1fr 1fr 120px 240px' }}><span>ID</span><span>Name</span><span>Slug</span><span>Status</span><span>Actions</span></div>{rows.map((row) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 1fr 1fr 120px 240px' }} key={row.id}><span>{row.id}</span><span>{row.name}</span><span>{row.slug}</span><span>{row.status}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => onSelect(row)}>Edit</button><button type="button" onClick={() => onShow(row.id)}>Show</button><button type="button" onClick={() => onHide(row.id)}>Hide</button><button type="button" className="is-danger" onClick={() => onDelete(row.id)}>Delete</button></span></div>)}</div>;
+}
+
+function CategoryTree({ nodes, onSelect }) {
+  if (!nodes?.length) {
+    return <div className="empty-state">Chua co category tree.</div>;
+  }
+
+  return (
+    <div className="admin-tree">
+      {nodes.map((node) => <CategoryNode key={node.id} node={node} onSelect={onSelect} />)}
+    </div>
+  );
+}
+
+function CategoryNode({ node, onSelect }) {
+  const children = node.children || node.childCategories || [];
+
+  return (
+    <div className="admin-tree__branch">
+      <button type="button" className="admin-tree__node" onClick={() => onSelect(node)}>
+        <strong>{node.name}</strong>
+        <span>#{node.id} · {node.status || 'UNKNOWN'} · order {node.displayOrder ?? 0}</span>
+      </button>
+      {children.length > 0 && (
+        <div className="admin-tree__children">
+          {children.map((child) => <CategoryNode key={child.id} node={child} onSelect={onSelect} />)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default AdminCategoryPage;
