@@ -40,3 +40,46 @@ export function getProductStatusLabel(product) {
 
   return product.status || 'Tam an';
 }
+
+export function formatDateTime(value) {
+  if (!value) {
+    return '';
+  }
+
+  return new Date(value).toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function getOrderStatusLabel(status) {
+  const labels = {
+    PENDING: 'Cho xac nhan',
+    CONFIRMED: 'Da xac nhan',
+    SHIPPED: 'Dang giao',
+    COMPLETED: 'Hoan thanh',
+    PARTIALLY_REFUNDED: 'Hoan mot phan',
+    FULLY_REFUNDED: 'Hoan toan bo',
+    CANCELLED: 'Da huy',
+  };
+
+  return labels[status] || status || '';
+}
+
+export function getPaymentStatusLabel(status) {
+  const labels = {
+    PENDING: 'Cho thanh toan',
+    SUCCEEDED: 'Thanh cong',
+    FAILED: 'That bai',
+    CANCELLED: 'Da huy',
+    EXPIRED: 'Het han',
+    REFUND_PENDING: 'Cho hoan tien',
+    REFUNDED: 'Da hoan tien',
+    REFUND_FAILED: 'Hoan tien that bai',
+  };
+
+  return labels[status] || status || '';
+}

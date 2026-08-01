@@ -31,6 +31,7 @@ function Header() {
         </form>
 
         <nav className="header-actions" aria-label="Customer actions">
+          {isAuthenticated && <Link to="/orders" className="plain-header-link">Don hang</Link>}
           <Link to="/cart" className="cart-link">
             Gio hang
             <span className="cart-link__badge">3</span>

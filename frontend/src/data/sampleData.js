@@ -140,3 +140,71 @@ export const sampleCart = {
     },
   ],
 };
+
+export const sampleOrders = [
+  {
+    id: 1,
+    userId: 1,
+    status: 'PENDING',
+    totalAmount: 770000,
+    shippingAddress: 'Quan 1, TP Ho Chi Minh',
+    promoCode: '',
+    discountAmount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    availableActions: ['CANCEL'],
+    allowedNextActions: ['CONFIRMED', 'CANCELLED'],
+    items: [
+      {
+        id: 1,
+        productId: 1,
+        variantId: 1,
+        productName: 'Kham pha thi choi',
+        variantAttributesSnapshot: 'Mac dinh',
+        quantity: 1,
+        price: 350000,
+      },
+      {
+        id: 2,
+        productId: 3,
+        variantId: 4,
+        productName: 'Gau bong mem mini',
+        variantAttributesSnapshot: 'Mac dinh',
+        quantity: 2,
+        price: 180000,
+      },
+    ],
+    histories: [
+      {
+        id: 1,
+        status: 'PENDING',
+        note: 'Don hang duoc tao',
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  },
+];
+
+export const samplePayments = [
+  {
+    id: 1,
+    orderId: 1,
+    userId: 1,
+    method: 'COD',
+    status: 'SUCCEEDED',
+    amount: 770000,
+    providerTransactionId: '',
+    failureReason: '',
+    cancelReason: '',
+    paidAt: new Date().toISOString(),
+    expiredAt: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    idempotencyKey: 'sample-cod-payment',
+    paymentUrl: '',
+    gatewayMessage: '',
+    availableActions: [],
+    allowedNextStatuses: [],
+    nextActions: [],
+  },
+];
