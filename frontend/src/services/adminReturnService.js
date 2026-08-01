@@ -50,6 +50,33 @@ export function getSupplierReturns(params = {}) {
   return apiClient(`/api/supplier-returns${query ? `?${query}` : ''}`);
 }
 
+export function createSupplierReturn(payload) {
+  return apiClient('/api/supplier-returns', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function submitSupplierReturn(id) {
+  return apiClient(`/api/supplier-returns/${id}/submit`, { method: 'PATCH' });
+}
+
+export function approveSupplierReturn(id) {
+  return apiClient(`/api/supplier-returns/${id}/approve`, { method: 'PATCH' });
+}
+
+export function rejectSupplierReturn(id, reason) {
+  return apiClient(`/api/supplier-returns/${id}/reject?reason=${encodeURIComponent(reason)}`, { method: 'PATCH' });
+}
+
+export function shipSupplierReturn(id) {
+  return apiClient(`/api/supplier-returns/${id}/ship`, { method: 'PATCH' });
+}
+
+export function completeSupplierReturn(id) {
+  return apiClient(`/api/supplier-returns/${id}/complete`, { method: 'PATCH' });
+}
+
 export function inspectSupplierReturn(returnId, payload) {
   return apiClient(`/api/supplier-returns/${returnId}/inspect`, {
     method: 'PATCH',

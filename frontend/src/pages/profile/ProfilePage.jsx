@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 import { uploadImage } from '../../services/uploadService.js';
 
@@ -120,6 +121,15 @@ function ProfilePage() {
           {saving ? 'Dang luu...' : uploading ? 'Dang upload...' : 'Luu thay doi'}
         </button>
       </form>
+
+      <div className="profile-form">
+        <h2>Thao tac mua hang</h2>
+        <div className="admin-resource-table__actions">
+          <Link className="login-link" to="/reviews/new">Viet danh gia</Link>
+          <Link className="login-link" to="/returns/new">Tao yeu cau tra hang</Link>
+          <Link className="login-link" to="/orders">Xem don hang</Link>
+        </div>
+      </div>
     </section>
   );
 }
