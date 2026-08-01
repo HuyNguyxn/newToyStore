@@ -70,6 +70,8 @@ function LoginPage() {
 
         <p className="auth-card__switch">
           Chua co tai khoan? <Link to="/register">Dang ky ngay</Link>
+          <br />
+          <Link to="/forgot-password">Quen mat khau?</Link>
         </p>
       </div>
     </section>

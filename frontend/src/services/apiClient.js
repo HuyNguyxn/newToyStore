@@ -15,10 +15,13 @@ export function clearStoredToken() {
 
 export async function apiClient(endpoint, options = {}) {
   const token = getStoredToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  const isFormData = options.body instanceof FormData;
+  const headers = isFormData
+    ? { ...options.headers }
+    : {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;

@@ -4,6 +4,7 @@ import useAuth from '../../hooks/useAuth.js';
 import { sampleProducts } from '../../data/sampleData.js';
 import { addCartItem } from '../../services/cartService.js';
 import { getProductDetails } from '../../services/productService.js';
+import { getProductReviews } from '../../services/reviewService.js';
 import {
   formatPrice,
   getProductOriginalPrice,
@@ -24,6 +25,8 @@ function ProductDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [reviewNotice, setReviewNotice] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -61,6 +64,28 @@ function ProductDetailPage() {
       setSelectedImageUrl(thumbnail);
       setQuantity(1);
     }
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    setReviewNotice('');
+
+    getProductReviews(id, { page: 0, size: 6, sort: 'createdAt,desc' })
+      .then((result) => {
+        if (active) {
+          setReviews(result.content || []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setReviews([]);
+          setReviewNotice('Chua tai duoc danh gia san pham.');
+        }
+      });
 
     return () => {
       active = false;
@@ -215,6 +240,52 @@ function ProductDetailPage() {
             <Link to="/products">Tiep tuc mua sam</Link>
           </div>
         </div>
+      </section>
+
+      <section className="product-reviews">
+        <div className="page-title-row">
+          <div>
+            <p>Danh gia thuc te</p>
+            <h2>Khach hang noi gi ve san pham</h2>
+          </div>
+          <span>{product.reviewCount || reviews.length || 0} danh gia</span>
+        </div>
+
+        {reviewNotice && <div className="form-alert form-alert--soft">{reviewNotice}</div>}
+
+        {reviews.length === 0 ? (
+          <div className="empty-state">San pham chua co danh gia hien thi.</div>
+        ) : (
+          <div className="review-list">
+            {reviews.map((review) => (
+              <article className="review-card" key={review.id}>
+                <div className="review-card__user">
+                  <img src={review.userAvatar || 'https://placehold.co/48x48?text=U'} alt={review.userFullName || 'User'} />
+                  <div>
+                    <strong>{review.userFullName || 'Khach hang'}</strong>
+                    <span>{'★'.repeat(review.rating)}{'☆'.repeat(Math.max(5 - review.rating, 0))}</span>
+                  </div>
+                </div>
+
+                <p>{review.comment || 'Khach hang khong de lai binh luan.'}</p>
+
+                {review.mediaAttachments?.length > 0 && (
+                  <div className="review-card__media">
+                    {review.mediaAttachments.map((media) => (
+                      media.mediaType === 'VIDEO' ? (
+                        <video key={media.id || media.url} src={media.url} controls />
+                      ) : (
+                        <img key={media.id || media.url} src={media.url} alt="Review media" />
+                      )
+                    ))}
+                  </div>
+                )}
+
+                {review.adminReply && <div className="review-card__reply">Shop: {review.adminReply}</div>}
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

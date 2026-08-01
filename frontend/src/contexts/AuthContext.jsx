@@ -1,6 +1,6 @@
 import { createContext, useEffect, useMemo, useReducer } from 'react';
 import { clearStoredToken, getStoredToken, storeToken } from '../services/apiClient.js';
-import { getCurrentUser, loginUser, registerUser } from '../services/authService.js';
+import { getCurrentUser, loginUser, registerUser, updateCurrentUser } from '../services/authService.js';
 
 const AuthContext = createContext(null);
 
@@ -84,6 +84,13 @@ export function AuthProvider({ children }) {
     return user;
   }
 
+  async function updateProfile(payload) {
+    dispatch({ type: 'AUTH_LOADING' });
+    const user = await updateCurrentUser(payload);
+    dispatch({ type: 'AUTH_PROFILE_SUCCESS', payload: user });
+    return user;
+  }
+
   function logout() {
     clearStoredToken();
     dispatch({ type: 'AUTH_LOGOUT' });
@@ -96,6 +103,7 @@ export function AuthProvider({ children }) {
     isStaff: ['STAFF', 'MANAGER', 'ADMIN'].includes(state.user?.role),
     login,
     register,
+    updateProfile,
     logout,
   }), [state]);
 

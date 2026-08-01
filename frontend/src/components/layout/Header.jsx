@@ -1,9 +1,37 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
+import { getUnreadNotificationCount } from '../../services/notificationService.js';
 
 function Header() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let active = true;
+
+    getUnreadNotificationCount()
+      .then((result) => {
+        if (active) {
+          setUnreadCount(result.unreadCount || 0);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUnreadCount(0);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
 
   function handleSearch(event) {
     event.preventDefault();
@@ -32,9 +60,14 @@ function Header() {
 
         <nav className="header-actions" aria-label="Customer actions">
           {isAuthenticated && <Link to="/orders" className="plain-header-link">Don hang</Link>}
+          {isAuthenticated && (
+            <Link to="/notifications" className="cart-link">
+              Thong bao
+              {unreadCount > 0 && <span className="cart-link__badge">{unreadCount}</span>}
+            </Link>
+          )}
           <Link to="/cart" className="cart-link">
             Gio hang
-            <span className="cart-link__badge">3</span>
           </Link>
           {isAuthenticated ? (
             <div className="user-menu">

@@ -4,11 +4,15 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage.jsx';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import CartPage from './pages/cart/CartPage.jsx';
 import CheckoutPage from './pages/cart/CheckoutPage.jsx';
+import NotFoundPage from './pages/common/NotFoundPage.jsx';
 import HomePage from './pages/home/HomePage.jsx';
+import NotificationPage from './pages/notifications/NotificationPage.jsx';
 import OrderDetailPage from './pages/orders/OrderDetailPage.jsx';
 import OrderListPage from './pages/orders/OrderListPage.jsx';
 import PaymentListPage from './pages/payments/PaymentListPage.jsx';
@@ -68,6 +72,8 @@ function App() {
         <Route path="/payments/vnpay-return" element={<VnpayReturnPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/profile"
           element={(
@@ -76,6 +82,15 @@ function App() {
             </ProtectedRoute>
           )}
         />
+        <Route
+          path="/notifications"
+          element={(
+            <ProtectedRoute>
+              <NotificationPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
 
       <Route
