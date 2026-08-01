@@ -1,5 +1,21 @@
 import { useMemo, useState } from 'react';
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   getPaymentFailureReasons,
   getCustomerSummary,
   getCustomerTrend,
@@ -19,6 +35,8 @@ import {
   getTopSpendingCustomers,
 } from '../../services/statisticsService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
+
+const chartColors = ['#f97316', '#2563eb', '#22c55e', '#ef4444', '#a855f7', '#14b8a6', '#f59e0b', '#64748b'];
 
 const quickRanges = [
   { code: 'TODAY', label: 'Hôm nay', days: 0 },
@@ -80,9 +98,9 @@ function AdminStatisticsPage() {
         <div>
           <p>Admin Analytics</p>
           <h2>Statistics</h2>
-          <span>Mỗi bảng thống kê có bộ lọc riêng, cùng cách thao tác nhưng không ảnh hưởng lẫn nhau.</span>
+          <span>Mỗi bảng thống kê có bộ lọc riêng và biểu đồ riêng để nhìn dữ liệu rõ hơn.</span>
         </div>
-        <strong>Independent panels</strong>
+        <strong>Recharts dashboard</strong>
       </div>
 
       <OverviewStatisticsPanel />
@@ -93,16 +111,21 @@ function AdminStatisticsPage() {
           <BreakdownStatisticPanel
             title="Revenue by category"
             subtitle="Danh mục tạo doanh thu cao nhất"
+            chartType="bar"
             loader={(params) => getRevenueByCategory(params)}
           />
-          <PaymentMethodStatisticPanel
+          <BreakdownStatisticPanel
             title="Revenue by payment method"
-            subtitle="Doanh thu theo phương thức thanh toán"
+            subtitle="Tỷ trọng theo phương thức thanh toán"
+            chartType="pie"
             loader={(params) => getRevenueByPaymentMethod(params)}
+            labelSelector={(row) => row.method || row.label || row.code}
+            countSelector={(row) => row.transactionCount || row.count || 0}
           />
           <BreakdownStatisticPanel
             title="Revenue by promotion"
             subtitle="Doanh thu theo chương trình khuyến mãi"
+            chartType="bar"
             loader={(params) => getRevenueByPromotion(params)}
           />
         </div>
@@ -120,24 +143,28 @@ function AdminStatisticsPage() {
             title="Revenue by product"
             subtitle="Sản phẩm tạo doanh thu cao"
             loader={(params, filters) => getRevenueByProduct({ ...params, limit: filters.topLimit })}
+            valueKey="grossRevenue"
           />
           <ProfitMarginStatisticPanel />
           <BreakdownStatisticPanel
             title="Top spending customers"
             subtitle="Khách hàng chi tiêu cao nhất"
+            chartType="bar"
             loader={(params) => getTopSpendingCustomers(params)}
           />
           <BreakdownStatisticPanel
             title="Customer summary"
             subtitle="Khách mới, khách có đơn, khách mua lặp lại"
+            chartType="bar"
+            valueFormatter={(value) => `${value}`}
             loader={(params) => getCustomerSummary(params)}
-            amountLabel="Value"
           />
           <BreakdownStatisticPanel
             title="Customer trend"
             subtitle="Khách hàng mới theo thời gian"
+            chartType="line"
+            valueFormatter={(value) => `${value}`}
             loader={(params) => getCustomerTrend(params)}
-            amountLabel="Value"
           />
         </div>
       </section>
@@ -148,38 +175,40 @@ function AdminStatisticsPage() {
           <BreakdownStatisticPanel
             title="Payment failure reasons"
             subtitle="Lý do thanh toán thất bại"
+            chartType="bar"
+            valueFormatter={(value) => `${value}`}
             loader={(params) => getPaymentFailureReasons(params)}
-            amountLabel="Amount"
           />
           <BreakdownStatisticPanel
             title="Refund by reason"
             subtitle="Lý do hoàn tiền"
+            chartType="pie"
             loader={(params) => getRefundReasons(params)}
-            amountLabel="Refund"
           />
           <BreakdownStatisticPanel
             title="Refund by product"
             subtitle="Tiền refund được phân bổ theo sản phẩm"
+            chartType="bar"
             loader={(params) => getRefundByProduct(params)}
-            amountLabel="Refund"
           />
           <BreakdownStatisticPanel
             title="Shipment by provider"
             subtitle="Đơn giao hàng theo nhà vận chuyển"
+            chartType="pie"
             loader={(params) => getShipmentsByProvider(params)}
-            amountLabel="Shipping fee"
           />
           <BreakdownStatisticPanel
             title="Shipment by region"
             subtitle="Đơn giao hàng theo khu vực"
+            chartType="bar"
             loader={(params) => getShipmentsByRegion(params)}
-            amountLabel="Shipping fee"
           />
           <BreakdownStatisticPanel
             title="Shipment failure reasons"
             subtitle="Lý do giao hàng thất bại"
+            chartType="bar"
+            valueFormatter={(value) => `${value}`}
             loader={(params) => getShipmentFailureReasons(params)}
-            amountLabel="Amount"
           />
           <InventoryMovementStatisticPanel />
         </div>
@@ -234,10 +263,8 @@ function OverviewStatisticsPanel() {
           <KpiSection title="Promotion KPIs" items={groupedKpis.promotion} />
 
           <section className="admin-api-console">
-            <div className="admin-panel__heading"><div><p>Revenue</p><h2>Trend</h2></div></div>
-            <div className="admin-chart-bars">
-              {(overview.revenueTrend || []).map((point) => <TrendBar key={point.period} point={point} />)}
-            </div>
+            <StatisticPanelHeading title="Revenue trend" subtitle="Biểu đồ đường theo doanh thu thuần" />
+            <RevenueLineChart rows={overview.revenueTrend || []} />
           </section>
 
           <div className="admin-dashboard-grid">
@@ -250,8 +277,14 @@ function OverviewStatisticsPanel() {
           </div>
 
           <div className="admin-crud-grid">
-            <PaymentMethodPanel rows={overview.paymentMethods} title="Payment methods" />
-            <InventoryPanel inventory={overview.inventory} />
+            <BreakdownChart
+              rows={overview.paymentMethods || []}
+              chartType="pie"
+              labelSelector={(row) => row.method || row.label || row.code}
+              valueSelector={(row) => row.amount || 0}
+              valueFormatter={formatPrice}
+            />
+            <InventoryOverviewPanel inventory={overview.inventory} />
           </div>
         </>
       )}
@@ -259,7 +292,16 @@ function OverviewStatisticsPanel() {
   );
 }
 
-function BreakdownStatisticPanel({ title, subtitle, loader, amountLabel = 'Revenue' }) {
+function BreakdownStatisticPanel({
+  title,
+  subtitle,
+  loader,
+  chartType,
+  valueFormatter = formatPrice,
+  labelSelector = (row) => row.label || row.code || 'Unknown',
+  valueSelector = (row) => row.amount ?? row.count ?? 0,
+  countSelector = (row) => row.count || 0,
+}) {
   const { data, filters, updateField, chooseQuickRange, load, loading, error } = useStatisticLoader(loader, []);
 
   return (
@@ -276,14 +318,21 @@ function BreakdownStatisticPanel({ title, subtitle, loader, amountLabel = 'Reven
         buttonText="Load"
       />
       {error && <div className="form-alert">{error}</div>}
+      <BreakdownChart
+        rows={data}
+        chartType={chartType}
+        labelSelector={labelSelector}
+        valueSelector={valueSelector}
+        valueFormatter={valueFormatter}
+      />
       <EmptyAware rows={data}>
         {data.map((row) => (
           <MetricRow
-            key={row.code || row.label}
-            label={row.label || row.code || 'Unknown'}
-            value={formatPrice(row.amount)}
+            key={row.code || row.label || row.method}
+            label={labelSelector(row)}
+            value={valueFormatter(valueSelector(row))}
             percent={row.sharePercent}
-            meta={`${amountLabel}: ${formatPrice(row.amount)} · Count: ${row.count || 0}`}
+            meta={`Count: ${countSelector(row)}`}
           />
         ))}
       </EmptyAware>
@@ -291,30 +340,9 @@ function BreakdownStatisticPanel({ title, subtitle, loader, amountLabel = 'Reven
   );
 }
 
-function PaymentMethodStatisticPanel({ title, subtitle, loader }) {
+function TopProductStatisticPanel({ title, subtitle, loader, valueKey = 'soldQuantity' }) {
   const { data, filters, updateField, chooseQuickRange, load, loading, error } = useStatisticLoader(loader, []);
-
-  return (
-    <article className="admin-api-console">
-      <StatisticPanelHeading title={title} subtitle={subtitle} />
-      <StatisticFilter
-        compact
-        title={`${title} filter`}
-        filters={filters}
-        loading={loading}
-        onSubmit={load}
-        onField={updateField}
-        onQuick={chooseQuickRange}
-        buttonText="Load"
-      />
-      {error && <div className="form-alert">{error}</div>}
-      <PaymentMethodPanel rows={data} title="Methods" embedded />
-    </article>
-  );
-}
-
-function TopProductStatisticPanel({ title, subtitle, loader }) {
-  const { data, filters, updateField, chooseQuickRange, load, loading, error } = useStatisticLoader(loader, []);
+  const valueFormatter = valueKey === 'grossRevenue' ? formatPrice : (value) => `${value} sold`;
 
   return (
     <article className="admin-resource-table admin-resource-table--compact">
@@ -330,6 +358,13 @@ function TopProductStatisticPanel({ title, subtitle, loader }) {
         buttonText="Load"
       />
       {error && <div className="form-alert">{error}</div>}
+      <BreakdownChart
+        rows={data}
+        chartType="bar"
+        labelSelector={(row) => row.productName || row.label || 'Product'}
+        valueSelector={(row) => row[valueKey] || row.amount || 0}
+        valueFormatter={valueFormatter}
+      />
       <div className="admin-resource-table__head" style={{ gridTemplateColumns: '60px 1fr 100px 120px 90px' }}>
         <span>Rank</span><span>Product</span><span>Sold</span><span>Revenue</span><span>Orders</span>
       </div>
@@ -356,7 +391,7 @@ function ProfitMarginStatisticPanel() {
 
   return (
     <article className="admin-resource-table admin-resource-table--compact">
-      <StatisticPanelHeading title="Profit / margin report" subtitle="Lãi gộp, refund, doanh thu thuần và biên lợi nhuận" />
+      <StatisticPanelHeading title="Profit / margin report" subtitle="Cột đôi cost/net revenue kết hợp line net profit" />
       <StatisticFilter
         compact
         title="Profit margin filter"
@@ -368,6 +403,7 @@ function ProfitMarginStatisticPanel() {
         buttonText="Load"
       />
       {error && <div className="form-alert">{error}</div>}
+      <ProfitMarginChart rows={data} />
       <div className="admin-resource-table__head" style={{ gridTemplateColumns: '1.2fr 70px 110px 100px 110px 110px 90px' }}>
         <span>Product</span><span>Sold</span><span>Gross</span><span>Refund</span><span>Net</span><span>Net profit</span><span>Margin</span>
       </div>
@@ -396,7 +432,7 @@ function InventoryMovementStatisticPanel() {
 
   return (
     <article className="admin-resource-table admin-resource-table--compact">
-      <StatisticPanelHeading title="Inventory movements" subtitle="Nhập, xuất, chênh lệch và snapshot tồn kho hiện tại" />
+      <StatisticPanelHeading title="Inventory movements" subtitle="Nhập, xuất, chênh lệch và snapshot tồn kho" />
       <StatisticFilter
         compact
         title="Inventory movement filter"
@@ -408,6 +444,13 @@ function InventoryMovementStatisticPanel() {
         buttonText="Load"
       />
       {error && <div className="form-alert">{error}</div>}
+      <BreakdownChart
+        rows={data}
+        chartType="bar"
+        labelSelector={(row) => row.label || row.code}
+        valueSelector={(row) => Math.abs(row.quantity || 0)}
+        valueFormatter={(value) => `${value} units`}
+      />
       <div className="admin-resource-table__head" style={{ gridTemplateColumns: '110px 1fr 100px 120px' }}>
         <span>Type</span><span>Movement</span><span>Quantity</span><span>Value</span>
       </div>
@@ -425,6 +468,175 @@ function InventoryMovementStatisticPanel() {
         ))}
       </EmptyAware>
     </article>
+  );
+}
+
+function RevenueLineChart({ rows }) {
+  const data = asArray(rows);
+  if (!data.length) return <div className="admin-empty-mini">Chưa có dữ liệu biểu đồ.</div>;
+
+  return (
+    <ChartFrame>
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="period" />
+        <YAxis tickFormatter={compactMoney} />
+        <Tooltip formatter={(value) => formatPrice(value)} />
+        <Legend />
+        <Line type="monotone" dataKey="grossRevenue" name="Gross revenue" stroke="#f97316" strokeWidth={3} dot={{ r: 4 }} />
+        <Line type="monotone" dataKey="netRevenue" name="Net revenue" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
+        <Line type="monotone" dataKey="refundAmount" name="Refund" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+      </LineChart>
+    </ChartFrame>
+  );
+}
+
+function ProfitMarginChart({ rows }) {
+  const data = asArray(rows).slice(0, 10).map((row) => ({
+    ...row,
+    shortName: shorten(row.productName || `#${row.productId}`, 14),
+  }));
+
+  if (!data.length) return <div className="admin-empty-mini">Chưa có dữ liệu biểu đồ.</div>;
+
+  return (
+    <ChartFrame>
+      <ComposedChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="shortName" />
+        <YAxis yAxisId="money" tickFormatter={compactMoney} />
+        <YAxis yAxisId="percent" orientation="right" tickFormatter={(value) => `${value}%`} />
+        <Tooltip formatter={(value, name) => String(name).includes('Margin') ? `${value}%` : formatPrice(value)} />
+        <Legend />
+        <Bar yAxisId="money" dataKey="cost" name="Cost / nhập vào" fill="#ef4444" radius={[8, 8, 0, 0]} />
+        <Bar yAxisId="money" dataKey="netRevenue" name="Net revenue / bán ra" fill="#22c55e" radius={[8, 8, 0, 0]} />
+        <Line yAxisId="money" type="monotone" dataKey="netProfit" name="Net profit trend" stroke="#2563eb" strokeWidth={3} />
+        <Line yAxisId="percent" type="monotone" dataKey="marginPercent" name="Margin %" stroke="#a855f7" strokeWidth={2} />
+      </ComposedChart>
+    </ChartFrame>
+  );
+}
+
+function BreakdownChart({ rows, chartType, labelSelector, valueSelector, valueFormatter }) {
+  const data = asArray(rows).slice(0, 10).map((row, index) => ({
+    name: shorten(labelSelector(row), 18),
+    value: Number(valueSelector(row)) || 0,
+    raw: row,
+    fill: chartColors[index % chartColors.length],
+  })).filter((row) => row.value > 0);
+
+  if (!data.length) return <div className="admin-empty-mini">Chưa có dữ liệu biểu đồ.</div>;
+
+  if (chartType === 'pie') {
+    return (
+      <ChartFrame compact>
+        <PieChart>
+          <Tooltip formatter={(value) => valueFormatter(value)} />
+          <Legend />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={42}
+            outerRadius={82}
+            paddingAngle={3}
+            activeShape={ActivePieSlice}
+          >
+            {data.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+          </Pie>
+        </PieChart>
+      </ChartFrame>
+    );
+  }
+
+  if (chartType === 'line') {
+    return (
+      <ChartFrame compact>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis tickFormatter={compactNumber} />
+          <Tooltip formatter={(value) => valueFormatter(value)} />
+          <Line type="monotone" dataKey="value" name="Value" stroke="#2563eb" strokeWidth={3} />
+        </LineChart>
+      </ChartFrame>
+    );
+  }
+
+  return (
+    <ChartFrame compact>
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis tickFormatter={compactNumber} />
+        <Tooltip formatter={(value) => valueFormatter(value)} />
+        <Bar dataKey="value" name="Value" radius={[8, 8, 0, 0]}>
+          {data.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+        </Bar>
+      </BarChart>
+    </ChartFrame>
+  );
+}
+
+function ActivePieSlice(props) {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+  return (
+    <g className="recharts-active-slice">
+      <Pie
+        data={[payload]}
+        dataKey="value"
+        cx={cx}
+        cy={cy - 6}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 8}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+        isAnimationActive={false}
+      />
+      <text x={cx} y={cy} textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="800">
+        {payload.name}
+      </text>
+      <text x={cx} y={cy + 18} textAnchor="middle" fill="#64748b" fontSize="11">
+        {`${(percent * 100).toFixed(1)}% · ${compactNumber(value)}`}
+      </text>
+    </g>
+  );
+}
+
+function InventoryOverviewPanel({ inventory }) {
+  const rows = [
+    { label: 'Stock', amount: inventory?.stockQuantity || 0 },
+    { label: 'Reserved', amount: inventory?.reservedQuantity || 0 },
+    { label: 'Available', amount: inventory?.availableQuantity || 0 },
+    { label: 'Low stock', amount: inventory?.lowStockVariantCount || 0 },
+  ];
+
+  return (
+    <article className="admin-api-console">
+      <StatisticPanelHeading title="Stock overview" subtitle="Inventory" />
+      <BreakdownChart
+        rows={rows}
+        chartType="bar"
+        labelSelector={(row) => row.label}
+        valueSelector={(row) => row.amount}
+        valueFormatter={(value) => `${value}`}
+      />
+      <div className="summary-line"><span>Stock quantity</span><strong>{inventory?.stockQuantity || 0}</strong></div>
+      <div className="summary-line"><span>Reserved quantity</span><strong>{inventory?.reservedQuantity || 0}</strong></div>
+      <div className="summary-line"><span>Available quantity</span><strong>{inventory?.availableQuantity || 0}</strong></div>
+      <div className="summary-line"><span>Low stock variants</span><strong>{inventory?.lowStockVariantCount || 0}</strong></div>
+    </article>
+  );
+}
+
+function ChartFrame({ children, compact = false }) {
+  return (
+    <div className={`admin-chart-frame ${compact ? 'admin-chart-frame--compact' : ''}`}>
+      <ResponsiveContainer width="100%" height={compact ? 260 : 340}>
+        {children}
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -540,61 +752,20 @@ function KpiCard({ kpi }) {
   );
 }
 
-function TrendBar({ point }) {
-  const max = Math.max(point.grossRevenue || 0, point.netRevenue || 0, point.refundAmount || 0, 1);
-  return (
-    <div className="admin-chart-bars__item">
-      <span>{point.period}</span>
-      <div><i style={{ width: `${Math.min(100, ((point.netRevenue || 0) / max) * 100)}%` }} /></div>
-      <small>{formatPrice(point.netRevenue)} · {point.orderCount} orders</small>
-    </div>
-  );
-}
-
 function StatusPanel({ title, rows }) {
   return (
     <article className="admin-api-console">
       <StatisticPanelHeading title={title} subtitle="Status" />
+      <BreakdownChart
+        rows={rows || []}
+        chartType="pie"
+        labelSelector={(row) => row.label || row.code}
+        valueSelector={(row) => row.count}
+        valueFormatter={(value) => `${value}`}
+      />
       <EmptyAware rows={rows}>
         {(rows || []).map((row) => <div className="summary-line" key={row.code}><span>{row.label || row.code}</span><strong>{row.count}</strong></div>)}
       </EmptyAware>
-    </article>
-  );
-}
-
-function PaymentMethodPanel({ rows, title = 'Methods', embedded = false }) {
-  const content = (
-    <EmptyAware rows={rows}>
-      {(rows || []).map((row) => (
-        <MetricRow
-          key={row.method || row.code}
-          label={`${row.method || row.label || row.code} · ${row.sharePercent || 0}%`}
-          value={formatPrice(row.amount)}
-          percent={row.sharePercent}
-          meta={`${row.transactionCount || row.count || 0} transactions`}
-        />
-      ))}
-    </EmptyAware>
-  );
-
-  if (embedded) return content;
-
-  return (
-    <article className="admin-api-console">
-      <StatisticPanelHeading title={title} subtitle="Payment" />
-      {content}
-    </article>
-  );
-}
-
-function InventoryPanel({ inventory }) {
-  return (
-    <article className="admin-api-console">
-      <StatisticPanelHeading title="Stock overview" subtitle="Inventory" />
-      <div className="summary-line"><span>Stock quantity</span><strong>{inventory?.stockQuantity || 0}</strong></div>
-      <div className="summary-line"><span>Reserved quantity</span><strong>{inventory?.reservedQuantity || 0}</strong></div>
-      <div className="summary-line"><span>Available quantity</span><strong>{inventory?.availableQuantity || 0}</strong></div>
-      <div className="summary-line"><span>Low stock variants</span><strong>{inventory?.lowStockVariantCount || 0}</strong></div>
     </article>
   );
 }
@@ -628,6 +799,23 @@ function asArray(value) {
 function hasCode(kpi, tokens) {
   const code = String(kpi.code || '');
   return tokens.some((token) => code.includes(token));
+}
+
+function shorten(value, maxLength) {
+  const text = String(value || '');
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function compactMoney(value) {
+  if (Math.abs(value) >= 1000000) return `${Math.round(value / 1000000)}M`;
+  if (Math.abs(value) >= 1000) return `${Math.round(value / 1000)}K`;
+  return value;
+}
+
+function compactNumber(value) {
+  if (Math.abs(value) >= 1000000) return `${Math.round(value / 1000000)}M`;
+  if (Math.abs(value) >= 1000) return `${Math.round(value / 1000)}K`;
+  return value;
 }
 
 export default AdminStatisticsPage;

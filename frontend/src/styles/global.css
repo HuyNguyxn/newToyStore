@@ -2630,6 +2630,41 @@ h3 {
   padding: 8px 10px;
 }
 
+.admin-chart-frame {
+  margin: 12px 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 10px 6px;
+  background: linear-gradient(145deg, #ffffff, #fff7ed);
+}
+
+.admin-chart-frame--compact {
+  padding: 10px 8px 2px;
+}
+
+.admin-chart-frame .recharts-default-tooltip {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.admin-chart-frame .recharts-legend-item-text,
+.admin-chart-frame .recharts-cartesian-axis-tick-value {
+  color: var(--color-muted) !important;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-chart-frame .recharts-pie-sector {
+  filter: drop-shadow(0 8px 5px rgba(15, 23, 42, 0.16));
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.admin-chart-frame .recharts-pie-sector:hover {
+  filter: drop-shadow(0 14px 9px rgba(15, 23, 42, 0.22));
+  transform: translateY(-4px);
+}
+
 .admin-resource-table--compact {
   align-self: start;
 }
