@@ -7,6 +7,7 @@ const adminNavItems = [
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/orders', label: 'Orders' },
   { to: '/admin/payments', label: 'Payments' },
+  { to: '/admin/refunds', label: 'Refunds' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/promotions', label: 'Promotions' },
   { to: '/admin/suppliers', label: 'Suppliers' },
