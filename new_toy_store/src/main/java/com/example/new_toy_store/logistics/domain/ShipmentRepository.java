@@ -34,6 +34,27 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     @Query("SELECT COUNT(s) FROM Shipment s WHERE s.status = :status AND s.createdAt >= :from AND s.createdAt < :to")
     long countByStatusBetween(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query("""
+            SELECT s.providerCode, s.providerCode, COUNT(s), COALESCE(SUM(s.shippingFee), 0)
+              FROM Shipment s
+             WHERE s.createdAt >= :from
+               AND s.createdAt < :to
+             GROUP BY s.providerCode
+             ORDER BY COUNT(s) DESC
+            """)
+    java.util.List<Object[]> aggregateByProvider(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT COALESCE(s.failureReason, 'UNKNOWN'), COALESCE(s.failureReason, 'Unknown'), COUNT(s), 0
+              FROM Shipment s
+             WHERE s.status = :status
+               AND s.createdAt >= :from
+               AND s.createdAt < :to
+             GROUP BY s.failureReason
+             ORDER BY COUNT(s) DESC
+            """)
+    java.util.List<Object[]> aggregateFailureReasons(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
     @Override
     @EntityGraph(attributePaths = "items")
     Optional<Shipment> findById(Integer id);

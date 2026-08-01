@@ -48,6 +48,17 @@ public interface PaymentRepository extends JpaRepository<PaymentTransaction, Int
     @Query("SELECT p.method, COUNT(p), COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status AND p.createdAt >= :from AND p.createdAt < :to GROUP BY p.method")
     java.util.List<Object[]> aggregateAmountByMethod(@Param("status") PaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query("""
+            SELECT COALESCE(p.failureReason, 'UNKNOWN'), COALESCE(p.failureReason, 'Unknown'), COUNT(p), 0
+              FROM PaymentTransaction p
+             WHERE p.status = :status
+               AND p.createdAt >= :from
+               AND p.createdAt < :to
+             GROUP BY p.failureReason
+             ORDER BY COUNT(p) DESC
+            """)
+    java.util.List<Object[]> aggregateFailureReasons(@Param("status") PaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
     @Override
     Page<PaymentTransaction> findAll(Specification<PaymentTransaction> spec, Pageable pageable);
 

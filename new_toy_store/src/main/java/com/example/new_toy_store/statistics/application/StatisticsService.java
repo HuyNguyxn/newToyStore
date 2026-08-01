@@ -15,6 +15,7 @@ import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.KpiMetricResponse;
+import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticPeriodResponse;
@@ -22,6 +23,7 @@ import com.example.new_toy_store.statistics.application.dto.response.StatisticsO
 import com.example.new_toy_store.statistics.application.dto.response.StatusCountResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
+import com.example.new_toy_store.statistics.domain.StatisticDateField;
 import com.example.new_toy_store.user.domain.UserRepository;
 import com.example.new_toy_store.user.domain.UserStatus;
 import org.springframework.data.domain.PageRequest;
@@ -78,6 +80,11 @@ public class StatisticsService {
 
     @Transactional(readOnly = true)
     public StatisticsOverviewResponse getOverview(StatisticPeriod period, int topLimit, int lowStockThreshold) {
+        return getOverview(period, topLimit, lowStockThreshold, StatisticDateField.CREATED_AT);
+    }
+
+    @Transactional(readOnly = true)
+    public StatisticsOverviewResponse getOverview(StatisticPeriod period, int topLimit, int lowStockThreshold, StatisticDateField dateField) {
         int safeTopLimit = Math.max(1, Math.min(topLimit, 20));
         int safeLowStockThreshold = Math.max(0, lowStockThreshold);
         StatisticPeriod previousPeriod = period.compareWithPreviousPeriod() ? period.previousPeriod() : null;
@@ -87,7 +94,7 @@ public class StatisticsService {
                 new StatisticPeriodResponse(period),
                 buildKpis(period, previousPeriod),
                 buildRevenueTrend(period),
-                buildOrderStatus(period),
+                buildOrderStatus(period, dateField == null ? StatisticDateField.CREATED_AT : dateField),
                 buildPaymentStatus(period),
                 buildRefundStatus(period),
                 buildShipmentStatus(period),
@@ -113,8 +120,125 @@ public class StatisticsService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<RevenueTrendPointResponse> getRevenueTrend(StatisticPeriod period) {
+        return buildRevenueTrend(period);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentMethodStatisticResponse> getPaymentMethods(StatisticPeriod period) {
+        return buildPaymentMethods(period);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getRevenueByCategory(StatisticPeriod period, int limit) {
+        double totalAmount = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, period.startDateTime(), period.endExclusiveDateTime());
+        return orderRepository.aggregateRevenueByCategory(
+                        REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, totalAmount))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getRevenueByPromotion(StatisticPeriod period, int limit) {
+        double totalAmount = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, period.startDateTime(), period.endExclusiveDateTime());
+        return orderRepository.aggregateRevenueByPromotion(
+                        REVENUE_ORDER_STATUSES,
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, totalAmount))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
+        double totalAmount = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, period.startDateTime(), period.endExclusiveDateTime());
+        return orderRepository.findTopSpendingCustomers(
+                        REVENUE_ORDER_STATUSES,
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, totalAmount))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getPaymentFailureReasons(StatisticPeriod period, int limit) {
+        return paymentRepository.aggregateFailureReasons(
+                        PaymentStatus.FAILED,
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, 0))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getRefundReasons(StatisticPeriod period, int limit) {
+        double totalAmount = refundRepository.sumAmountByStatusBetween(RefundStatus.SUCCEEDED, period.startDateTime(), period.endExclusiveDateTime());
+        return refundRepository.aggregateByReason(
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, totalAmount))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getShipmentsByProvider(StatisticPeriod period) {
+        double totalFee = shipmentRepository.aggregateByProvider(period.startDateTime(), period.endExclusiveDateTime())
+                .stream()
+                .mapToDouble(row -> ((Number) row[3]).doubleValue())
+                .sum();
+        return shipmentRepository.aggregateByProvider(period.startDateTime(), period.endExclusiveDateTime())
+                .stream()
+                .map(row -> breakdown(row, totalFee))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getShipmentFailureReasons(StatisticPeriod period, int limit) {
+        return shipmentRepository.aggregateFailureReasons(
+                        ShipmentStatus.DELIVERY_FAILED,
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> breakdown(row, 0))
+                .toList();
+    }
+
     public int getDefaultLowStockThreshold() {
         return DEFAULT_LOW_STOCK_THRESHOLD;
+    }
+
+    private int safeLimit(int limit, int max) {
+        return Math.max(1, Math.min(limit, max));
+    }
+
+    private BreakdownStatisticResponse breakdown(Object[] row, double totalAmount) {
+        return new BreakdownStatisticResponse(
+                String.valueOf(row[0]),
+                String.valueOf(row[1]),
+                ((Number) row[2]).longValue(),
+                ((Number) row[3]).doubleValue(),
+                totalAmount
+        );
     }
 
     private List<KpiMetricResponse> buildKpis(StatisticPeriod period, StatisticPeriod previousPeriod) {
@@ -225,10 +349,20 @@ public class StatisticsService {
         return buckets;
     }
 
-    private List<StatusCountResponse> buildOrderStatus(StatisticPeriod period) {
+    private List<StatusCountResponse> buildOrderStatus(StatisticPeriod period, StatisticDateField dateField) {
         return Arrays.stream(OrderStatus.values())
-                .map(status -> statusCount(status.name(), status.getDisplayName(), orderRepository.countByStatusBetween(status, period.startDateTime(), period.endExclusiveDateTime())))
+                .map(status -> statusCount(status.name(), status.getDisplayName(), countOrdersByDateField(status, period, dateField)))
                 .toList();
+    }
+
+    private long countOrdersByDateField(OrderStatus status, StatisticPeriod period, StatisticDateField dateField) {
+        if (dateField == StatisticDateField.COMPLETED_AT) {
+            return status == OrderStatus.COMPLETED ? orderRepository.countHistoryByStatusBetween(OrderStatus.COMPLETED, period.startDateTime(), period.endExclusiveDateTime()) : 0;
+        }
+        if (dateField == StatisticDateField.CANCELLED_AT) {
+            return status == OrderStatus.CANCELLED ? orderRepository.countHistoryByStatusBetween(OrderStatus.CANCELLED, period.startDateTime(), period.endExclusiveDateTime()) : 0;
+        }
+        return orderRepository.countByStatusBetween(status, period.startDateTime(), period.endExclusiveDateTime());
     }
 
     private List<StatusCountResponse> buildPaymentStatus(StatisticPeriod period) {

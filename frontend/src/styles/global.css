@@ -2360,6 +2360,62 @@ body {
   padding: 0 12px;
 }
 
+.admin-section-title {
+  margin: 22px 0 12px;
+  color: var(--color-text);
+  font-size: 18px;
+}
+
+.admin-quick-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-quick-ranges button {
+  min-height: 34px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.admin-chart-bars {
+  display: grid;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.admin-chart-bars__item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 180px;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-chart-bars__item div {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.admin-chart-bars__item i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), #f59e0b);
+}
+
+.admin-chart-bars__item span,
+.admin-chart-bars__item small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .admin-line-item {
   display: grid;
   grid-template-columns: repeat(5, minmax(95px, 1fr)) 90px;

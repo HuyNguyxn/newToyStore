@@ -1,6 +1,7 @@
 package com.example.new_toy_store.statistics.application.dto.request;
 
 import com.example.new_toy_store.statistics.domain.StatisticGroupBy;
+import com.example.new_toy_store.statistics.domain.StatisticDateField;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +22,7 @@ public class StatisticsOverviewRequest {
     private String timezone = "Asia/Ho_Chi_Minh";
 
     private StatisticGroupBy groupBy = StatisticGroupBy.AUTO;
+    private StatisticDateField dateField = StatisticDateField.CREATED_AT;
     private boolean compareWithPreviousPeriod;
 
     @Min(1)
@@ -38,6 +40,8 @@ public class StatisticsOverviewRequest {
     public void setTimezone(String timezone) { this.timezone = timezone; }
     public StatisticGroupBy getGroupBy() { return groupBy; }
     public void setGroupBy(StatisticGroupBy groupBy) { this.groupBy = groupBy; }
+    public StatisticDateField getDateField() { return dateField; }
+    public void setDateField(StatisticDateField dateField) { this.dateField = dateField; }
     public boolean isCompareWithPreviousPeriod() { return compareWithPreviousPeriod; }
     public void setCompareWithPreviousPeriod(boolean compareWithPreviousPeriod) { this.compareWithPreviousPeriod = compareWithPreviousPeriod; }
     public int getTopLimit() { return topLimit; }

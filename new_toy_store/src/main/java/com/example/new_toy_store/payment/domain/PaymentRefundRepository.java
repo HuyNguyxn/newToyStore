@@ -33,6 +33,16 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
     @Query("SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to GROUP BY FUNCTION('date', r.createdAt)")
     java.util.List<Object[]> aggregateDailyRefundAmount(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query("""
+            SELECT COALESCE(r.reason, 'UNKNOWN'), COALESCE(r.reason, 'Unknown'), COUNT(r), COALESCE(SUM(r.amount), 0)
+              FROM PaymentRefund r
+             WHERE r.createdAt >= :from
+               AND r.createdAt < :to
+             GROUP BY r.reason
+             ORDER BY COALESCE(SUM(r.amount), 0) DESC
+            """)
+    java.util.List<Object[]> aggregateByReason(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM PaymentRefund r WHERE r.id = :id")
     Optional<PaymentRefund> findByIdForUpdate(@Param("id") Integer id);
