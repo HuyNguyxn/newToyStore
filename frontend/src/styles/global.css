@@ -1813,6 +1813,178 @@ body {
   font-weight: 800;
 }
 
+.admin-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-alert-card {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: #fff;
+}
+
+.admin-alert-card span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-alert-card strong {
+  font-size: 26px;
+}
+
+.admin-alert-card p {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.admin-alert-card small {
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.admin-alert-card--warning {
+  border-top: 4px solid var(--color-warning);
+}
+
+.admin-alert-card--danger {
+  border-top: 4px solid var(--color-danger);
+}
+
+.admin-alert-card--info {
+  border-top: 4px solid var(--color-secondary);
+}
+
+.admin-alert-card--success {
+  border-top: 4px solid var(--color-success);
+}
+
+.css-bar-chart {
+  height: 260px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  border-radius: var(--radius);
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.css-bar-chart__item {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 6px;
+  height: 100%;
+  text-align: center;
+}
+
+.css-bar-chart__track {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.css-bar-chart__track span {
+  width: 100%;
+  display: block;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-accent));
+}
+
+.css-bar-chart__item strong {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.css-bar-chart__item small {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.css-segment-chart {
+  display: grid;
+  gap: 16px;
+}
+
+.css-segment-chart__bar {
+  height: 24px;
+  display: flex;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.css-segment-chart__segment {
+  min-width: 4px;
+}
+
+.css-segment-chart__segment--primary,
+.legend-dot--primary {
+  background: var(--color-primary);
+}
+
+.css-segment-chart__segment--warning,
+.legend-dot--warning {
+  background: var(--color-warning);
+}
+
+.css-segment-chart__segment--danger,
+.legend-dot--danger {
+  background: var(--color-danger);
+}
+
+.css-segment-chart__segment--info,
+.legend-dot--info {
+  background: var(--color-secondary);
+}
+
+.css-segment-chart__segment--success,
+.legend-dot--success {
+  background: var(--color-success);
+}
+
+.css-segment-chart__legend {
+  display: grid;
+  gap: 10px;
+}
+
+.css-segment-chart__legend div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.css-segment-chart__legend strong {
+  color: var(--color-text);
+}
+
+.css-segment-chart__legend small {
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
 @keyframes skeleton-pulse {
   from {
     background-position: 200% 0;
@@ -1866,6 +2038,10 @@ body {
   .admin-stat-grid,
   .admin-dashboard-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-alert-grid {
+    grid-template-columns: 1fr;
   }
 
   .cart-page,
@@ -1983,6 +2159,15 @@ body {
 
   .admin-table__row {
     grid-template-columns: 1fr;
+  }
+
+  .css-bar-chart {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: auto;
+  }
+
+  .css-bar-chart__item {
+    height: 190px;
   }
 
   .cart-item {

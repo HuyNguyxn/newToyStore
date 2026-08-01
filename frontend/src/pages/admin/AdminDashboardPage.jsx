@@ -15,14 +15,27 @@ const fallbackOverview = {
   inventory: {
     lowStockVariantCount: 7,
   },
+  revenueTrend: [
+    { period: 'Mon', netRevenue: 1200000, orderCount: 4 },
+    { period: 'Tue', netRevenue: 2100000, orderCount: 7 },
+    { period: 'Wed', netRevenue: 1800000, orderCount: 6 },
+    { period: 'Thu', netRevenue: 3200000, orderCount: 9 },
+    { period: 'Fri', netRevenue: 2600000, orderCount: 8 },
+    { period: 'Sat', netRevenue: 4100000, orderCount: 12 },
+    { period: 'Sun', netRevenue: 3000000, orderCount: 10 },
+  ],
+  orderStatus: [
+    { code: 'PENDING', label: 'Pending', count: 18 },
+    { code: 'CONFIRMED', label: 'Confirmed', count: 11 },
+    { code: 'SHIPPED', label: 'Shipped', count: 9 },
+    { code: 'COMPLETED', label: 'Completed', count: 24 },
+    { code: 'CANCELLED', label: 'Cancelled', count: 2 },
+  ],
+  paymentStatus: [
+    { code: 'PENDING', label: 'Pending', count: 3 },
+    { code: 'FAILED', label: 'Failed', count: 1 },
+  ],
 };
-
-const alerts = [
-  '3 VNPAY payments are still pending.',
-  '7 product variants are close to out of stock.',
-  '5 reviews need moderation before publishing.',
-  '2 return requests need staff inspection.',
-];
 
 function AdminDashboardPage() {
   const [overview, setOverview] = useState(null);
@@ -67,6 +80,9 @@ function AdminDashboardPage() {
   }, []);
 
   const statCards = useMemo(() => buildStatCards(overview), [overview]);
+  const alertCards = useMemo(() => buildAlertCards(overview), [overview]);
+  const revenueBars = useMemo(() => buildRevenueBars(overview?.revenueTrend || []), [overview]);
+  const orderSegments = useMemo(() => buildStatusSegments(overview?.orderStatus || []), [overview]);
 
   return (
     <div className="admin-dashboard">
@@ -138,12 +154,66 @@ function AdminDashboardPage() {
             <span>Needs attention</span>
           </div>
 
-          <div className="admin-alert-list">
-            {alerts.map((alert) => (
-              <div className="admin-alert" key={alert}>
-                {alert}
+          <div className="admin-alert-grid">
+            {alertCards.map((alert) => (
+              <article className={`admin-alert-card admin-alert-card--${alert.tone}`} key={alert.title}>
+                <span>{alert.label}</span>
+                <strong>{alert.value}</strong>
+                <p>{alert.title}</p>
+                <small>{alert.hint}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-dashboard-grid">
+        <div className="admin-panel">
+          <div className="admin-panel__heading">
+            <h3>Revenue trend</h3>
+            <span>Last 7 days</span>
+          </div>
+
+          <div className="css-bar-chart">
+            {revenueBars.map((point) => (
+              <div className="css-bar-chart__item" key={point.period}>
+                <div className="css-bar-chart__track">
+                  <span style={{ height: `${point.height}%` }} title={point.valueLabel} />
+                </div>
+                <strong>{point.period}</strong>
+                <small>{point.shortValue}</small>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="admin-panel">
+          <div className="admin-panel__heading">
+            <h3>Order status</h3>
+            <span>Current period</span>
+          </div>
+
+          <div className="css-segment-chart">
+            <div className="css-segment-chart__bar">
+              {orderSegments.map((segment) => (
+                <span
+                  className={`css-segment-chart__segment css-segment-chart__segment--${segment.tone}`}
+                  style={{ width: `${segment.percent}%` }}
+                  title={`${segment.label}: ${segment.count}`}
+                  key={segment.code}
+                />
+              ))}
+            </div>
+
+            <div className="css-segment-chart__legend">
+              {orderSegments.map((segment) => (
+                <div key={segment.code}>
+                  <span className={`legend-dot legend-dot--${segment.tone}`} />
+                  <strong>{segment.label}</strong>
+                  <small>{segment.count}</small>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -202,8 +272,75 @@ function buildStatCards(overview) {
   ];
 }
 
+function buildAlertCards(overview) {
+  const paymentPending = findStatusCount(overview?.paymentStatus, 'PENDING');
+  const paymentFailed = findStatusCount(overview?.paymentStatus, 'FAILED');
+  const cancelledOrders = findStatusCount(overview?.orderStatus, 'CANCELLED');
+  const lowStock = overview?.inventory?.lowStockVariantCount || 0;
+
+  return [
+    {
+      label: 'Payment',
+      title: 'Pending payments',
+      value: String(paymentPending),
+      hint: 'Check VNPAY/COD payments that still need confirmation.',
+      tone: paymentPending > 0 ? 'warning' : 'success',
+    },
+    {
+      label: 'Inventory',
+      title: 'Low stock variants',
+      value: String(lowStock),
+      hint: 'Prepare import notes before popular toys run out.',
+      tone: lowStock > 0 ? 'danger' : 'success',
+    },
+    {
+      label: 'Payment',
+      title: 'Failed payments',
+      value: String(paymentFailed),
+      hint: 'Review failed transactions before customers retry.',
+      tone: paymentFailed > 0 ? 'danger' : 'success',
+    },
+    {
+      label: 'Order',
+      title: 'Cancelled orders',
+      value: String(cancelledOrders),
+      hint: 'Watch cancellation reasons for service or stock issues.',
+      tone: cancelledOrders > 0 ? 'info' : 'success',
+    },
+  ];
+}
+
+function buildRevenueBars(trend) {
+  const points = trend.length > 0 ? trend : fallbackOverview.revenueTrend;
+  const maxRevenue = Math.max(...points.map((point) => point.netRevenue || 0), 1);
+
+  return points.map((point) => ({
+    period: point.period,
+    height: Math.max(8, Math.round(((point.netRevenue || 0) / maxRevenue) * 100)),
+    valueLabel: formatPrice(point.netRevenue),
+    shortValue: compactMoney(point.netRevenue),
+  }));
+}
+
+function buildStatusSegments(statusCounts) {
+  const counts = statusCounts.length > 0 ? statusCounts : fallbackOverview.orderStatus;
+  const total = counts.reduce((sum, item) => sum + (item.count || 0), 0) || 1;
+
+  return counts.map((item) => ({
+    code: item.code,
+    label: item.label || item.code,
+    count: item.count || 0,
+    percent: Math.max(4, Math.round(((item.count || 0) / total) * 100)),
+    tone: statusTone(item.code),
+  }));
+}
+
 function findKpi(kpis, code) {
   return kpis.find((kpi) => kpi.code === code);
+}
+
+function findStatusCount(items = [], code) {
+  return items.find((item) => item.code === code)?.count || 0;
 }
 
 function formatChange(changePercent) {
@@ -217,6 +354,30 @@ function formatChange(changePercent) {
 
 function toIsoDate(value) {
   return value.toISOString().slice(0, 10);
+}
+
+function compactMoney(value = 0) {
+  if (value >= 1000000) {
+    return `${Math.round(value / 100000) / 10}M`;
+  }
+
+  if (value >= 1000) {
+    return `${Math.round(value / 1000)}K`;
+  }
+
+  return String(Math.round(value));
+}
+
+function statusTone(code) {
+  const tones = {
+    PENDING: 'warning',
+    CONFIRMED: 'info',
+    SHIPPED: 'primary',
+    COMPLETED: 'success',
+    CANCELLED: 'danger',
+  };
+
+  return tones[code] || 'primary';
 }
 
 export default AdminDashboardPage;

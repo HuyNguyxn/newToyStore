@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
@@ -85,6 +85,7 @@ function App() {
           </ProtectedRoute>
         )}
       >
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
       </Route>
     </Routes>
