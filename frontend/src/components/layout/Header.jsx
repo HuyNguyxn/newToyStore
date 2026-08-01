@@ -60,6 +60,7 @@ function Header() {
 
         <nav className="header-actions" aria-label="Customer actions">
           {isAuthenticated && <Link to="/orders" className="plain-header-link">Don hang</Link>}
+          {isAuthenticated && <Link to="/shipments" className="plain-header-link">Van chuyen</Link>}
           {isAuthenticated && (
             <Link to="/notifications" className="cart-link">
               Thong bao

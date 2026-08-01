@@ -11,3 +11,21 @@ export function createReview(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function getMyReviews(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return apiClient(`/reviews/me${query ? `?${query}` : ''}`);
+}
+
+export function updateReview(reviewId, payload) {
+  return apiClient(`/reviews/${reviewId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteReview(reviewId) {
+  return apiClient(`/reviews/${reviewId}`, {
+    method: 'DELETE',
+  });
+}

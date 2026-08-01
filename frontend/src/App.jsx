@@ -38,7 +38,10 @@ import ProductDetailPage from './pages/products/ProductDetailPage.jsx';
 import ProductListPage from './pages/products/ProductListPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
 import ReturnCreatePage from './pages/returns/ReturnCreatePage.jsx';
+import ReturnListPage from './pages/returns/ReturnListPage.jsx';
 import ReviewCreatePage from './pages/reviews/ReviewCreatePage.jsx';
+import ReviewListPage from './pages/reviews/ReviewListPage.jsx';
+import ShipmentListPage from './pages/shipments/ShipmentListPage.jsx';
 
 function App() {
   return (
@@ -118,10 +121,34 @@ function App() {
           )}
         />
         <Route
+          path="/returns"
+          element={(
+            <ProtectedRoute>
+              <ReturnListPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
           path="/reviews/new"
           element={(
             <ProtectedRoute>
               <ReviewCreatePage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/reviews/me"
+          element={(
+            <ProtectedRoute>
+              <ReviewListPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/shipments"
+          element={(
+            <ProtectedRoute>
+              <ShipmentListPage />
             </ProtectedRoute>
           )}
         />

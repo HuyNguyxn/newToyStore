@@ -126,7 +126,10 @@ function ProfilePage() {
         <h2>Thao tac mua hang</h2>
         <div className="admin-resource-table__actions">
           <Link className="login-link" to="/reviews/new">Viet danh gia</Link>
+          <Link className="login-link" to="/reviews/me">Danh gia cua toi</Link>
           <Link className="login-link" to="/returns/new">Tao yeu cau tra hang</Link>
+          <Link className="login-link" to="/returns">Yeu cau tra hang cua toi</Link>
+          <Link className="login-link" to="/shipments">Theo doi van chuyen</Link>
           <Link className="login-link" to="/orders">Xem don hang</Link>
         </div>
       </div>
