@@ -48,41 +48,46 @@ function Header() {
   return (
     <header className="site-header">
       <div className="container site-header__inner">
-        <Link to="/" className="brand" aria-label="New Toy Store home">
+        <Link to="/" className="brand" aria-label="ToyStore home">
           <span className="brand__logo">
-            <img src="/toystore-assets/logo.png" alt="New Toy Store" />
+            <img src="/toystore-assets/logo.png" alt="ToyStore" />
           </span>
-          <span className="brand__name">New Toy Store</span>
+          <span className="brand__name">ToyStore</span>
         </Link>
 
+        <nav className="header-main-nav" aria-label="Store navigation">
+          <Link to="/products">Danh Mục⌄</Link>
+          <Link to="/products">Tất cả sản phẩm</Link>
+        </nav>
+
         <form className="search-box" role="search" onSubmit={handleSearch}>
-          <input name="keyword" type="search" placeholder="Tim kiem do choi..." aria-label="Tim kiem do choi" />
+          <input name="keyword" type="search" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" />
           <button type="submit">🔍</button>
         </form>
 
         <nav className="header-actions" aria-label="Customer actions">
-          <Link to="/products" className="plain-header-link">San pham</Link>
-          {isAuthenticated && <Link to="/orders" className="plain-header-link">Don hang</Link>}
+          <Link to="/cart" className="cart-link" aria-label="Giỏ hàng">
+            🛒
+          </Link>
           {isAuthenticated && (
-            <Link to="/notifications" className="cart-link">
+            <Link to="/notifications" className="cart-link" aria-label="Thông báo">
               🔔
               {unreadCount > 0 && <span className="cart-link__badge">{unreadCount}</span>}
             </Link>
           )}
-          <Link to="/cart" className="cart-link">
-            🛒
-          </Link>
           {isAuthenticated ? (
             <div className="user-menu">
               <Link to="/profile" className="user-menu__profile">
                 <span>{user?.fullName?.charAt(0) || 'U'}</span>
-                <strong>{user?.fullName || 'Tai khoan'}</strong>
+                <strong>{user?.fullName || 'Tài khoản'}</strong>
               </Link>
-              <button type="button" onClick={logout}>Thoat</button>
+              <Link to="/orders" className="plain-header-link">Đơn hàng</Link>
+              <button type="button" onClick={logout}>Thoát</button>
             </div>
           ) : (
-            <Link to="/login" className="login-link">Dang nhap</Link>
+            <Link to="/login" className="login-link">Đăng nhập</Link>
           )}
+          <span className="header-flag" aria-hidden="true">🇻🇳</span>
         </nav>
       </div>
     </header>

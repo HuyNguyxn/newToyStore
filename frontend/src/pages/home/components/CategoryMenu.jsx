@@ -8,7 +8,7 @@ function CategoryMenu() {
   const [categoryTree, setCategoryTree] = useState([]);
   const [stack, setStack] = useState([]);
   const currentCategories = stack.length === 0 ? categoryTree : getChildren(stack[stack.length - 1]);
-  const title = stack.length === 0 ? 'Danh muc san pham' : stack[stack.length - 1].name;
+  const title = stack.length === 0 ? 'Danh mục sản phẩm' : stack[stack.length - 1].name;
 
   useEffect(() => {
     let active = true;
@@ -16,7 +16,7 @@ function CategoryMenu() {
     getCategoryTree()
       .then((result) => {
         if (active) {
-          setCategoryTree(result || []);
+          setCategoryTree(Array.isArray(result) && result.length > 0 ? result : sampleCategories);
         }
       })
       .catch(() => {
@@ -44,7 +44,7 @@ function CategoryMenu() {
   }
 
   return (
-    <nav className="category-menu" aria-label="Danh muc san pham">
+    <nav className="category-menu" aria-label="Danh mục sản phẩm">
       <div className="category-menu__title">
         <span>Menu</span>
         <span>{title}</span>
@@ -52,11 +52,18 @@ function CategoryMenu() {
 
       {stack.length > 0 && (
         <button className="category-menu__back" type="button" onClick={goBack}>
-          Quay lai
+          Quay lại
         </button>
       )}
 
       <ul className="category-menu__list">
+        {currentCategories.length === 0 && (
+          <li>
+            <button type="button" onClick={() => navigate('/products')}>
+              <span>Xem tất cả sản phẩm</span>
+            </button>
+          </li>
+        )}
         {currentCategories.map((category) => (
           <li key={category.id}>
             <button type="button" onClick={() => handleCategoryClick(category)}>
