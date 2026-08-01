@@ -1985,6 +1985,54 @@ body {
   font-weight: 900;
 }
 
+.admin-placeholder {
+  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  max-width: 760px;
+  padding: 34px;
+}
+
+.admin-placeholder p {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.admin-placeholder h2 {
+  color: var(--color-text);
+  font-size: 32px;
+  margin: 0 0 10px;
+}
+
+.admin-placeholder span {
+  color: var(--color-muted);
+  display: block;
+  font-weight: 700;
+  line-height: 1.7;
+  max-width: 560px;
+}
+
+.admin-placeholder__actions {
+  display: flex;
+  margin-top: 22px;
+}
+
+.admin-placeholder__actions a {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-weight: 900;
+  min-height: 42px;
+  padding: 0 18px;
+}
+
 @keyframes skeleton-pulse {
   from {
     background-position: 200% 0;

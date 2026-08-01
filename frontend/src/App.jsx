@@ -3,6 +3,7 @@ import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
+import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import CartPage from './pages/cart/CartPage.jsx';
@@ -87,6 +88,19 @@ function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="products" element={<AdminPlaceholderPage />} />
+        <Route path="categories" element={<AdminPlaceholderPage />} />
+        <Route path="orders" element={<AdminPlaceholderPage />} />
+        <Route path="payments" element={<AdminPlaceholderPage />} />
+        <Route path="users" element={<AdminPlaceholderPage />} />
+        <Route path="promotions" element={<AdminPlaceholderPage />} />
+        <Route path="suppliers" element={<AdminPlaceholderPage />} />
+        <Route path="imports" element={<AdminPlaceholderPage />} />
+        <Route path="logistics" element={<AdminPlaceholderPage />} />
+        <Route path="returns" element={<AdminPlaceholderPage />} />
+        <Route path="reviews" element={<AdminPlaceholderPage />} />
+        <Route path="moderation" element={<AdminPlaceholderPage />} />
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
   );
