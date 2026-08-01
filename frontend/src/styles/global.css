@@ -2602,6 +2602,34 @@ h3 {
   margin-bottom: 18px;
 }
 
+.admin-api-console--nested {
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: #fffaf0;
+  box-shadow: none;
+}
+
+.admin-api-console--nested .admin-quick-ranges {
+  gap: 6px;
+}
+
+.admin-api-console--nested .admin-quick-ranges button {
+  min-height: 30px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.admin-api-console--nested label {
+  font-size: 11px;
+}
+
+.admin-api-console--nested input,
+.admin-api-console--nested select {
+  min-height: 34px;
+  padding: 8px 10px;
+}
+
 .admin-resource-table--compact {
   align-self: start;
 }
@@ -2787,6 +2815,14 @@ h3 {
 .admin-resource-table__row {
   display: grid;
   min-width: 1040px;
+}
+
+.admin-resource-table__row small {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .admin-resource-table__head {

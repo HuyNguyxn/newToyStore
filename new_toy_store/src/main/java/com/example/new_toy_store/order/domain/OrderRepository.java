@@ -170,17 +170,42 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                    i.product_name,
                    COALESCE(SUM(i.quantity), 0),
                    COALESCE(SUM(i.quantity * i.price), 0),
+                   MAX(COALESCE(refunds.refund_amount, 0)),
                    COALESCE(SUM(i.quantity * pv.cost_price), 0)
               FROM orders o
               JOIN order_items i ON i.order_id = o.id
               LEFT JOIN product_variants pv ON pv.id = i.variant_id
+              LEFT JOIN (
+                    SELECT ri.product_id,
+                           COALESCE(SUM(
+                               CASE
+                                   WHEN ro.total_amount > 0
+                                   THEN ((ri.quantity * ri.price) / ro.total_amount) * pr.amount
+                                   ELSE 0
+                               END
+                           ), 0) AS refund_amount
+                      FROM payment_refunds pr
+                      JOIN orders ro ON ro.id = pr.order_id
+                      JOIN order_items ri ON ri.order_id = ro.id
+                     WHERE pr.status = 'SUCCEEDED'
+                       AND pr.created_at >= :from
+                       AND pr.created_at < :to
+                       AND pr.deleted_at IS NULL
+                       AND ro.deleted_at IS NULL
+                       AND ri.deleted_at IS NULL
+                     GROUP BY ri.product_id
+              ) refunds ON refunds.product_id = i.product_id
              WHERE o.status IN (:statuses)
                AND o.created_at >= :from
                AND o.created_at < :to
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
              GROUP BY i.product_id, i.product_name
-             ORDER BY COALESCE(SUM((i.price - COALESCE(pv.cost_price, 0)) * i.quantity), 0) DESC
+             ORDER BY (
+                    COALESCE(SUM(i.quantity * i.price), 0)
+                    - MAX(COALESCE(refunds.refund_amount, 0))
+                    - COALESCE(SUM(i.quantity * COALESCE(pv.cost_price, 0)), 0)
+             ) DESC
             """, nativeQuery = true)
     List<Object[]> aggregateProfitMarginByProduct(
             @Param("statuses") List<String> statuses,

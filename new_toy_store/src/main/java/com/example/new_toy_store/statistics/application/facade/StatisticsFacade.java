@@ -2,6 +2,7 @@ package com.example.new_toy_store.statistics.application.facade;
 
 import com.example.new_toy_store.statistics.application.StatisticsService;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
@@ -86,8 +87,8 @@ public class StatisticsFacade {
         return service.getShipmentsByRegion(period, limit);
     }
 
-    public List<BreakdownStatisticResponse> getInventoryMovements(StatisticPeriod period) {
-        return service.getInventoryMovements(period);
+    public List<InventoryMovementStatisticResponse> getInventoryMovements(StatisticPeriod period, int lowStockThreshold) {
+        return service.getInventoryMovements(period, lowStockThreshold);
     }
 
     public List<ProfitMarginStatisticResponse> getProfitMargin(StatisticPeriod period, int limit) {

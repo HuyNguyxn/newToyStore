@@ -4,6 +4,7 @@ import com.example.new_toy_store.statistics.application.facade.StatisticsFacade;
 import com.example.new_toy_store.statistics.application.dto.request.StatisticsOverviewRequest;
 import com.example.new_toy_store.statistics.application.dto.request.TopSellingProductsRequest;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
@@ -125,8 +126,8 @@ public class StatisticsController {
     }
 
     @GetMapping("/inventory/movements")
-    public List<BreakdownStatisticResponse> getInventoryMovements(@Valid @ModelAttribute StatisticsOverviewRequest request) {
-        return facade.getInventoryMovements(toPeriod(request));
+    public List<InventoryMovementStatisticResponse> getInventoryMovements(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getInventoryMovements(toPeriod(request), request.getLowStockThreshold());
     }
 
     @GetMapping("/profit-margin")

@@ -15,6 +15,7 @@ import com.example.new_toy_store.product.domain.ProductRepository;
 import com.example.new_toy_store.product.domain.ProductStatus;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.KpiMetricResponse;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
@@ -271,12 +272,46 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<BreakdownStatisticResponse> getInventoryMovements(StatisticPeriod period) {
-        List<Object[]> rows = new ArrayList<>();
-        rows.addAll(importNoteRepository.aggregateInboundMovement(period.startDateTime(), period.endExclusiveDateTime()));
-        rows.addAll(importNoteRepository.aggregateOutboundMovement(period.startDateTime(), period.endExclusiveDateTime()));
-        double totalAmount = rows.stream().mapToDouble(row -> ((Number) row[3]).doubleValue()).sum();
-        return rows.stream().map(row -> breakdown(row, totalAmount)).toList();
+    public List<InventoryMovementStatisticResponse> getInventoryMovements(StatisticPeriod period, int lowStockThreshold) {
+        Object[] inbound = firstRowOrDefault(
+                importNoteRepository.aggregateInboundMovement(period.startDateTime(), period.endExclusiveDateTime()),
+                "INBOUND_IMPORT",
+                "Inbound imports"
+        );
+        Object[] outbound = firstRowOrDefault(
+                importNoteRepository.aggregateOutboundMovement(period.startDateTime(), period.endExclusiveDateTime()),
+                "OUTBOUND_SALE",
+                "Outbound sales"
+        );
+
+        List<InventoryMovementStatisticResponse> movements = new ArrayList<>();
+        movements.add(inventoryMovement(
+                inbound,
+                "INBOUND",
+                "Stock received from completed import notes in the selected period."
+        ));
+        movements.add(inventoryMovement(
+                outbound,
+                "OUTBOUND",
+                "Stock sold through completed orders in the selected period."
+        ));
+        movements.add(new InventoryMovementStatisticResponse(
+                "NET_MOVEMENT",
+                "Net movement",
+                "NET",
+                numberAsLong(inbound[2]) - numberAsLong(outbound[2]),
+                numberAsDouble(inbound[3]) - numberAsDouble(outbound[3]),
+                "Inbound quantity/value minus outbound quantity/value in the selected period."
+        ));
+
+        inventoryRepository.aggregateCurrentStockSnapshots(Math.max(0, lowStockThreshold))
+                .forEach(row -> movements.add(inventoryMovement(
+                        row,
+                        "SNAPSHOT",
+                        "Current inventory snapshot, not limited by the selected period."
+                )));
+
+        return movements;
     }
 
     @Transactional(readOnly = true)
@@ -293,7 +328,8 @@ public class StatisticsService {
                         String.valueOf(row[1]),
                         ((Number) row[2]).longValue(),
                         ((Number) row[3]).doubleValue(),
-                        ((Number) row[4]).doubleValue()
+                        ((Number) row[4]).doubleValue(),
+                        ((Number) row[5]).doubleValue()
                 ))
                 .toList();
     }
@@ -314,6 +350,32 @@ public class StatisticsService {
                 ((Number) row[3]).doubleValue(),
                 totalAmount
         );
+    }
+
+    private InventoryMovementStatisticResponse inventoryMovement(Object[] row, String direction, String description) {
+        return new InventoryMovementStatisticResponse(
+                String.valueOf(row[0]),
+                String.valueOf(row[1]),
+                direction,
+                numberAsLong(row[2]),
+                numberAsDouble(row[3]),
+                description
+        );
+    }
+
+    private Object[] firstRowOrDefault(List<Object[]> rows, String code, String label) {
+        if (rows == null || rows.isEmpty()) {
+            return new Object[]{code, label, 0, 0.0};
+        }
+        return rows.get(0);
+    }
+
+    private long numberAsLong(Object value) {
+        return value instanceof Number number ? number.longValue() : 0L;
+    }
+
+    private double numberAsDouble(Object value) {
+        return value instanceof Number number ? number.doubleValue() : 0.0;
     }
 
     private List<KpiMetricResponse> buildKpis(StatisticPeriod period, StatisticPeriod previousPeriod) {
