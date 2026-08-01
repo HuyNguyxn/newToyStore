@@ -7,17 +7,20 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import AdminImportPage from './pages/admin/AdminImportPage.jsx';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage.jsx';
 import AdminLogisticsPage from './pages/admin/AdminLogisticsPage.jsx';
+import AdminModerationPage from './pages/admin/AdminModerationPage.jsx';
 import AdminNotificationPage from './pages/admin/AdminNotificationPage.jsx';
+import AdminOrderPage from './pages/admin/AdminOrderPage.jsx';
+import AdminPaymentPage from './pages/admin/AdminPaymentPage.jsx';
 import AdminProductPage from './pages/admin/AdminProductPage.jsx';
 import AdminPromotionPage from './pages/admin/AdminPromotionPage.jsx';
 import AdminRefundPage from './pages/admin/AdminRefundPage.jsx';
-import AdminResourcePage from './pages/admin/AdminResourcePage.jsx';
 import AdminReturnInspectionPage from './pages/admin/AdminReturnInspectionPage.jsx';
 import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage.jsx';
 import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
 import AdminSupplierPage from './pages/admin/AdminSupplierPage.jsx';
 import AdminSupplierReturnPage from './pages/admin/AdminSupplierReturnPage.jsx';
 import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
+import AdminUserPage from './pages/admin/AdminUserPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
@@ -137,10 +140,10 @@ function App() {
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="products" element={<AdminProductPage />} />
         <Route path="categories" element={<AdminCategoryPage />} />
-        <Route path="orders" element={<AdminResourcePage resource="orders" />} />
-        <Route path="payments" element={<AdminResourcePage resource="payments" />} />
+        <Route path="orders" element={<AdminOrderPage />} />
+        <Route path="payments" element={<AdminPaymentPage />} />
         <Route path="refunds" element={<AdminRefundPage />} />
-        <Route path="users" element={<AdminResourcePage resource="users" />} />
+        <Route path="users" element={<AdminUserPage />} />
         <Route path="promotions" element={<AdminPromotionPage />} />
         <Route path="suppliers" element={<AdminSupplierPage />} />
         <Route path="imports" element={<AdminImportPage />} />
@@ -148,7 +151,7 @@ function App() {
         <Route path="logistics" element={<AdminLogisticsPage />} />
         <Route path="returns" element={<AdminReturnInspectionPage />} />
         <Route path="reviews" element={<AdminReviewModerationPage />} />
-        <Route path="moderation" element={<AdminResourcePage resource="moderation" />} />
+        <Route path="moderation" element={<AdminModerationPage />} />
         <Route path="notifications" element={<AdminNotificationPage />} />
         <Route path="inventory" element={<AdminInventoryPage />} />
         <Route path="statistics" element={<AdminStatisticsPage />} />
