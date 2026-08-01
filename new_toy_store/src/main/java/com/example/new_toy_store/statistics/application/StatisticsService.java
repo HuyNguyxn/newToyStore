@@ -2,6 +2,7 @@ package com.example.new_toy_store.statistics.application;
 
 import com.example.new_toy_store.logistics.domain.ShipmentRepository;
 import com.example.new_toy_store.logistics.domain.ShipmentStatus;
+import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.order.domain.OrderRepository;
 import com.example.new_toy_store.order.domain.OrderStatus;
 import com.example.new_toy_store.payment.domain.PaymentMethod;
@@ -17,6 +18,7 @@ import com.example.new_toy_store.statistics.application.dto.response.InventorySt
 import com.example.new_toy_store.statistics.application.dto.response.KpiMetricResponse;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticPeriodResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
@@ -57,6 +59,7 @@ public class StatisticsService {
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
     private final PromotionRepository promotionRepository;
+    private final ImportNoteRepository importNoteRepository;
 
     public StatisticsService(
             OrderRepository orderRepository,
@@ -66,7 +69,8 @@ public class StatisticsService {
             UserRepository userRepository,
             ProductRepository productRepository,
             InventoryRepository inventoryRepository,
-            PromotionRepository promotionRepository
+            PromotionRepository promotionRepository,
+            ImportNoteRepository importNoteRepository
     ) {
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
@@ -76,6 +80,7 @@ public class StatisticsService {
         this.productRepository = productRepository;
         this.inventoryRepository = inventoryRepository;
         this.promotionRepository = promotionRepository;
+        this.importNoteRepository = importNoteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -220,6 +225,76 @@ public class StatisticsService {
                 )
                 .stream()
                 .map(row -> breakdown(row, 0))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getCustomerSummary(StatisticPeriod period) {
+        return orderRepository.aggregateCustomerSummary(period.startDateTime(), period.endExclusiveDateTime())
+                .stream()
+                .map(row -> breakdown(row, 0))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getCustomerTrend(StatisticPeriod period) {
+        return orderRepository.aggregateNewCustomerTrend(period.startDateTime(), period.endExclusiveDateTime())
+                .stream()
+                .map(row -> breakdown(row, 0))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getRefundByProduct(StatisticPeriod period, int limit) {
+        double totalAmount = refundRepository.sumAmountByStatusBetween(RefundStatus.SUCCEEDED, period.startDateTime(), period.endExclusiveDateTime());
+        return refundRepository.aggregateRefundByProduct(
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> new BreakdownStatisticResponse(
+                        String.valueOf(row[0]),
+                        String.valueOf(row[1]),
+                        ((Number) row[2]).longValue(),
+                        ((Number) row[3]).doubleValue(),
+                        totalAmount
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getShipmentsByRegion(StatisticPeriod period, int limit) {
+        List<Object[]> rows = shipmentRepository.aggregateByRegion(period.startDateTime(), period.endExclusiveDateTime(), PageRequest.of(0, safeLimit(limit, 50)));
+        double totalFee = rows.stream().mapToDouble(row -> ((Number) row[3]).doubleValue()).sum();
+        return rows.stream().map(row -> breakdown(row, totalFee)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakdownStatisticResponse> getInventoryMovements(StatisticPeriod period) {
+        List<Object[]> rows = new ArrayList<>();
+        rows.addAll(importNoteRepository.aggregateInboundMovement(period.startDateTime(), period.endExclusiveDateTime()));
+        rows.addAll(importNoteRepository.aggregateOutboundMovement(period.startDateTime(), period.endExclusiveDateTime()));
+        double totalAmount = rows.stream().mapToDouble(row -> ((Number) row[3]).doubleValue()).sum();
+        return rows.stream().map(row -> breakdown(row, totalAmount)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProfitMarginStatisticResponse> getProfitMargin(StatisticPeriod period, int limit) {
+        return orderRepository.aggregateProfitMarginByProduct(
+                        REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        PageRequest.of(0, safeLimit(limit, 50))
+                )
+                .stream()
+                .map(row -> new ProfitMarginStatisticResponse(
+                        ((Number) row[0]).intValue(),
+                        String.valueOf(row[1]),
+                        ((Number) row[2]).longValue(),
+                        ((Number) row[3]).doubleValue(),
+                        ((Number) row[4]).doubleValue()
+                ))
                 .toList();
     }
 

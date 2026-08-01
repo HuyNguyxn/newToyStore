@@ -52,3 +52,27 @@ export function getShipmentsByProvider(params = {}) {
 export function getShipmentFailureReasons(params = {}) {
   return apiClient(`/statistics/shipments/failure-reasons${buildQuery(params)}`);
 }
+
+export function getCustomerSummary(params = {}) {
+  return apiClient(`/statistics/customers/summary${buildQuery(params)}`);
+}
+
+export function getCustomerTrend(params = {}) {
+  return apiClient(`/statistics/customers/trend${buildQuery(params)}`);
+}
+
+export function getRefundByProduct(params = {}) {
+  return apiClient(`/statistics/refunds/by-product${buildQuery(params)}`);
+}
+
+export function getShipmentsByRegion(params = {}) {
+  return apiClient(`/statistics/shipments/by-region${buildQuery(params)}`);
+}
+
+export function getInventoryMovements(params = {}) {
+  return apiClient(`/statistics/inventory/movements${buildQuery(params)}`);
+}
+
+export function getProfitMarginReport(params = {}) {
+  return apiClient(`/statistics/profit-margin${buildQuery(params)}`);
+}

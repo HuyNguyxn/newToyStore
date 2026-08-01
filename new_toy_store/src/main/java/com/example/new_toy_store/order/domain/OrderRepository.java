@@ -136,6 +136,59 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             """)
     List<Object[]> findTopSpendingCustomers(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
+    @Query("SELECT FUNCTION('date', u.createdAt), CONCAT(FUNCTION('date', u.createdAt)), COUNT(u), 0 FROM User u WHERE u.createdAt >= :from AND u.createdAt < :to GROUP BY FUNCTION('date', u.createdAt) ORDER BY FUNCTION('date', u.createdAt)")
+    List<Object[]> aggregateNewCustomerTrend(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT 'NEW_CUSTOMERS', 'New customers', COUNT(*), 0
+              FROM users u
+             WHERE u.created_at >= :from
+               AND u.created_at < :to
+               AND u.deleted_at IS NULL
+            UNION ALL
+            SELECT 'ORDERING_CUSTOMERS', 'Customers with orders', COUNT(DISTINCT o.user_id), 0
+              FROM orders o
+             WHERE o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+            UNION ALL
+            SELECT 'REPEAT_CUSTOMERS', 'Repeat customers', COUNT(*), 0
+              FROM (
+                    SELECT o.user_id
+                      FROM orders o
+                     WHERE o.created_at >= :from
+                       AND o.created_at < :to
+                       AND o.deleted_at IS NULL
+                     GROUP BY o.user_id
+                    HAVING COUNT(*) >= 2
+                   ) repeat_users
+            """, nativeQuery = true)
+    List<Object[]> aggregateCustomerSummary(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT i.product_id,
+                   i.product_name,
+                   COALESCE(SUM(i.quantity), 0),
+                   COALESCE(SUM(i.quantity * i.price), 0),
+                   COALESCE(SUM(i.quantity * pv.cost_price), 0)
+              FROM orders o
+              JOIN order_items i ON i.order_id = o.id
+              LEFT JOIN product_variants pv ON pv.id = i.variant_id
+             WHERE o.status IN (:statuses)
+               AND o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+               AND i.deleted_at IS NULL
+             GROUP BY i.product_id, i.product_name
+             ORDER BY COALESCE(SUM((i.price - COALESCE(pv.cost_price, 0)) * i.quantity), 0) DESC
+            """, nativeQuery = true)
+    List<Object[]> aggregateProfitMarginByProduct(
+            @Param("statuses") List<String> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable
+    );
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE Order o

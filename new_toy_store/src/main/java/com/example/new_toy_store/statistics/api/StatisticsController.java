@@ -5,6 +5,7 @@ import com.example.new_toy_store.statistics.application.dto.request.StatisticsOv
 import com.example.new_toy_store.statistics.application.dto.request.TopSellingProductsRequest;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
@@ -101,6 +102,36 @@ public class StatisticsController {
     @GetMapping("/shipments/failure-reasons")
     public List<BreakdownStatisticResponse> getShipmentFailureReasons(@Valid @ModelAttribute StatisticsOverviewRequest request) {
         return facade.getShipmentFailureReasons(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/customers/summary")
+    public List<BreakdownStatisticResponse> getCustomerSummary(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getCustomerSummary(toPeriod(request));
+    }
+
+    @GetMapping("/customers/trend")
+    public List<BreakdownStatisticResponse> getCustomerTrend(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getCustomerTrend(toPeriod(request));
+    }
+
+    @GetMapping("/refunds/by-product")
+    public List<BreakdownStatisticResponse> getRefundByProduct(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getRefundByProduct(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/shipments/by-region")
+    public List<BreakdownStatisticResponse> getShipmentsByRegion(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getShipmentsByRegion(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/inventory/movements")
+    public List<BreakdownStatisticResponse> getInventoryMovements(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getInventoryMovements(toPeriod(request));
+    }
+
+    @GetMapping("/profit-margin")
+    public List<ProfitMarginStatisticResponse> getProfitMargin(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getProfitMargin(toPeriod(request), request.getTopLimit());
     }
 
     private StatisticPeriod toPeriod(StatisticsOverviewRequest request) {

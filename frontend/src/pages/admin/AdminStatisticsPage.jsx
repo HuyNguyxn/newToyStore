@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import {
   getPaymentFailureReasons,
+  getCustomerSummary,
+  getCustomerTrend,
+  getInventoryMovements,
+  getProfitMarginReport,
   getRefundReasons,
+  getRefundByProduct,
   getRevenueByCategory,
   getRevenueByPaymentMethod,
   getRevenueByProduct,
   getRevenueByPromotion,
   getShipmentsByProvider,
+  getShipmentsByRegion,
   getShipmentFailureReasons,
   getStatisticsOverview,
   getTopSellingProducts,
@@ -33,6 +39,12 @@ const emptyDetails = {
   refundReasons: [],
   shipmentsByProvider: [],
   shipmentFailureReasons: [],
+  customerSummary: [],
+  customerTrend: [],
+  refundByProduct: [],
+  shipmentsByRegion: [],
+  inventoryMovements: [],
+  profitMargin: [],
 };
 
 function toDateInput(date) {
@@ -119,10 +131,16 @@ function AdminStatisticsPage() {
         revenueByPaymentMethod,
         revenueByPromotion,
         topSpendingCustomers,
+        customerSummary,
+        customerTrend,
         paymentFailureReasons,
         refundReasons,
+        refundByProduct,
         shipmentsByProvider,
+        shipmentsByRegion,
         shipmentFailureReasons,
+        inventoryMovements,
+        profitMargin,
       ] = await Promise.all([
         getStatisticsOverview(params),
         getTopSellingProducts(topParams),
@@ -131,10 +149,16 @@ function AdminStatisticsPage() {
         getRevenueByPaymentMethod(params),
         getRevenueByPromotion(params),
         getTopSpendingCustomers(params),
+        getCustomerSummary(params),
+        getCustomerTrend(params),
         getPaymentFailureReasons(params),
         getRefundReasons(params),
+        getRefundByProduct(params),
         getShipmentsByProvider(params),
+        getShipmentsByRegion(params),
         getShipmentFailureReasons(params),
+        getInventoryMovements(params),
+        getProfitMarginReport(params),
       ]);
 
       setOverview(overviewResult);
@@ -145,10 +169,16 @@ function AdminStatisticsPage() {
         revenueByPaymentMethod: asArray(revenueByPaymentMethod),
         revenueByPromotion: asArray(revenueByPromotion),
         topSpendingCustomers: asArray(topSpendingCustomers),
+        customerSummary: asArray(customerSummary),
+        customerTrend: asArray(customerTrend),
         paymentFailureReasons: asArray(paymentFailureReasons),
         refundReasons: asArray(refundReasons),
+        refundByProduct: asArray(refundByProduct),
         shipmentsByProvider: asArray(shipmentsByProvider),
+        shipmentsByRegion: asArray(shipmentsByRegion),
         shipmentFailureReasons: asArray(shipmentFailureReasons),
+        inventoryMovements: asArray(inventoryMovements),
+        profitMargin: asArray(profitMargin),
       });
     } catch (err) {
       setError(err.message || 'Khong the tai thong ke.');
@@ -262,7 +292,10 @@ function AdminStatisticsPage() {
         <div className="admin-statistics-panel-grid">
           <TopProductPanel title="Top selling products" rows={topSelling} />
           <TopProductPanel title="Revenue by product" rows={details.revenueByProduct} />
+          <ProfitMarginPanel rows={details.profitMargin} />
           <BreakdownPanel title="Top spending customers" subtitle="Khach hang chi tieu cao nhat" rows={details.topSpendingCustomers} />
+          <BreakdownPanel title="Customer summary" subtitle="Khach moi, khach co don, khach mua lap lai" rows={details.customerSummary} amountLabel="Value" />
+          <BreakdownPanel title="Customer trend" subtitle="Khach hang moi theo ngay" rows={details.customerTrend} amountLabel="Value" />
         </div>
       </section>
 
@@ -271,8 +304,11 @@ function AdminStatisticsPage() {
         <div className="admin-statistics-panel-grid">
           <BreakdownPanel title="Payment failure reasons" subtitle="Ly do thanh toan that bai" rows={details.paymentFailureReasons} amountLabel="Amount" />
           <BreakdownPanel title="Refund by reason" subtitle="Ly do hoan tien/tra tien" rows={details.refundReasons} amountLabel="Refund" />
+          <BreakdownPanel title="Refund by product" subtitle="Tien refund duoc phan bo theo san pham" rows={details.refundByProduct} amountLabel="Refund" />
           <BreakdownPanel title="Shipment by provider" subtitle="Don van chuyen theo nha giao hang" rows={details.shipmentsByProvider} amountLabel="Amount" />
+          <BreakdownPanel title="Shipment by region" subtitle="Don van chuyen theo khu vuc giao hang" rows={details.shipmentsByRegion} amountLabel="Shipping fee" />
           <BreakdownPanel title="Shipment failure reasons" subtitle="Ly do giao hang that bai" rows={details.shipmentFailureReasons} amountLabel="Amount" />
+          <BreakdownPanel title="Inventory movements" subtitle="Nhap kho va xuat kho trong ky" rows={details.inventoryMovements} amountLabel="Value" />
         </div>
       </section>
     </section>
@@ -389,6 +425,28 @@ function TopProductPanel({ title, rows }) {
             <span>{product.soldQuantity || 0}</span>
             <span>{formatPrice(product.grossRevenue || product.amount || 0)}</span>
             <span>{product.orderCount || product.count || 0}</span>
+          </div>
+        ))}
+      </EmptyAware>
+    </article>
+  );
+}
+
+function ProfitMarginPanel({ rows }) {
+  return (
+    <article className="admin-resource-table admin-resource-table--compact">
+      <div className="admin-panel__heading"><div><p>Finance</p><h2>Profit / margin report</h2></div></div>
+      <div className="admin-resource-table__head" style={{ gridTemplateColumns: '1fr 100px 120px 120px 100px' }}>
+        <span>Product</span><span>Sold</span><span>Revenue</span><span>Profit</span><span>Margin</span>
+      </div>
+      <EmptyAware rows={rows}>
+        {(rows || []).map((product, index) => (
+          <div className="admin-resource-table__row" style={{ gridTemplateColumns: '1fr 100px 120px 120px 100px' }} key={product.productId || index}>
+            <span>{product.productName || '-'}</span>
+            <span>{product.soldQuantity || 0}</span>
+            <span>{formatPrice(product.revenue || 0)}</span>
+            <span>{formatPrice(product.grossProfit || 0)}</span>
+            <span>{product.marginPercent || 0}%</span>
           </div>
         ))}
       </EmptyAware>

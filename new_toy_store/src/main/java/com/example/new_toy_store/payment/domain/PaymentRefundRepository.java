@@ -43,6 +43,31 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
             """)
     java.util.List<Object[]> aggregateByReason(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
+    @Query(value = """
+            SELECT i.product_id,
+                   i.product_name,
+                   COALESCE(SUM(i.quantity), 0),
+                   COALESCE(SUM(CASE
+                       WHEN o.total_amount > 0 THEN ((i.quantity * i.price) / o.total_amount) * r.amount
+                       ELSE 0
+                   END), 0)
+              FROM payment_refunds r
+              JOIN orders o ON o.id = r.order_id
+              JOIN order_items i ON i.order_id = o.id
+             WHERE r.status = 'SUCCEEDED'
+               AND r.created_at >= :from
+               AND r.created_at < :to
+               AND r.deleted_at IS NULL
+               AND o.deleted_at IS NULL
+               AND i.deleted_at IS NULL
+             GROUP BY i.product_id, i.product_name
+             ORDER BY COALESCE(SUM(CASE
+                       WHEN o.total_amount > 0 THEN ((i.quantity * i.price) / o.total_amount) * r.amount
+                       ELSE 0
+                   END), 0) DESC
+            """, nativeQuery = true)
+    java.util.List<Object[]> aggregateRefundByProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM PaymentRefund r WHERE r.id = :id")
     Optional<PaymentRefund> findByIdForUpdate(@Param("id") Integer id);

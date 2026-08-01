@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>, JpaSpecificationExecutor<ImportNote> {
 
@@ -34,4 +36,27 @@ public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>
                                 @Param("version") Long version,
                                 @Param("currentStatus") ImportStatus currentStatus,
                                 @Param("nextStatus") ImportStatus nextStatus);
+
+    @Query(value = """
+            SELECT 'INBOUND_IMPORT', 'Inbound from completed imports', COALESCE(SUM(ii.quantity), 0), COALESCE(SUM(ii.quantity * ii.import_price), 0)
+              FROM import_notes n
+              JOIN import_note_items ii ON ii.import_note_id = n.id
+             WHERE n.status = 'COMPLETED'
+               AND n.created_at >= :from
+               AND n.created_at < :to
+               AND n.deleted_at IS NULL
+            """, nativeQuery = true)
+    List<Object[]> aggregateInboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT 'OUTBOUND_SALE', 'Outbound from successful orders', COALESCE(SUM(i.quantity), 0), COALESCE(SUM(i.quantity * i.price), 0)
+              FROM orders o
+              JOIN order_items i ON i.order_id = o.id
+             WHERE o.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')
+               AND o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+               AND i.deleted_at IS NULL
+            """, nativeQuery = true)
+    List<Object[]> aggregateOutboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

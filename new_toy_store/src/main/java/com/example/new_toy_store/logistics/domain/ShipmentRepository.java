@@ -55,6 +55,21 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
             """)
     java.util.List<Object[]> aggregateFailureReasons(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
+    @Query(value = """
+            SELECT region, region, COUNT(*), COALESCE(SUM(shipping_fee), 0)
+              FROM (
+                    SELECT TRIM(SUBSTRING_INDEX(s.shipping_address_snapshot, ',', -1)) AS region,
+                           s.shipping_fee
+                      FROM shipments s
+                     WHERE s.created_at >= :from
+                       AND s.created_at < :to
+                       AND s.deleted_at IS NULL
+                   ) region_shipments
+             GROUP BY region
+             ORDER BY COUNT(*) DESC
+            """, nativeQuery = true)
+    java.util.List<Object[]> aggregateByRegion(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+
     @Override
     @EntityGraph(attributePaths = "items")
     Optional<Shipment> findById(Integer id);
