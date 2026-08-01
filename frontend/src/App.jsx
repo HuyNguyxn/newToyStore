@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
@@ -16,7 +17,6 @@ import AdminPromotionPage from './pages/admin/AdminPromotionPage.jsx';
 import AdminRefundPage from './pages/admin/AdminRefundPage.jsx';
 import AdminReturnInspectionPage from './pages/admin/AdminReturnInspectionPage.jsx';
 import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage.jsx';
-import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
 import AdminSupplierPage from './pages/admin/AdminSupplierPage.jsx';
 import AdminSupplierReturnPage from './pages/admin/AdminSupplierReturnPage.jsx';
 import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
@@ -42,6 +42,8 @@ import ReturnListPage from './pages/returns/ReturnListPage.jsx';
 import ReviewCreatePage from './pages/reviews/ReviewCreatePage.jsx';
 import ReviewListPage from './pages/reviews/ReviewListPage.jsx';
 import ShipmentListPage from './pages/shipments/ShipmentListPage.jsx';
+
+const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
 
 function App() {
   return (
@@ -181,7 +183,14 @@ function App() {
         <Route path="moderation" element={<AdminModerationPage />} />
         <Route path="notifications" element={<AdminNotificationPage />} />
         <Route path="inventory" element={<AdminInventoryPage />} />
-        <Route path="statistics" element={<AdminStatisticsPage />} />
+        <Route
+          path="statistics"
+          element={(
+            <Suspense fallback={<div className="admin-empty-mini">Loading statistics dashboard...</div>}>
+              <AdminStatisticsPage />
+            </Suspense>
+          )}
+        />
         <Route path="uploads" element={<AdminUploadPage />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
