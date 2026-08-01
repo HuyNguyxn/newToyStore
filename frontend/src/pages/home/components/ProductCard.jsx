@@ -28,7 +28,7 @@ function ProductCard({ product }) {
       <div className="product-card__body">
         <h3>{product.name}</h3>
         <p className="product-card__rating">
-          {rating.toFixed(1)} sao <span>({product.reviewCount || 0} danh gia)</span>
+          ⭐ {rating.toFixed(1)} <span>({product.reviewCount || 0} danh gia)</span>
         </p>
         <p className="product-card__price">
           {showOriginalPrice && <span>{formatPrice(originalPrice)}</span>}
@@ -38,7 +38,7 @@ function ProductCard({ product }) {
         <div className="product-card__actions">
           <Link to={`/products/${product.id}`}>Xem chi tiet</Link>
           {product.quickAddAvailable ? (
-            <button type="button">Them gio</button>
+            <button type="button">Them gio 🛒</button>
           ) : (
             <Link to={`/products/${product.id}`} className="product-card__select">
               Chon loai

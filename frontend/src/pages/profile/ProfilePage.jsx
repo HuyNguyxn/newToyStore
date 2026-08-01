@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import { uploadImage } from '../../services/uploadService.js';
 
@@ -66,6 +67,8 @@ function ProfilePage() {
 
   return (
     <section className="profile-page container">
+      <BackLink fallback="/" label="Quay lai trang chu" />
+
       <div className="profile-card">
         <img src={form.avatarUrl || user?.avatarUrl || 'https://placehold.co/96x96?text=NTS'} alt={user?.fullName || 'User avatar'} />
         <div>

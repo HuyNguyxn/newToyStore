@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import { cancelCustomerReturn, disputeCustomerReturn, getCustomerReturns, updateCustomerReturnInfo } from '../../services/customerReturnService.js';
 import { formatPrice } from '../../utils/formatters.js';
 
@@ -44,7 +45,8 @@ function ReturnListPage() {
 
   return (
     <section className="container profile-page">
-      <div className="admin-resource__hero"><div><p>After-sales</p><h2>Yeu cau tra hang cua toi</h2><span>Theo doi trang thai, cap nhat thong tin hoac mo tranh chap neu can.</span></div><Link className="login-link" to="/returns/new">Tao yeu cau moi</Link></div>
+      <BackLink fallback="/profile" label="Quay lai tai khoan" />
+      <div className="customer-panel-hero"><div><p>After-sales</p><h2>Yeu cau tra hang cua toi</h2><span>Theo doi trang thai, cap nhat thong tin hoac mo tranh chap neu can.</span></div><Link className="login-link" to="/returns/new">Tao yeu cau moi</Link></div>
       {error && <div className="form-alert">{error}</div>}{message && <div className="form-alert form-alert--success">{message}</div>}
       <form className="admin-filter" onSubmit={(e) => { e.preventDefault(); loadReturns(); }}>{Object.keys(filters).map((field) => <label key={field}>{field}<input value={filters[field]} onChange={(e) => setFilters((current) => ({ ...current, [field]: e.target.value }))} /></label>)}<button type="submit">Filter</button></form>
 

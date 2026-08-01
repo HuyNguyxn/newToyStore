@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import CategoryMenu from '../home/components/CategoryMenu.jsx';
 import ProductCard from '../home/components/ProductCard.jsx';
 import { sampleProducts } from '../../data/sampleData.js';
@@ -124,6 +125,8 @@ function ProductListPage() {
       </aside>
 
       <section className="product-list-page__content">
+        <BackLink fallback="/" label="Quay lai trang chu" />
+
         <div className="product-list-header">
           <div>
             <p>{categoryId ? `Danh muc #${categoryId}` : 'Tat ca san pham'}</p>

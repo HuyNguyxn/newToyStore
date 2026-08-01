@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import { sampleCart } from '../../data/sampleData.js';
 import {
@@ -118,6 +119,8 @@ function CartPage() {
   return (
     <div className="cart-page container">
       <section className="cart-content">
+        <BackLink fallback="/products" label="Tiep tuc mua sam" />
+
         <div className="cart-heading">
           <div>
             <p>Gio hang cua ban</p>

@@ -39,24 +39,40 @@ function HomePage() {
       <section className="home-page__content">
         <section className="hero-banner">
           <div className="hero-banner__copy">
+            <span className="hero-banner__eyebrow">New Toy Store</span>
             <h1>Kham Pha The Gioi Do Choi</h1>
-            <p>Kham pha do choi va mon qua thong minh giup be hoc hoi, sang tao va vui choi moi ngay.</p>
+            <p>Kham pha do choi thong minh, gau bong dang yeu, lego sang tao va qua tang an toan cho be.</p>
             <Link to="/products" className="hero-banner__button">Mua sam ngay</Link>
           </div>
-          <div className="hero-banner__art" aria-hidden="true">
-            <span>Plane</span>
-            <span>Bot</span>
-            <span>Car</span>
-            <span>Bear</span>
+          <div className="hero-banner__visual" aria-hidden="true">
+            <img src="/toystore-assets/hero-1.png" alt="" />
           </div>
+        </section>
+
+        <section className="store-benefits" aria-label="Loi ich mua sam">
+          <article>
+            <span>🧸</span>
+            <strong>Do choi an toan</strong>
+            <p>Uu tien san pham phu hop cho tre em.</p>
+          </article>
+          <article>
+            <span>🚚</span>
+            <strong>Giao hang noi bo</strong>
+            <p>Theo doi trang thai giao hang ro rang.</p>
+          </article>
+          <article>
+            <span>🎁</span>
+            <strong>Khuyen mai de dung</strong>
+            <p>Ap ma giam gia truc tiep trong gio hang.</p>
+          </article>
         </section>
 
         {notice && <div className="form-alert form-alert--soft">{notice}</div>}
 
         <section className="featured-section">
           <div className="section-heading">
-            <h2>San Pham Noi Bat</h2>
-            <Link to="/products">Xem tat ca</Link>
+            <h2>⭐ San Pham Noi Bat</h2>
+            <Link to="/products">Xem tat ca →</Link>
           </div>
 
           <div className="product-grid">

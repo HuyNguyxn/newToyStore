@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import { sampleCart } from '../../data/sampleData.js';
 import { checkoutCart, getCart } from '../../services/cartService.js';
@@ -72,6 +73,8 @@ function CheckoutPage() {
   return (
     <div className="checkout-page container">
       <section className="checkout-form-card">
+        <BackLink fallback="/cart" label="Quay lai gio hang" />
+
         <div className="cart-heading">
           <div>
             <p>Thanh toan</p>

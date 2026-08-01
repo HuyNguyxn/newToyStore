@@ -1,18 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --color-primary: #ff6b35;
-  --color-primary-dark: #e85d2a;
-  --color-secondary: #2563eb;
-  --color-accent: #ffd166;
-  --color-bg: #f8fafc;
+  --color-primary: #e08e3d;
+  --color-primary-dark: #c6762b;
+  --color-primary-gradient: linear-gradient(135deg, #e08e3d 0%, #f39c12 100%);
+  --color-secondary: #7ac0cc;
+  --color-secondary-soft: #a2d9e2;
+  --color-accent: #f4d35e;
+  --color-accent-soft: #fff9c4;
+  --color-bg: #fffdf5;
   --color-card: #ffffff;
-  --color-text: #172033;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-success: #16a34a;
+  --color-text: #4a3b32;
+  --color-muted: #8d8178;
+  --color-border: #e8e0d5;
+  --color-success: #27ae60;
   --color-warning: #f59e0b;
-  --color-danger: #dc2626;
-  --shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.07);
-  --shadow-md: 0 12px 30px rgba(15, 23, 42, 0.12);
-  --radius: 8px;
-  --font-family: Arial, Helvetica, sans-serif;
+  --color-danger: #ff6b6b;
+  --shadow-sm: 0 4px 12px rgba(224, 142, 61, 0.1);
+  --shadow-md: 0 12px 28px rgba(224, 142, 61, 0.18);
+  --shadow-hover: 0 10px 24px rgba(224, 142, 61, 0.24);
+  --radius: 16px;
+  --radius-pill: 999px;
+  --font-family: "Quicksand", "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-display: "Fredoka", "Quicksand", "Segoe UI", sans-serif;
 }

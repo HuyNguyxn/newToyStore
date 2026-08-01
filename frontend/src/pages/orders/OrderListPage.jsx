@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import { sampleOrders } from '../../data/sampleData.js';
 import { getMyOrders } from '../../services/orderService.js';
 import { formatDateTime, formatPrice, getOrderStatusLabel } from '../../utils/formatters.js';
@@ -60,6 +61,8 @@ function OrderListPage() {
 
   return (
     <div className="orders-page container">
+      <BackLink fallback="/" label="Quay lai trang chu" />
+
       <div className="page-title-row">
         <div>
           <p>Don hang cua toi</p>

@@ -49,26 +49,28 @@ function Header() {
     <header className="site-header">
       <div className="container site-header__inner">
         <Link to="/" className="brand" aria-label="New Toy Store home">
-          <span className="brand__logo">NTS</span>
+          <span className="brand__logo">
+            <img src="/toystore-assets/logo.png" alt="New Toy Store" />
+          </span>
           <span className="brand__name">New Toy Store</span>
         </Link>
 
         <form className="search-box" role="search" onSubmit={handleSearch}>
           <input name="keyword" type="search" placeholder="Tim kiem do choi..." aria-label="Tim kiem do choi" />
-          <button type="submit">Tim</button>
+          <button type="submit">🔍</button>
         </form>
 
         <nav className="header-actions" aria-label="Customer actions">
+          <Link to="/products" className="plain-header-link">San pham</Link>
           {isAuthenticated && <Link to="/orders" className="plain-header-link">Don hang</Link>}
-          {isAuthenticated && <Link to="/shipments" className="plain-header-link">Van chuyen</Link>}
           {isAuthenticated && (
             <Link to="/notifications" className="cart-link">
-              Thong bao
+              🔔
               {unreadCount > 0 && <span className="cart-link__badge">{unreadCount}</span>}
             </Link>
           )}
           <Link to="/cart" className="cart-link">
-            Gio hang
+            🛒
           </Link>
           {isAuthenticated ? (
             <div className="user-menu">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import { sampleProducts } from '../../data/sampleData.js';
 import { addCartItem } from '../../services/cartService.js';
@@ -159,6 +160,8 @@ function ProductDetailPage() {
 
   return (
     <div className="product-detail-page container">
+      <BackLink fallback="/products" label="Quay lai san pham" />
+
       <div className="breadcrumb">
         <Link to="/products">San pham</Link>
         <span>/</span>

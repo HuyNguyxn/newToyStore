@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import BackLink from '../../components/common/BackLink.jsx';
 import { deleteReview, getMyReviews, updateReview } from '../../services/reviewService.js';
 import { uploadImage, uploadVideo } from '../../services/uploadService.js';
 import { formatDateTime } from '../../utils/formatters.js';
@@ -88,7 +89,8 @@ function ReviewListPage() {
 
   return (
     <section className="container profile-page">
-      <div className="admin-resource__hero"><div><p>Reviews</p><h2>Danh gia cua toi</h2><span>Xem lai, sua noi dung, cap nhat hinh anh/video hoac xoa review.</span></div><Link className="login-link" to="/reviews/new">Viet danh gia moi</Link></div>
+      <BackLink fallback="/profile" label="Quay lai tai khoan" />
+      <div className="customer-panel-hero"><div><p>Reviews</p><h2>Danh gia cua toi</h2><span>Xem lai, sua noi dung, cap nhat hinh anh/video hoac xoa review.</span></div><Link className="login-link" to="/reviews/new">Viet danh gia moi</Link></div>
       {error && <div className="form-alert">{error}</div>}{message && <div className="form-alert form-alert--success">{message}</div>}
       <div className="admin-crud-grid">
         <div className="admin-resource-table">

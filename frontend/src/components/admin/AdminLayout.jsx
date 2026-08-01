@@ -2,25 +2,25 @@ import { NavLink, Outlet } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 
 const adminNavItems = [
-  { to: '/admin/dashboard', label: 'Dashboard' },
-  { to: '/admin/products', label: 'Products' },
-  { to: '/admin/categories', label: 'Categories' },
-  { to: '/admin/orders', label: 'Orders' },
-  { to: '/admin/payments', label: 'Payments' },
-  { to: '/admin/refunds', label: 'Refunds' },
-  { to: '/admin/users', label: 'Users' },
-  { to: '/admin/promotions', label: 'Promotions' },
-  { to: '/admin/suppliers', label: 'Suppliers' },
-  { to: '/admin/imports', label: 'Imports' },
-  { to: '/admin/supplier-returns', label: 'Supplier Returns' },
-  { to: '/admin/inventory', label: 'Inventory' },
-  { to: '/admin/logistics', label: 'Logistics' },
-  { to: '/admin/returns', label: 'Returns' },
-  { to: '/admin/reviews', label: 'Reviews' },
-  { to: '/admin/moderation', label: 'Moderation' },
-  { to: '/admin/notifications', label: 'Notifications' },
-  { to: '/admin/statistics', label: 'Statistics' },
-  { to: '/admin/uploads', label: 'Uploads' },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+  { to: '/admin/products', label: 'Products', icon: '🧸' },
+  { to: '/admin/categories', label: 'Categories', icon: '🗂️' },
+  { to: '/admin/orders', label: 'Orders', icon: '🧾' },
+  { to: '/admin/payments', label: 'Payments', icon: '💳' },
+  { to: '/admin/refunds', label: 'Refunds', icon: '↩️' },
+  { to: '/admin/users', label: 'Users', icon: '👤' },
+  { to: '/admin/promotions', label: 'Promotions', icon: '🎁' },
+  { to: '/admin/suppliers', label: 'Suppliers', icon: '🏭' },
+  { to: '/admin/imports', label: 'Imports', icon: '📦' },
+  { to: '/admin/supplier-returns', label: 'Supplier Returns', icon: '🔁' },
+  { to: '/admin/inventory', label: 'Inventory', icon: '🏷️' },
+  { to: '/admin/logistics', label: 'Logistics', icon: '🚚' },
+  { to: '/admin/returns', label: 'Returns', icon: '📮' },
+  { to: '/admin/reviews', label: 'Reviews', icon: '⭐' },
+  { to: '/admin/moderation', label: 'Moderation', icon: '🛡️' },
+  { to: '/admin/notifications', label: 'Notifications', icon: '🔔' },
+  { to: '/admin/statistics', label: 'Statistics', icon: '📈' },
+  { to: '/admin/uploads', label: 'Uploads', icon: '🖼️' },
 ];
 
 function AdminLayout() {
@@ -30,8 +30,13 @@ function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <span>NTS</span>
-          <strong>Admin</strong>
+          <span>
+            <img src="/toystore-assets/logo.png" alt="New Toy Store" />
+          </span>
+          <div>
+            <strong>New Toy Store</strong>
+            <small>Admin Console</small>
+          </div>
         </div>
 
         <nav className="admin-nav" aria-label="Admin navigation">
@@ -41,6 +46,7 @@ function AdminLayout() {
               to={item.to}
               className={({ isActive }) => (isActive ? 'is-active' : '')}
             >
+              <span>{item.icon}</span>
               {item.label}
             </NavLink>
           ))}

@@ -1,10 +1,15 @@
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:new_toy_store/.env[.properties]
+
   application:
     name: new_toy_store
 
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/new_toy_store}
-    username: ${DB_USERNAME:root}
+    username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
 
   flyway:
@@ -45,22 +50,22 @@ app:
   seed:
     admin:
       enabled: ${SEED_ADMIN_ENABLED:false}
-      email: ${SEED_ADMIN_EMAIL:admin@gmail.com}
+      email: ${SEED_ADMIN_EMAIL:}
       password: ${SEED_ADMIN_PASSWORD:}
-      full-name: ${SEED_ADMIN_FULL_NAME:Admin}
-      phone-number: ${SEED_ADMIN_PHONE:0900000001}
+      full-name: ${SEED_ADMIN_FULL_NAME:}
+      phone-number: ${SEED_ADMIN_PHONE:}
     staff:
       enabled: ${SEED_STAFF_ENABLED:false}
-      email: ${SEED_STAFF_EMAIL:staff@gmail.com}
+      email: ${SEED_STAFF_EMAIL:}
       password: ${SEED_STAFF_PASSWORD:}
-      full-name: ${SEED_STAFF_FULL_NAME:Staff}
-      phone-number: ${SEED_STAFF_PHONE:0900000002}
+      full-name: ${SEED_STAFF_FULL_NAME:}
+      phone-number: ${SEED_STAFF_PHONE:}
     customer:
       enabled: ${SEED_CUSTOMER_ENABLED:false}
-      email: ${SEED_CUSTOMER_EMAIL:customer@gmail.com}
+      email: ${SEED_CUSTOMER_EMAIL:}
       password: ${SEED_CUSTOMER_PASSWORD:}
-      full-name: ${SEED_CUSTOMER_FULL_NAME:Customer}
-      phone-number: ${SEED_CUSTOMER_PHONE:0900000003}
+      full-name: ${SEED_CUSTOMER_FULL_NAME:}
+      phone-number: ${SEED_CUSTOMER_PHONE:}
   cart:
     cleanup:
       cron: "0 0 0 * * ?"
@@ -94,4 +99,4 @@ app:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
     api-key: ${CLOUDINARY_API_KEY:}
     api-secret: ${CLOUDINARY_API_SECRET:}
-    folder: ${CLOUDINARY_FOLDER:new-toy-store}
+    folder: ${CLOUDINARY_FOLDER:}
