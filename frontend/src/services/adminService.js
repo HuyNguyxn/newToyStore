@@ -136,6 +136,21 @@ export const adminResourceConfigs = {
       { label: 'Cancel', danger: true, endpoint: (item) => `/imports/${item.id}/cancel` },
     ],
   },
+  supplierReturns: {
+    title: 'Supplier Returns',
+    description: 'Manage returns from warehouse back to suppliers, approval flow, stock deduction, and SLA alerts.',
+    endpoint: '/api/supplier-returns',
+    defaultParams: { page: 0, size: 10, sort: 'createdAt,desc' },
+    filters: ['supplierId', 'status', 'startDate', 'endDate'],
+    columns: ['id', 'supplierId', 'status', 'totalAmount', 'createdAt', 'completedAt'],
+    actions: [
+      { label: 'Submit', endpoint: (item) => `/api/supplier-returns/${item.id}/submit` },
+      { label: 'Approve', endpoint: (item) => `/api/supplier-returns/${item.id}/approve` },
+      { label: 'Reject', danger: true, endpoint: (item) => `/api/supplier-returns/${item.id}/reject?reason=${encodeURIComponent('Rejected from admin dashboard')}` },
+      { label: 'Ship', endpoint: (item) => `/api/supplier-returns/${item.id}/ship` },
+      { label: 'Complete', endpoint: (item) => `/api/supplier-returns/${item.id}/complete` },
+    ],
+  },
   logistics: {
     title: 'Logistics',
     description: 'Monitor internal shipment and delivery state.',

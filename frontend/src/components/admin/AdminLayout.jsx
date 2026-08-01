@@ -11,10 +11,14 @@ const adminNavItems = [
   { to: '/admin/promotions', label: 'Promotions' },
   { to: '/admin/suppliers', label: 'Suppliers' },
   { to: '/admin/imports', label: 'Imports' },
+  { to: '/admin/supplier-returns', label: 'Supplier Returns' },
+  { to: '/admin/inventory', label: 'Inventory' },
   { to: '/admin/logistics', label: 'Logistics' },
   { to: '/admin/returns', label: 'Returns' },
   { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/moderation', label: 'Moderation' },
+  { to: '/admin/statistics', label: 'Statistics' },
+  { to: '/admin/uploads', label: 'Uploads' },
 ];
 
 function AdminLayout() {
