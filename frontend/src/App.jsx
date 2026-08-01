@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
+import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import CartPage from './pages/cart/CartPage.jsx';
@@ -73,6 +75,17 @@ function App() {
             </ProtectedRoute>
           )}
         />
+      </Route>
+
+      <Route
+        path="/admin"
+        element={(
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminLayout />
+          </ProtectedRoute>
+        )}
+      >
+        <Route path="dashboard" element={<AdminDashboardPage />} />
       </Route>
     </Routes>
   );
