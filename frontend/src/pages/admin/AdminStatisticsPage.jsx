@@ -1,5 +1,17 @@
 import { useMemo, useState } from 'react';
-import { getStatisticsOverview, getTopSellingProducts } from '../../services/statisticsService.js';
+import {
+  getPaymentFailureReasons,
+  getRefundReasons,
+  getRevenueByCategory,
+  getRevenueByPaymentMethod,
+  getRevenueByProduct,
+  getRevenueByPromotion,
+  getShipmentsByProvider,
+  getShipmentFailureReasons,
+  getStatisticsOverview,
+  getTopSellingProducts,
+  getTopSpendingCustomers,
+} from '../../services/statisticsService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 const quickRanges = [
@@ -10,6 +22,18 @@ const quickRanges = [
   { code: 'THIS_MONTH', label: 'Thang nay', thisMonth: true },
   { code: 'LAST_MONTH', label: 'Thang truoc', lastMonth: true },
 ];
+
+const emptyDetails = {
+  revenueByCategory: [],
+  revenueByProduct: [],
+  revenueByPaymentMethod: [],
+  revenueByPromotion: [],
+  topSpendingCustomers: [],
+  paymentFailureReasons: [],
+  refundReasons: [],
+  shipmentsByProvider: [],
+  shipmentFailureReasons: [],
+};
 
 function toDateInput(date) {
   return date.toISOString().slice(0, 10);
@@ -53,16 +77,17 @@ function AdminStatisticsPage() {
   });
   const [overview, setOverview] = useState(null);
   const [topSelling, setTopSelling] = useState([]);
+  const [details, setDetails] = useState(emptyDetails);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const groupedKpis = useMemo(() => {
     const kpis = overview?.kpis || [];
     return {
-      revenue: kpis.filter((kpi) => String(kpi.code).includes('REVENUE') || String(kpi.code).includes('REFUND') || String(kpi.code).includes('AVERAGE_ORDER_VALUE')),
-      operations: kpis.filter((kpi) => String(kpi.code).includes('ORDER') || String(kpi.code).includes('SOLD') || String(kpi.code).includes('CUSTOMER')),
-      rates: kpis.filter((kpi) => String(kpi.code).includes('RATE')),
-      promotion: kpis.filter((kpi) => String(kpi.code).includes('PROMOTION')),
+      revenue: kpis.filter((kpi) => hasCode(kpi, ['REVENUE', 'REFUND', 'AVERAGE_ORDER_VALUE'])),
+      operations: kpis.filter((kpi) => hasCode(kpi, ['ORDER', 'SOLD', 'CUSTOMER'])),
+      rates: kpis.filter((kpi) => hasCode(kpi, ['RATE'])),
+      promotion: kpis.filter((kpi) => hasCode(kpi, ['PROMOTION'])),
     };
   }, [overview]);
 
@@ -85,12 +110,46 @@ function AdminStatisticsPage() {
 
     try {
       const params = buildParams();
-      const [overviewResult, topResult] = await Promise.all([
+      const topParams = { ...params, limit: filters.topLimit };
+      const [
+        overviewResult,
+        topResult,
+        revenueByCategory,
+        revenueByProduct,
+        revenueByPaymentMethod,
+        revenueByPromotion,
+        topSpendingCustomers,
+        paymentFailureReasons,
+        refundReasons,
+        shipmentsByProvider,
+        shipmentFailureReasons,
+      ] = await Promise.all([
         getStatisticsOverview(params),
-        getTopSellingProducts({ ...params, limit: filters.topLimit }),
+        getTopSellingProducts(topParams),
+        getRevenueByCategory(params),
+        getRevenueByProduct(topParams),
+        getRevenueByPaymentMethod(params),
+        getRevenueByPromotion(params),
+        getTopSpendingCustomers(params),
+        getPaymentFailureReasons(params),
+        getRefundReasons(params),
+        getShipmentsByProvider(params),
+        getShipmentFailureReasons(params),
       ]);
+
       setOverview(overviewResult);
-      setTopSelling(Array.isArray(topResult) ? topResult : []);
+      setTopSelling(asArray(topResult));
+      setDetails({
+        revenueByCategory: asArray(revenueByCategory),
+        revenueByProduct: asArray(revenueByProduct),
+        revenueByPaymentMethod: asArray(revenueByPaymentMethod),
+        revenueByPromotion: asArray(revenueByPromotion),
+        topSpendingCustomers: asArray(topSpendingCustomers),
+        paymentFailureReasons: asArray(paymentFailureReasons),
+        refundReasons: asArray(refundReasons),
+        shipmentsByProvider: asArray(shipmentsByProvider),
+        shipmentFailureReasons: asArray(shipmentFailureReasons),
+      });
     } catch (err) {
       setError(err.message || 'Khong the tai thong ke.');
     } finally {
@@ -104,7 +163,7 @@ function AdminStatisticsPage() {
         <div>
           <p>Admin Analytics</p>
           <h2>Statistics</h2>
-          <span>Overview dashboard with shared time range, groupBy, comparison, KPI, trend, status and inventory reports.</span>
+          <span>Dashboard tong hop KPI, doanh thu, khach hang, payment, refund, shipment va ton kho.</span>
         </div>
         <strong>{overview?.generatedAt ? `Updated ${formatDateTime(overview.generatedAt)}` : `${topSelling.length} top products`}</strong>
       </div>
@@ -146,7 +205,7 @@ function AdminStatisticsPage() {
           <input type="checkbox" checked={filters.compareWithPreviousPeriod} onChange={(event) => updateField('compareWithPreviousPeriod', event.target.checked)} />
           Compare with previous period
         </label>
-        <button type="submit" disabled={loading}>{loading ? 'Loading...' : 'Load statistics'}</button>
+        <button type="submit" disabled={loading}>{loading ? 'Loading...' : 'Load all statistics'}</button>
       </form>
 
       {error && <div className="form-alert">{error}</div>}
@@ -155,6 +214,7 @@ function AdminStatisticsPage() {
         <>
           <div className="admin-detail-summary">
             <p><strong>Period:</strong> {overview.period?.from} → {overview.period?.to}</p>
+            <p><strong>Generated at:</strong> {formatDateTime(overview.generatedAt)}</p>
             <p><strong>Timezone:</strong> {overview.period?.timezone}</p>
             <p><strong>Group by:</strong> requested {overview.period?.requestedGroupBy}, applied {overview.period?.appliedGroupBy}</p>
             <p><strong>Adjusted:</strong> {overview.period?.groupByAdjusted ? 'Yes' : 'No'} · <strong>Compare:</strong> {overview.period?.compareWithPreviousPeriod ? 'Yes' : 'No'}</p>
@@ -188,20 +248,32 @@ function AdminStatisticsPage() {
         </>
       )}
 
-      <section className="admin-resource-table">
-        <div className="admin-resource-table__head" style={{ gridTemplateColumns: '90px 1fr 150px 150px 160px 90px' }}>
-          <span>productId</span><span>productName</span><span>soldQuantity</span><span>grossRevenue</span><span>orderCount</span><span>rank</span>
+      <section>
+        <h3 className="admin-section-title">Revenue breakdown</h3>
+        <div className="admin-statistics-panel-grid">
+          <BreakdownPanel title="Revenue by category" subtitle="Danh muc tao doanh thu cao nhat" rows={details.revenueByCategory} />
+          <PaymentMethodPanel rows={details.revenueByPaymentMethod} title="Revenue by payment method" />
+          <BreakdownPanel title="Revenue by promotion" subtitle="Doanh thu theo chuong trinh khuyen mai" rows={details.revenueByPromotion} />
         </div>
-        {topSelling.map((product, index) => (
-          <div className="admin-resource-table__row" style={{ gridTemplateColumns: '90px 1fr 150px 150px 160px 90px' }} key={product.productId || index}>
-            <span>{product.productId || '-'}</span>
-            <span>{product.productName || '-'}</span>
-            <span>{product.soldQuantity || 0}</span>
-            <span>{formatPrice(product.grossRevenue || 0)}</span>
-            <span>{product.orderCount || 0}</span>
-            <span>{index + 1}</span>
-          </div>
-        ))}
+      </section>
+
+      <section>
+        <h3 className="admin-section-title">Product and customer ranking</h3>
+        <div className="admin-statistics-panel-grid">
+          <TopProductPanel title="Top selling products" rows={topSelling} />
+          <TopProductPanel title="Revenue by product" rows={details.revenueByProduct} />
+          <BreakdownPanel title="Top spending customers" subtitle="Khach hang chi tieu cao nhat" rows={details.topSpendingCustomers} />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="admin-section-title">Risk and operations</h3>
+        <div className="admin-statistics-panel-grid">
+          <BreakdownPanel title="Payment failure reasons" subtitle="Ly do thanh toan that bai" rows={details.paymentFailureReasons} amountLabel="Amount" />
+          <BreakdownPanel title="Refund by reason" subtitle="Ly do hoan tien/tra tien" rows={details.refundReasons} amountLabel="Refund" />
+          <BreakdownPanel title="Shipment by provider" subtitle="Don van chuyen theo nha giao hang" rows={details.shipmentsByProvider} amountLabel="Amount" />
+          <BreakdownPanel title="Shipment failure reasons" subtitle="Ly do giao hang that bai" rows={details.shipmentFailureReasons} amountLabel="Amount" />
+        </div>
       </section>
     </section>
   );
@@ -245,16 +317,28 @@ function StatusPanel({ title, rows }) {
   return (
     <article className="admin-api-console">
       <div className="admin-panel__heading"><div><p>Status</p><h2>{title}</h2></div></div>
-      {(rows || []).map((row) => <div className="summary-line" key={row.code}><span>{row.label || row.code}</span><strong>{row.count}</strong></div>)}
+      <EmptyAware rows={rows}>
+        {(rows || []).map((row) => <div className="summary-line" key={row.code}><span>{row.label || row.code}</span><strong>{row.count}</strong></div>)}
+      </EmptyAware>
     </article>
   );
 }
 
-function PaymentMethodPanel({ rows }) {
+function PaymentMethodPanel({ rows, title = 'Methods' }) {
   return (
     <article className="admin-api-console">
-      <div className="admin-panel__heading"><div><p>Payment</p><h2>Methods</h2></div></div>
-      {(rows || []).map((row) => <div className="summary-line" key={row.method}><span>{row.method} · {row.sharePercent}%</span><strong>{formatPrice(row.amount)}</strong></div>)}
+      <div className="admin-panel__heading"><div><p>Payment</p><h2>{title}</h2></div></div>
+      <EmptyAware rows={rows}>
+        {(rows || []).map((row) => (
+          <MetricRow
+            key={row.method || row.code}
+            label={`${row.method || row.label || row.code} · ${row.sharePercent || 0}%`}
+            value={formatPrice(row.amount)}
+            percent={row.sharePercent}
+            meta={`${row.transactionCount || row.count || 0} transactions`}
+          />
+        ))}
+      </EmptyAware>
     </article>
   );
 }
@@ -269,6 +353,78 @@ function InventoryPanel({ inventory }) {
       <div className="summary-line"><span>Low stock variants</span><strong>{inventory?.lowStockVariantCount || 0}</strong></div>
     </article>
   );
+}
+
+function BreakdownPanel({ title, subtitle, rows, amountLabel = 'Revenue' }) {
+  return (
+    <article className="admin-api-console">
+      <div className="admin-panel__heading"><div><p>{subtitle}</p><h2>{title}</h2></div></div>
+      <EmptyAware rows={rows}>
+        {(rows || []).map((row) => (
+          <MetricRow
+            key={row.code || row.label}
+            label={row.label || row.code || 'Unknown'}
+            value={formatPrice(row.amount)}
+            percent={row.sharePercent}
+            meta={`${amountLabel}: ${formatPrice(row.amount)} · Count: ${row.count || 0}`}
+          />
+        ))}
+      </EmptyAware>
+    </article>
+  );
+}
+
+function TopProductPanel({ title, rows }) {
+  return (
+    <article className="admin-resource-table admin-resource-table--compact">
+      <div className="admin-panel__heading"><div><p>Ranking</p><h2>{title}</h2></div></div>
+      <div className="admin-resource-table__head" style={{ gridTemplateColumns: '60px 1fr 100px 120px 90px' }}>
+        <span>Rank</span><span>Product</span><span>Sold</span><span>Revenue</span><span>Orders</span>
+      </div>
+      <EmptyAware rows={rows}>
+        {(rows || []).map((product, index) => (
+          <div className="admin-resource-table__row" style={{ gridTemplateColumns: '60px 1fr 100px 120px 90px' }} key={product.productId || index}>
+            <span>#{index + 1}</span>
+            <span>{product.productName || product.label || '-'}</span>
+            <span>{product.soldQuantity || 0}</span>
+            <span>{formatPrice(product.grossRevenue || product.amount || 0)}</span>
+            <span>{product.orderCount || product.count || 0}</span>
+          </div>
+        ))}
+      </EmptyAware>
+    </article>
+  );
+}
+
+function MetricRow({ label, value, percent = 0, meta }) {
+  const width = Math.max(0, Math.min(100, Number(percent) || 0));
+  return (
+    <div className="admin-metric-row">
+      <div className="summary-line">
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+      <div className="admin-metric-row__bar"><i style={{ width: `${width}%` }} /></div>
+      {meta && <small>{meta}</small>}
+    </div>
+  );
+}
+
+function EmptyAware({ rows, children }) {
+  if (!rows?.length) {
+    return <div className="admin-empty-mini">Chua co du lieu trong khoang thoi gian nay.</div>;
+  }
+
+  return children;
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function hasCode(kpi, tokens) {
+  const code = String(kpi.code || '');
+  return tokens.some((token) => code.includes(token));
 }
 
 export default AdminStatisticsPage;

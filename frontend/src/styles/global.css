@@ -2595,6 +2595,68 @@ h3 {
   font-weight: 800;
 }
 
+.admin-statistics-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-resource-table--compact {
+  align-self: start;
+}
+
+.admin-resource-table--compact .admin-panel__heading {
+  padding: 18px 18px 0;
+}
+
+.admin-metric-row {
+  border-top: 1px solid var(--color-border);
+  padding: 10px 0;
+}
+
+.admin-metric-row:first-of-type {
+  border-top: 0;
+}
+
+.admin-metric-row .summary-line {
+  border-top: 0;
+  padding: 0 0 8px;
+}
+
+.admin-metric-row__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: #f4eadf;
+}
+
+.admin-metric-row__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary-gradient);
+}
+
+.admin-metric-row small {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-empty-mini {
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  padding: 14px;
+  background: #fffdf5;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .admin-line-item {
   display: grid;
   grid-template-columns: repeat(5, minmax(95px, 1fr)) 90px;
@@ -3020,7 +3082,8 @@ h3 {
   }
 
   .admin-stat-grid,
-  .admin-dashboard-grid {
+  .admin-dashboard-grid,
+  .admin-statistics-panel-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -3137,6 +3200,7 @@ h3 {
 
   .admin-stat-grid,
   .admin-dashboard-grid,
+  .admin-statistics-panel-grid,
   .admin-crud-grid,
   .admin-filter,
   .admin-api-console__row,
