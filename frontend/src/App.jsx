@@ -4,10 +4,13 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage.jsx';
+import AdminNotificationPage from './pages/admin/AdminNotificationPage.jsx';
 import AdminProductPage from './pages/admin/AdminProductPage.jsx';
 import AdminPromotionPage from './pages/admin/AdminPromotionPage.jsx';
 import AdminRefundPage from './pages/admin/AdminRefundPage.jsx';
 import AdminResourcePage from './pages/admin/AdminResourcePage.jsx';
+import AdminReturnInspectionPage from './pages/admin/AdminReturnInspectionPage.jsx';
+import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage.jsx';
 import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
 import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
@@ -120,9 +123,10 @@ function App() {
         <Route path="imports" element={<AdminResourcePage resource="imports" />} />
         <Route path="supplier-returns" element={<AdminResourcePage resource="supplierReturns" />} />
         <Route path="logistics" element={<AdminResourcePage resource="logistics" />} />
-        <Route path="returns" element={<AdminResourcePage resource="returns" />} />
-        <Route path="reviews" element={<AdminResourcePage resource="reviews" />} />
+        <Route path="returns" element={<AdminReturnInspectionPage />} />
+        <Route path="reviews" element={<AdminReviewModerationPage />} />
         <Route path="moderation" element={<AdminResourcePage resource="moderation" />} />
+        <Route path="notifications" element={<AdminNotificationPage />} />
         <Route path="inventory" element={<AdminInventoryPage />} />
         <Route path="statistics" element={<AdminStatisticsPage />} />
         <Route path="uploads" element={<AdminUploadPage />} />

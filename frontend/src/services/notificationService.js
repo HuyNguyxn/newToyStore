@@ -26,3 +26,21 @@ export function markAllNotificationsAsRead() {
     method: 'PATCH',
   });
 }
+
+export function getNotificationPreferences() {
+  return apiClient('/notifications/preferences');
+}
+
+export function updateNotificationPreferences(payload) {
+  return apiClient('/notifications/preferences', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function broadcastNotification(payload) {
+  return apiClient('/notifications/broadcast', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

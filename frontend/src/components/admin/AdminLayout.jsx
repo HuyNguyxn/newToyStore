@@ -18,6 +18,7 @@ const adminNavItems = [
   { to: '/admin/returns', label: 'Returns' },
   { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/moderation', label: 'Moderation' },
+  { to: '/admin/notifications', label: 'Notifications' },
   { to: '/admin/statistics', label: 'Statistics' },
   { to: '/admin/uploads', label: 'Uploads' },
 ];
