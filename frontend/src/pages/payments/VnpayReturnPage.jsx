@@ -20,7 +20,7 @@ function VnpayReturnPage() {
       })
       .catch((err) => {
         if (active) {
-          setError(err.message || 'Khong the xac nhan ket qua thanh toan VNPAY.');
+          setError(err.message || 'Không thể xác nhận kết quả thanh toán VNPAY.');
         }
       })
       .finally(() => {
@@ -35,14 +35,14 @@ function VnpayReturnPage() {
   }, [location.search]);
 
   if (loading) {
-    return <div className="page-message">Dang xac nhan thanh toan VNPAY...</div>;
+    return <div className="page-message">Đang xác nhận thanh toán VNPAY...</div>;
   }
 
   return (
     <div className="vnpay-return-page container">
       <section className="result-card">
         <p>Ket qua thanh toan</p>
-        <h1>{result?.message || error || 'Da nhan phan hoi tu VNPAY'}</h1>
+        <h1>{result?.message || error || 'Đã nhận phản hồi từ VNPAY'}</h1>
 
         {result?.payment && (
           <div className="result-details">
@@ -62,7 +62,7 @@ function VnpayReturnPage() {
         )}
 
         <div className="result-actions">
-          {result?.payment?.orderId && <Link to={`/orders/${result.payment.orderId}`}>Xem don hang</Link>}
+          {result?.payment?.orderId && <Link to={`/orders/${result.payment.orderId}`}>Xem đơn hàng</Link>}
           <Link to="/payments">Lich su thanh toan</Link>
         </div>
       </section>

@@ -33,7 +33,7 @@ function AdminNotificationPage() {
   useEffect(() => {
     getNotificationPreferences()
       .then((result) => setPreferences({ ...preferences, ...result }))
-      .catch((err) => setError(err.message || 'Khong the tai cau hinh thong bao.'))
+      .catch((err) => setError(err.message || 'Kh?ng th? t?i c?u h?nh th?ng b?o.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -53,9 +53,9 @@ function AdminNotificationPage() {
     try {
       const result = await updateNotificationPreferences(preferences);
       setPreferences(result);
-      setMessage('Da luu notification preferences.');
+      setMessage('?? l?u notification preferences.');
     } catch (err) {
-      setError(err.message || 'Luu preferences that bai.');
+      setError(err.message || 'L?u preferences th?t b?i.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ function AdminNotificationPage() {
     setLoading(true);
     try {
       const result = await broadcastNotification(broadcastForm);
-      setMessage(`Da broadcast: created ${result.createdCount || 0}, skipped ${result.skippedCount || 0}.`);
+      setMessage(`?? broadcast: created ${result.createdCount || 0}, skipped ${result.skippedCount || 0}.`);
       setBroadcastForm({
         requestKey: `broadcast-${Date.now()}`,
         title: '',
@@ -77,7 +77,7 @@ function AdminNotificationPage() {
         sendEmail: false,
       });
     } catch (err) {
-      setError(err.message || 'Broadcast that bai.');
+      setError(err.message || 'Broadcast th?t b?i.');
     } finally {
       setLoading(false);
     }

@@ -23,7 +23,7 @@ function AdminSupplierReturnPage() {
   useEffect(() => { loadReturns(); }, []);
 
   async function loadReturns() {
-    try { const result = await getSupplierReturns({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' }); setReturns(result.content || []); } catch (err) { setError(err.message || 'Khong the tai supplier return.'); }
+    try { const result = await getSupplierReturns({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' }); setReturns(result.content || []); } catch (err) { setError(err.message || 'Kh?ng th? t?i supplier return.'); }
   }
 
   async function saveReturn(event) {
@@ -38,13 +38,13 @@ function AdminSupplierReturnPage() {
         imageUrls: form.imageUrls.split(',').map((url) => url.trim()).filter(Boolean),
         items: JSON.parse(form.itemsJson),
       });
-      setMessage('Da tao supplier return draft.'); setForm({ supplierId: '', importNoteId: '', freightCost: '0', restockingFee: '0', note: '', imageUrls: '', itemsJson: sampleItems }); await loadReturns();
-    } catch (err) { setError(err.message || 'Tao supplier return that bai. Kiem tra items JSON.'); }
+      setMessage('?? t?o supplier return draft.'); setForm({ supplierId: '', importNoteId: '', freightCost: '0', restockingFee: '0', note: '', imageUrls: '', itemsJson: sampleItems }); await loadReturns();
+    } catch (err) { setError(err.message || 'T?o supplier return th?t b?i. Ki?m tra items JSON.'); }
   }
 
   async function doAction(action, success) {
     setError(''); setMessage('');
-    try { await action(); setMessage(success); await loadReturns(); } catch (err) { setError(err.message || 'Thao tac supplier return that bai.'); }
+    try { await action(); setMessage(success); await loadReturns(); } catch (err) { setError(err.message || 'Thao t?c supplier return th?t b?i.'); }
   }
 
   return <section className="admin-resource">
@@ -61,7 +61,7 @@ function AdminSupplierReturnPage() {
       <button type="submit">Create supplier return</button>
     </form>
     <form className="admin-filter" onSubmit={(e) => e.preventDefault()}><label>Reject reason<input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} /></label></form>
-    <div className="admin-resource-table"><div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 120px 130px 140px 340px' }}><span>ID</span><span>Supplier</span><span>Status</span><span>Refund</span><span>Actions</span></div>{returns.map((r) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 120px 130px 140px 340px' }} key={r.id}><span>{r.id}</span><span>{r.supplierId}</span><span>{r.status}</span><span>{formatPrice(r.totalRefundAmount)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => doAction(() => submitSupplierReturn(r.id), 'Da submit.')}>Submit</button><button type="button" onClick={() => doAction(() => approveSupplierReturn(r.id), 'Da approve.')}>Approve</button><button type="button" className="is-danger" onClick={() => doAction(() => rejectSupplierReturn(r.id, rejectReason), 'Da reject.')}>Reject</button><button type="button" onClick={() => doAction(() => shipSupplierReturn(r.id), 'Da ship.')}>Ship</button><button type="button" onClick={() => doAction(() => completeSupplierReturn(r.id), 'Da complete.')}>Complete</button></span></div>)}</div>
+    <div className="admin-resource-table"><div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 120px 130px 140px 340px' }}><span>ID</span><span>Supplier</span><span>Status</span><span>Refund</span><span>Actions</span></div>{returns.map((r) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 120px 130px 140px 340px' }} key={r.id}><span>{r.id}</span><span>{r.supplierId}</span><span>{r.status}</span><span>{formatPrice(r.totalRefundAmount)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => doAction(() => submitSupplierReturn(r.id), '?? submit.')}>Submit</button><button type="button" onClick={() => doAction(() => approveSupplierReturn(r.id), '?? approve.')}>Approve</button><button type="button" className="is-danger" onClick={() => doAction(() => rejectSupplierReturn(r.id, rejectReason), '?? reject.')}>Reject</button><button type="button" onClick={() => doAction(() => shipSupplierReturn(r.id), '?? ship.')}>Ship</button><button type="button" onClick={() => doAction(() => completeSupplierReturn(r.id), '?? complete.')}>Complete</button></span></div>)}</div>
   </section>;
 }
 

@@ -6,7 +6,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
-    return <div className="page-message">Dang kiem tra phien dang nhap...</div>;
+    return <div className="page-message">Đang kiểm tra phiên đăng nhập...</div>;
   }
 
   if (!isAuthenticated) {
@@ -16,7 +16,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles?.length && !allowedRoles.includes(user?.role)) {
     return (
       <div className="page-message">
-        Ban khong co quyen truy cap khu vuc nay.
+        Bạn không có quyền truy cập khu vực này.
       </div>
     );
   }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import { resetPassword } from '../../services/authService.js';
 
 function ResetPasswordPage() {
@@ -18,49 +18,50 @@ function ResetPasswordPage() {
 
     try {
       await resetPassword({ token: token.trim(), newPassword });
-      setMessage('Da dat lai mat khau. Ban co the dang nhap bang mat khau moi.');
+      setMessage('Đã đặt lại mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.');
       setNewPassword('');
     } catch (err) {
-      setError(err.message || 'Dat lai mat khau that bai.');
+      setError(err.message || 'Đặt lại mật khẩu thất bại.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <section className="auth-page">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <p>Reset password</p>
-        <h1>Dat lai mat khau</h1>
+    <section className="auth-screen">
+      <div className="auth-topbar">
+        <Link to="/" className="auth-topbar__brand">
+          <img src="/toystore-assets/logo.png" alt="ToyStore" />
+          <strong>ToyStore</strong>
+        </Link>
+        <Link to="/" className="auth-topbar__home">⌂ Trang Chủ</Link>
+      </div>
+
+      <form className="auth-panel" onSubmit={handleSubmit}>
+        <h1 className="auth-panel__title">Đặt lại mật khẩu</h1>
+        <div className="auth-panel__title-line" />
+        <div className="auth-panel__icon">✉</div>
 
         {error && <div className="form-alert">{error}</div>}
         {message && <div className="form-alert form-alert--success">{message}</div>}
 
-        <label>
-          Reset token
-          <input
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-            required
-          />
-        </label>
+        <div className="auth-form auth-form--compact">
+          <label>
+            <span>Mã khôi phục</span>
+            <input value={token} onChange={(event) => setToken(event.target.value)} placeholder="Nhập token khôi phục" required />
+          </label>
 
-        <label>
-          Mat khau moi
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            minLength="6"
-            required
-          />
-        </label>
+          <label>
+            <span>Mật khẩu mới</span>
+            <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength="6" placeholder="Nhập mật khẩu mới" required />
+          </label>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Dang xu ly...' : 'Dat lai mat khau'}
-        </button>
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN✔'}
+          </button>
+        </div>
 
-        <Link to="/login">Quay lai dang nhap</Link>
+        <Link className="auth-forgot-link" to="/login">← Quay lại Đăng nhập</Link>
       </form>
     </section>
   );

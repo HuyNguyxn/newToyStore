@@ -17,6 +17,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -45,6 +50,26 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:4173",
+                "http://127.0.0.1:4173"
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -63,11 +88,19 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/tree").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/*", "/api/categories/*/path").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/products/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/products/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/products/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyRole("MANAGER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/admin/tree").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/categories/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasAnyRole("MANAGER", "ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/categories/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/categories/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
@@ -80,6 +113,7 @@ public class SecurityConfig {
                         .requestMatchers("/cart/**").hasAnyRole("CUSTOMER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/orders/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/orders/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/orders/*/cancel").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/orders/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/orders/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/orders/**").hasAnyRole("MANAGER", "ADMIN")

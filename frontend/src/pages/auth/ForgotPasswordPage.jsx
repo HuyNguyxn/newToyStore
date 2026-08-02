@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { requestPasswordReset } from '../../services/authService.js';
 
 function ForgotPasswordPage() {
@@ -19,40 +19,57 @@ function ForgotPasswordPage() {
     try {
       const result = await requestPasswordReset({ email: email.trim() });
       setResetToken(result?.token || result?.resetToken || '');
-      setMessage('Da tao yeu cau dat lai mat khau. Neu cau hinh email chua gui that, token se hien thi ben duoi de test.');
+      setMessage('Đã tạo yêu cầu đặt lại mật khẩu. Nếu email chưa gửi thật, token test sẽ hiển thị bên dưới.');
     } catch (err) {
-      setError(err.message || 'Khong the tao yeu cau dat lai mat khau.');
+      setError(err.message || 'Không thể tạo yêu cầu đặt lại mật khẩu.');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <section className="auth-page">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <p>Quen mat khau</p>
-        <h1>Lay token dat lai mat khau</h1>
+    <section className="auth-screen">
+      <div className="auth-topbar">
+        <Link to="/" className="auth-topbar__brand">
+          <img src="/toystore-assets/logo.png" alt="ToyStore" />
+          <strong>ToyStore</strong>
+        </Link>
+        <Link to="/" className="auth-topbar__home">⌂ Trang Chủ</Link>
+      </div>
+
+      <form className="auth-panel" onSubmit={handleSubmit}>
+        <img className="auth-panel__logo" src="/toystore-assets/logo.png" alt="ToyStore" />
+
+        <div className="auth-tabs auth-tabs--muted" aria-hidden="true">
+          <span className="auth-tabs__item">Đăng Nhập</span>
+          <span className="auth-tabs__item">Đăng Ký</span>
+        </div>
+
+        <div className="auth-panel__icon">👥</div>
+        <p className="auth-panel__hint">Nhập email để nhận mã khôi phục</p>
 
         {error && <div className="form-alert">{error}</div>}
         {message && <div className="form-alert form-alert--success">{message}</div>}
         {resetToken && <code className="token-box">{resetToken}</code>}
 
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="admin@gmail.com"
-            required
-          />
-        </label>
+        <div className="auth-form auth-form--compact">
+          <label>
+            <span>✉ Địa chỉ Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Nhập email của bạn"
+              required
+            />
+          </label>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Dang gui...' : 'Tao reset token'}
-        </button>
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'ĐANG GỬI...' : 'GỬI YÊU CẦU✈'}
+          </button>
+        </div>
 
-        <Link to="/reset-password">Da co token? Dat lai mat khau</Link>
+        <Link className="auth-forgot-link" to="/login">← Đăng Nhập</Link>
       </form>
     </section>
   );

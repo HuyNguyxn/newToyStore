@@ -1,7 +1,5 @@
 package com.example.new_toy_store.product.application.dto.response;
 
-import com.example.new_toy_store.product.domain.VariantType;
-
 import java.util.List;
 import java.util.Map;
 
@@ -13,13 +11,13 @@ public class ProductVariantResponse {
     private double discountedPrice;
     private int stockQuantity;
     private Map<String, String> attributes;
-    private VariantType typeDetail;
-    private List<VariantType> allowedNextTypes;
+    private ProductEnumOptionResponse typeDetail;
+    private List<ProductEnumOptionResponse> allowedNextTypes;
     private List<String> allowedActions;
 
     public ProductVariantResponse(Integer id, String type, double price, double discountedPrice,
                                   int stockQuantity, Map<String, String> attributes,
-                                  VariantType typeDetail, List<VariantType> allowedNextTypes,
+                                  ProductEnumOptionResponse typeDetail, List<ProductEnumOptionResponse> allowedNextTypes,
                                   List<String> allowedActions) {
         this.id = id;
         this.type = type;
@@ -38,7 +36,7 @@ public class ProductVariantResponse {
     public double getDiscountedPrice() { return discountedPrice; }
     public int getStockQuantity() { return stockQuantity; }
     public Map<String, String> getAttributes() { return attributes; }
-    public VariantType getTypeDetail() { return typeDetail; }
-    public List<VariantType> getAllowedNextTypes() { return allowedNextTypes; }
+    public ProductEnumOptionResponse getTypeDetail() { return typeDetail; }
+    public List<ProductEnumOptionResponse> getAllowedNextTypes() { return allowedNextTypes; }
     public List<String> getAllowedActions() { return allowedActions; }
 }

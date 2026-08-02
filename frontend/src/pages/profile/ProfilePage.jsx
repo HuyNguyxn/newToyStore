@@ -2,26 +2,63 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
+import {
+  addCurrentAddress,
+  changeCurrentPassword,
+  removeCurrentAddress,
+  setCurrentDefaultAddress,
+} from '../../services/authService.js';
 import { uploadImage } from '../../services/uploadService.js';
+
+const emptyAddressForm = {
+  receiverName: '',
+  receiverPhone: '',
+  detailAddress: '',
+  isDefault: false,
+};
+
+const emptyPasswordForm = {
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+};
 
 function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
-  const [form, setForm] = useState({ fullName: '', phoneNumber: '', avatarUrl: '' });
-  const [saving, setSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState({ fullName: '', phoneNumber: '', avatarUrl: '' });
+  const [addressForm, setAddressForm] = useState(emptyAddressForm);
+  const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
+  const [addresses, setAddresses] = useState([]);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [profileMessage, setProfileMessage] = useState('');
+  const [addressMessage, setAddressMessage] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [addressError, setAddressError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
-    setForm({
+    setProfileForm({
       fullName: user?.fullName || '',
       phoneNumber: user?.phoneNumber || '',
       avatarUrl: user?.avatarUrl || '',
     });
+    setAddresses(user?.addresses || []);
   }, [user]);
 
-  function updateField(field, value) {
-    setForm((current) => ({ ...current, [field]: value }));
+  function updateProfileField(field, value) {
+    setProfileForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateAddressField(field, value) {
+    setAddressForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updatePasswordField(field, value) {
+    setPasswordForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleAvatarUpload(event) {
@@ -31,109 +68,254 @@ function ProfilePage() {
     }
 
     setUploading(true);
-    setError('');
-    setMessage('');
+    setProfileError('');
+    setProfileMessage('');
 
     try {
       const result = await uploadImage(file, 'avatars');
-      updateField('avatarUrl', result.secureUrl || result.url);
-      setMessage('Da upload avatar. Bam Luu thay doi de cap nhat ho so.');
+      updateProfileField('avatarUrl', result.secureUrl || result.url);
+      setProfileMessage('Đã upload avatar. Bấm cập nhật để lưu vào hồ sơ.');
     } catch (err) {
-      setError(err.message || 'Upload avatar that bai.');
+      setProfileError(err.message || 'Upload avatar thất bại.');
     } finally {
       setUploading(false);
     }
   }
 
-  async function handleSubmit(event) {
+  async function handleProfileSubmit(event) {
     event.preventDefault();
-    setSaving(true);
-    setError('');
-    setMessage('');
+    setSavingProfile(true);
+    setProfileError('');
+    setProfileMessage('');
 
     try {
       await updateProfile({
-        fullName: form.fullName.trim(),
-        phoneNumber: form.phoneNumber.trim() || null,
-        avatarUrl: form.avatarUrl.trim() || null,
+        fullName: profileForm.fullName.trim(),
+        phoneNumber: profileForm.phoneNumber.trim() || null,
+        avatarUrl: profileForm.avatarUrl.trim() || null,
       });
-      setMessage('Da cap nhat ho so.');
+      setProfileMessage('Đã cập nhật thông tin cá nhân.');
     } catch (err) {
-      setError(err.message || 'Khong the cap nhat ho so.');
+      setProfileError(err.message || 'Không thể cập nhật hồ sơ.');
     } finally {
-      setSaving(false);
+      setSavingProfile(false);
+    }
+  }
+
+  async function handleAddressSubmit(event) {
+    event.preventDefault();
+    setSavingAddress(true);
+    setAddressError('');
+    setAddressMessage('');
+
+    try {
+      const updatedProfile = await addCurrentAddress({
+        receiverName: addressForm.receiverName.trim(),
+        receiverPhone: addressForm.receiverPhone.trim(),
+        detailAddress: addressForm.detailAddress.trim(),
+        isDefault: addressForm.isDefault,
+      });
+      setAddresses(updatedProfile?.addresses || []);
+      setAddressForm(emptyAddressForm);
+      setAddressMessage('Đã thêm địa chỉ giao hàng.');
+    } catch (err) {
+      setAddressError(err.message || 'Không thể thêm địa chỉ.');
+    } finally {
+      setSavingAddress(false);
+    }
+  }
+
+  async function handleSetDefaultAddress(addressId) {
+    setAddressError('');
+    setAddressMessage('');
+
+    try {
+      const updatedProfile = await setCurrentDefaultAddress(addressId);
+      setAddresses(updatedProfile?.addresses || []);
+      setAddressMessage('Đã đặt địa chỉ mặc định.');
+    } catch (err) {
+      setAddressError(err.message || 'Không thể đặt địa chỉ mặc định.');
+    }
+  }
+
+  async function handleRemoveAddress(addressId) {
+    setAddressError('');
+    setAddressMessage('');
+
+    try {
+      const updatedProfile = await removeCurrentAddress(addressId);
+      setAddresses(updatedProfile?.addresses || []);
+      setAddressMessage('Đã xóa địa chỉ.');
+    } catch (err) {
+      setAddressError(err.message || 'Không thể xóa địa chỉ.');
+    }
+  }
+
+  async function handlePasswordSubmit(event) {
+    event.preventDefault();
+    setSavingPassword(true);
+    setPasswordError('');
+    setPasswordMessage('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp.');
+      setSavingPassword(false);
+      return;
+    }
+
+    try {
+      await changeCurrentPassword({
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm(emptyPasswordForm);
+      setPasswordMessage('Đã thay đổi mật khẩu thành công.');
+    } catch (err) {
+      setPasswordError(err.message || 'Không thể thay đổi mật khẩu.');
+    } finally {
+      setSavingPassword(false);
     }
   }
 
   return (
     <section className="profile-page container">
-      <BackLink fallback="/" label="Quay lai trang chu" />
+      <BackLink fallback="/" label="Quay lại trang chủ" />
 
-      <div className="profile-card">
-        <img src={form.avatarUrl || user?.avatarUrl || 'https://placehold.co/96x96?text=NTS'} alt={user?.fullName || 'User avatar'} />
+      <div className="profile-card profile-card--hero">
+        <img src={profileForm.avatarUrl || user?.avatarUrl || '/toystore-assets/logo.png'} alt={user?.fullName || 'User avatar'} />
         <div>
-          <p>Tai khoan cua toi</p>
+          <p>Tài khoản của tôi</p>
           <h1>{user?.fullName}</h1>
           <span>{user?.email}</span>
           <strong>{user?.role}</strong>
         </div>
-        <button type="button" onClick={logout}>Dang xuat</button>
+        <button type="button" onClick={logout}>Đăng xuất</button>
       </div>
 
-      <form className="profile-form" onSubmit={handleSubmit}>
-        <h2>Cap nhat ho so</h2>
+      <div className="profile-dashboard">
+        <form className="profile-panel" onSubmit={handleProfileSubmit}>
+          <h2>💳 Thông tin cá nhân</h2>
 
-        {error && <div className="form-alert">{error}</div>}
-        {message && <div className="form-alert form-alert--success">{message}</div>}
+          {profileError && <div className="form-alert">{profileError}</div>}
+          {profileMessage && <div className="form-alert form-alert--success">{profileMessage}</div>}
 
-        <label>
-          Ho va ten
-          <input
-            value={form.fullName}
-            onChange={(event) => updateField('fullName', event.target.value)}
-            required
-            maxLength="120"
-          />
-        </label>
+          <label>
+            Email <span>(Không thể thay đổi)</span>
+            <input value={user?.email || ''} disabled />
+          </label>
 
-        <label>
-          So dien thoai
-          <input
-            value={form.phoneNumber}
-            onChange={(event) => updateField('phoneNumber', event.target.value)}
-            maxLength="20"
-          />
-        </label>
+          <label>
+            Họ và tên
+            <input value={profileForm.fullName} onChange={(event) => updateProfileField('fullName', event.target.value)} required maxLength="120" />
+          </label>
 
-        <label>
-          Avatar URL
-          <input
-            value={form.avatarUrl}
-            onChange={(event) => updateField('avatarUrl', event.target.value)}
-            placeholder="Cloudinary URL"
-            maxLength="1000"
-          />
-        </label>
+          <label>
+            Số điện thoại
+            <input value={profileForm.phoneNumber} onChange={(event) => updateProfileField('phoneNumber', event.target.value)} maxLength="20" />
+          </label>
 
-        <label>
-          Upload avatar
-          <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
-        </label>
+          <label>
+            Avatar URL
+            <input value={profileForm.avatarUrl} onChange={(event) => updateProfileField('avatarUrl', event.target.value)} placeholder="Cloudinary URL" maxLength="1000" />
+          </label>
 
-        <button type="submit" disabled={saving || uploading}>
-          {saving ? 'Dang luu...' : uploading ? 'Dang upload...' : 'Luu thay doi'}
-        </button>
-      </form>
+          <label>
+            Upload avatar
+            <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+          </label>
 
-      <div className="profile-form">
-        <h2>Thao tac mua hang</h2>
+          <button type="submit" disabled={savingProfile || uploading}>
+            {savingProfile ? 'Đang lưu...' : uploading ? 'Đang upload...' : 'Cập nhật thông tin'}
+          </button>
+        </form>
+
+        <form className="profile-panel" onSubmit={handlePasswordSubmit}>
+          <h2>🔑 Thay đổi mật khẩu</h2>
+
+          {passwordError && <div className="form-alert">{passwordError}</div>}
+          {passwordMessage && <div className="form-alert form-alert--success">{passwordMessage}</div>}
+
+          <label>
+            Nhập mật khẩu cũ
+            <input type="password" value={passwordForm.oldPassword} onChange={(event) => updatePasswordField('oldPassword', event.target.value)} required />
+          </label>
+
+          <label>
+            Mật khẩu mới
+            <input type="password" value={passwordForm.newPassword} onChange={(event) => updatePasswordField('newPassword', event.target.value)} minLength="6" required />
+          </label>
+
+          <label>
+            Xác nhận mật khẩu mới
+            <input type="password" value={passwordForm.confirmPassword} onChange={(event) => updatePasswordField('confirmPassword', event.target.value)} minLength="6" required />
+          </label>
+
+          <button type="submit" disabled={savingPassword}>
+            {savingPassword ? 'Đang xử lý...' : 'Thay đổi mật khẩu'}
+          </button>
+        </form>
+      </div>
+
+      <section className="profile-panel profile-panel--wide">
+        <div className="profile-panel__heading">
+          <h2>📍 Địa chỉ giao hàng</h2>
+          <span>{addresses.length} địa chỉ</span>
+        </div>
+
+        {addressError && <div className="form-alert">{addressError}</div>}
+        {addressMessage && <div className="form-alert form-alert--success">{addressMessage}</div>}
+
+        <form className="profile-address-form" onSubmit={handleAddressSubmit}>
+          <label>
+            Tên người nhận
+            <input value={addressForm.receiverName} onChange={(event) => updateAddressField('receiverName', event.target.value)} required />
+          </label>
+          <label>
+            Số điện thoại nhận hàng
+            <input value={addressForm.receiverPhone} onChange={(event) => updateAddressField('receiverPhone', event.target.value)} required />
+          </label>
+          <label className="profile-address-form__wide">
+            Địa chỉ chi tiết
+            <input value={addressForm.detailAddress} onChange={(event) => updateAddressField('detailAddress', event.target.value)} required />
+          </label>
+          <label className="profile-checkbox">
+            <input type="checkbox" checked={addressForm.isDefault} onChange={(event) => updateAddressField('isDefault', event.target.checked)} />
+            Đặt làm địa chỉ mặc định
+          </label>
+          <button type="submit" disabled={savingAddress}>
+            {savingAddress ? 'Đang thêm...' : 'Thêm địa chỉ'}
+          </button>
+        </form>
+
+        <div className="profile-address-list">
+          {addresses.length === 0 && <div className="empty-state">Bạn chưa có địa chỉ giao hàng.</div>}
+          {addresses.map((address) => (
+            <article className="profile-address-card" key={address.id}>
+              <div>
+                <strong>{address.receiverName}</strong>
+                <span>{address.receiverPhone}</span>
+                <p>{address.detailAddress}</p>
+                {address.default && <em>Mặc định</em>}
+              </div>
+              <div>
+                {!address.default && (
+                  <button type="button" onClick={() => handleSetDefaultAddress(address.id)}>Đặt mặc định</button>
+                )}
+                <button type="button" className="danger-button" onClick={() => handleRemoveAddress(address.id)}>Xóa</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <div className="profile-panel profile-panel--wide">
+        <h2>🧸 Thao tác mua hàng</h2>
         <div className="admin-resource-table__actions">
-          <Link className="login-link" to="/reviews/new">Viet danh gia</Link>
-          <Link className="login-link" to="/reviews/me">Danh gia cua toi</Link>
-          <Link className="login-link" to="/returns/new">Tao yeu cau tra hang</Link>
-          <Link className="login-link" to="/returns">Yeu cau tra hang cua toi</Link>
-          <Link className="login-link" to="/shipments">Theo doi van chuyen</Link>
-          <Link className="login-link" to="/orders">Xem don hang</Link>
+          <Link className="login-link" to="/reviews/new">Viết đánh giá</Link>
+          <Link className="login-link" to="/reviews/me">Đánh giá của tôi</Link>
+          <Link className="login-link" to="/returns/new">Tạo yêu cầu trả hàng</Link>
+          <Link className="login-link" to="/returns">Yêu cầu trả hàng của tôi</Link>
+          <Link className="login-link" to="/shipments">Theo dõi vận chuyển</Link>
         </div>
       </div>
     </section>

@@ -16,7 +16,7 @@ function ShipmentListPage() {
       const result = await getMyShipments({ page: 0, size: 20, sort: 'createdAt,desc' });
       setShipments(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai van chuyen.');
+      setError(err.message || 'Kh?ng th? t?i v?n chuy?n.');
     }
   }
 
@@ -33,7 +33,7 @@ function ShipmentListPage() {
       setLogs(logPage.content || []);
     } catch (err) {
       setLogs([]);
-      setMessage('Dang hien thi thong tin shipment tu danh sach.');
+      setMessage('?ang hi?n th? th?ng tin v?n chuy?n t? danh s?ch.');
     }
   }
 

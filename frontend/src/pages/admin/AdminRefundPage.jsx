@@ -27,7 +27,7 @@ function AdminRefundPage() {
       setRefunds(result.content || []);
     } catch (err) {
       setRefunds([]);
-      setError(err.message || 'Khong the tai danh sach refund.');
+      setError(err.message || 'Kh?ng th? t?i danh s?ch refund.');
     } finally {
       setLoading(false);
     }
@@ -44,11 +44,11 @@ function AdminRefundPage() {
         method: form.method,
         reason: form.reason.trim(),
       });
-      setMessage('Da tao yeu cau refund.');
+      setMessage('?? t?o y?u c?u refund.');
       setForm({ amount: '', method: 'COD', reason: '' });
       await loadRefunds();
     } catch (err) {
-      setError(err.message || 'Tao refund that bai.');
+      setError(err.message || 'T?o refund th?t b?i.');
     } finally {
       setLoading(false);
     }
@@ -60,10 +60,10 @@ function AdminRefundPage() {
     setMessage('');
     try {
       await action();
-      setMessage('Da cap nhat refund.');
+      setMessage('?? c?p nh?t refund.');
       await loadRefunds();
     } catch (err) {
-      setError(err.message || 'Thao tac refund that bai.');
+      setError(err.message || 'Thao t?c refund th?t b?i.');
     } finally {
       setLoading(false);
     }

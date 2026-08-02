@@ -34,7 +34,7 @@ function NotificationPage() {
           totalElements: result.totalElements || result.content?.length || 0,
         });
       })
-      .catch((err) => setError(err.message || 'Khong the tai thong bao.'))
+      .catch((err) => setError(err.message || 'Không thể tải thông báo.'))
       .finally(() => setLoading(false));
   }
 
@@ -47,7 +47,7 @@ function NotificationPage() {
       const updated = await markNotificationAsRead(notification.id);
       setNotifications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
-      setError(err.message || 'Khong the danh dau da doc.');
+      setError(err.message || 'Không thể đánh dấu đã đọc.');
     } finally {
       setUpdatingId(null);
     }
@@ -61,9 +61,9 @@ function NotificationPage() {
     try {
       await archiveNotification(notification.id);
       setNotifications((current) => current.filter((item) => item.id !== notification.id));
-      setNotice('Da luu tru thong bao.');
+      setNotice('Đã lưu trữ thông báo.');
     } catch (err) {
-      setError(err.message || 'Khong the luu tru thong bao.');
+      setError(err.message || 'Không thể lưu trữ thông báo.');
     } finally {
       setUpdatingId(null);
     }
@@ -76,16 +76,16 @@ function NotificationPage() {
 
     try {
       const result = await markAllNotificationsAsRead();
-      setNotice(`Da danh dau ${result.updatedCount || 0} thong bao la da doc.`);
+      setNotice(`Đã đánh dấu ${result.updatedCount || 0} thông báo là đã đọc.`);
       loadNotifications(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Khong the danh dau tat ca thong bao.');
+      setError(err.message || 'Không thể đánh dấu tất cả thông báo.');
       setUpdatingId(null);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai thong bao...</div>;
+    return <div className="page-message">Đang tải thông báo...</div>;
   }
 
   return (
@@ -93,7 +93,7 @@ function NotificationPage() {
       <div className="page-title-row">
         <div>
           <p>Thong bao</p>
-          <h1>Trung tam thong bao</h1>
+          <h1>Trung tâm thông báo</h1>
         </div>
         <button type="button" disabled={updatingId === 'all'} onClick={handleReadAll}>
           Danh dau tat ca da doc
@@ -104,7 +104,7 @@ function NotificationPage() {
       {notice && <div className="form-alert form-alert--success">{notice}</div>}
 
       {notifications.length === 0 ? (
-        <div className="empty-state">Ban chua co thong bao nao.</div>
+        <div className="empty-state">Bạn chưa có thông báo nào.</div>
       ) : (
         <div className="notification-list">
           {notifications.map((notification) => (
@@ -123,7 +123,7 @@ function NotificationPage() {
                 {notification.actionUrl && <a href={notification.actionUrl}>Mo lien ket</a>}
                 {!notification.readAt && (
                   <button type="button" disabled={updatingId === notification.id} onClick={() => handleRead(notification)}>
-                    Da doc
+                    Đã đọc
                   </button>
                 )}
                 <button type="button" disabled={updatingId === notification.id} onClick={() => handleArchive(notification)}>

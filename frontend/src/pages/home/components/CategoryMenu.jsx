@@ -7,8 +7,9 @@ function CategoryMenu() {
   const navigate = useNavigate();
   const [categoryTree, setCategoryTree] = useState([]);
   const [stack, setStack] = useState([]);
-  const currentCategories = stack.length === 0 ? categoryTree : getChildren(stack[stack.length - 1]);
-  const title = stack.length === 0 ? 'Danh mục sản phẩm' : stack[stack.length - 1].name;
+  const currentParent = stack[stack.length - 1];
+  const currentCategories = stack.length === 0 ? categoryTree : getChildren(currentParent);
+  const title = stack.length === 0 ? 'Danh mục sản phẩm' : currentParent.name;
 
   useEffect(() => {
     let active = true;
@@ -32,7 +33,7 @@ function CategoryMenu() {
 
   function handleCategoryClick(category) {
     if (getChildren(category).length > 0) {
-      setStack([...stack, category]);
+      setStack((current) => [...current, category]);
       return;
     }
 
@@ -40,7 +41,7 @@ function CategoryMenu() {
   }
 
   function goBack() {
-    setStack(stack.slice(0, -1));
+    setStack((current) => current.slice(0, -1));
   }
 
   return (
@@ -52,26 +53,37 @@ function CategoryMenu() {
 
       {stack.length > 0 && (
         <button className="category-menu__back" type="button" onClick={goBack}>
-          Quay lại
+          ← Quay lại
         </button>
       )}
 
       <ul className="category-menu__list">
+        <li>
+          <button type="button" onClick={() => navigate('/products')}>
+            <span>Tất cả sản phẩm</span>
+          </button>
+        </li>
+
         {currentCategories.length === 0 && (
           <li>
-            <button type="button" onClick={() => navigate('/products')}>
-              <span>Xem tất cả sản phẩm</span>
+            <button type="button" disabled>
+              <span>Chưa có danh mục con</span>
             </button>
           </li>
         )}
-        {currentCategories.map((category) => (
-          <li key={category.id}>
-            <button type="button" onClick={() => handleCategoryClick(category)}>
-              <span>{category.name}</span>
-              {getChildren(category).length > 0 && <span>&gt;</span>}
-            </button>
-          </li>
-        ))}
+
+        {currentCategories.map((category) => {
+          const childCount = getChildren(category).length;
+
+          return (
+            <li key={category.id}>
+              <button type="button" onClick={() => handleCategoryClick(category)}>
+                <span>{category.name}</span>
+                {childCount > 0 && <span>{childCount} ›</span>}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

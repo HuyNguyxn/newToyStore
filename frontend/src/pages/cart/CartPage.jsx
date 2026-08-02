@@ -41,7 +41,7 @@ function CartPage() {
       })
       .catch(() => {
         setCart(sampleCart);
-        setNotice('Backend chua san sang, dang hien thi gio hang mau.');
+        setNotice('Backend chưa sẵn sàng, đang hiển thị giỏ hàng mẫu.');
       })
       .finally(() => setLoading(false));
   }
@@ -58,7 +58,7 @@ function CartPage() {
       const result = await updateCartItemQuantity(user.id, item.id, nextQuantity);
       setCart(result);
     } catch (err) {
-      setError(err.message || 'Khong the cap nhat so luong.');
+      setError(err.message || 'Không thể cập nhật số lượng.');
     } finally {
       setUpdatingItemId(null);
     }
@@ -72,7 +72,7 @@ function CartPage() {
       const result = await toggleCartItemSelection(user.id, item.id, !isSelected(item));
       setCart(result);
     } catch (err) {
-      setError(err.message || 'Khong the cap nhat lua chon san pham.');
+      setError(err.message || 'Không thể cập nhật lựa chọn sản phẩm.');
     } finally {
       setUpdatingItemId(null);
     }
@@ -86,7 +86,7 @@ function CartPage() {
       const result = await removeCartItem(user.id, item.id);
       setCart(result);
     } catch (err) {
-      setError(err.message || 'Khong the xoa san pham khoi gio.');
+      setError(err.message || 'Không thể xóa sản phẩm khỏi giỏ.');
     } finally {
       setUpdatingItemId(null);
     }
@@ -99,7 +99,7 @@ function CartPage() {
       await clearCart(user.id);
       setCart({ ...cart, items: [], cartTotal: 0, finalTotal: 0, orderDiscountAmount: 0 });
     } catch (err) {
-      setError(err.message || 'Khong the xoa gio hang.');
+      setError(err.message || 'Không thể xóa giỏ hàng.');
     }
   }
 
@@ -113,7 +113,7 @@ function CartPage() {
   const canCheckout = selectedItems.length > 0 && selectedItems.every(isAvailable);
 
   if (loading) {
-    return <div className="page-message">Dang tai gio hang...</div>;
+    return <div className="page-message">Đang tải giỏ hàng...</div>;
   }
 
   return (
@@ -124,7 +124,7 @@ function CartPage() {
         <div className="cart-heading">
           <div>
             <p>Gio hang cua ban</p>
-            <h1>{items.length} san pham</h1>
+            <h1>{items.length} sản phẩm</h1>
           </div>
           {items.length > 0 && (
             <button type="button" onClick={handleClearCart}>Xoa tat ca</button>
@@ -147,7 +147,7 @@ function CartPage() {
                   checked={isSelected(item)}
                   disabled={updatingItemId === item.id}
                   onChange={() => handleToggleItem(item)}
-                  aria-label="Chon san pham"
+                  aria-label="Chọn sản phẩm"
                 />
 
                 <Link to={`/products/${item.productId}`} className="cart-item__image">
@@ -161,7 +161,7 @@ function CartPage() {
                 <div className="cart-item__info">
                   <Link to={`/products/${item.productId}`}>{item.productName}</Link>
                   <p>{item.variantAttributes || 'Mac dinh'}</p>
-                  {item.hasPriceChanged && <strong>Gia san pham da thay doi</strong>}
+                  {item.hasPriceChanged && <strong>Giá sản phẩm đã thay đổi</strong>}
                   {item.message && <strong>{item.message}</strong>}
                 </div>
 
@@ -203,7 +203,7 @@ function CartPage() {
       </section>
 
       <aside className="cart-summary">
-        <h2>Tong don hang</h2>
+        <h2>Tổng đơn hàng</h2>
 
         <form className="promo-form" onSubmit={applyPromo}>
           <input
@@ -217,7 +217,7 @@ function CartPage() {
         {cart?.promoMessage && <p className="promo-message">{cart.promoMessage}</p>}
 
         <div className="summary-line">
-          <span>Tam tinh</span>
+          <span>Tạm tính</span>
           <strong>{formatPrice(cart?.cartTotal)}</strong>
         </div>
         <div className="summary-line">
@@ -234,7 +234,7 @@ function CartPage() {
           disabled={!canCheckout}
           onClick={() => navigate('/checkout', { state: { promoCode } })}
         >
-          Thanh toan
+          Thanh toán
         </button>
       </aside>
     </div>

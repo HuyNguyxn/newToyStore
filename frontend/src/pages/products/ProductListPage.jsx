@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
-import CategoryMenu from '../home/components/CategoryMenu.jsx';
-import ProductCard from '../home/components/ProductCard.jsx';
 import { sampleProducts } from '../../data/sampleData.js';
 import {
   filterProducts,
@@ -10,8 +8,10 @@ import {
   getProductsByCategory,
   searchProducts,
 } from '../../services/productService.js';
+import CategoryMenu from '../home/components/CategoryMenu.jsx';
+import ProductCard from '../home/components/ProductCard.jsx';
 
-const pageSize = 8;
+const pageSize = 10;
 
 function ProductListPage() {
   const { categoryId } = useParams();
@@ -26,15 +26,52 @@ function ProductListPage() {
   const [sort, setSort] = useState(searchParams.get('sort') || 'createdAt,desc');
 
   const page = Number(searchParams.get('page') || 0);
+  const shouldShowCategoryMenu = searchParams.get('view') === 'categories' || Boolean(categoryId);
 
   const activeFilters = useMemo(() => ({
     page,
     size: pageSize,
-    sort,
+    sort: searchParams.get('sort') || 'createdAt,desc',
     keyword: searchParams.get('keyword') || '',
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
-  }), [page, searchParams, sort]);
+  }), [page, searchParams]);
+
+  useEffect(() => {
+    setKeyword(searchParams.get('keyword') || '');
+    setMinPrice(searchParams.get('minPrice') || '');
+    setMaxPrice(searchParams.get('maxPrice') || '');
+    setSort(searchParams.get('sort') || 'createdAt,desc');
+  }, [searchParams]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      const nextKeyword = keyword.trim();
+      const currentKeyword = searchParams.get('keyword') || '';
+
+      if (nextKeyword === currentKeyword) {
+        return;
+      }
+
+      const nextParams = Object.fromEntries(searchParams.entries());
+
+      if (nextKeyword) {
+        nextParams.keyword = nextKeyword;
+      } else {
+        delete nextParams.keyword;
+      }
+
+      nextParams.page = '0';
+      nextParams.sort = sort || 'createdAt,desc';
+      if (shouldShowCategoryMenu) {
+        nextParams.view = 'categories';
+      }
+
+      setSearchParams(nextParams);
+    }, 360);
+
+    return () => window.clearTimeout(timerId);
+  }, [keyword]);
 
   useEffect(() => {
     let active = true;
@@ -69,7 +106,7 @@ function ProductListPage() {
 
         setProducts(sampleProducts);
         setPageInfo({ number: 0, totalPages: 1, totalElements: sampleProducts.length });
-        setError('Backend chua san sang, dang hien thi du lieu mau.');
+        setError('Không lấy được dữ liệu từ backend, đang hiển thị dữ liệu mẫu.');
       })
       .finally(() => {
         if (active) {
@@ -98,6 +135,9 @@ function ProductListPage() {
     if (sort) {
       nextParams.sort = sort;
     }
+    if (shouldShowCategoryMenu) {
+      nextParams.view = 'categories';
+    }
     nextParams.page = '0';
 
     setSearchParams(nextParams);
@@ -119,56 +159,58 @@ function ProductListPage() {
   }
 
   return (
-    <div className="product-list-page container">
-      <aside>
-        <CategoryMenu />
-      </aside>
+    <div className={shouldShowCategoryMenu ? 'product-list-page container' : 'product-list-page product-list-page--full container'}>
+      {shouldShowCategoryMenu && (
+        <aside>
+          <CategoryMenu />
+        </aside>
+      )}
 
       <section className="product-list-page__content">
-        <BackLink fallback="/" label="Quay lai trang chu" />
+        <BackLink fallback="/" label="Quay lại trang chủ" />
 
         <div className="product-list-header">
           <div>
-            <p>{categoryId ? `Danh muc #${categoryId}` : 'Tat ca san pham'}</p>
-            <h1>Do choi cho be</h1>
+            <p>{categoryId ? `Danh mục #${categoryId}` : shouldShowCategoryMenu ? 'Chọn danh mục sản phẩm' : 'Tất cả sản phẩm'}</p>
+            <h1>{shouldShowCategoryMenu ? 'Danh mục đồ chơi' : 'Tất cả đồ chơi cho bé'}</h1>
           </div>
-          <span>{pageInfo.totalElements} san pham</span>
+          <span>{pageInfo.totalElements} sản phẩm</span>
         </div>
 
         <form className="product-filter" onSubmit={applyFilters}>
           <input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Tim theo ten san pham"
+            placeholder="Tìm theo tên sản phẩm"
           />
           <input
             value={minPrice}
             onChange={(event) => setMinPrice(event.target.value)}
             type="number"
             min="0"
-            placeholder="Gia tu"
+            placeholder="Giá từ"
           />
           <input
             value={maxPrice}
             onChange={(event) => setMaxPrice(event.target.value)}
             type="number"
             min="0"
-            placeholder="Gia den"
+            placeholder="Giá đến"
           />
           <select value={sort} onChange={(event) => setSort(event.target.value)}>
-            <option value="createdAt,desc">Moi nhat</option>
-            <option value="basePrice,asc">Gia thap den cao</option>
-            <option value="basePrice,desc">Gia cao den thap</option>
-            <option value="averageRating,desc">Danh gia cao</option>
+            <option value="createdAt,desc">Mới nhất</option>
+            <option value="basePrice,asc">Giá thấp đến cao</option>
+            <option value="basePrice,desc">Giá cao đến thấp</option>
+            <option value="averageRating,desc">Đánh giá cao</option>
           </select>
-          <button type="submit">Loc</button>
-          <button type="button" onClick={clearFilters}>Xoa</button>
+          <button type="submit">Lọc</button>
+          <button type="button" onClick={clearFilters}>Xóa</button>
         </form>
 
         {error && <div className="form-alert form-alert--soft">{error}</div>}
         {loading ? (
           <div className="product-grid product-grid--loading">
-            {Array.from({ length: 8 }).map((_, index) => (
+            {Array.from({ length: 10 }).map((_, index) => (
               <div className="product-card-skeleton" key={index} />
             ))}
           </div>
@@ -182,7 +224,7 @@ function ProductListPage() {
 
             {products.length === 0 && (
               <div className="empty-state">
-                Khong tim thay san pham phu hop.
+                Không tìm thấy sản phẩm phù hợp.
               </div>
             )}
           </>
@@ -190,7 +232,7 @@ function ProductListPage() {
 
         <div className="pagination-bar">
           <button type="button" disabled={pageInfo.number <= 0} onClick={() => changePage(pageInfo.number - 1)}>
-            Truoc
+            Trước
           </button>
           <span>Trang {pageInfo.number + 1} / {pageInfo.totalPages}</span>
           <button

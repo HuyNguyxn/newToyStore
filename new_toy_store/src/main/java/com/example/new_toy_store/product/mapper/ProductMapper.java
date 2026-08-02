@@ -2,6 +2,7 @@ package com.example.new_toy_store.product.mapper;
 
 import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
+import com.example.new_toy_store.product.application.dto.response.ProductEnumOptionResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductImageResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.application.dto.response.ProductVariantResponse;
@@ -77,8 +78,8 @@ public final class ProductMapper {
                 product.getAverageRating(),
                 product.getReviewCount(),
                 variants,
-                status,
-                status.getNextValidStates(),
+                toStatusOption(status),
+                toStatusOptions(status.getNextValidStates()),
                 determineProductActions(product, variants),
                 product.isAvailableForPurchase(),
                 isQuickAddAvailable(product, variants),
@@ -144,10 +145,60 @@ public final class ProductMapper {
                 discountedPrice,
                 variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0,
                 toAttributeMap(variant),
-                type,
-                type.getNextValidStates(),
+                toVariantTypeOption(type),
+                toVariantTypeOptions(type.getNextValidStates()),
                 determineVariantActions(variant)
         );
+    }
+
+    private static ProductEnumOptionResponse toStatusOption(ProductStatus status) {
+        if (status == null) {
+            return null;
+        }
+
+        return new ProductEnumOptionResponse(
+                status.getCode(),
+                status.name(),
+                status.getDisplayName(),
+                status.isVisible(),
+                status.canBePurchased(),
+                null
+        );
+    }
+
+    private static List<ProductEnumOptionResponse> toStatusOptions(List<ProductStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return List.of();
+        }
+
+        return statuses.stream()
+                .map(ProductMapper::toStatusOption)
+                .collect(Collectors.toList());
+    }
+
+    private static ProductEnumOptionResponse toVariantTypeOption(VariantType type) {
+        if (type == null) {
+            return null;
+        }
+
+        return new ProductEnumOptionResponse(
+                type.getCode(),
+                type.name(),
+                type.getDisplayName(),
+                null,
+                null,
+                type.canAddAttributes()
+        );
+    }
+
+    private static List<ProductEnumOptionResponse> toVariantTypeOptions(List<VariantType> types) {
+        if (types == null || types.isEmpty()) {
+            return List.of();
+        }
+
+        return types.stream()
+                .map(ProductMapper::toVariantTypeOption)
+                .collect(Collectors.toList());
     }
 
     private static Map<String, String> toAttributeMap(ProductVariant variant) {

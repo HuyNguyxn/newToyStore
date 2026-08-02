@@ -39,7 +39,7 @@ function ReturnCreatePage() {
       const url = result.secureUrl || result.url;
       setForm((current) => ({ ...current, proofImageUrls: [current.proofImageUrls, url].filter(Boolean).join(',') }));
     } catch (err) {
-      setError(err.message || 'Upload anh minh chung that bai.');
+      setError(err.message || 'Upload ?nh minh ch?ng th?t b?i.');
     } finally {
       setUploading(false);
     }
@@ -79,9 +79,9 @@ function ReturnCreatePage() {
         proofImageUrls: form.proofImageUrls.split(',').map((url) => url.trim()).filter(Boolean),
         items: buildItemsPayload(),
       });
-      setMessage('Da gui yeu cau tra hang.');
+      setMessage('Đã gửi yêu cầu trả hàng.');
     } catch (err) {
-      setError(err.message || 'Tao yeu cau tra hang that bai.');
+      setError(err.message || 'T?o y?u c?u tr? h?ng th?t b?i.');
     }
   }
 

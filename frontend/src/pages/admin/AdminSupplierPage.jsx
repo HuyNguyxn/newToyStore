@@ -16,7 +16,7 @@ function AdminSupplierPage() {
     try {
       const result = await getSuppliers({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setSuppliers(result.content || []);
-    } catch (err) { setError(err.message || 'Khong the tai supplier.'); }
+    } catch (err) { setError(err.message || 'Kh?ng th? t?i supplier.'); }
   }
 
   function selectSupplier(supplier) {
@@ -28,14 +28,14 @@ function AdminSupplierPage() {
     try {
       const payload = { name: form.name.trim(), phoneNumber: form.phoneNumber.trim(), email: form.email || null, address: form.address || null };
       if (form.id) await updateSupplier(form.id, payload); else await createSupplier(payload);
-      setMessage(form.id ? 'Da cap nhat supplier.' : 'Da tao supplier.');
+      setMessage(form.id ? '?? c?p nh?t supplier.' : '?? t?o supplier.');
       setForm(emptyForm); await loadSuppliers();
-    } catch (err) { setError(err.message || 'Luu supplier that bai.'); }
+    } catch (err) { setError(err.message || 'L?u supplier th?t b?i.'); }
   }
 
   async function doAction(action, success) {
     setError(''); setMessage('');
-    try { await action(); setMessage(success); await loadSuppliers(); } catch (err) { setError(err.message || 'Thao tac supplier that bai.'); }
+    try { await action(); setMessage(success); await loadSuppliers(); } catch (err) { setError(err.message || 'Thao t?c supplier th?t b?i.'); }
   }
 
   return (
@@ -50,7 +50,7 @@ function AdminSupplierPage() {
         <label>Address<input value={form.address} onChange={(e) => setForm((c) => ({ ...c, address: e.target.value }))} /></label>
         <button type="submit">{form.id ? 'Update supplier' : 'Create supplier'}</button>
       </form>
-      <div className="admin-resource-table"><div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 1fr 150px 1fr 120px 260px' }}><span>ID</span><span>Name</span><span>Phone</span><span>Email</span><span>Status</span><span>Actions</span></div>{suppliers.map((s) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 1fr 150px 1fr 120px 260px' }} key={s.id}><span>{s.id}</span><span>{s.name}</span><span>{s.phoneNumber}</span><span>{s.email}</span><span>{s.status}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectSupplier(s)}>Edit</button><button type="button" onClick={() => doAction(() => changeSupplierStatus(s.id, form.status || 'ACTIVE'), 'Da doi status supplier.')}>Status</button><button type="button" onClick={() => doAction(() => restoreSupplier(s.id), 'Da restore supplier.')}>Restore</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteSupplier(s.id), 'Da xoa supplier.')}>Delete</button></span></div>)}</div>
+      <div className="admin-resource-table"><div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 1fr 150px 1fr 120px 260px' }}><span>ID</span><span>Name</span><span>Phone</span><span>Email</span><span>Status</span><span>Actions</span></div>{suppliers.map((s) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 1fr 150px 1fr 120px 260px' }} key={s.id}><span>{s.id}</span><span>{s.name}</span><span>{s.phoneNumber}</span><span>{s.email}</span><span>{s.status}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectSupplier(s)}>Edit</button><button type="button" onClick={() => doAction(() => changeSupplierStatus(s.id, form.status || 'ACTIVE'), '?? ??i status supplier.')}>Status</button><button type="button" onClick={() => doAction(() => restoreSupplier(s.id), '?? restore supplier.')}>Restore</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteSupplier(s.id), '?? x?a supplier.')}>Delete</button></span></div>)}</div>
     </section>
   );
 }

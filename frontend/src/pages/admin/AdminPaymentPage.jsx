@@ -19,7 +19,7 @@ function AdminPaymentPage() {
       const result = await getAdminPayments({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setPayments(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai payments.');
+      setError(err.message || 'Kh?ng th? t?i payments.');
     }
   }
 
@@ -46,7 +46,7 @@ function AdminPaymentPage() {
       if (result) setSelected(result);
       await loadPayments();
     } catch (err) {
-      setError(err.message || 'Thao tac payment that bai.');
+      setError(err.message || 'Thao t?c payment th?t b?i.');
     }
   }
 
@@ -59,7 +59,7 @@ function AdminPaymentPage() {
       <div className="admin-crud-grid">
         <div className="admin-resource-table">
           <div className="admin-resource-table__head" style={{ gridTemplateColumns: '70px 90px 120px 130px 130px 180px 170px' }}><span>ID</span><span>Order</span><span>Method</span><span>Status</span><span>Amount</span><span>Created</span><span>Actions</span></div>
-          {payments.map((payment) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 90px 120px 130px 130px 180px 170px' }} key={payment.id}><span>{payment.id}</span><span>{payment.orderId}</span><span>{payment.method}</span><span>{payment.status}</span><span>{formatPrice(payment.amount)}</span><span>{formatDateTime(payment.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectPayment(payment)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminPayment(payment.id), 'Da xoa payment.')}>Delete</button></span></div>)}
+          {payments.map((payment) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 90px 120px 130px 130px 180px 170px' }} key={payment.id}><span>{payment.id}</span><span>{payment.orderId}</span><span>{payment.method}</span><span>{payment.status}</span><span>{formatPrice(payment.amount)}</span><span>{formatDateTime(payment.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectPayment(payment)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminPayment(payment.id), '?? x?a payment.')}>Delete</button></span></div>)}
         </div>
 
         <aside className="admin-api-console">
@@ -74,9 +74,9 @@ function AdminPaymentPage() {
               <label>Provider transaction ID<input value={providerTransactionId} onChange={(e) => setProviderTransactionId(e.target.value)} /></label>
               <label>Reason<input value={reason} onChange={(e) => setReason(e.target.value)} /></label>
               <div className="admin-resource-table__actions">
-                <button type="button" onClick={() => doAction(() => markPaymentSucceeded(selected.id, providerTransactionId), 'Da mark payment succeeded.')}>Succeed</button>
-                <button type="button" className="is-danger" onClick={() => doAction(() => markPaymentFailed(selected.id, reason), 'Da mark payment failed.')}>Fail</button>
-                <button type="button" className="is-danger" onClick={() => doAction(() => cancelAdminPayment(selected.id, reason), 'Da cancel payment.')}>Cancel</button>
+                <button type="button" onClick={() => doAction(() => markPaymentSucceeded(selected.id, providerTransactionId), '?? mark payment succeeded.')}>Succeed</button>
+                <button type="button" className="is-danger" onClick={() => doAction(() => markPaymentFailed(selected.id, reason), '?? mark payment failed.')}>Fail</button>
+                <button type="button" className="is-danger" onClick={() => doAction(() => cancelAdminPayment(selected.id, reason), '?? cancel payment.')}>Cancel</button>
               </div>
               <div className="admin-line-items">
                 <strong>Refund requests</strong>

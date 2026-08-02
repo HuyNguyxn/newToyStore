@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 
-function BackLink({ fallback = '/', label = 'Quay lai' }) {
+function BackLink({ fallback = '/', label = 'Quay lại' }) {
   const navigate = useNavigate();
 
   function handleBack(event) {

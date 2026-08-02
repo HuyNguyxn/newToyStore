@@ -19,7 +19,7 @@ function ReviewCreatePage() {
       const url = result.secureUrl || result.url;
       const field = type === 'video' ? 'videoUrls' : 'imageUrls';
       setForm((current) => ({ ...current, [field]: [current[field], url].filter(Boolean).join(',') }));
-    } catch (err) { setError(err.message || 'Upload media review that bai.'); } finally { setUploading(false); }
+    } catch (err) { setError(err.message || 'Upload media review th?t b?i.'); } finally { setUploading(false); }
   }
 
   async function submitReview(event) {
@@ -32,8 +32,8 @@ function ReviewCreatePage() {
         imageUrls: form.imageUrls.split(',').map((url) => url.trim()).filter(Boolean),
         videoUrls: form.videoUrls.split(',').map((url) => url.trim()).filter(Boolean),
       });
-      setMessage('Da gui danh gia san pham.');
-    } catch (err) { setError(err.message || 'Gui review that bai.'); }
+      setMessage('Đã gửi đánh giá sản phẩm.');
+    } catch (err) { setError(err.message || 'G?i review th?t b?i.'); }
   }
 
   return <section className="container profile-page"><form className="admin-api-console" onSubmit={submitReview}>

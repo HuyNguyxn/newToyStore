@@ -60,7 +60,7 @@ function AdminProductPage() {
         setProducts(next.content);
         setPageInfo({ number: next.number, totalPages: next.totalPages, totalElements: next.totalElements });
       })
-      .catch((err) => setError(err.message || 'Khong the tai san pham.'))
+      .catch((err) => setError(err.message || 'Kh?ng th? t?i s?n ph?m.'))
       .finally(() => setLoading(false));
   }
 
@@ -110,16 +110,16 @@ function AdminProductPage() {
     try {
       if (form.id) {
         await updateAdminProduct(form.id, buildPayload(false));
-        setMessage('Da cap nhat san pham.');
+        setMessage('?? c?p nh?t s?n ph?m.');
       } else {
         await createAdminProduct(buildPayload(true));
-        setMessage('Da tao san pham.');
+        setMessage('?? t?o s?n ph?m.');
       }
       setForm(emptyProductForm);
       setSelectedProduct(null);
       loadProducts(0);
     } catch (err) {
-      setError(err.message || 'Luu san pham that bai. Kiem tra JSON variants va cac ID.');
+      setError(err.message || 'L?u s?n ph?m th?t b?i. Ki?m tra JSON variants v? c?c ID.');
     } finally {
       setSubmitting(false);
     }
@@ -134,9 +134,9 @@ function AdminProductPage() {
     try {
       const result = await uploadImage(file, 'products');
       setImageForm((current) => ({ ...current, imageUrl: result.secureUrl || result.url || '' }));
-      setMessage('Da upload anh. Bam Add image de gan vao san pham.');
+      setMessage('?? upload ?nh. B?m Add image ?? g?n v?o s?n ph?m.');
     } catch (err) {
-      setError(err.message || 'Upload anh that bai.');
+      setError(err.message || 'Upload ?nh th?t b?i.');
     } finally {
       setSubmitting(false);
     }
@@ -152,10 +152,10 @@ function AdminProductPage() {
         thumbnail: imageForm.thumbnail,
       });
       setSelectedProduct(updated);
-      setMessage('Da them anh san pham.');
+      setMessage('?? th?m ?nh s?n ph?m.');
       loadProducts(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Khong the them anh.');
+      setError(err.message || 'Kh?ng th? th?m ?nh.');
     } finally {
       setSubmitting(false);
     }
@@ -167,17 +167,17 @@ function AdminProductPage() {
     setError('');
     try {
       await action();
-      setMessage('Da cap nhat san pham.');
+      setMessage('?? c?p nh?t s?n ph?m.');
       loadProducts(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Thao tac san pham that bai.');
+      setError(err.message || 'Thao t?c s?n ph?m th?t b?i.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai san pham admin...</div>;
+    return <div className="page-message">?ang t?i s?n ph?m admin...</div>;
   }
 
   return (

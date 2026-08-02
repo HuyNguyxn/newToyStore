@@ -32,7 +32,7 @@ function CheckoutPage() {
       .then((result) => setCart(result))
       .catch(() => {
         setCart(sampleCart);
-        setError('Backend chua san sang, dang hien thi du lieu mau.');
+        setError('Backend chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');
       })
       .finally(() => setLoading(false));
   }, [user?.id]);
@@ -47,7 +47,7 @@ function CheckoutPage() {
     setError('');
 
     if (!shippingAddress.trim()) {
-      setError('Vui long nhap dia chi giao hang.');
+      setError('Vui lòng nhập địa chỉ giao hàng.');
       return;
     }
 
@@ -58,29 +58,29 @@ function CheckoutPage() {
         shippingAddress: shippingAddress.trim(),
         promoCode: promoCode.trim() || null,
       });
-      setMessage('Da tao yeu cau checkout. Buoc tiep theo la thanh toan COD hoac VNPAY.');
+      setMessage('Đã tạo yêu cầu checkout. Bước tiếp theo là thanh toán COD hoặc VNPAY.');
     } catch (err) {
-      setError(err.message || 'Checkout that bai. Vui long kiem tra lai gio hang.');
+      setError(err.message || 'Checkout thất bại. Vui lòng kiểm tra lại giỏ hàng.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai thong tin thanh toan...</div>;
+    return <div className="page-message">Đang tải thông tin thanh toán...</div>;
   }
 
   return (
     <div className="checkout-page container">
       <section className="checkout-form-card">
-        <BackLink fallback="/cart" label="Quay lai gio hang" />
+        <BackLink fallback="/cart" label="Quay lại giỏ hàng" />
 
         <div className="cart-heading">
           <div>
-            <p>Thanh toan</p>
-            <h1>Xac nhan don hang</h1>
+            <p>Thanh toán</p>
+            <h1>Xác nhận đơn hàng</h1>
           </div>
-          <Link to="/cart">Quay lai gio hang</Link>
+          <Link to="/cart">Quay lại giỏ hàng</Link>
         </div>
 
         {error && <div className="form-alert">{error}</div>}
@@ -92,7 +92,7 @@ function CheckoutPage() {
             <textarea
               value={shippingAddress}
               onChange={(event) => setShippingAddress(event.target.value)}
-              placeholder="Nhap dia chi nhan hang chi tiet"
+              placeholder="Nhập địa chỉ nhận hàng chi tiết"
               rows="5"
               maxLength="500"
               required
@@ -110,7 +110,7 @@ function CheckoutPage() {
           </label>
 
           <button type="submit" disabled={submitting || selectedItems.length === 0}>
-            {submitting ? 'Dang xu ly...' : 'Dat hang'}
+            {submitting ? 'Đang xử lý...' : 'Đặt hàng'}
           </button>
         </form>
       </section>
@@ -127,7 +127,7 @@ function CheckoutPage() {
         </div>
 
         <div className="summary-line">
-          <span>Tam tinh</span>
+          <span>Tạm tính</span>
           <strong>{formatPrice(cart?.cartTotal)}</strong>
         </div>
         <div className="summary-line">

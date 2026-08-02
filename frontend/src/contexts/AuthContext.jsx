@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
         clearStoredToken();
         if (active) {
           dispatch({ type: 'AUTH_LOGOUT' });
-          dispatch({ type: 'AUTH_ERROR', payload: error.message || 'Khong the tai thong tin tai khoan.' });
+          dispatch({ type: 'AUTH_ERROR', payload: error.message || 'Kh?ng th? t?i th?ng tin t?i kho?n.' });
         }
       });
 

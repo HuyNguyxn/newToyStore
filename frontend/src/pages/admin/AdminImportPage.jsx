@@ -19,7 +19,7 @@ function AdminImportPage() {
       const result = await getImports({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setImports(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai import.');
+      setError(err.message || 'Kh?ng th? t?i import.');
     }
   }
 
@@ -56,12 +56,12 @@ function AdminImportPage() {
         note: form.note || null,
         items: buildItemsPayload(),
       });
-      setMessage('Da tao import note.');
+      setMessage('?? t?o import note.');
       setForm({ supplierId: '', note: '' });
       setItems([{ ...emptyItem }]);
       await loadImports();
     } catch (err) {
-      setError(err.message || 'Tao import note that bai. Kiem tra dong san pham.');
+      setError(err.message || 'T?o import note th?t b?i. Ki?m tra d?ng s?n ph?m.');
     }
   }
 
@@ -73,7 +73,7 @@ function AdminImportPage() {
       setMessage(success);
       await loadImports();
     } catch (err) {
-      setError(err.message || 'Thao tac import that bai.');
+      setError(err.message || 'Thao t?c import th?t b?i.');
     }
   }
 
@@ -137,8 +137,8 @@ function AdminImportPage() {
           <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 120px 150px 150px 220px' }} key={item.id}>
             <span>{item.id}</span><span>{item.supplierId}</span><span>{item.status}</span><span>{formatPrice(item.totalAmount)}</span>
             <span className="admin-resource-table__actions">
-              <button type="button" onClick={() => doAction(() => completeImportNote(item.id), 'Da complete import.')}>Complete</button>
-              <button type="button" className="is-danger" onClick={() => doAction(() => cancelImportNote(item.id), 'Da cancel import.')}>Cancel</button>
+              <button type="button" onClick={() => doAction(() => completeImportNote(item.id), '?? complete import.')}>Complete</button>
+              <button type="button" className="is-danger" onClick={() => doAction(() => cancelImportNote(item.id), '?? cancel import.')}>Cancel</button>
             </span>
           </div>
         ))}

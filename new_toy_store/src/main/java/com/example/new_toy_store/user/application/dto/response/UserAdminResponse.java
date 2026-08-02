@@ -1,8 +1,5 @@
 package com.example.new_toy_store.user.application.dto.response;
 
-import com.example.new_toy_store.user.domain.UserRole;
-import com.example.new_toy_store.user.domain.UserStatus;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,12 +12,12 @@ public class UserAdminResponse {
     private String avatarUrl;
     private String role;
     private String roleDisplayName;
-    private UserRole roleDetail;
+    private UserEnumOptionResponse roleDetail;
     private String status;
     private String statusDisplayName;
-    private UserStatus statusDetail;
-    private List<UserStatus> allowedNextStatuses;
-    private List<UserRole> assignableRoles;
+    private UserEnumOptionResponse statusDetail;
+    private List<UserEnumOptionResponse> allowedNextStatuses;
+    private List<UserEnumOptionResponse> assignableRoles;
     private List<String> allowedActions;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -33,12 +30,12 @@ public class UserAdminResponse {
             String avatarUrl,
             String role,
             String roleDisplayName,
-            UserRole roleDetail,
+            UserEnumOptionResponse roleDetail,
             String status,
             String statusDisplayName,
-            UserStatus statusDetail,
-            List<UserStatus> allowedNextStatuses,
-            List<UserRole> assignableRoles,
+            UserEnumOptionResponse statusDetail,
+            List<UserEnumOptionResponse> allowedNextStatuses,
+            List<UserEnumOptionResponse> assignableRoles,
             List<String> allowedActions,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
@@ -68,12 +65,12 @@ public class UserAdminResponse {
     public String getAvatarUrl() { return avatarUrl; }
     public String getRole() { return role; }
     public String getRoleDisplayName() { return roleDisplayName; }
-    public UserRole getRoleDetail() { return roleDetail; }
+    public UserEnumOptionResponse getRoleDetail() { return roleDetail; }
     public String getStatus() { return status; }
     public String getStatusDisplayName() { return statusDisplayName; }
-    public UserStatus getStatusDetail() { return statusDetail; }
-    public List<UserStatus> getAllowedNextStatuses() { return allowedNextStatuses; }
-    public List<UserRole> getAssignableRoles() { return assignableRoles; }
+    public UserEnumOptionResponse getStatusDetail() { return statusDetail; }
+    public List<UserEnumOptionResponse> getAllowedNextStatuses() { return allowedNextStatuses; }
+    public List<UserEnumOptionResponse> getAssignableRoles() { return assignableRoles; }
     public List<String> getAllowedActions() { return allowedActions; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

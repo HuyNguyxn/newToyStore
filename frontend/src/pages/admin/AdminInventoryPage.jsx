@@ -20,7 +20,7 @@ function AdminInventoryPage() {
       setBatches(Array.isArray(result) ? result : []);
     } catch (err) {
       setBatches([]);
-      setError(err.message || 'Khong the tai batch ton kho.');
+      setError(err.message || 'Kh?ng th? t?i batch t?n kho.');
     } finally {
       setLoading(false);
     }

@@ -12,7 +12,7 @@ function AdminUploadPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!file) {
-      setError('Vui long chon file de upload.');
+      setError('Vui lòng chọn file để upload.');
       return;
     }
 
@@ -26,7 +26,7 @@ function AdminUploadPage() {
         : await uploadImage(file, folder);
       setResult(uploaded);
     } catch (err) {
-      setError(err.message || 'Upload that bai.');
+      setError(err.message || 'Upload th?t b?i.');
     } finally {
       setLoading(false);
     }

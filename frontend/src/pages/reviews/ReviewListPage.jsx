@@ -20,7 +20,7 @@ function ReviewListPage() {
       const result = await getMyReviews({ page: 0, size: 20, sort: 'createdAt,desc' });
       setReviews(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai danh gia cua toi.');
+      setError(err.message || 'Không thể tải đánh giá của tôi.');
     }
   }
 
@@ -49,7 +49,7 @@ function ReviewListPage() {
       const field = type === 'video' ? 'videoUrls' : 'imageUrls';
       setForm((current) => ({ ...current, [field]: [current[field], url].filter(Boolean).join(',') }));
     } catch (err) {
-      setError(err.message || 'Upload media review that bai.');
+      setError(err.message || 'Upload media review th?t b?i.');
     } finally {
       setUploading(false);
     }
@@ -67,10 +67,10 @@ function ReviewListPage() {
         videoUrls: form.videoUrls.split(',').map((url) => url.trim()).filter(Boolean),
       });
       setSelected(result);
-      setMessage('Da cap nhat review.');
+      setMessage('Đã cập nhật review.');
       await loadReviews();
     } catch (err) {
-      setError(err.message || 'Cap nhat review that bai.');
+      setError(err.message || 'C?p nh?t review th?t b?i.');
     }
   }
 
@@ -80,16 +80,16 @@ function ReviewListPage() {
     try {
       await deleteReview(id);
       setSelected(null);
-      setMessage('Da xoa review.');
+      setMessage('Đã xóa review.');
       await loadReviews();
     } catch (err) {
-      setError(err.message || 'Xoa review that bai.');
+      setError(err.message || 'X?a review th?t b?i.');
     }
   }
 
   return (
     <section className="container profile-page">
-      <BackLink fallback="/profile" label="Quay lai tai khoan" />
+      <BackLink fallback="/profile" label="Quay lại tài khoản" />
       <div className="customer-panel-hero"><div><p>Reviews</p><h2>Danh gia cua toi</h2><span>Xem lai, sua noi dung, cap nhat hinh anh/video hoac xoa review.</span></div><Link className="login-link" to="/reviews/new">Viet danh gia moi</Link></div>
       {error && <div className="form-alert">{error}</div>}{message && <div className="form-alert form-alert--success">{message}</div>}
       <div className="admin-crud-grid">

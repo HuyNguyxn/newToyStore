@@ -48,7 +48,7 @@ function ProductDetailPage() {
 
         const fallback = sampleProducts.find((item) => String(item.id) === String(id)) || sampleProducts[0];
         applyProduct(fallback);
-        setError('Backend chua san sang, dang hien thi du lieu mau.');
+        setError('Backend chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');
       })
       .finally(() => {
         if (active) {
@@ -84,7 +84,7 @@ function ProductDetailPage() {
       .catch(() => {
         if (active) {
           setReviews([]);
-          setReviewNotice('Chua tai duoc danh gia san pham.');
+          setReviewNotice('Chưa tải được đánh giá sản phẩm.');
         }
       });
 
@@ -126,7 +126,7 @@ function ProductDetailPage() {
     }
 
     if (!canAddToCart) {
-      setError('San pham hoac phan loai nay hien khong the them vao gio.');
+      setError('Sản phẩm hoặc phân loại này hiện không thể thêm vào giỏ.');
       return;
     }
 
@@ -138,29 +138,29 @@ function ProductDetailPage() {
         variantId: selectedVariant.id,
         quantity,
       });
-      setMessage('Da them san pham vao gio hang.');
+      setMessage('Đã thêm sản phẩm vào giỏ hàng.');
     } catch (err) {
-      setError(err.message || 'Khong the them san pham vao gio. Vui long thu lai.');
+      setError(err.message || 'Không thể thêm sản phẩm vào giỏ. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai chi tiet san pham...</div>;
+    return <div className="page-message">Đang tải chi tiết sản phẩm...</div>;
   }
 
   if (!product) {
     return (
       <div className="empty-state container">
-        Khong tim thay san pham.
+        Không tìm thấy sản phẩm.
       </div>
     );
   }
 
   return (
     <div className="product-detail-page container">
-      <BackLink fallback="/products" label="Quay lai san pham" />
+      <BackLink fallback="/products" label="Quay lại sản phẩm" />
 
       <div className="breadcrumb">
         <Link to="/products">San pham</Link>
@@ -238,7 +238,7 @@ function ProductDetailPage() {
 
           <div className="product-detail__actions">
             <button type="button" disabled={!canAddToCart || submitting} onClick={handleAddToCart}>
-              {submitting ? 'Dang them...' : 'Them vao gio'}
+              {submitting ? 'Đang thêm...' : 'Thêm vào giỏ'}
             </button>
             <Link to="/products">Tiep tuc mua sam</Link>
           </div>
@@ -249,7 +249,7 @@ function ProductDetailPage() {
         <div className="page-title-row">
           <div>
             <p>Danh gia thuc te</p>
-            <h2>Khach hang noi gi ve san pham</h2>
+            <h2>Khách hàng nói gì về sản phẩm</h2>
           </div>
           <span>{product.reviewCount || reviews.length || 0} danh gia</span>
         </div>
@@ -257,7 +257,7 @@ function ProductDetailPage() {
         {reviewNotice && <div className="form-alert form-alert--soft">{reviewNotice}</div>}
 
         {reviews.length === 0 ? (
-          <div className="empty-state">San pham chua co danh gia hien thi.</div>
+          <div className="empty-state">Sản phẩm chưa có đánh giá hiển thị.</div>
         ) : (
           <div className="review-list">
             {reviews.map((review) => (
@@ -265,12 +265,12 @@ function ProductDetailPage() {
                 <div className="review-card__user">
                   <img src={review.userAvatar || 'https://placehold.co/48x48?text=U'} alt={review.userFullName || 'User'} />
                   <div>
-                    <strong>{review.userFullName || 'Khach hang'}</strong>
+                    <strong>{review.userFullName || 'Khách hàng'}</strong>
                     <span>{'★'.repeat(review.rating)}{'☆'.repeat(Math.max(5 - review.rating, 0))}</span>
                   </div>
                 </div>
 
-                <p>{review.comment || 'Khach hang khong de lai binh luan.'}</p>
+                <p>{review.comment || 'Khách hàng không để lại bình luận.'}</p>
 
                 {review.mediaAttachments?.length > 0 && (
                   <div className="review-card__media">

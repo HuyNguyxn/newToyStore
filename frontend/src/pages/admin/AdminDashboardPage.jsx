@@ -66,7 +66,7 @@ function AdminDashboardPage() {
 
         setOverview(fallbackOverview);
         setRecentOrders(sampleOrders);
-        setNotice('Backend chua san sang, dang hien thi dashboard mau.');
+        setNotice('Backend chưa sẵn sàng, đang hiển thị dashboard mẫu để xem giao diện. Dữ liệu mẫu này không tính vào số liệu thực tế.');
       })
       .finally(() => {
         if (active) {

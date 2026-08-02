@@ -165,7 +165,7 @@ function App() {
           </ProtectedRoute>
         )}
       >
-        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route index element={<Navigate to="statistics" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="products" element={<AdminProductPage />} />
         <Route path="categories" element={<AdminCategoryPage />} />
@@ -186,13 +186,13 @@ function App() {
         <Route
           path="statistics"
           element={(
-            <Suspense fallback={<div className="admin-empty-mini">Loading statistics dashboard...</div>}>
+            <Suspense fallback={<div className="admin-empty-mini">Đang tải trang thống kê...</div>}>
               <AdminStatisticsPage />
             </Suspense>
           )}
         />
         <Route path="uploads" element={<AdminUploadPage />} />
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
+        <Route path="*" element={<Navigate to="statistics" replace />} />
       </Route>
     </Routes>
   );

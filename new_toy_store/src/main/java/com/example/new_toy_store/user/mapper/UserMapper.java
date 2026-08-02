@@ -3,6 +3,7 @@ package com.example.new_toy_store.user.mapper;
 import com.example.new_toy_store.user.application.dto.request.RegisterRequest;
 import com.example.new_toy_store.user.application.dto.response.AddressResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserEnumOptionResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.application.dto.response.UserResponse;
 import com.example.new_toy_store.user.domain.User;
@@ -44,10 +45,10 @@ public final class UserMapper {
                 user.getPhoneNumber(),
                 resolveAvatarUrl(user, defaultAvatarUrl),
                 role.name(),
-                role,
+                toRoleOption(role),
                 status.name(),
-                status,
-                status.getNextValidStates(),
+                toStatusOption(status),
+                toStatusOptions(status.getNextValidStates()),
                 determineProfileActions(user),
                 toAddressResponses(user)
         );
@@ -69,12 +70,12 @@ public final class UserMapper {
                 resolveAvatarUrl(user, defaultAvatarUrl),
                 role.name(),
                 role.getDisplayName(),
-                role,
+                toRoleOption(role),
                 status.name(),
                 status.getDisplayName(),
-                status,
-                status.getNextValidStates(),
-                UserRole.ADMIN.getAssignableRoles(),
+                toStatusOption(status),
+                toStatusOptions(status.getNextValidStates()),
+                toRoleOptions(UserRole.ADMIN.getAssignableRoles()),
                 determineAdminActions(user),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
@@ -102,6 +103,60 @@ public final class UserMapper {
     private static List<AddressResponse> toAddressResponses(User user) {
         return user.getAddresses().stream()
                 .map(UserMapper::toAddressResponse)
+                .collect(Collectors.toList());
+    }
+
+    private static UserEnumOptionResponse toRoleOption(UserRole role) {
+        if (role == null) {
+            return null;
+        }
+
+        return new UserEnumOptionResponse(
+                role.getCode(),
+                role.name(),
+                role.getDisplayName(),
+                null,
+                null,
+                null,
+                role.canManageProducts(),
+                role.canManageOrders()
+        );
+    }
+
+    private static List<UserEnumOptionResponse> toRoleOptions(List<UserRole> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return List.of();
+        }
+
+        return roles.stream()
+                .map(UserMapper::toRoleOption)
+                .collect(Collectors.toList());
+    }
+
+    private static UserEnumOptionResponse toStatusOption(UserStatus status) {
+        if (status == null) {
+            return null;
+        }
+
+        return new UserEnumOptionResponse(
+                status.getCode(),
+                status.name(),
+                status.getDisplayName(),
+                status.canLogin(),
+                status.canPlaceOrder(),
+                status.canModifyData(),
+                null,
+                null
+        );
+    }
+
+    private static List<UserEnumOptionResponse> toStatusOptions(List<UserStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return List.of();
+        }
+
+        return statuses.stream()
+                .map(UserMapper::toStatusOption)
                 .collect(Collectors.toList());
     }
 

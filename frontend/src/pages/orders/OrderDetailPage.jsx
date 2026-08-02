@@ -31,7 +31,7 @@ function OrderDetailPage() {
           return;
         }
         setOrder(sampleOrders.find((item) => String(item.id) === String(id)) || sampleOrders[0]);
-        setError('Backend chua san sang, dang hien thi don hang mau.');
+        setError('Backend chưa sẵn sàng, đang hiển thị đơn hàng mẫu.');
       })
       .finally(() => {
         if (active) {
@@ -61,9 +61,9 @@ function OrderDetailPage() {
         return;
       }
 
-      setMessage(`Thanh toan ${payment.method} dang o trang thai ${getPaymentStatusLabel(payment.status)}.`);
+      setMessage(`Thanh toán ${payment.method} đang ở trạng thái ${getPaymentStatusLabel(payment.status)}.`);
     } catch (err) {
-      setError(err.message || 'Khong the tao thanh toan cho don hang.');
+      setError(err.message || 'Không thể tạo thanh toán cho đơn hàng.');
     } finally {
       setSubmitting(false);
     }
@@ -75,22 +75,22 @@ function OrderDetailPage() {
     setError('');
 
     try {
-      const result = await cancelOrder(order.id, 'Khach hang huy tren website');
+      const result = await cancelOrder(order.id, 'Khách hàng hủy trên website');
       setOrder(result);
-      setMessage('Da huy don hang.');
+      setMessage('Đã hủy đơn hàng.');
     } catch (err) {
-      setError(err.message || 'Khong the huy don hang.');
+      setError(err.message || 'Không thể hủy đơn hàng.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai chi tiet don hang...</div>;
+    return <div className="page-message">Đang tải chi tiết đơn hàng...</div>;
   }
 
   if (!order) {
-    return <div className="empty-state container">Khong tim thay don hang.</div>;
+    return <div className="empty-state container">Không tìm thấy đơn hàng.</div>;
   }
 
   const canCancel = order.availableActions?.includes('CANCEL');
@@ -123,8 +123,8 @@ function OrderDetailPage() {
                   <strong>{item.productName}</strong>
                   <p>{item.variantAttributesSnapshot || 'Mac dinh'} x {item.quantity}</p>
                   <div className="order-item-row__actions">
-                    <Link to={`/reviews/new?orderItemId=${item.id}`}>Viet danh gia</Link>
-                    <Link to={`/returns/new?orderId=${order.id}&orderItemId=${item.id}&productId=${item.productId || ''}&variantId=${item.variantId || ''}`}>Yeu cau tra hang</Link>
+                    <Link to={`/reviews/new?orderItemId=${item.id}`}>Viết đánh giá</Link>
+                    <Link to={`/returns/new?orderId=${order.id}&orderItemId=${item.id}&productId=${item.productId || ''}&variantId=${item.variantId || ''}`}>Yêu cầu trả hàng</Link>
                   </div>
                 </div>
                 <span>{formatPrice(item.price * item.quantity)}</span>
@@ -149,9 +149,9 @@ function OrderDetailPage() {
         </div>
 
         <aside className="payment-panel">
-          <h2>Thanh toan</h2>
+          <h2>Thanh toán</h2>
           <div className="summary-line">
-            <span>Tam tinh</span>
+            <span>Tạm tính</span>
             <strong>{formatPrice(order.totalAmount + (order.discountAmount || 0))}</strong>
           </div>
           <div className="summary-line">
@@ -187,17 +187,17 @@ function OrderDetailPage() {
           </div>
 
           <button type="button" disabled={submitting} onClick={handlePaymentCheckout}>
-            {submitting ? 'Dang xu ly...' : 'Thanh toan'}
+            {submitting ? 'Đang xử lý...' : 'Thanh toán'}
           </button>
 
           {canCancel && (
             <button type="button" className="danger-button" disabled={submitting} onClick={handleCancelOrder}>
-              Huy don hang
+              Hủy đơn hàng
             </button>
           )}
 
           <button type="button" className="secondary-button" onClick={() => navigate('/payments')}>
-            Xem thanh toan
+            Xem thanh toán
           </button>
         </aside>
       </section>

@@ -36,7 +36,7 @@ export async function apiClient(endpoint, options = {}) {
     clearStoredToken();
     throw {
       status: 401,
-      message: 'Phien dang nhap da het han. Vui long dang nhap lai.',
+      message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
     };
   }
 
@@ -50,7 +50,7 @@ export async function apiClient(endpoint, options = {}) {
   if (!response.ok) {
     throw typeof data === 'object'
       ? data
-      : { status: response.status, message: data || 'Da xay ra loi. Vui long thu lai.' };
+      : { status: response.status, message: data || 'Đã xảy ra lỗi. Vui lòng thử lại.' };
   }
 
   return data;

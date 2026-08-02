@@ -18,21 +18,21 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     long countByStatus(OrderStatus status);
 
-    @EntityGraph(attributePaths = {"items", "histories"})
+    @EntityGraph(attributePaths = {"items"})
     Page<Order> findByUserId(Integer userId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"items", "histories"})
+    @EntityGraph(attributePaths = {"items"})
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"items", "histories"})
+    @EntityGraph(attributePaths = {"items"})
     Page<Order> findAll(Specification<Order> spec, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"items", "histories"})
+    @EntityGraph(attributePaths = {"items"})
     Optional<Order> findById(Integer id);
 
-    @EntityGraph(attributePaths = {"items", "histories"})
+    @EntityGraph(attributePaths = {"items"})
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdWithItemsAndHistories(@Param("id") Integer id);
 

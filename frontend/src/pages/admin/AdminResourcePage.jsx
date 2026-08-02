@@ -44,7 +44,7 @@ function AdminResourcePage({ resource }) {
   }, [resource]);
 
   if (!config) {
-    return <div className="page-message">Admin module khong ton tai.</div>;
+    return <div className="page-message">Admin module kh?ng t?n t?i.</div>;
   }
 
   function normalizePage(result) {
@@ -82,7 +82,7 @@ function AdminResourcePage({ resource }) {
       })
       .catch((err) => {
         setItems([]);
-        setError(err.message || 'Khong the tai du lieu quan tri.');
+        setError(err.message || 'Kh?ng th? t?i d? li?u qu?n tr?.');
       })
       .finally(() => setLoading(false));
   }
@@ -113,10 +113,10 @@ function AdminResourcePage({ resource }) {
         method: action.method,
         body: typeof action.body === 'function' ? action.body(item) : action.body,
       });
-      setMessage(`Da thuc hien: ${action.label} #${item.id}.`);
+      setMessage(`?? th?c hi?n: ${action.label} #${item.id}.`);
       loadData(pageInfo.number);
     } catch (err) {
-      setError(err.message || `Khong the thuc hien ${action.label}.`);
+      setError(err.message || `Kh?ng th? th?c hi?n ${action.label}.`);
     } finally {
       setActingKey('');
     }
@@ -136,10 +136,10 @@ function AdminResourcePage({ resource }) {
 
       const result = await runAdminJsonRequest(consoleRequest);
       setConsoleResponse(result === null ? 'No content' : JSON.stringify(result, null, 2));
-      setMessage('Admin API request thanh cong.');
+      setMessage('Admin API request th?nh c?ng.');
       loadData(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Admin API request that bai. Kiem tra endpoint, method hoac JSON body.');
+      setError(err.message || 'Admin API request th?t b?i. Ki?m tra endpoint, method ho?c JSON body.');
       if (err && typeof err === 'object') {
         setConsoleResponse(JSON.stringify(err, null, 2));
       }

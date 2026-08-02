@@ -21,7 +21,7 @@ function AdminUserPage() {
       const result = await getAdminUsers({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setUsers(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai users.');
+      setError(err.message || 'Kh?ng th? t?i users.');
     }
   }
 
@@ -48,7 +48,7 @@ function AdminUserPage() {
       if (result) setSelected(result);
       await loadUsers();
     } catch (err) {
-      setError(err.message || 'Thao tac user that bai.');
+      setError(err.message || 'Thao t?c user th?t b?i.');
     }
   }
 
@@ -61,7 +61,7 @@ function AdminUserPage() {
       <div className="admin-crud-grid">
         <div className="admin-resource-table">
           <div className="admin-resource-table__head" style={{ gridTemplateColumns: '70px 1fr 1fr 110px 120px 170px 160px' }}><span>ID</span><span>Email</span><span>Name</span><span>Role</span><span>Status</span><span>Created</span><span>Actions</span></div>
-          {users.map((user) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 1fr 1fr 110px 120px 170px 160px' }} key={user.id}><span>{user.id}</span><span>{user.email}</span><span>{user.fullName || '-'}</span><span>{user.role}</span><span>{user.status}</span><span>{formatDateTime(user.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectUser(user)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminUser(user.id), 'Da xoa user.')}>Delete</button></span></div>)}
+          {users.map((user) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 1fr 1fr 110px 120px 170px 160px' }} key={user.id}><span>{user.id}</span><span>{user.email}</span><span>{user.fullName || '-'}</span><span>{user.role}</span><span>{user.status}</span><span>{formatDateTime(user.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectUser(user)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminUser(user.id), '?? x?a user.')}>Delete</button></span></div>)}
         </div>
 
         <aside className="admin-api-console">
@@ -78,10 +78,10 @@ function AdminUserPage() {
                 <label>Status<select value={status} onChange={(e) => setStatus(e.target.value)}>{statuses.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
               </div>
               <div className="admin-resource-table__actions">
-                <button type="button" onClick={() => doAction(() => updateAdminUserRole(selected.id, role), 'Da cap nhat role user.')}>Update role</button>
-                <button type="button" onClick={() => doAction(() => updateAdminUserStatus(selected.id, status), 'Da cap nhat status user.')}>Update status</button>
-                <button type="button" className="is-danger" onClick={() => doAction(() => lockAdminUser(selected.id), 'Da lock user.')}>Lock</button>
-                <button type="button" onClick={() => doAction(() => unlockAdminUser(selected.id), 'Da unlock user.')}>Unlock</button>
+                <button type="button" onClick={() => doAction(() => updateAdminUserRole(selected.id, role), '?? c?p nh?t role user.')}>Update role</button>
+                <button type="button" onClick={() => doAction(() => updateAdminUserStatus(selected.id, status), '?? c?p nh?t status user.')}>Update status</button>
+                <button type="button" className="is-danger" onClick={() => doAction(() => lockAdminUser(selected.id), '?? lock user.')}>Lock</button>
+                <button type="button" onClick={() => doAction(() => unlockAdminUser(selected.id), '?? unlock user.')}>Unlock</button>
               </div>
               <div className="admin-line-items">
                 <strong>Addresses</strong>

@@ -18,7 +18,7 @@ function AdminOrderPage() {
       const result = await getAdminOrders({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setOrders(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai orders.');
+      setError(err.message || 'Kh?ng th? t?i orders.');
     }
   }
 
@@ -43,7 +43,7 @@ function AdminOrderPage() {
       if (result) setSelected(result);
       await loadOrders();
     } catch (err) {
-      setError(err.message || 'Thao tac order that bai.');
+      setError(err.message || 'Thao t?c order th?t b?i.');
     }
   }
 
@@ -56,7 +56,7 @@ function AdminOrderPage() {
       <div className="admin-crud-grid">
         <div className="admin-resource-table">
           <div className="admin-resource-table__head" style={{ gridTemplateColumns: '70px 90px 130px 140px 140px 180px 160px' }}><span>ID</span><span>User</span><span>Status</span><span>Payment</span><span>Total</span><span>Created</span><span>Actions</span></div>
-          {orders.map((order) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 90px 130px 140px 140px 180px 160px' }} key={order.id}><span>{order.id}</span><span>{order.userId}</span><span>{order.status}</span><span>{order.paymentStatus}</span><span>{formatPrice(order.totalAmount)}</span><span>{formatDateTime(order.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectOrder(order)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminOrder(order.id), 'Da xoa order.')}>Delete</button></span></div>)}
+          {orders.map((order) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 90px 130px 140px 140px 180px 160px' }} key={order.id}><span>{order.id}</span><span>{order.userId}</span><span>{order.status}</span><span>{order.paymentStatus}</span><span>{formatPrice(order.totalAmount)}</span><span>{formatDateTime(order.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectOrder(order)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminOrder(order.id), '?? x?a order.')}>Delete</button></span></div>)}
         </div>
 
         <aside className="admin-api-console">
@@ -70,16 +70,16 @@ function AdminOrderPage() {
               </div>
               <label>Action note<input value={actionNote} onChange={(e) => setActionNote(e.target.value)} /></label>
               <div className="admin-resource-table__actions">
-                <button type="button" onClick={() => doAction(() => confirmAdminOrder(selected.id, actionNote), 'Da confirm order.')}>Confirm</button>
-                <button type="button" onClick={() => doAction(() => shipAdminOrder(selected.id, actionNote), 'Da ship order.')}>Ship</button>
-                <button type="button" onClick={() => doAction(() => completeAdminOrder(selected.id, actionNote), 'Da complete order.')}>Complete</button>
-                <button type="button" className="is-danger" onClick={() => doAction(() => cancelAdminOrder(selected.id, actionNote), 'Da cancel order.')}>Cancel</button>
+                <button type="button" onClick={() => doAction(() => confirmAdminOrder(selected.id, actionNote), '?? confirm order.')}>Confirm</button>
+                <button type="button" onClick={() => doAction(() => shipAdminOrder(selected.id, actionNote), '?? ship order.')}>Ship</button>
+                <button type="button" onClick={() => doAction(() => completeAdminOrder(selected.id, actionNote), '?? complete order.')}>Complete</button>
+                <button type="button" className="is-danger" onClick={() => doAction(() => cancelAdminOrder(selected.id, actionNote), '?? cancel order.')}>Cancel</button>
               </div>
               <div className="admin-line-items">
                 <strong>Items</strong>
                 {(selected.items || []).map((item) => <div className="admin-log-list__item" key={item.id}><strong>{item.productName}</strong><p>{item.variantAttributesSnapshot || 'Default'} x {item.quantity} · {formatPrice((item.price || 0) * item.quantity)}</p></div>)}
               </div>
-              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => updateAdminOrderShipping(selected.id, shippingForm), 'Da cap nhat dia chi giao hang.'); }}>
+              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => updateAdminOrderShipping(selected.id, shippingForm), '?? c?p nh?t ??a ch? giao h?ng.'); }}>
                 <label>New address<input value={shippingForm.newAddress} onChange={(e) => setShippingForm((current) => ({ ...current, newAddress: e.target.value }))} required /></label>
                 <label>Shipping note<input value={shippingForm.note} onChange={(e) => setShippingForm((current) => ({ ...current, note: e.target.value }))} /></label>
                 <button type="submit">Update shipping address</button>

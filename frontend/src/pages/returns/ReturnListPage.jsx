@@ -20,7 +20,7 @@ function ReturnListPage() {
       const result = await getCustomerReturns({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setReturns(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai yeu cau tra hang.');
+      setError(err.message || 'Kh?ng th? t?i y?u c?u tr? h?ng.');
     }
   }
 
@@ -39,13 +39,13 @@ function ReturnListPage() {
       setMessage(success);
       await loadReturns();
     } catch (err) {
-      setError(err.message || 'Thao tac return that bai.');
+      setError(err.message || 'Thao t?c return th?t b?i.');
     }
   }
 
   return (
     <section className="container profile-page">
-      <BackLink fallback="/profile" label="Quay lai tai khoan" />
+      <BackLink fallback="/profile" label="Quay lại tài khoản" />
       <div className="customer-panel-hero"><div><p>After-sales</p><h2>Yeu cau tra hang cua toi</h2><span>Theo doi trang thai, cap nhat thong tin hoac mo tranh chap neu can.</span></div><Link className="login-link" to="/returns/new">Tao yeu cau moi</Link></div>
       {error && <div className="form-alert">{error}</div>}{message && <div className="form-alert form-alert--success">{message}</div>}
       <form className="admin-filter" onSubmit={(e) => { e.preventDefault(); loadReturns(); }}>{Object.keys(filters).map((field) => <label key={field}>{field}<input value={filters[field]} onChange={(e) => setFilters((current) => ({ ...current, [field]: e.target.value }))} /></label>)}<button type="submit">Filter</button></form>
@@ -53,7 +53,7 @@ function ReturnListPage() {
       <div className="admin-crud-grid">
         <div className="admin-resource-table">
           <div className="admin-resource-table__head" style={{ gridTemplateColumns: '80px 100px 150px 150px 160px' }}><span>ID</span><span>Order</span><span>Status</span><span>Refund</span><span>Actions</span></div>
-          {returns.map((item) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 100px 150px 150px 160px' }} key={item.id}><span>{item.id}</span><span>{item.orderId}</span><span>{item.status?.code || item.status}</span><span>{formatPrice(item.totalRefundAmount)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectReturn(item)}>Detail</button><button type="button" className="is-danger" onClick={() => doAction(() => cancelCustomerReturn(item.id), 'Da huy yeu cau tra hang.')}>Cancel</button></span></div>)}
+          {returns.map((item) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '80px 100px 150px 150px 160px' }} key={item.id}><span>{item.id}</span><span>{item.orderId}</span><span>{item.status?.code || item.status}</span><span>{formatPrice(item.totalRefundAmount)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectReturn(item)}>Detail</button><button type="button" className="is-danger" onClick={() => doAction(() => cancelCustomerReturn(item.id), 'Đã hủy yêu cầu trả hàng.')}>Cancel</button></span></div>)}
         </div>
 
         <aside className="admin-api-console">
@@ -73,11 +73,11 @@ function ReturnListPage() {
                 <strong>Items</strong>
                 {(selected.items || []).map((item) => <div className="admin-log-list__item" key={item.id || item.orderItemId}><strong>Order item #{item.orderItemId}</strong><p>Qty {item.quantity} · {item.reasonCode || item.reason} · {formatPrice(item.expectedRefundAmount || item.refundAmount || 0)}</p></div>)}
               </div>
-              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => updateCustomerReturnInfo(selected.id, reasonNote), 'Da cap nhat thong tin return.'); }}>
+              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => updateCustomerReturnInfo(selected.id, reasonNote), 'Đã cập nhật thông tin return.'); }}>
                 <label>New reason note<input value={reasonNote} onChange={(e) => setReasonNote(e.target.value)} required /></label>
                 <button type="submit">Update info</button>
               </form>
-              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => disputeCustomerReturn(selected.id, disputeReason), 'Da mo tranh chap return.'); }}>
+              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => disputeCustomerReturn(selected.id, disputeReason), 'Đã mở tranh chấp return.'); }}>
                 <label>Dispute reason<input value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} required /></label>
                 <button type="submit">Open dispute</button>
               </form>

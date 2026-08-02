@@ -37,7 +37,7 @@ function PaymentListPage() {
         }
         setPayments(samplePayments);
         setPageInfo({ number: 0, totalPages: 1, totalElements: samplePayments.length });
-        setNotice('Backend chua san sang, dang hien thi thanh toan mau.');
+        setNotice('Backend chưa sẵn sàng, đang hiển thị thanh toán mẫu.');
       })
       .finally(() => {
         if (active) {
@@ -55,14 +55,14 @@ function PaymentListPage() {
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai thanh toan...</div>;
+    return <div className="page-message">Đang tải thanh toán...</div>;
   }
 
   return (
     <div className="payments-page container">
       <div className="page-title-row">
         <div>
-          <p>Thanh toan cua toi</p>
+          <p>Thanh toán của tôi</p>
           <h1>Lich su thanh toan</h1>
         </div>
         <span>{pageInfo.totalElements} giao dich</span>
@@ -75,7 +75,7 @@ function PaymentListPage() {
           <article className="payment-card" key={payment.id}>
             <div>
               <span className="status-badge">{getPaymentStatusLabel(payment.status)}</span>
-              <h2>Thanh toan #{payment.id}</h2>
+              <h2>Thanh toán #{payment.id}</h2>
               <p>Don hang #{payment.orderId} - {formatDateTime(payment.createdAt)}</p>
             </div>
             <div>
@@ -88,7 +88,7 @@ function PaymentListPage() {
       </div>
 
       {payments.length === 0 && (
-        <div className="empty-state">Ban chua co giao dich thanh toan nao.</div>
+        <div className="empty-state">Bạn chưa có giao dịch thanh toán nào.</div>
       )}
 
       <div className="pagination-bar">

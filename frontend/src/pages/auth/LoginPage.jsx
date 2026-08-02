@@ -21,26 +21,37 @@ function LoginPage() {
     setError('');
 
     try {
-      await login(form);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(form);
+      const targetPath = loggedInUser?.role === 'ADMIN' ? '/admin/statistics' : from;
+      navigate(targetPath, { replace: true });
     } catch (err) {
-      setError(err.message || 'Dang nhap that bai. Vui long kiem tra lai email va mat khau.');
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
     }
   }
 
   return (
-    <section className="auth-page">
-      <div className="auth-card">
-        <div className="auth-card__heading">
-          <p>Chao mung tro lai</p>
-          <h1>Dang nhap</h1>
+    <section className="auth-screen">
+      <div className="auth-topbar">
+        <Link to="/" className="auth-topbar__brand">
+          <img src="/toystore-assets/logo.png" alt="ToyStore" />
+          <strong>ToyStore</strong>
+        </Link>
+        <Link to="/" className="auth-topbar__home">⌂ Trang Chủ</Link>
+      </div>
+
+      <div className="auth-panel">
+        <img className="auth-panel__logo" src="/toystore-assets/logo.png" alt="ToyStore" />
+
+        <div className="auth-tabs" aria-label="Auth navigation">
+          <Link className="auth-tabs__item auth-tabs__item--active" to="/login">Đăng Nhập</Link>
+          <Link className="auth-tabs__item" to="/register">Đăng Ký</Link>
         </div>
 
         {error && <div className="form-alert">{error}</div>}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form auth-form--compact" onSubmit={handleSubmit}>
           <label>
-            Email
+            <span>✉ Địa chỉ Email</span>
             <input
               name="email"
               type="email"
@@ -52,27 +63,23 @@ function LoginPage() {
           </label>
 
           <label>
-            Mat khau
+            <span>🔒 Mật khẩu</span>
             <input
               name="password"
               type="password"
               value={form.password}
               onChange={handleChange}
-              placeholder="Nhap mat khau"
+              placeholder="Nhập mật khẩu"
               required
             />
           </label>
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Dang xu ly...' : 'Dang nhap'}
+            {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP↪'}
           </button>
         </form>
 
-        <p className="auth-card__switch">
-          Chua co tai khoan? <Link to="/register">Dang ky ngay</Link>
-          <br />
-          <Link to="/forgot-password">Quen mat khau?</Link>
-        </p>
+        <Link className="auth-forgot-link" to="/forgot-password">🔑 Quên mật khẩu?</Link>
       </div>
     </section>
   );

@@ -56,7 +56,7 @@ function AdminPromotionPage() {
         setPromotions(next.content);
         setPageInfo({ number: next.number, totalPages: next.totalPages, totalElements: next.totalElements });
       })
-      .catch((err) => setError(err.message || 'Khong the tai khuyen mai.'))
+      .catch((err) => setError(err.message || 'Kh?ng th? t?i khuy?n m?i.'))
       .finally(() => setLoading(false));
   }
 
@@ -105,15 +105,15 @@ function AdminPromotionPage() {
     try {
       if (form.id) {
         await updatePromotion(form.id, buildPayload());
-        setMessage('Da cap nhat khuyen mai.');
+        setMessage('?? c?p nh?t khuy?n m?i.');
       } else {
         await createPromotion(buildPayload());
-        setMessage('Da tao khuyen mai.');
+        setMessage('?? t?o khuy?n m?i.');
       }
       setForm(emptyPromotionForm);
       loadPromotions(0);
     } catch (err) {
-      setError(err.message || 'Luu khuyen mai that bai.');
+      setError(err.message || 'L?u khuy?n m?i th?t b?i.');
     } finally {
       setSubmitting(false);
     }
@@ -125,17 +125,17 @@ function AdminPromotionPage() {
     setMessage('');
     try {
       await action();
-      setMessage('Da cap nhat khuyen mai.');
+      setMessage('?? c?p nh?t khuy?n m?i.');
       loadPromotions(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Thao tac khuyen mai that bai.');
+      setError(err.message || 'Thao t?c khuy?n m?i th?t b?i.');
     } finally {
       setSubmitting(false);
     }
   }
 
   if (loading) {
-    return <div className="page-message">Dang tai khuyen mai admin...</div>;
+    return <div className="page-message">?ang t?i khuy?n m?i admin...</div>;
   }
 
   return (

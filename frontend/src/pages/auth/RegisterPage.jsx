@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import useAuth from '../../hooks/useAuth.js';
 
 function RegisterPage() {
@@ -8,6 +8,7 @@ function RegisterPage() {
   const [form, setForm] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phoneNumber: '',
   });
@@ -24,81 +25,76 @@ function RegisterPage() {
     setError('');
     setSuccess('');
 
+    if (form.password !== form.confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
     try {
-      await register(form);
-      setSuccess('Dang ky thanh cong. Neu he thong bat xac thuc email, hay kiem tra email truoc khi dang nhap.');
+      await register({
+        email: form.email,
+        password: form.password,
+        fullName: form.fullName,
+        phoneNumber: form.phoneNumber,
+      });
+      setSuccess('Đăng ký thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.');
       setTimeout(() => navigate('/login'), 900);
     } catch (err) {
-      setError(err.message || 'Dang ky that bai. Vui long kiem tra lai thong tin.');
+      setError(err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
     }
   }
 
   return (
-    <section className="auth-page">
-      <div className="auth-card">
-        <div className="auth-card__heading">
-          <p>Tao tai khoan mua sam</p>
-          <h1>Dang ky</h1>
+    <section className="auth-screen">
+      <div className="auth-topbar">
+        <Link to="/" className="auth-topbar__brand">
+          <img src="/toystore-assets/logo.png" alt="ToyStore" />
+          <strong>ToyStore</strong>
+        </Link>
+        <Link to="/" className="auth-topbar__home">⌂ Trang Chủ</Link>
+      </div>
+
+      <div className="auth-panel auth-panel--register">
+        <img className="auth-panel__logo" src="/toystore-assets/logo.png" alt="ToyStore" />
+
+        <div className="auth-tabs" aria-label="Auth navigation">
+          <Link className="auth-tabs__item" to="/login">Đăng Nhập</Link>
+          <Link className="auth-tabs__item auth-tabs__item--active" to="/register">Đăng Ký</Link>
         </div>
 
         {error && <div className="form-alert">{error}</div>}
         {success && <div className="form-alert form-alert--success">{success}</div>}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form auth-form--compact" onSubmit={handleSubmit}>
           <label>
-            Ho va ten
-            <input
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              placeholder="Nguyen Van A"
-              required
-            />
+            <span>👤 Họ và tên</span>
+            <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Nhập họ tên của bạn" required />
           </label>
 
           <label>
-            Email
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="customer@gmail.com"
-              required
-            />
+            <span>✉ Địa chỉ Email</span>
+            <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Nhập email của bạn" required />
           </label>
 
           <label>
-            So dien thoai
-            <input
-              name="phoneNumber"
-              value={form.phoneNumber}
-              onChange={handleChange}
-              placeholder="0900000000"
-            />
+            <span>☎ Số điện thoại</span>
+            <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="Nhập số điện thoại" />
           </label>
 
           <label>
-            Mat khau
-            <input
-              name="password"
-              type="password"
-              minLength="6"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="It nhat 6 ky tu"
-              required
-            />
+            <span>🔒 Mật khẩu</span>
+            <input name="password" type="password" minLength="6" value={form.password} onChange={handleChange} placeholder="Nhập mật khẩu" required />
+          </label>
+
+          <label>
+            <span>✔ Xác nhận mật khẩu</span>
+            <input name="confirmPassword" type="password" minLength="6" value={form.confirmPassword} onChange={handleChange} placeholder="Nhập lại mật khẩu" required />
           </label>
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Dang xu ly...' : 'Tao tai khoan'}
+            {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ NGAY♣'}
           </button>
         </form>
-
-        <p className="auth-card__switch">
-          Da co tai khoan? <Link to="/login">Dang nhap</Link>
-        </p>
       </div>
     </section>
   );

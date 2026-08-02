@@ -1,7 +1,5 @@
 package com.example.new_toy_store.product.application.dto.response;
 
-import com.example.new_toy_store.product.domain.ProductStatus;
-
 import java.util.List;
 
 public class ProductResponse {
@@ -19,8 +17,8 @@ public class ProductResponse {
     private double averageRating;
     private int reviewCount;
     private List<ProductVariantResponse> variants;
-    private ProductStatus statusDetail;
-    private List<ProductStatus> allowedNextStatuses;
+    private ProductEnumOptionResponse statusDetail;
+    private List<ProductEnumOptionResponse> allowedNextStatuses;
     private List<String> allowedActions;
     private boolean purchasable;
     private boolean quickAddAvailable;
@@ -30,8 +28,8 @@ public class ProductResponse {
     public ProductResponse(Integer id, String name, double basePrice, String status, Integer supplierId,
                            List<Integer> categoryIds, String thumbnailUrl, List<ProductImageResponse> images,
                            double averageRating, int reviewCount,
-                           List<ProductVariantResponse> variants, ProductStatus statusDetail,
-                           List<ProductStatus> allowedNextStatuses, List<String> allowedActions,
+                           List<ProductVariantResponse> variants, ProductEnumOptionResponse statusDetail,
+                           List<ProductEnumOptionResponse> allowedNextStatuses, List<String> allowedActions,
                            boolean purchasable, boolean quickAddAvailable,
                            Integer defaultVariantId, int defaultVariantStockQuantity) {
         this.id = id;
@@ -67,8 +65,8 @@ public class ProductResponse {
     public double getAverageRating() { return averageRating; }
     public int getReviewCount() { return reviewCount; }
     public List<ProductVariantResponse> getVariants() { return variants; }
-    public ProductStatus getStatusDetail() { return statusDetail; }
-    public List<ProductStatus> getAllowedNextStatuses() { return allowedNextStatuses; }
+    public ProductEnumOptionResponse getStatusDetail() { return statusDetail; }
+    public List<ProductEnumOptionResponse> getAllowedNextStatuses() { return allowedNextStatuses; }
     public List<String> getAllowedActions() { return allowedActions; }
     public boolean isPurchasable() { return purchasable; }
     public boolean isQuickAddAvailable() { return quickAddAvailable; }

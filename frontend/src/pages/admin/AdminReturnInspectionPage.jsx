@@ -45,7 +45,7 @@ function AdminReturnInspectionPage() {
       setCustomerReturns(customerResult.content || []);
       setSupplierReturns(supplierResult.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai du lieu return.');
+      setError(err.message || 'Kh?ng th? t?i d? li?u return.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ function AdminReturnInspectionPage() {
       setMessage(successMessage);
       await loadData();
     } catch (err) {
-      setError(err.message || 'Thao tac return that bai.');
+      setError(err.message || 'Thao t?c return th?t b?i.');
     } finally {
       setLoading(false);
     }
@@ -74,11 +74,11 @@ function AdminReturnInspectionPage() {
     await runAction(async () => {
       const alerts = await getSupplierReturnCriticalAlerts();
       setSupplierReturns(Array.isArray(alerts) ? alerts : []);
-    }, 'Da tai danh sach canh bao SLA.');
+    }, '?? t?i danh s?ch c?nh b?o SLA.');
   }
 
   if (loading && customerReturns.length === 0 && supplierReturns.length === 0) {
-    return <div className="page-message">Dang tai return inspection...</div>;
+    return <div className="page-message">?ang t?i return inspection...</div>;
   }
 
   return (
@@ -111,11 +111,11 @@ function AdminReturnInspectionPage() {
           <label>Refund note<input value={customerForm.refundNote} onChange={(event) => updateCustomerForm('refundNote', event.target.value)} /></label>
 
           <div className="admin-resource-table__actions">
-            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => requireCustomerReturnInfo(selectedCustomerReturn.id, customerForm.adminMessage), 'Da yeu cau bo sung thong tin.')}>Require info</button>
-            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => receiveCustomerReturn(selectedCustomerReturn.id), 'Da nhan hang return.')}>Receive</button>
-            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => inspectCustomerReturn(selectedCustomerReturn.id, customerForm), 'Da QC return.')}>Inspect</button>
-            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => resolveCustomerReturnDispute(selectedCustomerReturn.id, customerForm), 'Da xu ly dispute.')}>Resolve dispute</button>
-            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => finalizeCustomerReturnRefund(selectedCustomerReturn.id, customerForm.refundNote), 'Da finalize refund.')}>Finalize refund</button>
+            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => requireCustomerReturnInfo(selectedCustomerReturn.id, customerForm.adminMessage), '?? y?u c?u b? sung th?ng tin.')}>Require info</button>
+            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => receiveCustomerReturn(selectedCustomerReturn.id), '?? nh?n h?ng return.')}>Receive</button>
+            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => inspectCustomerReturn(selectedCustomerReturn.id, customerForm), '?? QC return.')}>Inspect</button>
+            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => resolveCustomerReturnDispute(selectedCustomerReturn.id, customerForm), '?? x? l? dispute.')}>Resolve dispute</button>
+            <button type="button" disabled={!selectedCustomerReturn} onClick={() => runAction(() => finalizeCustomerReturnRefund(selectedCustomerReturn.id, customerForm.refundNote), '?? finalize refund.')}>Finalize refund</button>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ function AdminReturnInspectionPage() {
           <button
             type="button"
             disabled={!selectedSupplierReturn}
-            onClick={() => runAction(() => inspectSupplierReturn(selectedSupplierReturn.id, JSON.parse(supplierInspectionJson)), 'Da ghi nhan supplier inspection.')}
+            onClick={() => runAction(() => inspectSupplierReturn(selectedSupplierReturn.id, JSON.parse(supplierInspectionJson)), '?? ghi nh?n supplier inspection.')}
           >
             Inspect supplier return
           </button>

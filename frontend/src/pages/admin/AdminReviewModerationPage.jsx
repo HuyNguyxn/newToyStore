@@ -36,7 +36,7 @@ function AdminReviewModerationPage() {
         setReviews(next.content);
         setPageInfo({ number: next.number, totalPages: next.totalPages, totalElements: next.totalElements });
       })
-      .catch((err) => setError(err.message || 'Khong the tai reviews.'))
+      .catch((err) => setError(err.message || 'Kh?ng th? t?i reviews.'))
       .finally(() => setLoading(false));
   }
 
@@ -54,10 +54,10 @@ function AdminReviewModerationPage() {
     setLoading(true);
     try {
       await replyToReview(selectedReview.id, reply.trim());
-      setMessage('Da gui phan hoi review.');
+      setMessage('?? g?i ph?n h?i review.');
       loadReviews(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Phan hoi review that bai.');
+      setError(err.message || 'Ph?n h?i review th?t b?i.');
     } finally {
       setLoading(false);
     }
@@ -71,17 +71,17 @@ function AdminReviewModerationPage() {
     try {
       await changeReviewStatus(selectedReview.id, nextStatus);
       setStatus(nextStatus);
-      setMessage(`Da doi trang thai review sang ${nextStatus}.`);
+      setMessage(`?? ??i tr?ng th?i review sang ${nextStatus}.`);
       loadReviews(pageInfo.number);
     } catch (err) {
-      setError(err.message || 'Doi trang thai review that bai.');
+      setError(err.message || '??i tr?ng th?i review th?t b?i.');
     } finally {
       setLoading(false);
     }
   }
 
   if (loading && reviews.length === 0) {
-    return <div className="page-message">Dang tai review moderation...</div>;
+    return <div className="page-message">?ang t?i review moderation...</div>;
   }
 
   return (

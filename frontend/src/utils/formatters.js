@@ -26,19 +26,19 @@ export function getProductStatusLabel(product) {
     return '';
   }
 
-  if (product.status === 'Dang ban') {
+  if (product.status === 'Đang bán') {
     return product.status;
   }
 
   if (product.purchasable || product.status === 'ACTIVE') {
-    return 'Dang ban';
+    return 'Đang bán';
   }
 
   if (product.status === 'OUT_OF_STOCK') {
-    return 'Het hang';
+    return 'Hết hàng';
   }
 
-  return product.status || 'Tam an';
+  return product.status || 'Tạm ẩn';
 }
 
 export function formatDateTime(value) {
@@ -57,13 +57,13 @@ export function formatDateTime(value) {
 
 export function getOrderStatusLabel(status) {
   const labels = {
-    PENDING: 'Cho xac nhan',
-    CONFIRMED: 'Da xac nhan',
-    SHIPPED: 'Dang giao',
-    COMPLETED: 'Hoan thanh',
-    PARTIALLY_REFUNDED: 'Hoan mot phan',
-    FULLY_REFUNDED: 'Hoan toan bo',
-    CANCELLED: 'Da huy',
+    PENDING: 'Chờ xác nhận',
+    CONFIRMED: 'Đã xác nhận',
+    SHIPPED: 'Đang giao',
+    COMPLETED: 'Hoàn thành',
+    PARTIALLY_REFUNDED: 'Hoàn một phần',
+    FULLY_REFUNDED: 'Hoàn toàn bộ',
+    CANCELLED: 'Đã hủy',
   };
 
   return labels[status] || status || '';
@@ -71,14 +71,14 @@ export function getOrderStatusLabel(status) {
 
 export function getPaymentStatusLabel(status) {
   const labels = {
-    PENDING: 'Cho thanh toan',
-    SUCCEEDED: 'Thanh cong',
-    FAILED: 'That bai',
-    CANCELLED: 'Da huy',
-    EXPIRED: 'Het han',
-    REFUND_PENDING: 'Cho hoan tien',
-    REFUNDED: 'Da hoan tien',
-    REFUND_FAILED: 'Hoan tien that bai',
+    PENDING: 'Chờ thanh toán',
+    SUCCEEDED: 'Thành công',
+    FAILED: 'Thất bại',
+    CANCELLED: 'Đã hủy',
+    EXPIRED: 'Hết hạn',
+    REFUND_PENDING: 'Chờ hoàn tiền',
+    REFUNDED: 'Đã hoàn tiền',
+    REFUND_FAILED: 'Hoàn tiền thất bại',
   };
 
   return labels[status] || status || '';

@@ -1,12 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { sampleProducts } from '../../data/sampleData.js';
 import { getProducts } from '../../services/productService.js';
 import ProductCard from './components/ProductCard.jsx';
 
+const heroSlides = [
+  {
+    image: '/toystore-assets/hero-1.png',
+    eyebrow: 'ToyStore',
+    title: 'Khám phá thế giới đồ chơi',
+    description: 'Đồ chơi thông minh, gấu bông đáng yêu, lego sáng tạo và quà tặng an toàn cho bé.',
+  },
+  {
+    image: '/toystore-assets/hero-2.png',
+    eyebrow: 'New Collection',
+    title: 'Món quà nhỏ cho niềm vui lớn',
+    description: 'Chọn nhanh những sản phẩm nổi bật, phù hợp cho bé học, chơi và sáng tạo mỗi ngày.',
+  },
+  {
+    image: '/toystore-assets/hero-3.png',
+    eyebrow: 'Best Seller',
+    title: 'Đồ chơi bán chạy trong tuần',
+    description: 'Các mẫu đồ chơi được phụ huynh quan tâm nhiều, dễ mua và dễ thêm vào giỏ hàng.',
+  },
+  {
+    image: '/toystore-assets/hero-4.png',
+    eyebrow: 'Safe Toys',
+    title: 'Ưu tiên trải nghiệm an toàn',
+    description: 'Không gian mua sắm rõ ràng, thân thiện và phù hợp với cửa hàng đồ chơi hiện đại.',
+  },
+];
+
 function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [notice, setNotice] = useState('');
+  const [activeSlide, setActiveSlide] = useState(0);
+  const currentSlide = useMemo(() => heroSlides[activeSlide], [activeSlide]);
 
   useEffect(() => {
     let active = true;
@@ -29,39 +58,41 @@ function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(timerId);
+  }, []);
+
+  function goToPreviousSlide() {
+    setActiveSlide((current) => (current - 1 + heroSlides.length) % heroSlides.length);
+  }
+
+  function goToNextSlide() {
+    setActiveSlide((current) => (current + 1) % heroSlides.length);
+  }
+
   return (
     <div className="home-page home-page--showcase container">
       <section className="home-page__content">
         <section className="hero-banner">
-          <button className="hero-banner__arrow" type="button" aria-label="Previous banner">‹</button>
+          <button className="hero-banner__arrow hero-banner__arrow--left" type="button" aria-label="Banner trước" onClick={goToPreviousSlide}>
+            ‹
+          </button>
           <div className="hero-banner__copy">
-            <span className="hero-banner__eyebrow">ToyStore</span>
-            <h1>Khám phá thế giới đồ chơi</h1>
-            <p>Đồ chơi thông minh, gấu bông đáng yêu, lego sáng tạo và quà tặng an toàn cho bé.</p>
+            <span className="hero-banner__eyebrow">{currentSlide.eyebrow}</span>
+            <h1>{currentSlide.title}</h1>
+            <p>{currentSlide.description}</p>
             <Link to="/products" className="hero-banner__button">Mua sắm ngay</Link>
           </div>
           <div className="hero-banner__visual" aria-hidden="true">
-            <img src="/toystore-assets/hero-1.png" alt="" />
+            <img src={currentSlide.image} alt="" />
           </div>
-          <button className="hero-banner__arrow hero-banner__arrow--right" type="button" aria-label="Next banner">›</button>
-        </section>
-
-        <section className="store-benefits" aria-label="Lợi ích mua sắm">
-          <article>
-            <span>🧸</span>
-            <strong>Đồ chơi an toàn</strong>
-            <p>Ưu tiên sản phẩm phù hợp cho trẻ em.</p>
-          </article>
-          <article>
-            <span>🚚</span>
-            <strong>Giao hàng nội bộ</strong>
-            <p>Theo dõi trạng thái giao hàng rõ ràng.</p>
-          </article>
-          <article>
-            <span>🎁</span>
-            <strong>Khuyến mãi dễ dùng</strong>
-            <p>Áp mã giảm giá trực tiếp trong giỏ hàng.</p>
-          </article>
+          <button className="hero-banner__arrow hero-banner__arrow--right" type="button" aria-label="Banner tiếp theo" onClick={goToNextSlide}>
+            ›
+          </button>
         </section>
 
         {notice && <div className="form-alert form-alert--soft">{notice}</div>}

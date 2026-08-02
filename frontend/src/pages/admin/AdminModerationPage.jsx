@@ -19,7 +19,7 @@ function AdminModerationPage() {
       const result = await getBlacklistedWords({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
       setWords(result.content || []);
     } catch (err) {
-      setError(err.message || 'Khong the tai moderation blacklist.');
+      setError(err.message || 'Kh?ng th? t?i moderation blacklist.');
     }
   }
 
@@ -34,11 +34,11 @@ function AdminModerationPage() {
     try {
       const payload = { word: form.word.trim(), category: form.category };
       if (form.id) await updateBlacklistedWord(form.id, payload); else await createBlacklistedWord(payload);
-      setMessage(form.id ? 'Da cap nhat blacklist word.' : 'Da them blacklist word.');
+      setMessage(form.id ? '?? c?p nh?t blacklist word.' : '?? th?m blacklist word.');
       setForm(emptyForm);
       await loadWords();
     } catch (err) {
-      setError(err.message || 'Luu blacklist word that bai.');
+      setError(err.message || 'L?u blacklist word th?t b?i.');
     }
   }
 
@@ -50,7 +50,7 @@ function AdminModerationPage() {
       setMessage(success);
       await loadWords();
     } catch (err) {
-      setError(err.message || 'Thao tac moderation that bai.');
+      setError(err.message || 'Thao t?c moderation th?t b?i.');
     }
   }
 
@@ -70,7 +70,7 @@ function AdminModerationPage() {
 
         <div className="admin-resource-table">
           <div className="admin-resource-table__head" style={{ gridTemplateColumns: '70px 1fr 130px 160px 240px' }}><span>ID</span><span>Word</span><span>Category</span><span>Created</span><span>Actions</span></div>
-          {words.map((word) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 1fr 130px 160px 240px' }} key={word.id}><span>{word.id}</span><span>{word.word || word.value}</span><span>{word.category?.code || word.category || word.type}</span><span>{formatDateTime(word.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectWord(word)}>Edit</button><button type="button" onClick={() => doAction(() => restoreBlacklistedWord(word.id), 'Da restore word.')}>Restore</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteBlacklistedWord(word.id), 'Da xoa mem word.')}>Delete</button><button type="button" className="is-danger" onClick={() => doAction(() => hardDeleteBlacklistedWord(word.id), 'Da hard delete word.')}>Hard</button></span></div>)}
+          {words.map((word) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 1fr 130px 160px 240px' }} key={word.id}><span>{word.id}</span><span>{word.word || word.value}</span><span>{word.category?.code || word.category || word.type}</span><span>{formatDateTime(word.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectWord(word)}>Edit</button><button type="button" onClick={() => doAction(() => restoreBlacklistedWord(word.id), '?? restore word.')}>Restore</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteBlacklistedWord(word.id), '?? x?a m?m word.')}>Delete</button><button type="button" className="is-danger" onClick={() => doAction(() => hardDeleteBlacklistedWord(word.id), '?? hard delete word.')}>Hard</button></span></div>)}
         </div>
       </div>
     </section>
