@@ -1,28 +1,6 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
-
-// Role-based sidebar configuration
-// requiredRoles: which roles can see this menu item
-const adminNavItems = [
-  { to: '/admin/statistics',       label: 'Thống kê',      icon: '↗',  requiredRoles: ['MANAGER', 'ADMIN'] },
-  { to: '/admin/categories',       label: 'Danh mục',      icon: '▣',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/products',         label: 'Sản phẩm',      icon: '▤',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/suppliers',        label: 'Nhà cung cấp',  icon: '▥',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/imports',          label: 'Nhập hàng',     icon: '↧',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/users',            label: 'Người dùng',    icon: '●',  requiredRoles: ['ADMIN'] },
-  { to: '/admin/orders',           label: 'Đơn hàng',      icon: '≡',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/promotions',       label: 'Khuyến mãi',    icon: '◆',  requiredRoles: ['MANAGER', 'ADMIN'] },
-  { to: '/admin/payments',         label: 'Thanh toán',     icon: '▧',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/refunds',          label: 'Hoàn tiền',     icon: '↩',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/inventory',        label: 'Tồn kho',       icon: '▨',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/logistics',        label: 'Vận chuyển',    icon: '⇄',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/returns',          label: 'Trả hàng',      icon: '▢',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/supplier-returns', label: 'Trả NCC',       icon: '⇤',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/reviews',          label: 'Đánh giá',      icon: '★',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/moderation',       label: 'Kiểm duyệt',   icon: '◈',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-  { to: '/admin/notifications',    label: 'Thông báo',     icon: '●',  requiredRoles: ['MANAGER', 'ADMIN'] },
-  { to: '/admin/uploads',          label: 'Tải ảnh',       icon: '▨',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-];
+import AdminSidebar from './AdminSidebar.jsx';
 
 // Display name for each role
 const roleDisplayNames = {
@@ -44,11 +22,6 @@ function AdminLayout() {
 
   const userRole = user?.role || 'STAFF';
 
-  // Filter nav items based on user role
-  const visibleNavItems = adminNavItems.filter(
-    (item) => item.requiredRoles.includes(userRole)
-  );
-
   function handleLogout() {
     const confirmed = window.confirm('Bạn chắc chắn muốn đăng xuất khỏi trang quản trị?');
 
@@ -61,43 +34,27 @@ function AdminLayout() {
   const badgeStyle = roleBadgeStyles[userRole] || roleBadgeStyles.STAFF;
 
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <span>
-            <img src="/toystore-assets/logo.png" alt="ToyStore" />
-          </span>
-          <div>
-            <strong>ToyStore</strong>
-            <small>Trang quản trị</small>
-          </div>
-        </div>
+    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+      
+      {/* HYBRID ENTERPRISE SIDEBAR */}
+      <AdminSidebar userRole={userRole} />
 
-        <nav className="admin-nav" aria-label="Điều hướng quản trị">
-          {visibleNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => (isActive ? 'is-active' : '')}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="admin-workspace">
-        <header className="admin-topbar">
+      {/* WORKSPACE AREA */}
+      <div className="admin-workspace" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        
+        {/* TOPBAR */}
+        <header className="admin-topbar" style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p>TRANG QUẢN TRỊ</p>
-            <h1>Quản lý cửa hàng</h1>
+            <p style={{ fontSize: '11px', fontWeight: '800', color: '#ea580c', letterSpacing: '0.8px', margin: 0, textTransform: 'uppercase' }}>HỆ THỐNG QUẢN TRỊ ENTERPRISE</p>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: '2px 0 0 0' }}>Bảng điều khiển Quản lý</h1>
           </div>
 
-          <div className="admin-user">
-            <Link to="/" className="admin-view-site">⌂ Xem cửa hàng</Link>
-            <div>
-              <strong>{user?.email || user?.fullName || 'admin@gmail.com'}</strong>
+          <div className="admin-user" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link to="/" className="admin-view-site" style={{ fontSize: '13px', color: '#2563eb', fontWeight: '700', textDecoration: 'none', background: '#eff6ff', padding: '6px 12px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+              ⌂ Xem cửa hàng
+            </Link>
+            <div style={{ textAlign: 'right' }}>
+              <strong style={{ display: 'block', fontSize: '13px', color: '#0f172a' }}>{user?.email || user?.fullName || 'admin@gmail.com'}</strong>
               <span
                 style={{
                   ...badgeStyle,
@@ -112,14 +69,22 @@ function AdminLayout() {
                 {roleDisplayNames[userRole] || userRole}
               </span>
             </div>
-            <button type="button" onClick={handleLogout}>Đăng xuất</button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{ padding: '7px 14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+            >
+              Đăng xuất
+            </button>
           </div>
         </header>
 
-        <main className="admin-main">
+        {/* MAIN WORKSPACE CONTENT */}
+        <main className="admin-main" style={{ flex: 1, padding: '0', background: '#f8fafc' }}>
           <Outlet context={{ userRole }} />
         </main>
       </div>
+
     </div>
   );
 }

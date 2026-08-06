@@ -20,6 +20,8 @@ public interface SupplierReturnRepository extends JpaRepository<SupplierReturn, 
 
     boolean existsByImportNoteIdAndStatusNotIn(Integer importNoteId, Collection<SupplierReturnStatus> statuses);
 
+    long countByStatus(SupplierReturnStatus status);
+
     List<SupplierReturn> findAllByStatusAndUpdatedAtBefore(
             SupplierReturnStatus status,
             LocalDateTime cutoffTime

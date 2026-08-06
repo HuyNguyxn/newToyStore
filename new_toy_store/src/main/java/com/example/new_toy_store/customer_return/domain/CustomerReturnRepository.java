@@ -20,6 +20,8 @@ public interface CustomerReturnRepository extends JpaRepository<CustomerReturn, 
     @EntityGraph(attributePaths = {"items"})
     Page<CustomerReturn> findAll(Specification<CustomerReturn> spec, Pageable pageable);
 
+    long countByStatus(CustomerReturnStatus status);
+
     @EntityGraph(attributePaths = {"items"})
     Optional<CustomerReturn> findById(Integer id);
 
