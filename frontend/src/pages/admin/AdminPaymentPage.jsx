@@ -44,12 +44,14 @@ function getMethodBadgeStyle(method) {
 
 function AdminPaymentPage() {
   const { userRole } = useOutletContext();
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') || '';
   const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
 
   const [payments, setPayments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [refunds, setRefunds] = useState([]);
-  const [filters, setFilters] = useState({ status: '', method: '', orderId: '' });
+  const [filters, setFilters] = useState({ status: initialStatus, method: '', orderId: '' });
   const [providerTransactionId, setProviderTransactionId] = useState('');
   const [reason, setReason] = useState('Cập nhật từ trang quản trị');
   const [message, setMessage] = useState('');
@@ -57,15 +59,16 @@ function AdminPaymentPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPayments();
+    loadPayments(initialStatus);
   }, []);
 
-  async function loadPayments() {
+  async function loadPayments(overrideStatus) {
     setLoading(true);
     setError('');
+    const targetStatus = overrideStatus !== undefined ? overrideStatus : filters.status;
     try {
       const result = await getAdminPayments({
-        status: filters.status || undefined,
+        status: targetStatus || undefined,
         method: filters.method || undefined,
         orderId: filters.orderId || undefined,
         page: 0,

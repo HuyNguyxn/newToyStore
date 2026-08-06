@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getVariantInventoryBatches } from '../../services/inventoryService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 function AdminInventoryPage() {
+  const [searchParams] = useSearchParams();
+  const isLowStockFilter = searchParams.get('lowStock') === 'true';
+
   const [variantId, setVariantId] = useState('');
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [infoNotice, setInfoNotice] = useState(
+    isLowStockFilter ? '⚠️ Đang lọc danh sách các biến thể có lượng tồn kho thấp dưới mức cảnh báo.' : ''
+  );
+
+  useEffect(() => {
+    if (isLowStockFilter) {
+      // Auto fetch batches if variantId or low-stock warning requested
+      setInfoNotice('⚠️ Đang hiển thị các biến thể sắp hết hàng cần bổ sung tồn kho.');
+    }
+  }, [isLowStockFilter]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -37,6 +51,13 @@ function AdminInventoryPage() {
           Lô hàng: {batches.length}
         </div>
       </div>
+
+      {/* INFO NOTICE ALERT */}
+      {infoNotice && (
+        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>
+          {infoNotice}
+        </div>
+      )}
 
       {/* ERROR ALERT */}
       {error && (

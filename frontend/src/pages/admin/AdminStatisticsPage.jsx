@@ -1062,7 +1062,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.pendingPayment}
                   hint="Kiểm tra các giao dịch VNPAY/COD đang chờ xác nhận."
                   tone="pending"
-                  onClick={() => navigate('/admin/payments')}
+                  onClick={() => navigate('/admin/payments?status=PENDING')}
                 />
                 <OperationalAlertCard
                   category="TỒN KHO"
@@ -1070,7 +1070,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.lowStock}
                   hint="Chuẩn bị phiếu nhập kho trước khi các món đồ chơi hot bị hết hàng."
                   tone="warning"
-                  onClick={() => navigate('/admin/inventory')}
+                  onClick={() => navigate('/admin/inventory?lowStock=true')}
                 />
                 <OperationalAlertCard
                   category="SẢN PHẨM"
@@ -1078,7 +1078,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.slowSelling}
                   hint="Xem các sản phẩm có lượt bán thấp để điều chỉnh giá hoặc tạo khuyến mãi."
                   tone="warning"
-                  onClick={() => navigate('/admin/products')}
+                  onClick={() => navigate('/admin/products?filter=SLOW_SELLING')}
                 />
                 <OperationalAlertCard
                   category="ĐƠN HÀNG"
@@ -1086,15 +1086,15 @@ function AdminStatisticsPage() {
                   count={overview.alerts.cancelledOrder}
                   hint="Theo dõi lý do hủy đơn để cải thiện dịch vụ hoặc nguồn hàng."
                   tone="cancelled"
-                  onClick={() => navigate('/admin/orders')}
+                  onClick={() => navigate('/admin/orders?status=CANCELLED')}
                 />
                 <OperationalAlertCard
                   category="ĐÁNH GIÁ"
                   title="Cảnh báo Đánh giá kém (< 3 sao)"
-                  count={lowRatingReviews.length || 0}
+                  count={overview.alerts.lowRatingCount}
                   hint="Xem ngay phản hồi < 3 sao từ khách hàng để hỗ trợ và xử lý dịch vụ."
                   tone="danger"
-                  onClick={() => navigate('/admin/reviews')}
+                  onClick={() => navigate('/admin/reviews?rating=2')}
                 />
               </div>
             </div>

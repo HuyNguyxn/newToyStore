@@ -15,9 +15,12 @@ function getReviewStatusInfo(status) {
 }
 
 function AdminReviewModerationPage() {
+  const [searchParams] = useSearchParams();
+  const initialRating = searchParams.get('rating') || '';
+
   const [reviews, setReviews] = useState([]);
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
-  const [filters, setFilters] = useState({ productId: '', rating: '', status: '', hasAdminReplied: '' });
+  const [filters, setFilters] = useState({ productId: '', rating: initialRating, status: '', hasAdminReplied: '' });
   const [selectedReview, setSelectedReview] = useState(null);
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState('PUBLISHED');
@@ -26,7 +29,7 @@ function AdminReviewModerationPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadReviews(0);
+    loadReviews(0, initialRating);
   }, []);
 
   function normalizePage(result) {
@@ -38,13 +41,14 @@ function AdminReviewModerationPage() {
     };
   }
 
-  function loadReviews(page = pageInfo.number) {
+  function loadReviews(page = pageInfo.number, overrideRating) {
     setLoading(true);
     setError('');
+    const targetRating = overrideRating !== undefined ? overrideRating : filters.rating;
 
     getAdminReviews({
       productId: filters.productId || undefined,
-      rating: filters.rating ? Number(filters.rating) : undefined,
+      rating: targetRating ? Number(targetRating) : undefined,
       status: filters.status || undefined,
       hasAdminReplied: filters.hasAdminReplied === '' ? undefined : (filters.hasAdminReplied === 'true'),
       page,

@@ -38,11 +38,13 @@ function getOrderStatusInfo(status) {
 
 function AdminOrderPage() {
   const { userRole } = useOutletContext();
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') || '';
   const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
 
   const [orders, setOrders] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [filters, setFilters] = useState({ status: '', userId: '' });
+  const [filters, setFilters] = useState({ status: initialStatus, userId: '' });
   const [actionNote, setActionNote] = useState('Cập nhật từ trang quản trị');
   const [shippingForm, setShippingForm] = useState({ newAddress: '', note: '' });
   const [message, setMessage] = useState('');
@@ -57,15 +59,16 @@ function AdminOrderPage() {
   const [tempPhone, setTempPhone] = useState('0398616546');
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(initialStatus);
   }, []);
 
-  async function loadOrders() {
+  async function loadOrders(overrideStatus) {
     setLoading(true);
     setError('');
+    const targetStatus = overrideStatus !== undefined ? overrideStatus : filters.status;
     try {
       const result = await getAdminOrders({
-        status: filters.status || undefined,
+        status: targetStatus || undefined,
         userId: filters.userId || undefined,
         page: 0,
         size: 50,
