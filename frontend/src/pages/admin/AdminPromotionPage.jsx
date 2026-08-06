@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   activatePromotion,
   createPromotion,
@@ -44,6 +44,9 @@ function getPromotionStatusInfo(promo) {
 
 function AdminPromotionPage() {
   const { userRole } = useOutletContext();
+  const [searchParams] = useSearchParams();
+  const createForProduct = searchParams.get('createForProduct');
+  const initialProductName = searchParams.get('productName');
   const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
 
   const [promotions, setPromotions] = useState([]);
@@ -66,6 +69,28 @@ function AdminPromotionPage() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (createForProduct) {
+      const decodedName = initialProductName ? decodeURIComponent(initialProductName) : '';
+      const now = new Date();
+      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      setForm({
+        ...emptyPromotionForm,
+        code: `SALE${createForProduct}`,
+        name: decodedName ? `Giảm giá - ${decodedName}` : `Giảm giá xả hàng SP #${createForProduct}`,
+        targetProductId: `MH${createForProduct}`,
+        discountValue: '15.00',
+        type: 'PERCENTAGE',
+        scope: 'PRODUCT',
+        startDate: toDateTimeInput(now.toISOString()),
+        endDate: toDateTimeInput(nextWeek.toISOString()),
+        description: `Chương trình giảm giá xả hàng dành riêng cho sản phẩm ${decodedName || `PT${createForProduct}`}.`,
+      });
+      setFormStatus('ACTIVE');
+      setViewState('FORM');
+    }
+  }, [createForProduct, initialProductName]);
 
   async function loadInitialData() {
     setLoading(true);

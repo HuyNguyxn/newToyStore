@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { getAdminCategories, getAdminCategoryTree } from '../../services/adminCategoryService.js';
 import {
   addProductImage,
@@ -361,6 +361,7 @@ function TableCategoryBadge({ product, categoriesMap }) {
 
 function AdminProductPage() {
   const { userRole } = useOutletContext();
+  const navigate = useNavigate();
   const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -686,9 +687,25 @@ function AdminProductPage() {
                     <td style={{ padding: '10px', fontWeight: '700', color: '#0f172a' }}>{item.productName}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#d97706' }}>{item.unitsSold} món</td>
                     <td style={{ padding: '10px', textAlign: 'right' }}>
-                      <span style={{ fontSize: '11px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '8px', fontWeight: '800' }}>
-                        Cần xả hàng / Giảm giá
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/promotions?createForProduct=${item.productId}&productName=${encodeURIComponent(item.productName || '')}`)}
+                        style={{
+                          fontSize: '11px',
+                          background: '#fef2f2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca',
+                          padding: '3px 10px',
+                          borderRadius: '8px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
+                      >
+                        Giảm giá
+                      </button>
                     </td>
                   </tr>
                 ))
