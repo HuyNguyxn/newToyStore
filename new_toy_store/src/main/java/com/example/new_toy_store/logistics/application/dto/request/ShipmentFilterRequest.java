@@ -1,6 +1,7 @@
 package com.example.new_toy_store.logistics.application.dto.request;
 
 import com.example.new_toy_store.logistics.domain.ShipmentStatus;
+import com.example.new_toy_store.logistics.domain.ShipmentType;
 import com.example.new_toy_store.logistics.domain.ShippingProviderCode;
 
 import java.time.LocalDate;
@@ -14,6 +15,9 @@ public class ShipmentFilterRequest {
     private String trackingCode;
     private LocalDate fromDate;
     private LocalDate toDate;
+    private ShipmentType shipmentType;
+    private Integer customerReturnId;
+    private Integer supplierReturnId;
 
     public Integer getOrderId() { return orderId; }
     public void setOrderId(Integer orderId) { this.orderId = orderId; }
@@ -29,4 +33,10 @@ public class ShipmentFilterRequest {
     public void setFromDate(LocalDate fromDate) { this.fromDate = fromDate; }
     public LocalDate getToDate() { return toDate; }
     public void setToDate(LocalDate toDate) { this.toDate = toDate; }
+    public ShipmentType getShipmentType() { return shipmentType; }
+    public void setShipmentType(ShipmentType shipmentType) { this.shipmentType = shipmentType; }
+    public Integer getCustomerReturnId() { return customerReturnId; }
+    public void setCustomerReturnId(Integer customerReturnId) { this.customerReturnId = customerReturnId; }
+    public Integer getSupplierReturnId() { return supplierReturnId; }
+    public void setSupplierReturnId(Integer supplierReturnId) { this.supplierReturnId = supplierReturnId; }
 }

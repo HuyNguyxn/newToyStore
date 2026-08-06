@@ -17,6 +17,9 @@ public final class ShipmentSpecification {
                 .and(hasStatus(request.getStatus()))
                 .and(hasProviderCode(request.getProviderCode()))
                 .and(containsTrackingCode(request.getTrackingCode()))
+                .and(hasShipmentType(request.getShipmentType()))
+                .and(hasCustomerReturnId(request.getCustomerReturnId()))
+                .and(hasSupplierReturnId(request.getSupplierReturnId()))
                 .and(createdBetween(request));
     }
 
@@ -38,6 +41,18 @@ public final class ShipmentSpecification {
 
     public static Specification<Shipment> containsTrackingCode(String trackingCode) {
         return BaseSpecification.contains("trackingCode", trackingCode);
+    }
+
+    public static Specification<Shipment> hasShipmentType(Object shipmentType) {
+        return BaseSpecification.isEqual("shipmentType", shipmentType);
+    }
+
+    public static Specification<Shipment> hasCustomerReturnId(Integer customerReturnId) {
+        return BaseSpecification.isEqual("customerReturnId", customerReturnId);
+    }
+
+    public static Specification<Shipment> hasSupplierReturnId(Integer supplierReturnId) {
+        return BaseSpecification.isEqual("supplierReturnId", supplierReturnId);
     }
 
     public static Specification<Shipment> createdBetween(ShipmentFilterRequest request) {

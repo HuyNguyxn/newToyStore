@@ -2,6 +2,7 @@ package com.example.new_toy_store.logistics.application.dto.response;
 
 import com.example.new_toy_store.logistics.domain.ShipmentAction;
 import com.example.new_toy_store.logistics.domain.ShipmentStatus;
+import com.example.new_toy_store.logistics.domain.ShipmentType;
 import com.example.new_toy_store.logistics.domain.ShippingProviderCode;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public class ShipmentResponse {
     private double shippingFee;
     private double codAmount;
     private ShipmentStatus status;
+    private ShipmentType shipmentType;
+    private Integer customerReturnId;
+    private Integer supplierReturnId;
     private int deliveryAttemptCount;
     private String failureReason;
     private LocalDateTime deliveredAt;
@@ -58,6 +62,12 @@ public class ShipmentResponse {
     public void setCodAmount(double codAmount) { this.codAmount = codAmount; }
     public ShipmentStatus getStatus() { return status; }
     public void setStatus(ShipmentStatus status) { this.status = status; }
+    public ShipmentType getShipmentType() { return shipmentType; }
+    public void setShipmentType(ShipmentType shipmentType) { this.shipmentType = shipmentType; }
+    public Integer getCustomerReturnId() { return customerReturnId; }
+    public void setCustomerReturnId(Integer customerReturnId) { this.customerReturnId = customerReturnId; }
+    public Integer getSupplierReturnId() { return supplierReturnId; }
+    public void setSupplierReturnId(Integer supplierReturnId) { this.supplierReturnId = supplierReturnId; }
     public int getDeliveryAttemptCount() { return deliveryAttemptCount; }
     public void setDeliveryAttemptCount(int deliveryAttemptCount) { this.deliveryAttemptCount = deliveryAttemptCount; }
     public String getFailureReason() { return failureReason; }

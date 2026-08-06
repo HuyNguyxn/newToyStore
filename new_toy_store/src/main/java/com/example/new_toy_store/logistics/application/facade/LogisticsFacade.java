@@ -16,4 +16,8 @@ public class LogisticsFacade {
     public ShipmentResponse createForConfirmedOrder(Integer orderId) {
         return logisticsService.createForConfirmedOrder(orderId);
     }
+
+    public ShipmentResponse getShipmentDetails(Integer shipmentId) {
+        return logisticsService.getDetails(shipmentId, 1, true);
+    }
 }

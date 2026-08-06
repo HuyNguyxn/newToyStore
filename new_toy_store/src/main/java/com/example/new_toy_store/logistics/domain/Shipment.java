@@ -1,20 +1,12 @@
 package com.example.new_toy_store.logistics.domain;
 
 import com.example.new_toy_store.global.common.BaseRootEntity;
+import com.example.new_toy_store.logistics.domain.converter.ShipmentStatusConverter;
+import com.example.new_toy_store.logistics.domain.converter.ShipmentTypeConverter;
+import com.example.new_toy_store.logistics.domain.converter.ShippingProviderCodeConverter;
 import com.example.new_toy_store.logistics.domain.exception.InvalidShipmentDataException;
 import com.example.new_toy_store.logistics.domain.exception.InvalidShipmentOperationException;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
@@ -27,8 +19,7 @@ import java.util.List;
 @Table(
         name = "shipments",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_shipment_tracking_code", columnNames = "tracking_code"),
-                @UniqueConstraint(name = "uk_shipment_order", columnNames = "order_id")
+                @UniqueConstraint(name = "uk_shipment_tracking_code", columnNames = "tracking_code")
         },
         indexes = {
                 @Index(name = "idx_shipment_order", columnList = "order_id"),
@@ -36,7 +27,9 @@ import java.util.List;
                 @Index(name = "idx_shipment_status", columnList = "status"),
                 @Index(name = "idx_shipment_provider", columnList = "provider_code"),
                 @Index(name = "idx_shipment_created_at", columnList = "created_at"),
-                @Index(name = "idx_shipment_status_created", columnList = "status, created_at")
+                @Index(name = "idx_shipment_status_created", columnList = "status, created_at"),
+                @Index(name = "idx_shipment_cust_return", columnList = "customer_return_id"),
+                @Index(name = "idx_shipment_supp_return", columnList = "supplier_return_id")
         }
 )
 public class Shipment extends BaseRootEntity {
@@ -50,13 +43,13 @@ public class Shipment extends BaseRootEntity {
     @Column(name = "tracking_code", nullable = false, length = 40)
     private String trackingCode;
 
-    @Column(name = "order_id", nullable = false)
+    @Column(name = "order_id")
     private Integer orderId;
 
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ShippingProviderCodeConverter.class)
     @Column(name = "provider_code", nullable = false, length = 30)
     private ShippingProviderCode providerCode;
 
@@ -78,9 +71,19 @@ public class Shipment extends BaseRootEntity {
     @Column(name = "cod_amount", nullable = false)
     private double codAmount = 0.0;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ShipmentStatusConverter.class)
     @Column(nullable = false, length = 30)
     private ShipmentStatus status;
+
+    @Convert(converter = ShipmentTypeConverter.class)
+    @Column(name = "shipment_type", nullable = false, length = 30)
+    private ShipmentType shipmentType;
+
+    @Column(name = "customer_return_id")
+    private Integer customerReturnId;
+
+    @Column(name = "supplier_return_id")
+    private Integer supplierReturnId;
 
     @Column(name = "delivery_attempt_count", nullable = false)
     private int deliveryAttemptCount = 0;
@@ -115,7 +118,6 @@ public class Shipment extends BaseRootEntity {
         if (trackingCode == null || trackingCode.trim().isEmpty()) {
             throw new InvalidShipmentDataException("trackingCode", "Tracking code must not be empty.");
         }
-        if (orderId == null) throw new InvalidShipmentDataException("orderId", "Order id must not be empty.");
         if (userId == null) throw new InvalidShipmentDataException("userId", "User id must not be empty.");
         if (recipientName == null || recipientName.trim().isEmpty()) {
             throw new InvalidShipmentDataException("recipientName", "Recipient name must not be empty.");
@@ -128,12 +130,61 @@ public class Shipment extends BaseRootEntity {
         this.orderId = orderId;
         this.userId = userId;
         this.providerCode = ShippingProviderCode.SELF_SHIPPING;
+        this.shipmentType = ShipmentType.FORWARD;
         this.recipientName = recipientName.trim();
         this.recipientPhone = sanitize(recipientPhone);
         this.shippingAddressSnapshot = shippingAddressSnapshot.trim();
         this.shippingFee = roundAmount(shippingFee);
         this.codAmount = roundAmount(codAmount);
         this.status = ShipmentStatus.PENDING_PICKUP;
+    }
+
+    public static Shipment createCustomerReturnShipment(
+            String trackingCode,
+            Integer customerReturnId,
+            Integer userId,
+            String recipientName,
+            String recipientPhone,
+            String shippingAddressSnapshot,
+            double shippingFee
+    ) {
+        Shipment s = new Shipment();
+        s.trackingCode = trackingCode;
+        s.customerReturnId = customerReturnId;
+        s.userId = userId;
+        s.recipientName = recipientName;
+        s.recipientPhone = recipientPhone;
+        s.shippingAddressSnapshot = shippingAddressSnapshot;
+        s.shippingFee = shippingFee;
+        s.codAmount = 0.0;
+        s.providerCode = ShippingProviderCode.SELF_SHIPPING;
+        s.shipmentType = ShipmentType.CUSTOMER_RETURN;
+        s.status = ShipmentStatus.PENDING_PICKUP;
+        return s;
+    }
+
+    public static Shipment createSupplierReturnShipment(
+            String trackingCode,
+            Integer supplierReturnId,
+            Integer userId,
+            String recipientName,
+            String recipientPhone,
+            String shippingAddressSnapshot,
+            double shippingFee
+    ) {
+        Shipment s = new Shipment();
+        s.trackingCode = trackingCode;
+        s.supplierReturnId = supplierReturnId;
+        s.userId = userId;
+        s.recipientName = recipientName;
+        s.recipientPhone = recipientPhone;
+        s.shippingAddressSnapshot = shippingAddressSnapshot;
+        s.shippingFee = shippingFee;
+        s.codAmount = 0.0;
+        s.providerCode = ShippingProviderCode.SELF_SHIPPING;
+        s.shipmentType = ShipmentType.SUPPLIER_RETURN;
+        s.status = ShipmentStatus.PENDING_PICKUP;
+        return s;
     }
 
     public void addItem(Integer productId, Integer variantId, String productNameSnapshot, String variantSnapshot, int quantity) {
@@ -213,6 +264,9 @@ public class Shipment extends BaseRootEntity {
     public double getShippingFee() { return shippingFee; }
     public double getCodAmount() { return codAmount; }
     public ShipmentStatus getStatus() { return status; }
+    public ShipmentType getShipmentType() { return shipmentType; }
+    public Integer getCustomerReturnId() { return customerReturnId; }
+    public Integer getSupplierReturnId() { return supplierReturnId; }
     public int getDeliveryAttemptCount() { return deliveryAttemptCount; }
     public String getFailureReason() { return failureReason; }
     public LocalDateTime getDeliveredAt() { return deliveredAt; }

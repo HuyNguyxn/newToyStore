@@ -27,6 +27,14 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
 
     boolean existsByOrderId(Integer orderId);
 
+    Optional<Shipment> findByCustomerReturnId(Integer customerReturnId);
+
+    boolean existsByCustomerReturnId(Integer customerReturnId);
+
+    Optional<Shipment> findBySupplierReturnId(Integer supplierReturnId);
+
+    boolean existsBySupplierReturnId(Integer supplierReturnId);
+
     boolean existsByTrackingCode(String trackingCode);
 
     long countByStatus(ShipmentStatus status);

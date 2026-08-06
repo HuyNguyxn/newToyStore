@@ -32,7 +32,7 @@ public class SupplierReturn extends BaseRootEntity {
     @Column(name = "import_note_id")
     private Integer importNoteId;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.example.new_toy_store.supplier_return.domain.converter.SupplierReturnStatusConverter.class)
     @Column(nullable = false)
     private SupplierReturnStatus status = SupplierReturnStatus.DRAFT;
 

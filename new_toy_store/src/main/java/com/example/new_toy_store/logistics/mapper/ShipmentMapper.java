@@ -51,6 +51,9 @@ public final class ShipmentMapper {
         response.setShippingFee(shipment.getShippingFee());
         response.setCodAmount(shipment.getCodAmount());
         response.setStatus(shipment.getStatus());
+        response.setShipmentType(shipment.getShipmentType());
+        response.setCustomerReturnId(shipment.getCustomerReturnId());
+        response.setSupplierReturnId(shipment.getSupplierReturnId());
         response.setDeliveryAttemptCount(shipment.getDeliveryAttemptCount());
         response.setFailureReason(shipment.getFailureReason());
         response.setDeliveredAt(shipment.getDeliveredAt());

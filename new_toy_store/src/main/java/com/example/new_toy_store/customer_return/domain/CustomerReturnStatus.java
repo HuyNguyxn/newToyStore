@@ -24,10 +24,16 @@ public enum CustomerReturnStatus {
             return Arrays.asList(REQUESTED, REJECTED, CANCELLED);
         }
     },
-    APPROVED("APPROVED", "Đã duyệt - Chờ nhận hàng") {
+    APPROVED("APPROVED", "Đã duyệt - Chờ bưu tá lấy hàng") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(RECEIVED, CANCELLED);
+            return Arrays.asList(RETURNING, CANCELLED);
+        }
+    },
+    RETURNING("RETURNING", "Đang hoàn về kho") {
+        @Override
+        protected List<CustomerReturnStatus> nextStates() {
+            return Collections.singletonList(RECEIVED);
         }
     },
     RECEIVED("RECEIVED", "Kho đã nhận - Đang kiểm định QC") {

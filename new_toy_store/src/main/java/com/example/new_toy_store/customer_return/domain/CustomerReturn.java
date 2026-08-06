@@ -40,7 +40,7 @@ public class CustomerReturn extends BaseRootEntity {
     @Column(name = "is_high_risk", nullable = false)
     private boolean isHighRisk = false;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.example.new_toy_store.customer_return.domain.converter.CustomerReturnStatusConverter.class)
     @Column(nullable = false)
     private CustomerReturnStatus status = CustomerReturnStatus.REQUESTED;
 
@@ -118,6 +118,10 @@ public class CustomerReturn extends BaseRootEntity {
 
     public void cancelByUser(String actionBy, String note) {
         changeStatus(CustomerReturnStatus.CANCELLED, actionBy, note);
+    }
+
+    public void transitReturn(String actionBy, String note) {
+        changeStatus(CustomerReturnStatus.RETURNING, actionBy, note);
     }
 
     public void receiveItems(String actionBy, String note) {

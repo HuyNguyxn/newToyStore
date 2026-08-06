@@ -116,6 +116,16 @@ public class CustomerReturnService {
     }
 
     @Transactional
+    public CustomerReturnResponse transitReturn(Integer id, String operatorUsername) {
+        CustomerReturn rma = getEntity(id);
+        CustomerReturnStatus previousStatus = rma.getStatus();
+        rma.transitReturn(operatorUsername, "Bưu tá đã lấy hàng, hàng đang trên đường hoàn về.");
+        CustomerReturn saved = repository.save(rma);
+        publishStatusChanged(saved, previousStatus, operatorUsername);
+        return CustomerReturnMapper.toResponse(saved);
+    }
+
+    @Transactional
     public CustomerReturnResponse receiveItems(Integer id, String warehouseUsername) {
         CustomerReturn rma = getEntity(id);
         CustomerReturnStatus previousStatus = rma.getStatus();

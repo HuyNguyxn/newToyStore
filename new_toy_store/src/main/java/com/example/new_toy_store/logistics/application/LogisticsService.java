@@ -12,6 +12,7 @@ import com.example.new_toy_store.logistics.application.dto.response.ShipmentResp
 import com.example.new_toy_store.logistics.application.dto.response.ShipmentTrackingLogResponse;
 import com.example.new_toy_store.logistics.domain.Shipment;
 import com.example.new_toy_store.logistics.domain.ShipmentAction;
+import com.example.new_toy_store.logistics.domain.ShipmentType;
 import com.example.new_toy_store.logistics.domain.ShipmentRepository;
 import com.example.new_toy_store.logistics.domain.ShipmentStatus;
 import com.example.new_toy_store.logistics.domain.ShipmentTrackingLog;
@@ -104,6 +105,84 @@ public class LogisticsService {
                 shipment.getTrackingCode(),
                 shipment.getCodAmount()
         ));
+        return ShipmentMapper.toResponse(shipment);
+    }
+
+    @Transactional
+    public ShipmentResponse createForCustomerReturn(
+            Integer returnId,
+            Integer userId,
+            String recipientName,
+            String recipientPhone,
+            String shippingAddressSnapshot,
+            double shippingFee
+    ) {
+        if (shipmentRepository.existsByCustomerReturnId(returnId)) {
+            return shipmentRepository.findByCustomerReturnId(returnId).map(ShipmentMapper::toResponse)
+                    .orElseThrow(() -> new DuplicateShipmentException(returnId));
+        }
+
+        String trackingCode = "RET-" + LocalDateTime.now().format(TRACKING_DATE_FORMAT) + "-" + returnId;
+        Shipment shipment = Shipment.createCustomerReturnShipment(
+                trackingCode,
+                returnId,
+                userId,
+                recipientName,
+                recipientPhone,
+                shippingAddressSnapshot,
+                shippingFee
+        );
+
+        shipmentRepository.save(shipment);
+        addTrackingLog(shipment, "Customer Address", "Return shipment request registered. Waiting for carrier pickup.");
+        
+        eventPublisher.publishEvent(ShipmentCreatedEvent.now(
+                shipment.getId(),
+                null, // No orderId for return
+                shipment.getUserId(),
+                shipment.getTrackingCode(),
+                0.0
+        ));
+        
+        return ShipmentMapper.toResponse(shipment);
+    }
+
+    @Transactional
+    public ShipmentResponse createForSupplierReturn(
+            Integer supplierReturnId,
+            Integer userId,
+            String recipientName,
+            String recipientPhone,
+            String shippingAddressSnapshot,
+            double shippingFee
+    ) {
+        if (shipmentRepository.existsBySupplierReturnId(supplierReturnId)) {
+            return shipmentRepository.findBySupplierReturnId(supplierReturnId).map(ShipmentMapper::toResponse)
+                    .orElseThrow(() -> new DuplicateShipmentException(supplierReturnId));
+        }
+
+        String trackingCode = "SUP-" + LocalDateTime.now().format(TRACKING_DATE_FORMAT) + "-" + supplierReturnId;
+        Shipment shipment = Shipment.createSupplierReturnShipment(
+                trackingCode,
+                supplierReturnId,
+                userId,
+                recipientName,
+                recipientPhone,
+                shippingAddressSnapshot,
+                shippingFee
+        );
+
+        shipmentRepository.save(shipment);
+        addTrackingLog(shipment, "Warehouse", "Supplier return shipment created. Waiting for carrier dispatch.");
+        
+        eventPublisher.publishEvent(ShipmentCreatedEvent.now(
+                shipment.getId(),
+                null,
+                shipment.getUserId(),
+                shipment.getTrackingCode(),
+                0.0
+        ));
+        
         return ShipmentMapper.toResponse(shipment);
     }
 
