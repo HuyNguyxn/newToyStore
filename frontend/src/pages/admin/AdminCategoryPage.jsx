@@ -505,6 +505,21 @@ function AdminCategoryPage() {
     }
   }
 
+  /* Calculate total category count recursively from full category tree */
+  const totalCategoryCount = useMemo(() => {
+    if (tree && tree.length > 0) {
+      const countNodes = (nodes) => {
+        if (!nodes || !Array.isArray(nodes)) return 0;
+        return nodes.reduce((sum, node) => {
+          const subs = getChildren(node);
+          return sum + 1 + countNodes(subs);
+        }, 0);
+      };
+      return countNodes(tree);
+    }
+    return categories.length;
+  }, [tree, categories]);
+
   return (
     <section className="admin-category-page" style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
@@ -515,9 +530,9 @@ function AdminCategoryPage() {
             Sơ đồ cây danh mục
           </h1>
 
-          {/* TOTAL CATEGORIES BADGE MOVED TO TOP HEADER */}
+          {/* ACCURATE TOTAL CATEGORIES BADGE */}
           <span style={{ fontSize: '12px', background: '#fff7ed', border: '1px solid #fed7aa', color: '#ea580c', fontWeight: '800', padding: '5px 14px', borderRadius: '20px' }}>
-            Tổng số danh mục: {categories.length}
+            Tổng số danh mục: {totalCategoryCount}
           </span>
         </div>
 
