@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Area,
   AreaChart,
@@ -1061,6 +1062,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.pendingPayment}
                   hint="Kiểm tra các giao dịch VNPAY/COD đang chờ xác nhận."
                   tone="pending"
+                  onClick={() => navigate('/admin/payments')}
                 />
                 <OperationalAlertCard
                   category="TỒN KHO"
@@ -1068,6 +1070,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.lowStock}
                   hint="Chuẩn bị phiếu nhập kho trước khi các món đồ chơi hot bị hết hàng."
                   tone="warning"
+                  onClick={() => navigate('/admin/inventory')}
                 />
                 <OperationalAlertCard
                   category="SẢN PHẨM"
@@ -1075,6 +1078,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.slowSelling}
                   hint="Xem các sản phẩm có lượt bán thấp để điều chỉnh giá hoặc tạo khuyến mãi."
                   tone="warning"
+                  onClick={() => navigate('/admin/products')}
                 />
                 <OperationalAlertCard
                   category="ĐƠN HÀNG"
@@ -1082,6 +1086,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.cancelledOrder}
                   hint="Theo dõi lý do hủy đơn để cải thiện dịch vụ hoặc nguồn hàng."
                   tone="cancelled"
+                  onClick={() => navigate('/admin/orders')}
                 />
                 <OperationalAlertCard
                   category="ĐÁNH GIÁ"
@@ -1089,6 +1094,7 @@ function AdminStatisticsPage() {
                   count={lowRatingReviews.length || 0}
                   hint="Xem ngay phản hồi < 3 sao từ khách hàng để hỗ trợ và xử lý dịch vụ."
                   tone="danger"
+                  onClick={() => navigate('/admin/reviews')}
                 />
               </div>
             </div>
@@ -1255,7 +1261,7 @@ function KpiSparklineCard({ title, rawNumber, formattedValue, change, strokeColo
   );
 }
 
-function OperationalAlertCard({ category, title, count, hint, tone }) {
+function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
   const isDanger = tone === 'danger';
   const isWarning = tone === 'warning';
   const isCancelled = tone === 'cancelled';
@@ -1264,7 +1270,33 @@ function OperationalAlertCard({ category, title, count, hint, tone }) {
   const badgeColor = isDanger ? '#dc2626' : isWarning ? '#d97706' : isCancelled ? '#64748b' : '#16a34a';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: badgeBg, border: `1px solid ${isDanger ? '#fecaca' : isWarning ? '#fef3c7' : '#e2e8f0'}` }}>
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 18px',
+        borderRadius: '12px',
+        background: badgeBg,
+        border: `1px solid ${isDanger ? '#fecaca' : isWarning ? '#fef3c7' : '#e2e8f0'}`,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.15s ease',
+        userSelect: 'none',
+      }}
+      onMouseEnter={(e) => {
+        if (onClick) {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (onClick) {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = 'none';
+        }
+      }}
+    >
       <div>
         <div style={{ fontSize: '11px', fontWeight: '800', color: badgeColor, letterSpacing: '0.5px' }}>{category}</div>
         <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', margin: '2px 0' }}>{title}</div>
