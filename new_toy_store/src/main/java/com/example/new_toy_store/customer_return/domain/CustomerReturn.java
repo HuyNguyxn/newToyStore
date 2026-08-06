@@ -124,6 +124,10 @@ public class CustomerReturn extends BaseRootEntity {
         changeStatus(CustomerReturnStatus.RETURNING, actionBy, note);
     }
 
+    public void markShippingFailed(String actionBy, String note) {
+        changeStatus(CustomerReturnStatus.SHIPPING_FAILED, actionBy, note);
+    }
+
     public void receiveItems(String actionBy, String note) {
         changeStatus(CustomerReturnStatus.RECEIVED, actionBy, note);
     }

@@ -67,8 +67,7 @@ public class LogisticsService {
     @Transactional
     public ShipmentResponse createForConfirmedOrder(Integer orderId) {
         if (shipmentRepository.existsByOrderId(orderId)) {
-            return shipmentRepository.findByOrderId(orderId).map(ShipmentMapper::toResponse)
-                    .orElseThrow(() -> new DuplicateShipmentException(orderId));
+            throw new DuplicateShipmentException(orderId);
         }
 
         OrderLogisticsSnapshot order = orderFacade.getLogisticsSnapshot(orderId);
@@ -118,8 +117,7 @@ public class LogisticsService {
             double shippingFee
     ) {
         if (shipmentRepository.existsByCustomerReturnId(returnId)) {
-            return shipmentRepository.findByCustomerReturnId(returnId).map(ShipmentMapper::toResponse)
-                    .orElseThrow(() -> new DuplicateShipmentException(returnId));
+            throw new DuplicateShipmentException(returnId);
         }
 
         String trackingCode = "RET-" + LocalDateTime.now().format(TRACKING_DATE_FORMAT) + "-" + returnId;
@@ -157,8 +155,7 @@ public class LogisticsService {
             double shippingFee
     ) {
         if (shipmentRepository.existsBySupplierReturnId(supplierReturnId)) {
-            return shipmentRepository.findBySupplierReturnId(supplierReturnId).map(ShipmentMapper::toResponse)
-                    .orElseThrow(() -> new DuplicateShipmentException(supplierReturnId));
+            throw new DuplicateShipmentException(supplierReturnId);
         }
 
         String trackingCode = "SUP-" + LocalDateTime.now().format(TRACKING_DATE_FORMAT) + "-" + supplierReturnId;

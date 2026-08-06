@@ -126,6 +126,16 @@ public class CustomerReturnService {
     }
 
     @Transactional
+    public CustomerReturnResponse markShippingFailed(Integer id, String reason) {
+        CustomerReturn rma = getEntity(id);
+        CustomerReturnStatus previousStatus = rma.getStatus();
+        rma.markShippingFailed("SYSTEM_CARRIER", reason);
+        CustomerReturn saved = repository.save(rma);
+        publishStatusChanged(saved, previousStatus, "SYSTEM_CARRIER");
+        return CustomerReturnMapper.toResponse(saved);
+    }
+
+    @Transactional
     public CustomerReturnResponse receiveItems(Integer id, String warehouseUsername) {
         CustomerReturn rma = getEntity(id);
         CustomerReturnStatus previousStatus = rma.getStatus();

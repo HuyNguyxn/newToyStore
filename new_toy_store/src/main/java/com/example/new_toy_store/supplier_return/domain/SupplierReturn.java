@@ -161,6 +161,10 @@ public class SupplierReturn extends BaseRootEntity {
         changeStatus(SupplierReturnStatus.SHIPPED, actionBy, note);
     }
 
+    public void markShippingFailed(String actionBy, String note) {
+        changeStatus(SupplierReturnStatus.SHIPPING_FAILED, actionBy, note);
+    }
+
     public void complete(String actionBy, String note) {
         changeStatus(SupplierReturnStatus.COMPLETED, actionBy, note);
     }

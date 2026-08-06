@@ -52,7 +52,19 @@ public enum SupplierReturnStatus {
     SHIPPED("SHIPPED", "Đang xuất trả") {
         @Override
         protected List<SupplierReturnStatus> nextStates() {
-            return List.of(COMPLETED);
+            return Arrays.asList(COMPLETED, SHIPPING_FAILED);
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return true;
+        }
+    },
+
+    SHIPPING_FAILED("SHIPPING_FAILED", "Giao vận thất bại") {
+        @Override
+        protected List<SupplierReturnStatus> nextStates() {
+            return Arrays.asList(APPROVED, CANCELLED);
         }
 
         @Override

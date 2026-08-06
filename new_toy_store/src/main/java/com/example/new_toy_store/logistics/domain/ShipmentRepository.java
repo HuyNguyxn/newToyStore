@@ -19,6 +19,7 @@ import java.util.Optional;
 public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, JpaSpecificationExecutor<Shipment> {
 
     @Override
+    @EntityGraph(attributePaths = "items")
     Page<Shipment> findAll(Specification<Shipment> spec, Pageable pageable);
 
     Page<Shipment> findByUserId(Integer userId, Pageable pageable);
@@ -43,7 +44,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     long countByStatusBetween(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
-            SELECT s.providerCode, s.providerCode, COUNT(s), COALESCE(SUM(s.shippingFee), 0)
+            SELECT s.providerCode, COUNT(s), COALESCE(SUM(s.shippingFee), 0)
               FROM Shipment s
              WHERE s.createdAt >= :from
                AND s.createdAt < :to
@@ -53,7 +54,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     java.util.List<Object[]> aggregateByProvider(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
-            SELECT COALESCE(s.failureReason, 'UNKNOWN'), COALESCE(s.failureReason, 'Unknown'), COUNT(s), 0
+            SELECT COALESCE(s.failureReason, 'UNKNOWN'), COUNT(s), 0
               FROM Shipment s
              WHERE s.status = :status
                AND s.createdAt >= :from
@@ -64,7 +65,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     java.util.List<Object[]> aggregateFailureReasons(@Param("status") ShipmentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
     @Query(value = """
-            SELECT region, region, COUNT(*), COALESCE(SUM(shipping_fee), 0)
+            SELECT region, COUNT(*), COALESCE(SUM(shipping_fee), 0)
               FROM (
                     SELECT TRIM(SUBSTRING_INDEX(s.shipping_address_snapshot, ',', -1)) AS region,
                            s.shipping_fee
@@ -90,8 +91,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Integer>, Jp
     @Query("""
             UPDATE Shipment s
                SET s.deletedAt = CURRENT_TIMESTAMP,
-                   s.updatedAt = CURRENT_TIMESTAMP,
-                   s.version = s.version + 1
+                   s.updatedAt = CURRENT_TIMESTAMP
              WHERE s.id = :id
                AND s.version = :version
                AND s.status IN :deletableStatuses

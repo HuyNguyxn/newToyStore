@@ -8,6 +8,7 @@ import {
   rejectSupplierReturn,
   shipSupplierReturn,
   submitSupplierReturn,
+  getSupplierReturnCriticalAlerts,
 } from '../../services/adminReturnService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
@@ -29,6 +30,12 @@ function getSupplierReturnStatusInfo(status) {
   if (statusStr === 'SHIPPED') {
     return { label: 'Đang vận chuyển', bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' };
   }
+  if (statusStr === 'SHIPPING_FAILED') {
+    return { label: 'Giao vận thất bại', bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' };
+  }
+  if (statusStr === 'PENDING_APPROVAL') {
+    return { label: 'Chờ duyệt', bg: '#fef3c7', color: '#d97706', border: '#fde68a' };
+  }
   if (statusStr === 'REJECTED') {
     return { label: 'Từ chối', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
   }
@@ -37,6 +44,8 @@ function getSupplierReturnStatusInfo(status) {
 
 function AdminSupplierReturnPage() {
   const [returns, setReturns] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({ supplierId: '', status: '' });
   
   // Basic info form fields
@@ -49,6 +58,7 @@ function AdminSupplierReturnPage() {
 
   // Interactive items list in state
   const [items, setItems] = useState([]);
+  const [slaAlerts, setSlaAlerts] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [loadingImport, setLoadingImport] = useState(false);
@@ -57,20 +67,27 @@ function AdminSupplierReturnPage() {
 
   useEffect(() => {
     loadReturns();
-  }, []);
+  }, [currentPage]);
 
   async function loadReturns() {
     setLoading(true);
     setError('');
     try {
-      const result = await getSupplierReturns({
-        supplierId: filters.supplierId || undefined,
-        status: filters.status || undefined,
-        page: 0,
-        size: 50,
-        sort: 'createdAt,desc',
-      });
+      const [result, alertsResult] = await Promise.all([
+        getSupplierReturns({
+          supplierId: filters.supplierId || undefined,
+          status: filters.status || undefined,
+          page: currentPage,
+          size: 50,
+          sort: 'createdAt,desc',
+        }),
+        getSupplierReturnCriticalAlerts().catch(() => [])
+      ]);
       setReturns(result.content || result || []);
+      setSlaAlerts(alertsResult || []);
+      if (result.totalPages !== undefined) {
+        setTotalPages(result.totalPages);
+      }
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách trả hàng nhà cung cấp.');
       setReturns([]);
@@ -124,11 +141,11 @@ function AdminSupplierReturnPage() {
       productId: '',
       variantId: '',
       productName: '',
-      importedQty: 999,
+      importedQty: 0,
       quantity: 1,
       returnPrice: 0,
       reasonCode: 'DAMAGED',
-      batchNumber: 'BATCH-MANUAL',
+      batchNumber: '',
       expiryDate: '',
     };
     setItems((current) => [...current, newRow]);
@@ -189,7 +206,7 @@ function AdminSupplierReturnPage() {
           returnPrice: Number(item.returnPrice),
           discountAmount: 0,
           reasonCode: item.reasonCode,
-          batchNumber: item.batchNumber || 'BATCH-001',
+          batchNumber: item.batchNumber || '',
           expiryDate: item.expiryDate || null,
         })),
       };
@@ -225,6 +242,7 @@ function AdminSupplierReturnPage() {
 
   const handleClearFilters = () => {
     setFilters({ supplierId: '', status: '' });
+    setCurrentPage(0);
     setTimeout(() => {
       loadReturns();
     }, 50);
@@ -251,7 +269,8 @@ function AdminSupplierReturnPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          loadReturns();
+          if (currentPage === 0) loadReturns();
+          else setCurrentPage(0);
         }}
         style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
       >
@@ -273,11 +292,13 @@ function AdminSupplierReturnPage() {
           >
             <option value="">Tất cả trạng thái</option>
             <option value="DRAFT">Bản nháp (DRAFT)</option>
-            <option value="SUBMITTED">Chờ duyệt (SUBMITTED)</option>
+            <option value="PENDING_APPROVAL">Chờ duyệt (PENDING_APPROVAL)</option>
             <option value="APPROVED">Đã duyệt (APPROVED)</option>
             <option value="SHIPPED">Đang vận chuyển (SHIPPED)</option>
+            <option value="SHIPPING_FAILED">Giao vận thất bại (SHIPPING_FAILED)</option>
             <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
             <option value="REJECTED">Bị từ chối (REJECTED)</option>
+            <option value="CANCELLED">Đã hủy (CANCELLED)</option>
           </select>
         </div>
 
@@ -306,6 +327,17 @@ function AdminSupplierReturnPage() {
           <h3 style={{ fontSize: '15px', fontWeight: '800', marginBottom: '14px', color: '#0f172a', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
             Danh sách phiếu trả Nhà cung cấp
           </h3>
+
+          {slaAlerts.length > 0 && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px' }}>
+              <div style={{ color: '#b91c1c', fontWeight: '700', fontSize: '13px', marginBottom: '4px' }}>
+                Cảnh báo SLA: Có {slaAlerts.length} phiếu trả hàng quá hạn xử lý!
+              </div>
+              <div style={{ color: '#7f1d1d', fontSize: '12px' }}>
+                Mã phiếu: {slaAlerts.map(a => `#${a.returnId || a.id}`).join(', ')}
+              </div>
+            </div>
+          )}
 
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
@@ -401,6 +433,28 @@ function AdminSupplierReturnPage() {
               )}
             </tbody>
           </table>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '16px' }}>
+            <button
+              type="button"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(c => Math.max(0, c - 1))}
+              style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer', fontSize: '12px' }}
+            >
+              Trang trước
+            </button>
+            <span style={{ fontSize: '13px', display: 'flex', alignItems: 'center' }}>
+              Trang {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages - 1 || totalPages === 0}
+              onClick={() => setCurrentPage(c => c + 1)}
+              style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: currentPage >= totalPages - 1 || totalPages === 0 ? 'not-allowed' : 'pointer', fontSize: '12px' }}
+            >
+              Trang sau
+            </button>
+          </div>
         </div>
 
         {/* RIGHT CARD: DYNAMIC CREATION & INTERACTIVE PRODUCT SELECTOR */}

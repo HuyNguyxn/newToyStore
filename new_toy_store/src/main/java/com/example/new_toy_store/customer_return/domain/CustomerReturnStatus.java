@@ -33,7 +33,13 @@ public enum CustomerReturnStatus {
     RETURNING("RETURNING", "Đang hoàn về kho") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Collections.singletonList(RECEIVED);
+            return Arrays.asList(RECEIVED, SHIPPING_FAILED);
+        }
+    },
+    SHIPPING_FAILED("SHIPPING_FAILED", "Giao vận thất bại") {
+        @Override
+        protected List<CustomerReturnStatus> nextStates() {
+            return Arrays.asList(APPROVED, CANCELLED);
         }
     },
     RECEIVED("RECEIVED", "Kho đã nhận - Đang kiểm định QC") {

@@ -1,7 +1,9 @@
 package com.example.new_toy_store.supplier_return.application.listener;
 
+import com.example.new_toy_store.global.event.ShipmentCancelledEvent;
 import com.example.new_toy_store.global.event.ShipmentDeliveredEvent;
 import com.example.new_toy_store.global.event.ShipmentInTransitEvent;
+import com.example.new_toy_store.global.event.ShipmentReturnedEvent;
 import com.example.new_toy_store.logistics.application.dto.response.ShipmentResponse;
 import com.example.new_toy_store.logistics.application.facade.LogisticsFacade;
 import com.example.new_toy_store.supplier_return.application.SupplierReturnService;
@@ -35,6 +37,22 @@ public class SupplierReturnLogisticsListener {
         ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
         if (shipment != null && shipment.getSupplierReturnId() != null) {
             supplierReturnService.complete(shipment.getSupplierReturnId(), "SYSTEM_CARRIER");
+        }
+    }
+
+    @EventListener
+    public void onShipmentReturned(ShipmentReturnedEvent event) {
+        ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
+        if (shipment != null && shipment.getSupplierReturnId() != null) {
+            supplierReturnService.complete(shipment.getSupplierReturnId(), "SYSTEM_WAREHOUSE");
+        }
+    }
+
+    @EventListener
+    public void onShipmentCancelled(ShipmentCancelledEvent event) {
+        ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
+        if (shipment != null && shipment.getSupplierReturnId() != null) {
+            supplierReturnService.markShippingFailed(shipment.getSupplierReturnId(), event.reason());
         }
     }
 }

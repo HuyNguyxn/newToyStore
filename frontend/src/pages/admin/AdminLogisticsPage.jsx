@@ -27,6 +27,8 @@ function getShipmentStatusInfo(status) {
       return { label: 'Đang giao hàng', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
     case 'DELIVERY_FAILED':
       return { label: 'Giao hàng thất bại', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
+    case 'SHIPPING_FAILED':
+      return { label: 'Giao vận thất bại', bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' };
     case 'DELIVERED':
       return { label: 'Giao thành công', bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
     case 'RETURNED':
@@ -68,16 +70,18 @@ function AdminLogisticsPage() {
     supplierReturnId: '',
   });
   const [createOrderId, setCreateOrderId] = useState('');
-  const [actionForm, setActionForm] = useState({ action: 'HAND_OVER_TO_CARRIER', reason: '', location: 'Kho trung tâm' });
+  const [actionForm, setActionForm] = useState({ action: 'HAND_OVER_TO_CARRIER', reason: '', location: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    loadShipments();
-  }, []);
+    loadShipments(currentPage);
+  }, [currentPage]);
 
-  async function loadShipments() {
+  async function loadShipments(pageToLoad = currentPage) {
     setLoading(true);
     setError('');
     try {
@@ -88,11 +92,12 @@ function AdminLogisticsPage() {
         shipmentType: filters.shipmentType || undefined,
         customerReturnId: filters.customerReturnId || undefined,
         supplierReturnId: filters.supplierReturnId || undefined,
-        page: 0,
+        page: pageToLoad,
         size: 50,
         sort: 'createdAt,desc',
       });
       setShipments(result.content || result || []);
+      setTotalPages(result.totalPages || 1);
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách vận chuyển.');
       setShipments([]);
@@ -129,8 +134,9 @@ function AdminLogisticsPage() {
 
   const handleClearFilters = () => {
     setFilters({ orderId: '', status: '', trackingCode: '', shipmentType: '', customerReturnId: '', supplierReturnId: '' });
+    setCurrentPage(0);
     setTimeout(() => {
-      loadShipments();
+      loadShipments(0);
     }, 50);
   };
 
@@ -143,7 +149,7 @@ function AdminLogisticsPage() {
           Quản lý Vận chuyển & Logistics
         </h1>
         <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Tổng số vận đơn: {shipments.length}
+          Tổng số vận đơn: {shipments.length} | Trang {currentPage + 1} / {totalPages}
         </div>
       </div>
 
@@ -155,7 +161,8 @@ function AdminLogisticsPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          loadShipments();
+          setCurrentPage(0);
+          loadShipments(0);
         }}
         style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
       >
@@ -408,7 +415,7 @@ function AdminLogisticsPage() {
                             fontWeight: '700',
                           }}
                         >
-                          {typeInfo.label}
+                          {s.shipmentTypeDisplayName || typeInfo.label}
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '700' }}>
@@ -439,7 +446,7 @@ function AdminLogisticsPage() {
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', color: '#334155' }}>
-                        {s.carrierName || s.providerCode || 'Chưa nhận'}
+                        {s.providerDisplayName || s.carrierName || s.providerCode || 'Chưa nhận'}
                       </td>
                       <td style={{ padding: '14px 16px', color: '#64748b', fontWeight: '600' }}>
                         {s.trackingCode || '-'}
@@ -488,6 +495,27 @@ function AdminLogisticsPage() {
               )}
             </tbody>
           </table>
+          
+          {totalPages > 1 && (
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', gap: '10px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 0 ? '#f1f5f9' : '#ffffff', color: currentPage === 0 ? '#94a3b8' : '#334155', cursor: currentPage === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Trang trước
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage >= totalPages - 1 ? '#f1f5f9' : '#ffffff', color: currentPage >= totalPages - 1 ? '#94a3b8' : '#334155', cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Trang sau
+              </button>
+            </div>
+          )}
         </div>
 
         {/* LOGS PANEL */}

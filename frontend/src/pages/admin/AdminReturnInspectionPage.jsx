@@ -30,6 +30,36 @@ function getReturnStatusInfo(status) {
   if (statusStr === 'REJECTED' || statusStr === 'FAILED') {
     return { label: 'Từ chối', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
   }
+  if (statusStr === 'RETURNING') {
+    return { label: 'Đang hoàn về', bg: '#fef3c7', color: '#b45309', border: '#fde68a' };
+  }
+  if (statusStr === 'SHIPPING_FAILED') {
+    return { label: 'Giao vận thất bại', bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' };
+  }
+  if (statusStr === 'APPROVED') {
+    return { label: 'Đã duyệt', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+  }
+  if (statusStr === 'NEEDS_MORE_INFO') {
+    return { label: 'Cần bổ sung', bg: '#fff7ed', color: '#ea580c', border: '#ffedd5' };
+  }
+  if (statusStr === 'INSPECTED_OK') {
+    return { label: 'QC Đạt', bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
+  }
+  if (statusStr === 'INSPECTED_FAILED') {
+    return { label: 'QC Không đạt', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' };
+  }
+  if (statusStr === 'DISPUTED') {
+    return { label: 'Đang tranh chấp', bg: '#faf5ff', color: '#7c3aed', border: '#e9d5ff' };
+  }
+  if (statusStr === 'REFUNDED') {
+    return { label: 'Đã hoàn tiền', bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
+  }
+  if (statusStr === 'REPLACED') {
+    return { label: 'Đã đổi hàng', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+  }
+  if (statusStr === 'CANCELLED') {
+    return { label: 'Đã hủy', bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+  }
   return { label: statusStr, bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
 }
 
@@ -43,48 +73,89 @@ function AdminReturnInspectionPage() {
   const [supplierInspectionItems, setSupplierInspectionItems] = useState([]);
 
   const [customerForm, setCustomerForm] = useState({
-    adminMessage: 'Vui lòng cung cấp thêm hình ảnh chứng minh trả hàng.',
+    adminMessage: '',
     isPassed: true,
-    qcNote: 'Đã kiểm định QC đạt yêu cầu.',
+    qcNote: '',
     isApproved: true,
-    resolutionNote: 'Đã thống nhất giải pháp xử lý.',
-    refundNote: 'Hoàn tiền cho khách hàng.',
+    resolutionNote: '',
+    refundNote: '',
   });
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Pagination states
+  const [customerPage, setCustomerPage] = useState(0);
+  const [customerTotalPages, setCustomerTotalPages] = useState(1);
+  const [supplierPage, setSupplierPage] = useState(0);
+  const [supplierTotalPages, setSupplierTotalPages] = useState(1);
 
-  async function loadData() {
+  // Filter states for Customer Returns
+  const [customerFilters, setCustomerFilters] = useState({
+    status: '',
+    orderId: ''
+  });
+  
+  const [activeCustomerFilters, setActiveCustomerFilters] = useState({
+    status: '',
+    orderId: ''
+  });
+
+  useEffect(() => {
+    loadCustomerData();
+  }, [customerPage, activeCustomerFilters]);
+
+  useEffect(() => {
+    loadSupplierData();
+  }, [supplierPage]);
+
+  async function loadCustomerData() {
     setLoading(true);
     setError('');
-
     try {
-      const [custRes, suppRes] = await Promise.allSettled([
-        getCustomerReturns({ page: 0, size: 20, sort: 'createdAt,desc' }),
-        getSupplierReturns({ page: 0, size: 20, sort: 'createdAt,desc' }),
-      ]);
-
-      if (custRes.status === 'fulfilled') {
-        setCustomerReturns(custRes.value?.content || custRes.value || []);
-      } else {
-        setCustomerReturns([]);
+      const filters = { page: customerPage, size: 10, sort: 'createdAt,desc' };
+      if (activeCustomerFilters.status && activeCustomerFilters.status !== 'all') {
+        filters.status = activeCustomerFilters.status;
       }
-
-      if (suppRes.status === 'fulfilled') {
-        setSupplierReturns(suppRes.value?.content || suppRes.value || []);
-      } else {
-        setSupplierReturns([]);
+      if (activeCustomerFilters.orderId) {
+        filters.orderId = activeCustomerFilters.orderId;
       }
+      
+      const res = await getCustomerReturns(filters);
+      setCustomerReturns(res?.content || res || []);
+      setCustomerTotalPages(res?.totalPages || 1);
     } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách phiếu trả hàng.');
+      setError(err?.message || 'Không thể tải danh sách phiếu trả hàng khách hàng.');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadSupplierData() {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await getSupplierReturns({ page: supplierPage, size: 10, sort: 'createdAt,desc' });
+      setSupplierReturns(res?.content || res || []);
+      setSupplierTotalPages(res?.totalPages || 1);
+    } catch (err) {
+      setError(err?.message || 'Không thể tải danh sách phiếu trả hàng nhà cung cấp.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleFilterCustomer() {
+    setCustomerPage(0);
+    setActiveCustomerFilters({ ...customerFilters });
+  }
+
+  function handleClearFilterCustomer() {
+    const defaultFilters = { status: '', orderId: '' };
+    setCustomerFilters(defaultFilters);
+    setActiveCustomerFilters(defaultFilters);
+    setCustomerPage(0);
   }
 
   function handleSelectSupplierReturn(item) {
@@ -118,7 +189,7 @@ function AdminReturnInspectionPage() {
     try {
       await action();
       setMessage(successMessage);
-      await loadData();
+      await Promise.all([loadCustomerData(), loadSupplierData()]);
       setSelectedCustomerReturn(null);
       setSelectedSupplierReturn(null);
       setSupplierInspectionItems([]);
@@ -136,7 +207,7 @@ function AdminReturnInspectionPage() {
           Kiểm định hàng trả
         </h1>
         <button
-          onClick={loadData}
+          onClick={() => { loadCustomerData(); loadSupplierData(); }}
           style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
         >
           Làm mới dữ liệu
@@ -159,6 +230,49 @@ function AdminReturnInspectionPage() {
               Phiếu yêu cầu trả hàng từ Khách hàng
             </h3>
             
+            {/* Filter Bar */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
+              <select
+                value={customerFilters.status}
+                onChange={(e) => setCustomerFilters({ ...customerFilters, status: e.target.value })}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="REQUESTED">REQUESTED</option>
+                <option value="NEEDS_MORE_INFO">NEEDS_MORE_INFO</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="RETURNING">RETURNING</option>
+                <option value="SHIPPING_FAILED">SHIPPING_FAILED</option>
+                <option value="RECEIVED">RECEIVED</option>
+                <option value="INSPECTED_OK">INSPECTED_OK</option>
+                <option value="INSPECTED_FAILED">INSPECTED_FAILED</option>
+                <option value="REJECTED">REJECTED</option>
+                <option value="DISPUTED">DISPUTED</option>
+                <option value="REFUNDED">REFUNDED</option>
+                <option value="REPLACED">REPLACED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Mã ĐH..."
+                value={customerFilters.orderId}
+                onChange={(e) => setCustomerFilters({ ...customerFilters, orderId: e.target.value })}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', width: '120px' }}
+              />
+              <button
+                onClick={handleFilterCustomer}
+                style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Lọc
+              </button>
+              <button
+                onClick={handleClearFilterCustomer}
+                style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
@@ -208,6 +322,27 @@ function AdminReturnInspectionPage() {
                 )}
               </tbody>
             </table>
+            
+            {/* Pagination */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '16px', gap: '16px' }}>
+              <button
+                disabled={customerPage === 0}
+                onClick={() => setCustomerPage(p => p - 1)}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: customerPage === 0 ? '#f1f5f9' : '#fff', cursor: customerPage === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Trước
+              </button>
+              <span style={{ fontSize: '13px', color: '#475569' }}>
+                Trang {customerPage + 1} / {customerTotalPages || 1}
+              </span>
+              <button
+                disabled={customerPage >= customerTotalPages - 1}
+                onClick={() => setCustomerPage(p => p + 1)}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: customerPage >= customerTotalPages - 1 ? '#f1f5f9' : '#fff', cursor: customerPage >= customerTotalPages - 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Sau
+              </button>
+            </div>
           </div>
 
           {/* Supplier Returns Table */}
@@ -261,6 +396,27 @@ function AdminReturnInspectionPage() {
                 )}
               </tbody>
             </table>
+            
+            {/* Pagination */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '16px', gap: '16px' }}>
+              <button
+                disabled={supplierPage === 0}
+                onClick={() => setSupplierPage(p => p - 1)}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: supplierPage === 0 ? '#f1f5f9' : '#fff', cursor: supplierPage === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Trước
+              </button>
+              <span style={{ fontSize: '13px', color: '#475569' }}>
+                Trang {supplierPage + 1} / {supplierTotalPages || 1}
+              </span>
+              <button
+                disabled={supplierPage >= supplierTotalPages - 1}
+                onClick={() => setSupplierPage(p => p + 1)}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: supplierPage >= supplierTotalPages - 1 ? '#f1f5f9' : '#fff', cursor: supplierPage >= supplierTotalPages - 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Sau
+              </button>
+            </div>
           </div>
 
         </div>
@@ -335,6 +491,57 @@ function AdminReturnInspectionPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Dispute Resolution UI */}
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Giải quyết tranh chấp</label>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                    <input
+                      type="checkbox"
+                      id="disputeApproved"
+                      checked={customerForm.isApproved}
+                      onChange={(e) => updateCustomerForm('isApproved', e.target.checked)}
+                      style={{ marginRight: '8px' }}
+                    />
+                    <label htmlFor="disputeApproved" style={{ fontSize: '12.5px', color: '#334155', cursor: 'pointer' }}>
+                      Chấp nhận tranh chấp (Đồng ý bồi thường/Đổi trả)
+                    </label>
+                  </div>
+                  <textarea
+                    rows="2"
+                    placeholder="Ghi chú giải quyết tranh chấp..."
+                    value={customerForm.resolutionNote}
+                    onChange={(e) => updateCustomerForm('resolutionNote', e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', outline: 'none', resize: 'none', marginBottom: '8px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => runAction(() => resolveCustomerReturnDispute(selectedCustomerReturn.id, { isApproved: customerForm.isApproved, resolutionNote: customerForm.resolutionNote }), 'Đã giải quyết tranh chấp.')}
+                    style={{ width: '100%', padding: '9px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Giải quyết tranh chấp
+                  </button>
+                </div>
+
+                {/* Refund Finalization UI */}
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Hoàn tiền</label>
+                  <textarea
+                    rows="2"
+                    placeholder="Ghi chú hoàn tiền..."
+                    value={customerForm.refundNote}
+                    onChange={(e) => updateCustomerForm('refundNote', e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', outline: 'none', resize: 'none', marginBottom: '8px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => runAction(() => finalizeCustomerReturnRefund(selectedCustomerReturn.id, { refundNote: customerForm.refundNote }), 'Đã hoàn tất hoàn tiền.')}
+                    style={{ width: '100%', padding: '9px', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Hoàn tiền
+                  </button>
+                </div>
+
               </div>
             </div>
           )}

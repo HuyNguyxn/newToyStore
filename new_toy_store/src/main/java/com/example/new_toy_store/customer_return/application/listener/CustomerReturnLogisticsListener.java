@@ -1,8 +1,10 @@
 package com.example.new_toy_store.customer_return.application.listener;
 
 import com.example.new_toy_store.customer_return.application.service.CustomerReturnService;
+import com.example.new_toy_store.global.event.ShipmentCancelledEvent;
 import com.example.new_toy_store.global.event.ShipmentDeliveredEvent;
 import com.example.new_toy_store.global.event.ShipmentInTransitEvent;
+import com.example.new_toy_store.global.event.ShipmentReturnedEvent;
 import com.example.new_toy_store.logistics.application.dto.response.ShipmentResponse;
 import com.example.new_toy_store.logistics.application.facade.LogisticsFacade;
 import org.springframework.context.event.EventListener;
@@ -35,6 +37,22 @@ public class CustomerReturnLogisticsListener {
         ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
         if (shipment != null && shipment.getCustomerReturnId() != null) {
             customerReturnService.receiveItems(shipment.getCustomerReturnId(), "SYSTEM_CARRIER");
+        }
+    }
+
+    @EventListener
+    public void onShipmentReturned(ShipmentReturnedEvent event) {
+        ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
+        if (shipment != null && shipment.getCustomerReturnId() != null) {
+            customerReturnService.receiveItems(shipment.getCustomerReturnId(), "SYSTEM_WAREHOUSE");
+        }
+    }
+
+    @EventListener
+    public void onShipmentCancelled(ShipmentCancelledEvent event) {
+        ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
+        if (shipment != null && shipment.getCustomerReturnId() != null) {
+            customerReturnService.markShippingFailed(shipment.getCustomerReturnId(), event.reason());
         }
     }
 }

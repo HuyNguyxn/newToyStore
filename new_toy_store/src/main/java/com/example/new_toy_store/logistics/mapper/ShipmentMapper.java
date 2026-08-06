@@ -46,7 +46,7 @@ public final class ShipmentMapper {
         response.setProviderCode(shipment.getProviderCode());
         response.setProviderShipmentCode(shipment.getProviderShipmentCode());
         response.setRecipientName(shipment.getRecipientName());
-        response.setRecipientPhone(maskPhone(shipment.getRecipientPhone()));
+        response.setRecipientPhone(shipment.getRecipientPhone());
         response.setShippingAddressSnapshot(shipment.getShippingAddressSnapshot());
         response.setShippingFee(shipment.getShippingFee());
         response.setCodAmount(shipment.getCodAmount());
@@ -54,6 +54,8 @@ public final class ShipmentMapper {
         response.setShipmentType(shipment.getShipmentType());
         response.setCustomerReturnId(shipment.getCustomerReturnId());
         response.setSupplierReturnId(shipment.getSupplierReturnId());
+        response.setShipmentTypeDisplayName(shipment.getShipmentType() != null ? shipment.getShipmentType().getDisplayName() : null);
+        response.setProviderDisplayName(shipment.getProviderCode() != null ? shipment.getProviderCode().getDisplayName() : null);
         response.setDeliveryAttemptCount(shipment.getDeliveryAttemptCount());
         response.setFailureReason(shipment.getFailureReason());
         response.setDeliveredAt(shipment.getDeliveredAt());
@@ -90,8 +92,4 @@ public final class ShipmentMapper {
         return new ShipmentActionResponse(action.name(), action.getDisplayName(), action.getDescription());
     }
 
-    private static String maskPhone(String phone) {
-        if (phone == null || phone.length() < 4) return phone;
-        return "***" + phone.substring(phone.length() - 4);
-    }
 }

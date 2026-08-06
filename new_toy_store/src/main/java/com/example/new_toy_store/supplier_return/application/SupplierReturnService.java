@@ -162,6 +162,16 @@ public class SupplierReturnService {
     }
 
     @Transactional
+    public SupplierReturnResponse markShippingFailed(Integer id, String reason) {
+        SupplierReturn returnNote = getEntity(id);
+        SupplierReturnStatus previousStatus = returnNote.getStatus();
+        returnNote.markShippingFailed("SYSTEM_CARRIER", reason);
+        SupplierReturn saved = repository.save(returnNote);
+        publishStatusChanged(saved, previousStatus, "SYSTEM_CARRIER");
+        return SupplierReturnMapper.mapEntityToResponse(saved);
+    }
+
+    @Transactional
     public SupplierReturnResponse recordInspection(Integer id, SupplierReturnInspectionRequest request, String username) {
         SupplierReturn returnNote = getEntity(id);
 

@@ -25,6 +25,8 @@ public class ShipmentResponse {
     private ShipmentType shipmentType;
     private Integer customerReturnId;
     private Integer supplierReturnId;
+    private String shipmentTypeDisplayName;
+    private String providerDisplayName;
     private int deliveryAttemptCount;
     private String failureReason;
     private LocalDateTime deliveredAt;
@@ -68,6 +70,10 @@ public class ShipmentResponse {
     public void setCustomerReturnId(Integer customerReturnId) { this.customerReturnId = customerReturnId; }
     public Integer getSupplierReturnId() { return supplierReturnId; }
     public void setSupplierReturnId(Integer supplierReturnId) { this.supplierReturnId = supplierReturnId; }
+    public String getShipmentTypeDisplayName() { return shipmentTypeDisplayName; }
+    public void setShipmentTypeDisplayName(String shipmentTypeDisplayName) { this.shipmentTypeDisplayName = shipmentTypeDisplayName; }
+    public String getProviderDisplayName() { return providerDisplayName; }
+    public void setProviderDisplayName(String providerDisplayName) { this.providerDisplayName = providerDisplayName; }
     public int getDeliveryAttemptCount() { return deliveryAttemptCount; }
     public void setDeliveryAttemptCount(int deliveryAttemptCount) { this.deliveryAttemptCount = deliveryAttemptCount; }
     public String getFailureReason() { return failureReason; }
