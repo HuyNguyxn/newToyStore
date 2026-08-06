@@ -49,8 +49,8 @@ const navGroups = [
   },
 ];
 
-/* Helper Component: Process Canvas to Erase All White Background Pixels & Clip Inner Circular Emblem */
-function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 74 }) {
+/* Helper Component: Process Canvas to Erase All White Background Pixels & Zoom in on Inner Circular Emblem */
+function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 180 }) {
   const [cleanSrc, setCleanSrc] = useState(src);
 
   useEffect(() => {
@@ -82,18 +82,29 @@ function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 74 }
   }, [src]);
 
   return (
-    <img
-      src={cleanSrc}
-      alt="ToyStore Logo"
+    <div
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        objectFit: 'contain',
         borderRadius: '50%',
-        clipPath: 'circle(46% at 50% 50%)',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         filter: 'brightness(1.2) drop-shadow(0 6px 16px rgba(234,88,12,0.45))',
       }}
-    />
+    >
+      <img
+        src={cleanSrc}
+        alt="ToyStore Logo"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          transform: 'scale(1.38)', // Zoom in 38% on the inner circular emblem itself
+        }}
+      />
+    </div>
   );
 }
 
@@ -166,9 +177,9 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
   return (
     <aside className="admin-sidebar" style={{ width: '270px', background: '#0b1120', color: '#f8fafc', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       
-      {/* LOGO-ONLY HEADER (Phóng to tối đa 235px khít tràn ra sát 2 ria mép sidebar) */}
-      <div className="admin-brand" style={{ padding: '10px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
-        <TransparentSidebarLogo size={235} />
+      {/* LOGO-ONLY HEADER (Phóng to 38% riêng vòng tròn họa tiết bên trong logo) */}
+      <div className="admin-brand" style={{ padding: '12px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
+        <TransparentSidebarLogo size={180} />
       </div>
 
       {/* SEARCH FILTER BAR */}
