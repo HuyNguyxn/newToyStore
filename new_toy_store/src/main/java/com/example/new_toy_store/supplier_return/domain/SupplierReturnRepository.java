@@ -14,10 +14,8 @@ import java.util.Optional;
 
 public interface SupplierReturnRepository extends JpaRepository<SupplierReturn, Integer>, JpaSpecificationExecutor<SupplierReturn> {
 
-    @EntityGraph(attributePaths = {"items", "histories", "images"})
     Page<SupplierReturn> findAll(Specification<SupplierReturn> spec, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"items", "histories", "images"})
     Optional<SupplierReturn> findById(Integer id);
 
     boolean existsByImportNoteIdAndStatusNotIn(Integer importNoteId, Collection<SupplierReturnStatus> statuses);
