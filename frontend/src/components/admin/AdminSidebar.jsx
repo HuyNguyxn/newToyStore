@@ -50,7 +50,7 @@ const navGroups = [
 ];
 
 /* Helper Component: Process Canvas to Erase All White Background Pixels & Zoom in on Inner Circular Emblem */
-function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 180 }) {
+function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 250 }) {
   const [cleanSrc, setCleanSrc] = useState(src);
 
   useEffect(() => {
@@ -101,7 +101,7 @@ function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 180 
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          transform: 'scale(1.38)', // Zoom in 38% on the inner circular emblem itself
+          transform: 'scale(1.42)', // Zoom in on the inner circular emblem graphics itself
         }}
       />
     </div>
@@ -177,9 +177,9 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
   return (
     <aside className="admin-sidebar" style={{ width: '270px', background: '#0b1120', color: '#f8fafc', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       
-      {/* LOGO-ONLY HEADER (Phóng to 38% riêng vòng tròn họa tiết bên trong logo) */}
-      <div className="admin-brand" style={{ padding: '12px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
-        <TransparentSidebarLogo size={180} />
+      {/* LOGO-ONLY HEADER (Phóng to 250px khít tràn phủ các phần màu đen) */}
+      <div className="admin-brand" style={{ padding: '8px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
+        <TransparentSidebarLogo size={250} />
       </div>
 
       {/* SEARCH FILTER BAR */}
