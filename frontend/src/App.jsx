@@ -205,6 +205,7 @@ function App() {
         <Route path="supplier-returns" element={<AdminSupplierReturnPage />} />
         <Route path="logistics" element={<AdminLogisticsPage />} />
         <Route path="returns" element={<AdminReturnInspectionPage />} />
+        <Route path="return-inspection" element={<AdminReturnInspectionPage />} />
         <Route path="reviews" element={<AdminReviewModerationPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
         <Route
