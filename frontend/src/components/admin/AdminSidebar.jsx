@@ -182,8 +182,8 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
         />
       </div>
 
-      {/* NAVIGATION ACCORDION GROUPS */}
-      <nav className="admin-nav" style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }} aria-label="Điều hướng quản trị">
+      {/* NAVIGATION ACCORDION GROUPS (Flex Column - Tightly Packed) */}
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '2px' }} aria-label="Điều hướng quản trị">
         {navGroups.map((group) => {
           // Filter items by role and search query
           const visibleItems = group.items.filter((item) => {
@@ -197,15 +197,15 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
           const isOpen = normalizedSearch ? true : openGroups[group.id];
 
           return (
-            <div key={group.id} style={{ marginBottom: '8px' }}>
-              {/* GROUP ACCORDION HEADER (Chữ to hơn, khít hơn) */}
+            <div key={group.id} style={{ marginBottom: '4px' }}>
+              {/* GROUP ACCORDION HEADER (Chữ to hơn, khít rịt) */}
               <div
                 onClick={() => toggleGroup(group.id)}
                 style={{
                   display: 'flex',
                   justify: 'space-between',
                   alignItems: 'center',
-                  padding: '6px 8px',
+                  padding: '5px 8px',
                   cursor: 'pointer',
                   fontSize: '12.5px',
                   fontWeight: '900',
