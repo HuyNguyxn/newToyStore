@@ -166,9 +166,9 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
   return (
     <aside className="admin-sidebar" style={{ width: '270px', background: '#0b1120', color: '#f8fafc', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       
-      {/* LOGO-ONLY HEADER (Tách 100% nền trắng, chỉ hiển thị logo hình tròn nội dung bên trong) */}
-      <div className="admin-brand" style={{ padding: '18px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
-        <TransparentSidebarLogo size={74} />
+      {/* LOGO-ONLY HEADER (Tách 100% nền trắng, phóng to khít rộng với menu) */}
+      <div className="admin-brand" style={{ padding: '14px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
+        <TransparentSidebarLogo size={165} />
       </div>
 
       {/* SEARCH FILTER BAR */}
