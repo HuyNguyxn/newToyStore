@@ -20,22 +20,36 @@ const shipmentActions = [
 
 function getShipmentStatusInfo(status) {
   const statusStr = String(status || '').toUpperCase();
-  if (statusStr === 'DELIVERED') {
-    return { label: 'Đã giao thành công', bg: '#d1fae5', color: '#10b981', border: '#a7f3d0' };
+  switch (statusStr) {
+    case 'PENDING_PICKUP':
+      return { label: 'Chờ lấy hàng', bg: '#fffbeb', color: '#d97706', border: '#fde68a' };
+    case 'IN_TRANSIT':
+      return { label: 'Đang giao hàng', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+    case 'DELIVERY_FAILED':
+      return { label: 'Giao hàng thất bại', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
+    case 'DELIVERED':
+      return { label: 'Giao thành công', bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
+    case 'RETURNED':
+      return { label: 'Đã hoàn về kho', bg: '#f3e8ff', color: '#7c3aed', border: '#e9d5ff' };
+    case 'CANCELLED':
+      return { label: 'Đã hủy', bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
+    default:
+      return { label: statusStr, bg: '#f8fafc', color: '#475569', border: '#cbd5e1' };
   }
-  if (statusStr === 'PENDING') {
-    return { label: 'Chờ lấy hàng', bg: '#fef3c7', color: '#d97706', border: '#fde68a' };
+}
+
+function getShipmentTypeInfo(type) {
+  const typeStr = String(type || '').toUpperCase();
+  switch (typeStr) {
+    case 'FORWARD':
+      return { label: 'Đơn bán lẻ', bg: '#fff8f3', color: '#ea580c', border: '#ffedd5' };
+    case 'CUSTOMER_RETURN':
+      return { label: 'Khách hoàn trả', bg: '#eff6ff', color: '#2563eb', border: '#dbeafe' };
+    case 'SUPPLIER_RETURN':
+      return { label: 'Xuất trả NCC', bg: '#f3e8ff', color: '#9333ea', border: '#e9d5ff' };
+    default:
+      return { label: typeStr, bg: '#f8fafc', color: '#475569', border: '#cbd5e1' };
   }
-  if (statusStr === 'IN_TRANSIT' || statusStr === 'PICKED_UP') {
-    return { label: 'Đang giao hàng', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
-  }
-  if (statusStr === 'FAILED') {
-    return { label: 'Giao thất bại', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
-  }
-  if (statusStr === 'CANCELLED') {
-    return { label: 'Đã hủy', bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' };
-  }
-  return { label: statusStr, bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
 }
 
 function AdminLogisticsPage() {
@@ -45,7 +59,14 @@ function AdminLogisticsPage() {
   const [shipments, setShipments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [filters, setFilters] = useState({ orderId: '', status: '', trackingCode: '' });
+  const [filters, setFilters] = useState({
+    orderId: '',
+    status: '',
+    trackingCode: '',
+    shipmentType: '',
+    customerReturnId: '',
+    supplierReturnId: '',
+  });
   const [createOrderId, setCreateOrderId] = useState('');
   const [actionForm, setActionForm] = useState({ action: 'HAND_OVER_TO_CARRIER', reason: '', location: 'Kho trung tâm' });
   const [message, setMessage] = useState('');
@@ -64,6 +85,9 @@ function AdminLogisticsPage() {
         orderId: filters.orderId || undefined,
         status: filters.status || undefined,
         trackingCode: filters.trackingCode || undefined,
+        shipmentType: filters.shipmentType || undefined,
+        customerReturnId: filters.customerReturnId || undefined,
+        supplierReturnId: filters.supplierReturnId || undefined,
         page: 0,
         size: 50,
         sort: 'createdAt,desc',
@@ -104,7 +128,7 @@ function AdminLogisticsPage() {
   }
 
   const handleClearFilters = () => {
-    setFilters({ orderId: '', status: '', trackingCode: '' });
+    setFilters({ orderId: '', status: '', trackingCode: '', shipmentType: '', customerReturnId: '', supplierReturnId: '' });
     setTimeout(() => {
       loadShipments();
     }, 50);
@@ -116,10 +140,10 @@ function AdminLogisticsPage() {
       {/* HEADER ROW */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Quản lý Vận chuyển (Logistics)
+          Quản lý Vận chuyển & Logistics
         </h1>
         <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Vận đơn: {shipments.length}
+          Tổng số vận đơn: {shipments.length}
         </div>
       </div>
 
@@ -133,9 +157,22 @@ function AdminLogisticsPage() {
           e.preventDefault();
           loadShipments();
         }}
-        style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
+        style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
       >
-        <div style={{ flex: '1', minWidth: '160px' }}>
+        <div style={{ flex: '1', minWidth: '120px' }}>
+          <select
+            value={filters.shipmentType}
+            onChange={(e) => setFilters({ ...filters, shipmentType: e.target.value })}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
+          >
+            <option value="">Tất cả loại hình</option>
+            <option value="FORWARD">Đơn bán lẻ (FORWARD)</option>
+            <option value="CUSTOMER_RETURN">Khách hoàn trả (CUSTOMER_RETURN)</option>
+            <option value="SUPPLIER_RETURN">Xuất trả NCC (SUPPLIER_RETURN)</option>
+          </select>
+        </div>
+
+        <div style={{ flex: '1', minWidth: '120px' }}>
           <input
             type="text"
             placeholder="Mã đơn hàng..."
@@ -145,7 +182,27 @@ function AdminLogisticsPage() {
           />
         </div>
 
-        <div style={{ flex: '1', minWidth: '160px' }}>
+        <div style={{ flex: '1', minWidth: '120px' }}>
+          <input
+            type="text"
+            placeholder="Mã khách trả..."
+            value={filters.customerReturnId}
+            onChange={(e) => setFilters({ ...filters, customerReturnId: e.target.value })}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ flex: '1', minWidth: '120px' }}>
+          <input
+            type="text"
+            placeholder="Mã trả NCC..."
+            value={filters.supplierReturnId}
+            onChange={(e) => setFilters({ ...filters, supplierReturnId: e.target.value })}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ flex: '1', minWidth: '150px' }}>
           <input
             type="text"
             placeholder="Mã vận đơn (Tracking Code)..."
@@ -155,18 +212,18 @@ function AdminLogisticsPage() {
           />
         </div>
 
-        <div style={{ flex: '1', minWidth: '160px' }}>
+        <div style={{ flex: '1', minWidth: '150px' }}>
           <select
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ lấy hàng (PENDING)</option>
-            <option value="PICKED_UP">Đã lấy hàng (PICKED_UP)</option>
+            <option value="PENDING_PICKUP">Chờ lấy hàng (PENDING_PICKUP)</option>
             <option value="IN_TRANSIT">Đang giao hàng (IN_TRANSIT)</option>
+            <option value="DELIVERY_FAILED">Giao thất bại (DELIVERY_FAILED)</option>
             <option value="DELIVERED">Đã giao thành công (DELIVERED)</option>
-            <option value="FAILED">Giao thất bại (FAILED)</option>
+            <option value="RETURNED">Đã hoàn về kho (RETURNED)</option>
             <option value="CANCELLED">Đã hủy (CANCELLED)</option>
           </select>
         </div>
@@ -183,7 +240,7 @@ function AdminLogisticsPage() {
             onClick={handleClearFilters}
             style={{ padding: '9px 14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
           >
-            Xóa lọc
+            Xóa bộ lọc
           </button>
         </div>
       </form>
@@ -194,7 +251,7 @@ function AdminLogisticsPage() {
         {/* Create Shipment Card */}
         <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
           <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', margin: '0 0 14px 0' }}>
-            Tạo vận đơn theo Đơn hàng
+            Tạo vận đơn thủ công (Đơn hàng lẻ)
           </h3>
           <form
             onSubmit={(e) => {
@@ -207,7 +264,7 @@ function AdminLogisticsPage() {
               <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Mã đơn hàng *</label>
               <input
                 type="text"
-                placeholder="Nhập mã đơn hàng (ví dụ: 1)..."
+                placeholder="Nhập mã đơn hàng..."
                 value={createOrderId}
                 onChange={(e) => setCreateOrderId(e.target.value)}
                 required
@@ -218,7 +275,7 @@ function AdminLogisticsPage() {
               type="submit"
               style={{ width: '100%', padding: '10px', background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', marginTop: '4px' }}
             >
-              Tạo vận đơn
+              Tạo vận đơn chiều đi
             </button>
           </form>
         </div>
@@ -251,7 +308,7 @@ function AdminLogisticsPage() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Địa điểm</label>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Địa điểm cập nhật</label>
                 <input
                   type="text"
                   value={actionForm.location}
@@ -261,7 +318,7 @@ function AdminLogisticsPage() {
               </div>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Lý do / Mô tả chi tiết</label>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Lý do / Ghi chú chi tiết</label>
               <input
                 type="text"
                 placeholder="Nhập ghi chú chi tiết..."
@@ -286,7 +343,7 @@ function AdminLogisticsPage() {
                 marginTop: '4px',
               }}
             >
-              Cập nhật tiến trình
+              Cập nhật trạng thái bưu cục
             </button>
           </form>
         </div>
@@ -301,30 +358,32 @@ function AdminLogisticsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
-                <th style={{ padding: '14px 16px', width: '60px' }}>ID</th>
-                <th style={{ padding: '14px 16px', width: '80px' }}>Mã Đơn</th>
-                <th style={{ padding: '14px 16px', width: '140px' }}>Trạng thái</th>
-                <th style={{ padding: '14px 16px', width: '150px' }}>Đơn vị vận chuyển</th>
-                <th style={{ padding: '14px 16px', width: '150px' }}>Mã vận đơn</th>
-                <th style={{ padding: '14px 16px', width: '160px', textAlign: 'center' }}>Thao tác</th>
+                <th style={{ padding: '14px 16px', width: '70px' }}>ID</th>
+                <th style={{ padding: '14px 16px', width: '110px' }}>Phân loại</th>
+                <th style={{ padding: '14px 16px', width: '120px' }}>Tham chiếu nguồn</th>
+                <th style={{ padding: '14px 16px', width: '130px' }}>Trạng thái</th>
+                <th style={{ padding: '14px 16px', width: '140px' }}>Hãng vận chuyển</th>
+                <th style={{ padding: '14px 16px', width: '160px' }}>Mã vận đơn</th>
+                <th style={{ padding: '14px 16px', width: '150px', textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
                     Đang tải danh sách vận chuyển...
                   </td>
                 </tr>
               ) : shipments.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                    Không tìm thấy vận đơn nào.
+                  <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                    Không tìm thấy vận đơn nào phù hợp với bộ lọc.
                   </td>
                 </tr>
               ) : (
                 shipments.map((s, idx) => {
                   const statusInfo = getShipmentStatusInfo(s.status);
+                  const typeInfo = getShipmentTypeInfo(s.shipmentType);
 
                   return (
                     <tr
@@ -337,8 +396,31 @@ function AdminLogisticsPage() {
                       <td style={{ padding: '14px 16px', fontWeight: '600', color: '#334155' }}>
                         #{s.id}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: '700', color: '#ea580c' }}>
-                        DH{s.orderId}
+                      <td style={{ padding: '14px 16px' }}>
+                        <span
+                          style={{
+                            background: typeInfo.bg,
+                            color: typeInfo.color,
+                            border: `1px solid ${typeInfo.border}`,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                          }}
+                        >
+                          {typeInfo.label}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', fontWeight: '700' }}>
+                        {s.shipmentType === 'FORWARD' && (
+                          <span style={{ color: '#ea580c' }}>DH{s.orderId}</span>
+                        )}
+                        {s.shipmentType === 'CUSTOMER_RETURN' && (
+                          <span style={{ color: '#2563eb' }}>K-TRA #{s.customerReturnId}</span>
+                        )}
+                        {s.shipmentType === 'SUPPLIER_RETURN' && (
+                          <span style={{ color: '#9333ea' }}>NCC-TRA #{s.supplierReturnId}</span>
+                        )}
                       </td>
                       <td style={{ padding: '14px 16px' }}>
                         <span
@@ -378,7 +460,7 @@ function AdminLogisticsPage() {
                               fontWeight: '700',
                             }}
                           >
-                            Chi tiết / Log
+                            Hành trình
                           </button>
                           {canDelete && (
                             <button
@@ -413,7 +495,7 @@ function AdminLogisticsPage() {
           <aside style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '14px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                Lịch trình Vận đơn #{selected.id}
+                Chi tiết Vận đơn #{selected.id}
               </h3>
               <button
                 type="button"
@@ -426,7 +508,22 @@ function AdminLogisticsPage() {
                 ✕
               </button>
             </div>
+
+            {/* DETAILED SPECIFICATIONS OF SHIPMENT */}
+            <div style={{ marginBottom: '16px', background: '#f8fafc', padding: '12px', borderRadius: '8px', fontSize: '12.5px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', color: '#475569' }}>
+                <div><strong>Người nhận:</strong> {selected.recipientName || 'Chưa rõ'}</div>
+                <div><strong>Điện thoại:</strong> {selected.recipientPhone || 'Ẩn/Không có'}</div>
+                <div style={{ gridColumn: 'span 2' }}><strong>Địa chỉ:</strong> {selected.shippingAddressSnapshot}</div>
+                {selected.codAmount > 0 && (
+                  <div style={{ gridColumn: 'span 2', color: '#ea580c', fontWeight: '700' }}>
+                    Thu hộ COD: {selected.codAmount.toLocaleString()} VND
+                  </div>
+                )}
+              </div>
+            </div>
             
+            <h4 style={{ fontSize: '13px', fontWeight: '750', color: '#334155', margin: '0 0 10px 0' }}>Lịch trình vận đơn</h4>
             <TrackingLogList logs={logs} />
           </aside>
         )}
