@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "@xyflow/react": "^12.11.2",
+    "dagre": "^0.8.5",
     "react": "^18.3.1",
+    "react-d3-tree": "^3.6.6",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^3.10.1",

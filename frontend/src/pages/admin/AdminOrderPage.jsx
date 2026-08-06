@@ -1,28 +1,87 @@
 import { useEffect, useState } from 'react';
-import { cancelAdminOrder, completeAdminOrder, confirmAdminOrder, deleteAdminOrder, getAdminOrderDetails, getAdminOrders, shipAdminOrder, updateAdminOrderShipping } from '../../services/adminOrderService.js';
+import { useOutletContext } from 'react-router-dom';
+import {
+  cancelAdminOrder,
+  completeAdminOrder,
+  confirmAdminOrder,
+  deleteAdminOrder,
+  getAdminOrderDetails,
+  getAdminOrders,
+  shipAdminOrder,
+  updateAdminOrderShipping,
+} from '../../services/adminOrderService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
+// Status badge styling helper
+function getOrderStatusInfo(status) {
+  const code = typeof status === 'object' ? (status?.code || status?.name || '') : String(status || '');
+  const label = typeof status === 'object' ? (status?.displayName || status?.label || '') : '';
+  const statusStr = code.toUpperCase();
+
+  if (statusStr === 'PENDING' || statusStr === 'PROCESSING') {
+    return { label: label || 'Đang xử lý', bg: '#fef3c7', color: '#d97706', border: '#fde68a' };
+  }
+  if (statusStr === 'CONFIRMED' || statusStr === 'CONFIRM') {
+    return { label: label || 'Đã xác nhận', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+  }
+  if (statusStr === 'SHIPPED' || statusStr === 'SHIPPING') {
+    return { label: label || 'Đang giao', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' };
+  }
+  if (statusStr === 'COMPLETED' || statusStr === 'DELIVERED') {
+    return { label: label || 'Đã giao', bg: '#d1fae5', color: '#10b981', border: '#a7f3d0' };
+  }
+  if (statusStr === 'CANCELLED' || statusStr === 'CANCEL') {
+    return { label: label || 'Đã hủy', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
+  }
+  return { label: label || statusStr, bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
+}
+
 function AdminOrderPage() {
+  const { userRole } = useOutletContext();
+  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+
   const [orders, setOrders] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({ status: '', userId: '' });
-  const [actionNote, setActionNote] = useState('Updated from admin dashboard');
+  const [actionNote, setActionNote] = useState('Cập nhật từ trang quản trị');
   const [shippingForm, setShippingForm] = useState({ newAddress: '', note: '' });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
-  useEffect(() => { loadOrders(); }, []);
+  // Edit view states matching Mockup Image 1
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempStatus, setTempStatus] = useState('PENDING');
+  const [tempAddress, setTempAddress] = useState('');
+  const [tempPhone, setTempPhone] = useState('0398616546');
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
   async function loadOrders() {
+    setLoading(true);
+    setError('');
     try {
-      const result = await getAdminOrders({ ...filters, page: 0, size: 20, sort: 'createdAt,desc' });
-      setOrders(result.content || []);
+      const result = await getAdminOrders({
+        status: filters.status || undefined,
+        userId: filters.userId || undefined,
+        page: 0,
+        size: 50,
+        sort: 'createdAt,desc',
+      });
+      setOrders(result.content || result || []);
     } catch (err) {
-      setError(err.message || 'Kh?ng th? t?i orders.');
+      setError(err.message || 'Không thể tải danh sách đơn hàng.');
+    } finally {
+      setLoading(false);
     }
   }
 
   async function selectOrder(order) {
+    setError('');
+    setMessage('');
     setSelected(order);
     setShippingForm({ newAddress: order.shippingAddress || '', note: '' });
     try {
@@ -30,64 +89,715 @@ function AdminOrderPage() {
       setSelected(result);
       setShippingForm({ newAddress: result.shippingAddress || '', note: '' });
     } catch {
-      // Keep table row data if detail endpoint is not available for any reason.
+      // Keep basic row data if details endpoint is not available
     }
   }
 
-  async function doAction(action, success) {
+  async function editOrder(order) {
+    setError('');
+    setMessage('');
+    setSelected(order);
+    setIsEditing(true);
+    setTempStatus(typeof order.status === 'object' ? (order.status?.code || order.status?.name || '') : String(order.status || ''));
+    setTempAddress(order.shippingAddress || '');
+    setTempPhone('0398616546'); // Default mock phone from mockup
+
+    try {
+      const result = await getAdminOrderDetails(order.id);
+      setSelected(result);
+      setTempStatus(typeof result.status === 'object' ? (result.status?.code || result.status?.name || '') : String(result.status || ''));
+      setTempAddress(result.shippingAddress || '');
+    } catch {
+      // Keep row details
+    }
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      // 1. If status changed, transition status
+      const originalStatus = typeof selected.status === 'object' ? (selected.status?.code || selected.status?.name || '') : String(selected.status || '');
+      if (tempStatus !== originalStatus) {
+        let action;
+        if (tempStatus === 'CONFIRMED') action = () => confirmAdminOrder(selected.id, actionNote);
+        else if (tempStatus === 'SHIPPED') action = () => shipAdminOrder(selected.id, actionNote);
+        else if (tempStatus === 'COMPLETED') action = () => completeAdminOrder(selected.id, actionNote);
+        else if (tempStatus === 'CANCELLED') action = () => cancelAdminOrder(selected.id, actionNote);
+        
+        if (action) {
+          await action();
+        }
+      }
+
+      // 2. If address changed, update shipping address
+      if (tempAddress !== (selected.shippingAddress || '')) {
+        await updateAdminOrderShipping(selected.id, { newAddress: tempAddress, note: actionNote });
+      }
+
+      setMessage('Cập nhật đơn hàng thành công.');
+      setIsEditing(false);
+      setSelected(null);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || 'Cập nhật đơn hàng thất bại.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function doAction(action, successMsg) {
     setError('');
     setMessage('');
     try {
       const result = await action();
-      setMessage(success);
+      setMessage(successMsg);
       if (result) setSelected(result);
+      setShowStatusModal(false);
       await loadOrders();
     } catch (err) {
-      setError(err.message || 'Thao t?c order th?t b?i.');
+      setError(err.message || 'Thao tác thất bại.');
     }
   }
 
-  return (
-    <section className="admin-resource">
-      <div className="admin-resource__hero"><div><p>Admin Workflow</p><h2>Orders</h2><span>Manage order lifecycle, shipping address, and order detail inspection.</span></div></div>
-      {error && <div className="form-alert">{error}</div>}{message && <div className="form-alert form-alert--success">{message}</div>}
-      <form className="admin-filter" onSubmit={(e) => { e.preventDefault(); loadOrders(); }}>{Object.keys(filters).map((field) => <label key={field}>{field}<input value={filters[field]} onChange={(e) => setFilters((current) => ({ ...current, [field]: e.target.value }))} /></label>)}<button type="submit">Filter</button></form>
+  const handleClearFilters = () => {
+    setFilters({ status: '', userId: '' });
+    // Reload automatically
+    setTimeout(() => {
+      loadOrders();
+    }, 50);
+  };
 
-      <div className="admin-crud-grid">
-        <div className="admin-resource-table">
-          <div className="admin-resource-table__head" style={{ gridTemplateColumns: '70px 90px 130px 140px 140px 180px 160px' }}><span>ID</span><span>User</span><span>Status</span><span>Payment</span><span>Total</span><span>Created</span><span>Actions</span></div>
-          {orders.map((order) => <div className="admin-resource-table__row" style={{ gridTemplateColumns: '70px 90px 130px 140px 140px 180px 160px' }} key={order.id}><span>{order.id}</span><span>{order.userId}</span><span>{order.status}</span><span>{order.paymentStatus}</span><span>{formatPrice(order.totalAmount)}</span><span>{formatDateTime(order.createdAt)}</span><span className="admin-resource-table__actions"><button type="button" onClick={() => selectOrder(order)}>Manage</button><button type="button" className="is-danger" onClick={() => doAction(() => deleteAdminOrder(order.id), '?? x?a order.')}>Delete</button></span></div>)}
+  // State 1: Editing Order View (Image 1 mockup style)
+  if (selected && isEditing) {
+    return (
+      <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* CONTAINER CARD */}
+        <div style={{ background: '#ffffff', width: '100%', maxWidth: '640px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.02)', padding: '30px 40px', marginTop: '20px' }}>
+          
+          {/* HEADER */}
+          <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#ea580c', textAlign: 'center', marginTop: 0, marginBottom: '24px' }}>
+            Cập nhật đơn hàng
+          </h2>
+
+          {/* ALERTS */}
+          {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>{error}</div>}
+          
+          {/* ORDER BRIEF INFO CARD */}
+          <div style={{ background: '#f8fafc', padding: '18px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '20px', fontSize: '13.5px', color: '#334155' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ color: '#64748b' }}>Mã đơn:</span>
+              <span style={{ fontWeight: '700', color: '#0f172a' }}>DH{selected.id}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ color: '#64748b' }}>Khách hàng:</span>
+              <span style={{ fontWeight: '700', color: '#0f172a' }}>NDF1110</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#64748b' }}>Tổng tiền:</span>
+              <span style={{ fontWeight: '800', color: '#dc2626' }}>{formatPrice(selected.totalAmount)}</span>
+            </div>
+          </div>
+
+          {/* FORM */}
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* TRẠNG THÁI SELECT */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Trạng thái</label>
+              <select
+                value={tempStatus}
+                onChange={(e) => setTempStatus(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: '#fff' }}
+              >
+                <option value="PENDING">Đang xử lý</option>
+                <option value="CONFIRMED">Đã xác nhận</option>
+                <option value="SHIPPED">Đang giao</option>
+                <option value="COMPLETED">Đã giao</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '12px', marginTop: '8px', lineHeight: 1.3 }}>
+                Cẩn thận khi chuyển sang "Đã hủy" hoặc "Đã giao" vì sẽ ảnh hưởng đến tồn kho.
+              </div>
+            </div>
+
+            {/* ĐỊA CHỈ GIAO HÀNG */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Địa chỉ Giao hàng</label>
+              <input
+                type="text"
+                value={tempAddress}
+                onChange={(e) => setTempAddress(e.target.value)}
+                required
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* SĐT GIAO HÀNG */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>SĐT Giao hàng</label>
+              <input
+                type="text"
+                value={tempPhone}
+                onChange={(e) => setTempPhone(e.target.value)}
+                required
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* NGÀY ĐẶT */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>Ngày đặt</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={formatDateTime(selected.createdAt)}
+                  readOnly
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: '#f8fafc', color: '#64748b' }}
+                />
+              </div>
+            </div>
+
+            {/* BUTTONS */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#16a34a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(22,163,74,0.15)'
+                }}
+              >
+                {loading ? 'Đang lưu...' : 'Lưu'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setIsEditing(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#ffffff',
+                  color: '#475569',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                }}
+              >
+                Hủy đơn
+              </button>
+            </div>
+
+          </form>
+
         </div>
 
-        <aside className="admin-api-console">
-          <div className="admin-panel__heading"><div><p>Selected</p><h2>{selected ? `Order #${selected.id}` : 'Choose an order'}</h2></div></div>
-          {selected && (
-            <>
-              <div className="admin-detail-summary">
-                <p><strong>Status:</strong> {selected.status}</p>
-                <p><strong>Total:</strong> {formatPrice(selected.totalAmount)}</p>
-                <p><strong>Address:</strong> {selected.shippingAddress || '-'}</p>
+        {/* FOOTER */}
+        <footer style={{ textAlign: 'center', marginTop: '40px', fontSize: '12px', color: '#94a3b8' }}>
+          © 2026 ToyStore Admin Panel
+        </footer>
+      </section>
+    );
+  }
+
+  // State 2: Detailed Order View (Image 2 mockup style)
+  if (selected) {
+    return (
+      <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        {/* HEADER BAR */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#ea580c', margin: 0 }}>
+            Chi tiết đơn hàng #DH{selected.id}
+          </h1>
+          <button
+            type="button"
+            onClick={() => setSelected(null)}
+            style={{
+              padding: '8px 16px',
+              background: '#ffffff',
+              color: '#475569',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+            }}
+          >
+            ← Quay lại danh sách
+          </button>
+        </div>
+
+        {/* ALERTS */}
+        {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>{error}</div>}
+        {message && <div style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>{message}</div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
+          
+          {/* LEFT COLUMN: GENERAL INFO & RECIPIENT */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Card: Thông tin chung */}
+            <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', marginTop: 0, marginBottom: '14px' }}>
+                Thông tin chung
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px', color: '#334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Ngày đặt:</span>
+                  <span style={{ fontWeight: '600' }}>{formatDateTime(selected.createdAt)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#64748b' }}>Trạng thái:</span>
+                  <span
+                    style={{
+                      background: getOrderStatusInfo(selected.status).bg,
+                      color: getOrderStatusInfo(selected.status).color,
+                      border: `1px solid ${getOrderStatusInfo(selected.status).border}`,
+                      padding: '3px 10px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                    }}
+                  >
+                    {getOrderStatusInfo(selected.status).label}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Tổng tiền:</span>
+                  <span style={{ fontWeight: '800', color: '#dc2626' }}>{formatPrice(selected.totalAmount)}</span>
+                </div>
               </div>
-              <label>Action note<input value={actionNote} onChange={(e) => setActionNote(e.target.value)} /></label>
-              <div className="admin-resource-table__actions">
-                <button type="button" onClick={() => doAction(() => confirmAdminOrder(selected.id, actionNote), '?? confirm order.')}>Confirm</button>
-                <button type="button" onClick={() => doAction(() => shipAdminOrder(selected.id, actionNote), '?? ship order.')}>Ship</button>
-                <button type="button" onClick={() => doAction(() => completeAdminOrder(selected.id, actionNote), '?? complete order.')}>Complete</button>
-                <button type="button" className="is-danger" onClick={() => doAction(() => cancelAdminOrder(selected.id, actionNote), '?? cancel order.')}>Cancel</button>
+            </div>
+
+            {/* Card: Người nhận */}
+            <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', marginTop: 0, marginBottom: '14px' }}>
+                Người nhận
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px', color: '#334155' }}>
+                <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                  Khách hàng ND{selected.userId}
+                </div>
+                <div style={{ color: '#475569' }}>
+                  SĐT: 0398616546
+                </div>
+                <div style={{ color: '#475569', lineHeight: 1.4 }}>
+                  Địa chỉ: {selected.shippingAddress || 'Chưa cập nhật địa chỉ'}
+                </div>
               </div>
-              <div className="admin-line-items">
-                <strong>Items</strong>
-                {(selected.items || []).map((item) => <div className="admin-log-list__item" key={item.id}><strong>{item.productName}</strong><p>{item.variantAttributesSnapshot || 'Default'} x {item.quantity} · {formatPrice((item.price || 0) * item.quantity)}</p></div>)}
-              </div>
-              <form className="admin-line-items" onSubmit={(e) => { e.preventDefault(); doAction(() => updateAdminOrderShipping(selected.id, shippingForm), '?? c?p nh?t ??a ch? giao h?ng.'); }}>
-                <label>New address<input value={shippingForm.newAddress} onChange={(e) => setShippingForm((current) => ({ ...current, newAddress: e.target.value }))} required /></label>
-                <label>Shipping note<input value={shippingForm.note} onChange={(e) => setShippingForm((current) => ({ ...current, note: e.target.value }))} /></label>
-                <button type="submit">Update shipping address</button>
-              </form>
-            </>
-          )}
-        </aside>
+            </div>
+
+            {/* Card: Trạng thái & Địa chỉ cập nhật */}
+            <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px' }}>
+              <button
+                type="button"
+                onClick={() => setShowStatusModal(!showStatusModal)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#ea580c',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(234,88,12,0.2)',
+                }}
+              >
+                Cập nhật trạng thái
+              </button>
+
+              {showStatusModal && (
+                <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Ghi chú hành động:</label>
+                  <input
+                    type="text"
+                    value={actionNote}
+                    onChange={(e) => setActionNote(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', marginBottom: '12px', outline: 'none' }}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => doAction(() => confirmAdminOrder(selected.id, actionNote), 'Xác nhận đơn hàng thành công.')}
+                      style={{ padding: '6px 12px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Xác nhận
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doAction(() => shipAdminOrder(selected.id, actionNote), 'Đã chuyển trạng thái đang giao hàng.')}
+                      style={{ padding: '6px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Giao hàng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doAction(() => completeAdminOrder(selected.id, actionNote), 'Hoàn thành đơn hàng thành công.')}
+                      style={{ padding: '6px 12px', background: '#0d9488', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Hoàn thành
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doAction(() => cancelAdminOrder(selected.id, actionNote), 'Đã hủy đơn hàng.')}
+                      style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Hủy đơn
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      doAction(() => updateAdminOrderShipping(selected.id, shippingForm), 'Đã cập nhật địa chỉ giao hàng.');
+                    }}
+                    style={{ marginTop: '16px', borderTop: '1px solid #cbd5e1', paddingTop: '12px' }}
+                  >
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>Địa chỉ mới:</label>
+                    <input
+                      type="text"
+                      value={shippingForm.newAddress}
+                      onChange={(e) => setShippingForm({ ...shippingForm, newAddress: e.target.value })}
+                      required
+                      style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', marginBottom: '8px', outline: 'none' }}
+                    />
+                    <button
+                      type="submit"
+                      style={{ width: '100%', padding: '8px', background: '#475569', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Cập nhật địa chỉ
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN: PRODUCTS IN ORDER */}
+          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '20px', gridColumn: 'span 2' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', marginTop: 0, marginBottom: '14px' }}>
+              Sản phẩm trong đơn
+            </h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '12px 14px' }}>Tên sản phẩm</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'center', width: '100px' }}>Số lượng</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', width: '140px' }}>Giá</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right', width: '150px' }}>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selected.items || []).map((item) => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img
+                            src="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=120&auto=format&fit=crop&q=60"
+                            alt="product"
+                            style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                          />
+                          <div>
+                            <div style={{ fontWeight: '700', color: '#0f172a' }}>{item.productName}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                              Phân loại: {item.variantAttributesSnapshot || 'Mặc định'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center', fontWeight: '700', color: '#334155' }}>
+                        {item.quantity}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right', color: '#475569' }}>
+                        {formatPrice(item.price)}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: '700', color: '#0f172a' }}>
+                        {formatPrice((item.price || 0) * item.quantity)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td colSpan="3" style={{ padding: '16px 14px', fontWeight: '800', textAlign: 'right', color: '#334155', fontSize: '14px' }}>
+                      TỔNG CỘNG:
+                    </td>
+                    <td style={{ padding: '16px 14px', fontWeight: '900', textAlign: 'right', color: '#dc2626', fontSize: '16px' }}>
+                      {formatPrice(selected.totalAmount)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        {/* FOOTER */}
+        <footer style={{ textAlign: 'center', marginTop: '30px', padding: '16px 0', borderTop: '1px solid #cbd5e1', fontSize: '12px', color: '#94a3b8' }}>
+          © 2026 ToyStore Admin Panel
+        </footer>
+      </section>
+    );
+  }
+
+  // Otherwise, render list view (Image 1 style)
+  return (
+    <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
+      {/* HEADER BAR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Quản lý đơn hàng
+        </h1>
+        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+          Tổng đơn hàng: {orders.length}
+        </div>
       </div>
+
+      {/* ALERTS */}
+      {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>{error}</div>}
+      {message && <div style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>{message}</div>}
+
+      {/* FILTER BAR */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          loadOrders();
+        }}
+        style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
+      >
+        <div style={{ flex: '1', minWidth: '180px' }}>
+          <input
+            type="text"
+            placeholder="Tìm theo Mã KH..."
+            value={filters.userId}
+            onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ flex: '1', minWidth: '180px' }}>
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ xác nhận</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="SHIPPED">Đang giao</option>
+            <option value="COMPLETED">Hoàn thành</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="submit"
+            style={{ padding: '9px 18px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            Lọc
+          </button>
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            style={{ padding: '9px 14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            Xóa lọc
+          </button>
+        </div>
+      </form>
+
+      {/* DATA TABLE */}
+      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'visible' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
+              <th style={{ padding: '14px 16px' }}>Mã ĐH</th>
+              <th style={{ padding: '14px 16px' }}>Ngày đặt</th>
+              <th style={{ padding: '14px 16px', width: '150px' }}>Mã KH</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right', width: '160px' }}>Tổng tiền</th>
+              <th style={{ padding: '14px 16px', width: '160px' }}>Trạng thái</th>
+              <th style={{ padding: '14px 16px', width: '160px', textAlign: 'center' }}>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
+                  Đang tải danh sách đơn hàng...
+                </td>
+              </tr>
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                  Không tìm thấy đơn hàng nào.
+                </td>
+              </tr>
+            ) : (
+              orders.map((order, idx) => {
+                const statusInfo = getOrderStatusInfo(order.status);
+                return (
+                  <tr
+                    key={order.id}
+                    style={{
+                      borderBottom: '1px solid #f1f5f9',
+                      background: idx % 2 === 0 ? '#ffffff' : '#fafafa',
+                    }}
+                  >
+                    {/* Mã ĐH */}
+                    <td style={{ padding: '14px 16px', fontWeight: '800', color: '#ea580c' }}>
+                      DH{order.id}
+                    </td>
+
+                    {/* Ngày đặt */}
+                    <td style={{ padding: '14px 16px', color: '#334155' }}>
+                      {formatDateTime(order.createdAt)}
+                    </td>
+
+                    {/* Mã KH */}
+                    <td style={{ padding: '14px 16px' }}>
+                      <span
+                        style={{
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          border: '1px solid #cbd5e1',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        ND{order.userId}
+                      </span>
+                    </td>
+
+                    {/* Tổng tiền */}
+                    <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '800', color: '#dc2626' }}>
+                      {formatPrice(order.totalAmount)}
+                    </td>
+
+                    {/* Trạng thái */}
+                    <td style={{ padding: '14px 16px' }}>
+                      <span
+                        style={{
+                          background: statusInfo.bg,
+                          color: statusInfo.color,
+                          border: `1px solid ${statusInfo.border}`,
+                          padding: '3px 10px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {statusInfo.label}
+                      </span>
+                    </td>
+
+                    {/* Thao tác */}
+                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
+                        {/* Eye Button */}
+                        <button
+                          type="button"
+                          onClick={() => selectOrder(order)}
+                          title="Xem chi tiết"
+                          style={{
+                            padding: '6px 12px',
+                            background: '#ffffff',
+                            color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                          }}
+                        >
+                          Xem
+                        </button>
+
+                        {/* Pencil Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            editOrder(order);
+                          }}
+                          title="Cập nhật trạng thái"
+                          style={{
+                            padding: '6px 12px',
+                            background: '#ffffff',
+                            color: '#ea580c',
+                            border: '1px solid #ffedd5',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                          }}
+                        >
+                          Sửa
+                        </button>
+
+                        {/* Delete Button */}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => doAction(() => deleteAdminOrder(order.id), 'Đã xóa đơn hàng.')}
+                            title="Xóa đơn hàng"
+                            style={{
+                              padding: '6px 12px',
+                              background: '#ffffff',
+                              color: '#dc2626',
+                              border: '1px solid #fecaca',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '12.5px',
+                              fontWeight: '700',
+                            }}
+                          >
+                            Xóa
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* FOOTER */}
+      <footer style={{ textAlign: 'center', marginTop: '30px', padding: '16px 0', borderTop: '1px solid #cbd5e1', fontSize: '12px', color: '#94a3b8' }}>
+        © 2026 ToyStore Admin Panel
+      </footer>
     </section>
   );
 }

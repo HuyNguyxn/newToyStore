@@ -60,6 +60,12 @@ app:
       password: ${SEED_STAFF_PASSWORD:}
       full-name: ${SEED_STAFF_FULL_NAME:}
       phone-number: ${SEED_STAFF_PHONE:}
+    manager:
+      enabled: ${SEED_MANAGER_ENABLED:false}
+      email: ${SEED_MANAGER_EMAIL:}
+      password: ${SEED_MANAGER_PASSWORD:}
+      full-name: ${SEED_MANAGER_FULL_NAME:}
+      phone-number: ${SEED_MANAGER_PHONE:}
     customer:
       enabled: ${SEED_CUSTOMER_ENABLED:false}
       email: ${SEED_CUSTOMER_EMAIL:}

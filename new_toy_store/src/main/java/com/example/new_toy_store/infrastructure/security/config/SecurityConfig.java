@@ -132,7 +132,7 @@ public class SecurityConfig {
                         .requestMatchers("/notifications/broadcast").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/uploads/images", "/uploads/videos").authenticated()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
 
                         .anyRequest().authenticated()
                 );

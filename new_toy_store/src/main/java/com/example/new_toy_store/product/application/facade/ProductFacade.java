@@ -2,6 +2,7 @@ package com.example.new_toy_store.product.application.facade;
 
 import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
+import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
@@ -34,6 +35,17 @@ public class ProductFacade {
         return productService.searchActiveProducts(keyword, pageable);
     }
 
+    public Page<ProductResponse> filterProducts(
+            String keyword,
+            Integer categoryId,
+            Double minPrice,
+            Double maxPrice,
+            String status,
+            Pageable pageable
+    ) {
+        return productService.filterProducts(keyword, categoryId, minPrice, maxPrice, status, pageable);
+    }
+
     public Page<ProductResponse> filterProductsByPriceAndStatus(
             Double minPrice,
             Double maxPrice,
@@ -53,6 +65,10 @@ public class ProductFacade {
 
     public ProductResponse create(CreateProductRequest request) {
         return productService.create(request);
+    }
+
+    public ProductResponse addVariant(Integer productId, ProductVariantRequest request) {
+        return productService.addVariant(productId, request);
     }
 
     public ProductResponse updateInfo(Integer id, UpdateProductRequest request) {

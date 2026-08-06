@@ -4,6 +4,7 @@ import com.example.new_toy_store.category.domain.Category;
 import com.example.new_toy_store.category.application.facade.CategoryFacade;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
+import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
@@ -160,15 +161,34 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
-        ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : ProductStatus.ACTIVE;
+    public Page<ProductResponse> filterProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String status, Pageable pageable) {
+        ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : null;
 
-        Specification<Product> spec = Specification.where(ProductSpecification.isDistinct())
-                .and(ProductSpecification.priceBetween(minPrice, maxPrice))
-                .and(ProductSpecification.hasStatus(targetStatus));
+        Specification<Product> spec = Specification.where(ProductSpecification.isDistinct());
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            spec = spec.and(ProductSpecification.hasKeyword(keyword.trim()));
+        }
+        if (categoryId != null) {
+            java.util.List<Integer> allCategoryIds = new java.util.ArrayList<>();
+            allCategoryIds.add(categoryId);
+            allCategoryIds.addAll(categoryFacade.getAllSubCategoryIds(categoryId));
+            spec = spec.and(ProductSpecification.hasCategoryIds(allCategoryIds));
+        }
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(ProductSpecification.priceBetween(minPrice, maxPrice));
+        }
+        if (targetStatus != null) {
+            spec = spec.and(ProductSpecification.hasStatus(targetStatus));
+        }
 
         Page<Product> productPage = repository.findAll(spec, pageable);
         return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> filterProductsByPriceAndStatus(Double minPrice, Double maxPrice, String status, Pageable pageable) {
+        return filterProducts(null, null, minPrice, maxPrice, status, pageable);
     }
 
     private Page<ProductResponse> mapProductsToResponsesWithBatchData(Page<Product> productPage) {
@@ -227,6 +247,28 @@ public class ProductService {
         }
 
         repository.save(product);
+        return ProductMapper.toResponseWithSupplier(product, supplier);
+    }
+
+    @Transactional
+    public ProductResponse addVariant(Integer productId, ProductVariantRequest request) {
+        Product product = getProductEntity(productId);
+        Map<String, String> attrs = (request.getAttributes() != null && !request.getAttributes().isEmpty())
+                ? request.getAttributes()
+                : Map.of("Biến thể", "Phiên bản mới");
+
+        product.addRealVariant(
+                attrs,
+                request.getInitialStock(),
+                request.getPrice() > 0 ? request.getPrice() : product.getBasePrice(),
+                request.isMaster()
+        );
+        repository.save(product);
+
+        SupplierResponse supplier = null;
+        if (product.getSupplierId() != null) {
+            supplier = supplierFacade.getSupplierDetails(product.getSupplierId());
+        }
         return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 

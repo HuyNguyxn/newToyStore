@@ -82,6 +82,11 @@ public class OrderService {
 
     @Transactional
     public OrderResponse create(OrderRequest request) {
+        return create(request, null);
+    }
+
+    @Transactional
+    public OrderResponse create(OrderRequest request, Integer cartId) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> OrderCrossModuleException.missingCustomer(request.getUserId()));
 
@@ -100,7 +105,7 @@ public class OrderService {
         repository.save(order);
         eventPublisher.publishEvent(new OrderCreatedEvent(
                 order.getId(),
-                null,
+                cartId,
                 order.getUserId(),
                 toOrderCreatedItemPayloads(order)
         ));

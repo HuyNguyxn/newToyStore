@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+import useAuth from './hooks/useAuth.js';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminCategoryPage from './pages/admin/AdminCategoryPage.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
@@ -44,6 +45,17 @@ import ReviewListPage from './pages/reviews/ReviewListPage.jsx';
 import ShipmentListPage from './pages/shipments/ShipmentListPage.jsx';
 
 const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
+
+// Role-based default redirect for admin panel
+function AdminDefaultRedirect() {
+  const { user } = useAuth();
+  // STAFF can't access statistics, redirect to products
+  if (user?.role === 'STAFF') {
+    return <Navigate to="/admin/products" replace />;
+  }
+  // MANAGER & ADMIN go to statistics
+  return <Navigate to="/admin/statistics" replace />;
+}
 
 function App() {
   return (
@@ -160,20 +172,34 @@ function App() {
       <Route
         path="/admin"
         element={(
-          <ProtectedRoute allowedRoles={['ADMIN']}>
+          <ProtectedRoute allowedRoles={['STAFF', 'MANAGER', 'ADMIN']}>
             <AdminLayout />
           </ProtectedRoute>
         )}
       >
-        <Route index element={<Navigate to="statistics" replace />} />
+        <Route index element={<AdminDefaultRedirect />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
         <Route path="products" element={<AdminProductPage />} />
         <Route path="categories" element={<AdminCategoryPage />} />
         <Route path="orders" element={<AdminOrderPage />} />
         <Route path="payments" element={<AdminPaymentPage />} />
         <Route path="refunds" element={<AdminRefundPage />} />
-        <Route path="users" element={<AdminUserPage />} />
-        <Route path="promotions" element={<AdminPromotionPage />} />
+        <Route
+          path="users"
+          element={(
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminUserPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="promotions"
+          element={(
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <AdminPromotionPage />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="suppliers" element={<AdminSupplierPage />} />
         <Route path="imports" element={<AdminImportPage />} />
         <Route path="supplier-returns" element={<AdminSupplierReturnPage />} />
@@ -181,18 +207,27 @@ function App() {
         <Route path="returns" element={<AdminReturnInspectionPage />} />
         <Route path="reviews" element={<AdminReviewModerationPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
-        <Route path="notifications" element={<AdminNotificationPage />} />
+        <Route
+          path="notifications"
+          element={(
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <AdminNotificationPage />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="inventory" element={<AdminInventoryPage />} />
         <Route
           path="statistics"
           element={(
-            <Suspense fallback={<div className="admin-empty-mini">Đang tải trang thống kê...</div>}>
-              <AdminStatisticsPage />
-            </Suspense>
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <Suspense fallback={<div className="admin-empty-mini">Đang tải trang thống kê...</div>}>
+                <AdminStatisticsPage />
+              </Suspense>
+            </ProtectedRoute>
           )}
         />
         <Route path="uploads" element={<AdminUploadPage />} />
-        <Route path="*" element={<Navigate to="statistics" replace />} />
+        <Route path="*" element={<AdminDefaultRedirect />} />
       </Route>
     </Routes>
   );

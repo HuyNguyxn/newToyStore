@@ -7,6 +7,7 @@ import com.example.new_toy_store.category.domain.exception.CategoryCrossModuleEx
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,12 +34,23 @@ public class CategoryFacade {
     public List<Integer> getAllSubCategoryIds(Integer rootCategoryId) {
         if (rootCategoryId == null) return List.of();
 
-        String pathCriteria = "/" + rootCategoryId + "/";
+        return repository.findById(rootCategoryId)
+                .map(root -> {
+                    List<Integer> childIds = new ArrayList<>();
+                    collectChildIds(root, childIds);
+                    return childIds;
+                })
+                .orElse(List.of());
+    }
 
-        return repository.findAll().stream()
-                .filter(c -> c.getPath() != null && c.getPath().contains(pathCriteria))
-                .map(Category::getId)
-                .collect(Collectors.toList());
+    private void collectChildIds(Category parent, List<Integer> acc) {
+        if (parent == null || parent.getSubCategories() == null) return;
+        for (Category child : parent.getSubCategories()) {
+            if (child != null && child.getId() != null) {
+                acc.add(child.getId());
+                collectChildIds(child, acc);
+            }
+        }
     }
 
     public String getCategoryPath(Integer categoryId) {

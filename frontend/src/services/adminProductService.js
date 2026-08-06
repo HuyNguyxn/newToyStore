@@ -67,3 +67,10 @@ export function addVariantStock(productId, variantId, amount) {
     body: JSON.stringify({ amount: Number(amount) }),
   });
 }
+
+export function addProductVariant(productId, payload) {
+  return apiClient(`/products/${productId}/variants`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

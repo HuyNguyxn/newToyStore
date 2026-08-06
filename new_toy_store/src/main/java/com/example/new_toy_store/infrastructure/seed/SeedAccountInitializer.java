@@ -32,6 +32,7 @@ public class SeedAccountInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         createAccountIfMissing(properties.getAdmin(), UserRole.ADMIN);
         createAccountIfMissing(properties.getStaff(), UserRole.STAFF);
+        createAccountIfMissing(properties.getManager(), UserRole.MANAGER);
         createAccountIfMissing(properties.getCustomer(), UserRole.CUSTOMER);
     }
 

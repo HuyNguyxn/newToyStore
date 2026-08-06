@@ -39,4 +39,12 @@ public class ProductSpecification {
             return cb.equal(categories.get("id"), categoryId);
         };
     }
+
+    public static Specification<Product> hasCategoryIds(java.util.Collection<Integer> categoryIds) {
+        return (root, query, cb) -> {
+            if (categoryIds == null || categoryIds.isEmpty()) return null;
+            Join<Product, Category> categories = root.join("categories");
+            return categories.get("id").in(categoryIds);
+        };
+    }
 }

@@ -9,6 +9,7 @@ const qs = (params = {}) => {
 };
 
 export const getImports = (params = {}) => apiClient(`/imports${qs(params) ? `?${qs(params)}` : ''}`);
+export const getImportDetails = (id) => apiClient(`/imports/${id}`);
 export const createImportNote = (payload) => apiClient('/imports', { method: 'POST', body: JSON.stringify(payload) });
 export const completeImportNote = (id) => apiClient(`/imports/${id}/complete`, { method: 'PATCH' });
 export const cancelImportNote = (id) => apiClient(`/imports/${id}/cancel`, { method: 'PATCH' });

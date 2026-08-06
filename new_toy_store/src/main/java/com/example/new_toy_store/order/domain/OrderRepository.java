@@ -94,6 +94,24 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     );
 
     @Query(value = """
+            SELECT p.id, p.name, COALESCE(SUM(i.quantity), 0) AS sold_qty, COUNT(DISTINCT o.id) AS order_cnt, COALESCE(SUM(i.quantity * i.price), 0) AS total_rev
+              FROM products p
+              LEFT JOIN order_items i ON i.product_id = p.id AND i.deleted_at IS NULL
+              LEFT JOIN orders o ON o.id = i.order_id AND o.status IN (:statuses) AND o.created_at >= :from AND o.created_at < :to AND o.deleted_at IS NULL
+             WHERE p.deleted_at IS NULL
+             GROUP BY p.id, p.name
+            HAVING COALESCE(SUM(i.quantity), 0) <= :maxUnits
+             ORDER BY COALESCE(SUM(i.quantity), 0) ASC, p.id DESC
+            """, nativeQuery = true)
+    List<Object[]> findSlowSellingProducts(
+            @Param("statuses") List<String> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("maxUnits") int maxUnits,
+            Pageable pageable
+    );
+
+    @Query(value = """
             SELECT c.id, c.name, COALESCE(SUM(i.quantity), 0), COUNT(DISTINCT o.id), COALESCE(SUM(i.quantity * i.price), 0)
               FROM orders o
               JOIN order_items i ON i.order_id = o.id
@@ -114,16 +132,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             Pageable pageable
     );
 
-    @Query("""
-            SELECT COALESCE(o.promoCode, 'NO_PROMOTION'), COALESCE(o.promoCode, 'No promotion'), COUNT(o), COALESCE(SUM(o.totalAmount), 0)
-              FROM Order o
-             WHERE o.status IN :statuses
-               AND o.createdAt >= :from
-               AND o.createdAt < :to
-             GROUP BY o.promoCode
-             ORDER BY COALESCE(SUM(o.totalAmount), 0) DESC
-            """)
-    List<Object[]> aggregateRevenueByPromotion(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
     @Query("""
             SELECT o.userId, CONCAT('User #', o.userId), COUNT(o), COALESCE(SUM(o.totalAmount), 0)

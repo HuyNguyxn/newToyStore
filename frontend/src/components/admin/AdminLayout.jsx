@@ -1,30 +1,53 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 
+// Role-based sidebar configuration
+// requiredRoles: which roles can see this menu item
 const adminNavItems = [
-  { to: '/admin/statistics', label: 'Thống kê', icon: '↗' },
-  { to: '/admin/categories', label: 'Danh mục', icon: '▣' },
-  { to: '/admin/products', label: 'Sản phẩm', icon: '▤' },
-  { to: '/admin/suppliers', label: 'Nhà cung cấp', icon: '▥' },
-  { to: '/admin/imports', label: 'Nhập hàng', icon: '↧' },
-  { to: '/admin/users', label: 'Người dùng', icon: '●' },
-  { to: '/admin/orders', label: 'Đơn hàng', icon: '≡' },
-  { to: '/admin/promotions', label: 'Khuyến mãi', icon: '◆' },
-  { to: '/admin/payments', label: 'Thanh toán', icon: '▧' },
-  { to: '/admin/refunds', label: 'Hoàn tiền', icon: '↩' },
-  { to: '/admin/inventory', label: 'Tồn kho', icon: '▨' },
-  { to: '/admin/logistics', label: 'Vận chuyển', icon: '⇄' },
-  { to: '/admin/returns', label: 'Trả hàng', icon: '▢' },
-  { to: '/admin/supplier-returns', label: 'Trả NCC', icon: '⇤' },
-  { to: '/admin/reviews', label: 'Đánh giá', icon: '★' },
-  { to: '/admin/moderation', label: 'Kiểm duyệt', icon: '◈' },
-  { to: '/admin/notifications', label: 'Thông báo', icon: '●' },
-  { to: '/admin/uploads', label: 'Tải ảnh', icon: '▨' },
+  { to: '/admin/statistics',       label: 'Thống kê',      icon: '↗',  requiredRoles: ['MANAGER', 'ADMIN'] },
+  { to: '/admin/categories',       label: 'Danh mục',      icon: '▣',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/products',         label: 'Sản phẩm',      icon: '▤',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/suppliers',        label: 'Nhà cung cấp',  icon: '▥',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/imports',          label: 'Nhập hàng',     icon: '↧',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/users',            label: 'Người dùng',    icon: '●',  requiredRoles: ['ADMIN'] },
+  { to: '/admin/orders',           label: 'Đơn hàng',      icon: '≡',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/promotions',       label: 'Khuyến mãi',    icon: '◆',  requiredRoles: ['MANAGER', 'ADMIN'] },
+  { to: '/admin/payments',         label: 'Thanh toán',     icon: '▧',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/refunds',          label: 'Hoàn tiền',     icon: '↩',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/inventory',        label: 'Tồn kho',       icon: '▨',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/logistics',        label: 'Vận chuyển',    icon: '⇄',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/returns',          label: 'Trả hàng',      icon: '▢',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/supplier-returns', label: 'Trả NCC',       icon: '⇤',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/reviews',          label: 'Đánh giá',      icon: '★',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/moderation',       label: 'Kiểm duyệt',   icon: '◈',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+  { to: '/admin/notifications',    label: 'Thông báo',     icon: '●',  requiredRoles: ['MANAGER', 'ADMIN'] },
+  { to: '/admin/uploads',          label: 'Tải ảnh',       icon: '▨',  requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
 ];
+
+// Display name for each role
+const roleDisplayNames = {
+  ADMIN: 'Quản trị viên',
+  MANAGER: 'Quản lý',
+  STAFF: 'Nhân viên',
+};
+
+// Badge color for each role
+const roleBadgeStyles = {
+  ADMIN:   { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' },
+  MANAGER: { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' },
+  STAFF:   { background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' },
+};
 
 function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const userRole = user?.role || 'STAFF';
+
+  // Filter nav items based on user role
+  const visibleNavItems = adminNavItems.filter(
+    (item) => item.requiredRoles.includes(userRole)
+  );
 
   function handleLogout() {
     const confirmed = window.confirm('Bạn chắc chắn muốn đăng xuất khỏi trang quản trị?');
@@ -34,6 +57,8 @@ function AdminLayout() {
       navigate('/');
     }
   }
+
+  const badgeStyle = roleBadgeStyles[userRole] || roleBadgeStyles.STAFF;
 
   return (
     <div className="admin-shell">
@@ -49,7 +74,7 @@ function AdminLayout() {
         </div>
 
         <nav className="admin-nav" aria-label="Điều hướng quản trị">
-          {adminNavItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -73,14 +98,26 @@ function AdminLayout() {
             <Link to="/" className="admin-view-site">⌂ Xem cửa hàng</Link>
             <div>
               <strong>{user?.email || user?.fullName || 'admin@gmail.com'}</strong>
-              <small>{user?.role || 'ADMIN'}</small>
+              <span
+                style={{
+                  ...badgeStyle,
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  display: 'inline-block',
+                  marginTop: '2px',
+                }}
+              >
+                {roleDisplayNames[userRole] || userRole}
+              </span>
             </div>
             <button type="button" onClick={handleLogout}>Đăng xuất</button>
           </div>
         </header>
 
         <main className="admin-main">
-          <Outlet />
+          <Outlet context={{ userRole }} />
         </main>
       </div>
     </div>

@@ -4,6 +4,7 @@ import com.example.new_toy_store.product.application.facade.ProductFacade;
 import com.example.new_toy_store.product.application.dto.request.AddProductImageRequest;
 import com.example.new_toy_store.product.application.dto.request.AddVariantStockRequest;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
+import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateVariantPriceRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
@@ -54,11 +55,13 @@ public class ProductController {
 
     @GetMapping("/filter")
     public Page<ProductResponse> filterProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String status,
             Pageable pageable) {
-        return facade.filterProductsByPriceAndStatus(minPrice, maxPrice, status, pageable);
+        return facade.filterProducts(keyword, categoryId, minPrice, maxPrice, status, pageable);
     }
 
     @GetMapping("/{id}")
@@ -71,6 +74,14 @@ public class ProductController {
     @PostMapping
     public ProductResponse create(@Valid @RequestBody CreateProductRequest request) {
         return facade.create(request);
+    }
+
+    @PostMapping("/{id}/variants")
+    public ProductResponse addVariant(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id,
+            @RequestBody ProductVariantRequest request
+    ) {
+        return facade.addVariant(id, request);
     }
 
     @PutMapping("/{id}")

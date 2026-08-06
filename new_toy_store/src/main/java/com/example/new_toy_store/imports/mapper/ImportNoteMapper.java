@@ -60,6 +60,8 @@ public class ImportNoteMapper {
                 mapAllowedNextActions(note.getStatus()),
                 note.getTotalAmount(),
                 note.getNote(),
+                note.getCreatedAt(),
+                "TK10",
                 items
         );
     }

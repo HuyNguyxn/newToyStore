@@ -9,6 +9,7 @@ public class SeedAccountProperties {
 
     private Account admin = new Account();
     private Account staff = new Account();
+    private Account manager = new Account();
     private Account customer = new Account();
 
     public Account getAdmin() {
@@ -25,6 +26,14 @@ public class SeedAccountProperties {
 
     public void setStaff(Account staff) {
         this.staff = staff;
+    }
+
+    public Account getManager() {
+        return manager;
+    }
+
+    public void setManager(Account manager) {
+        this.manager = manager;
     }
 
     public Account getCustomer() {
