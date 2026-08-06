@@ -49,6 +49,54 @@ const navGroups = [
   },
 ];
 
+/* Helper Component: Process Canvas to Erase All White Background Pixels & Clip Inner Circular Emblem */
+function TransparentSidebarLogo({ src = '/toystore-assets/logo.png', size = 74 }) {
+  const [cleanSrc, setCleanSrc] = useState(src);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+
+      // Erase white / near-white background pixels (RGB > 215)
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        if (r > 215 && g > 215 && b > 215) {
+          data[i + 3] = 0; // Make pixel transparent
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      setCleanSrc(canvas.toDataURL('image/png'));
+    };
+  }, [src]);
+
+  return (
+    <img
+      src={cleanSrc}
+      alt="ToyStore Logo"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        borderRadius: '50%',
+        clipPath: 'circle(46% at 50% 50%)',
+        filter: 'brightness(1.2) drop-shadow(0 6px 16px rgba(234,88,12,0.45))',
+      }}
+    />
+  );
+}
+
 function AdminSidebar({ userRole = 'ADMIN' }) {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,19 +166,9 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
   return (
     <aside className="admin-sidebar" style={{ width: '270px', background: '#0b1120', color: '#f8fafc', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       
-      {/* LOGO-ONLY HEADER (Ảnh 2: Chỉ hiển thị logo và cho logo rõ hơn) */}
-      <div className="admin-brand" style={{ padding: '20px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
-        <img
-          src="/toystore-assets/logo.png"
-          alt="ToyStore Logo"
-          style={{
-            width: '64px',
-            height: '64px',
-            objectFit: 'contain',
-            filter: 'brightness(1.15) drop-shadow(0 4px 12px rgba(234,88,12,0.4))',
-            borderRadius: '50%',
-          }}
-        />
+      {/* LOGO-ONLY HEADER (Tách 100% nền trắng, chỉ hiển thị logo hình tròn nội dung bên trong) */}
+      <div className="admin-brand" style={{ padding: '18px 0', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0b1120' }}>
+        <TransparentSidebarLogo size={74} />
       </div>
 
       {/* SEARCH FILTER BAR */}
