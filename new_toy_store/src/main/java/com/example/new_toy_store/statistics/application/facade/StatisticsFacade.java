@@ -2,9 +2,7 @@ package com.example.new_toy_store.statistics.application.facade;
 
 import com.example.new_toy_store.statistics.application.StatisticsService;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
-import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
-import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
@@ -35,6 +33,10 @@ public class StatisticsFacade {
         return service.getTopSellingProducts(period, limit);
     }
 
+    public List<TopSellingProductResponse> getSlowSellingProducts(StatisticPeriod period, int limit, int maxUnits) {
+        return service.getSlowSellingProducts(period, limit, maxUnits);
+    }
+
     public List<RevenueTrendPointResponse> getRevenueTrend(StatisticPeriod period) {
         return service.getRevenueTrend(period);
     }
@@ -47,51 +49,7 @@ public class StatisticsFacade {
         return service.getRevenueByCategory(period, limit);
     }
 
-    public List<BreakdownStatisticResponse> getRevenueByPromotion(StatisticPeriod period, int limit) {
-        return service.getRevenueByPromotion(period, limit);
-    }
-
     public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
         return service.getTopSpendingCustomers(period, limit);
-    }
-
-    public List<BreakdownStatisticResponse> getPaymentFailureReasons(StatisticPeriod period, int limit) {
-        return service.getPaymentFailureReasons(period, limit);
-    }
-
-    public List<BreakdownStatisticResponse> getRefundReasons(StatisticPeriod period, int limit) {
-        return service.getRefundReasons(period, limit);
-    }
-
-    public List<BreakdownStatisticResponse> getShipmentsByProvider(StatisticPeriod period) {
-        return service.getShipmentsByProvider(period);
-    }
-
-    public List<BreakdownStatisticResponse> getShipmentFailureReasons(StatisticPeriod period, int limit) {
-        return service.getShipmentFailureReasons(period, limit);
-    }
-
-    public List<BreakdownStatisticResponse> getCustomerSummary(StatisticPeriod period) {
-        return service.getCustomerSummary(period);
-    }
-
-    public List<BreakdownStatisticResponse> getCustomerTrend(StatisticPeriod period) {
-        return service.getCustomerTrend(period);
-    }
-
-    public List<BreakdownStatisticResponse> getRefundByProduct(StatisticPeriod period, int limit) {
-        return service.getRefundByProduct(period, limit);
-    }
-
-    public List<BreakdownStatisticResponse> getShipmentsByRegion(StatisticPeriod period, int limit) {
-        return service.getShipmentsByRegion(period, limit);
-    }
-
-    public List<InventoryMovementStatisticResponse> getInventoryMovements(StatisticPeriod period, int lowStockThreshold) {
-        return service.getInventoryMovements(period, lowStockThreshold);
-    }
-
-    public List<ProfitMarginStatisticResponse> getProfitMargin(StatisticPeriod period, int limit) {
-        return service.getProfitMargin(period, limit);
     }
 }

@@ -127,6 +127,23 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
+    public List<TopSellingProductResponse> getSlowSellingProducts(StatisticPeriod period, int limit, int maxUnits) {
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        int safeMaxUnits = Math.max(0, maxUnits);
+        List<String> statusNames = REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList();
+        return orderRepository.findSlowSellingProducts(
+                        statusNames,
+                        period.startDateTime(),
+                        period.endExclusiveDateTime(),
+                        safeMaxUnits,
+                        PageRequest.of(0, safeLimit)
+                )
+                .stream()
+                .map(this::toTopSellingProduct)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<RevenueTrendPointResponse> getRevenueTrend(StatisticPeriod period) {
         return buildRevenueTrend(period);
     }
@@ -150,19 +167,6 @@ public class StatisticsService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<BreakdownStatisticResponse> getRevenueByPromotion(StatisticPeriod period, int limit) {
-        double totalAmount = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, period.startDateTime(), period.endExclusiveDateTime());
-        return orderRepository.aggregateRevenueByPromotion(
-                        REVENUE_ORDER_STATUSES,
-                        period.startDateTime(),
-                        period.endExclusiveDateTime(),
-                        PageRequest.of(0, safeLimit(limit, 50))
-                )
-                .stream()
-                .map(row -> breakdown(row, totalAmount))
-                .toList();
-    }
 
     @Transactional(readOnly = true)
     public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
@@ -206,14 +210,9 @@ public class StatisticsService {
 
     @Transactional(readOnly = true)
     public List<BreakdownStatisticResponse> getShipmentsByProvider(StatisticPeriod period) {
-        double totalFee = shipmentRepository.aggregateByProvider(period.startDateTime(), period.endExclusiveDateTime())
-                .stream()
-                .mapToDouble(row -> ((Number) row[3]).doubleValue())
-                .sum();
-        return shipmentRepository.aggregateByProvider(period.startDateTime(), period.endExclusiveDateTime())
-                .stream()
-                .map(row -> breakdown(row, totalFee))
-                .toList();
+        List<Object[]> rows = shipmentRepository.aggregateByProvider(period.startDateTime(), period.endExclusiveDateTime());
+        double totalFee = rows.stream().mapToDouble(row -> ((Number) row[3]).doubleValue()).sum();
+        return rows.stream().map(row -> breakdown(row, totalFee)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -272,6 +271,18 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
+    public List<InventoryMovementStatisticResponse> getInventorySnapshot(int lowStockThreshold) {
+        List<InventoryMovementStatisticResponse> snapshots = new ArrayList<>();
+        inventoryRepository.aggregateCurrentStockSnapshots(Math.max(0, lowStockThreshold))
+                .forEach(row -> snapshots.add(inventoryMovement(
+                        row,
+                        "SNAPSHOT",
+                        "Current inventory snapshot, not limited by the selected period."
+                )));
+        return snapshots;
+    }
+
+    @Transactional(readOnly = true)
     public List<InventoryMovementStatisticResponse> getInventoryMovements(StatisticPeriod period, int lowStockThreshold) {
         Object[] inbound = firstRowOrDefault(
                 importNoteRepository.aggregateInboundMovement(period.startDateTime(), period.endExclusiveDateTime()),
@@ -303,13 +314,6 @@ public class StatisticsService {
                 numberAsDouble(inbound[3]) - numberAsDouble(outbound[3]),
                 "Inbound quantity/value minus outbound quantity/value in the selected period."
         ));
-
-        inventoryRepository.aggregateCurrentStockSnapshots(Math.max(0, lowStockThreshold))
-                .forEach(row -> movements.add(inventoryMovement(
-                        row,
-                        "SNAPSHOT",
-                        "Current inventory snapshot, not limited by the selected period."
-                )));
 
         return movements;
     }
