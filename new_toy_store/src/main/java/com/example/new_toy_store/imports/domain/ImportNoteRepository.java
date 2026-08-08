@@ -42,11 +42,25 @@ public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>
               FROM import_notes n
               JOIN import_note_items ii ON ii.import_note_id = n.id
              WHERE n.status = 'COMPLETED'
-               AND n.created_at >= :from
-               AND n.created_at < :to
+               AND n.updated_at >= :from
+               AND n.updated_at < :to
                AND n.deleted_at IS NULL
             """, nativeQuery = true)
     List<Object[]> aggregateInboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT DATE(n.updated_at),
+                   COALESCE(SUM(ii.quantity), 0),
+                   COALESCE(SUM(ii.quantity * ii.import_price), 0)
+              FROM import_notes n
+              JOIN import_note_items ii ON ii.import_note_id = n.id
+             WHERE n.status = 'COMPLETED'
+               AND n.updated_at >= :from
+               AND n.updated_at < :to
+               AND n.deleted_at IS NULL
+             GROUP BY DATE(n.updated_at)
+            """, nativeQuery = true)
+    List<Object[]> aggregateDailyInboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query(value = """
             SELECT 'OUTBOUND_SALE', 'Outbound from successful orders', COALESCE(SUM(i.quantity), 0), COALESCE(SUM(i.quantity * i.price), 0)

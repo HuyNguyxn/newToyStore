@@ -6,6 +6,8 @@ import com.example.new_toy_store.statistics.application.dto.response.PaymentMeth
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.domain.StatisticDateField;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
 import org.springframework.stereotype.Component;
@@ -51,5 +53,17 @@ public class StatisticsFacade {
 
     public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
         return service.getTopSpendingCustomers(period, limit);
+    }
+
+    public List<InventoryMovementStatisticResponse> getInventorySnapshot(int lowStockThreshold) {
+        return service.getInventorySnapshot(lowStockThreshold);
+    }
+
+    public List<InventoryMovementStatisticResponse> getInventoryMovements(StatisticPeriod period, int lowStockThreshold) {
+        return service.getInventoryMovements(period, lowStockThreshold);
+    }
+
+    public List<ProfitMarginStatisticResponse> getProfitMargin(StatisticPeriod period, int limit) {
+        return service.getProfitMargin(period, limit);
     }
 }

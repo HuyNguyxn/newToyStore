@@ -36,3 +36,11 @@ export function getTopSpendingCustomers(params = {}) {
 export function getInventorySnapshot(params = {}) {
   return apiClient(`/statistics/inventory/snapshot${buildQuery(params)}`);
 }
+
+export function getInventoryMovements(params = {}) {
+  return apiClient(`/statistics/inventory/movements${buildQuery(params)}`);
+}
+
+export function getProfitMargin(params = {}) {
+  return apiClient(`/statistics/profit-margin${buildQuery(params)}`);
+}

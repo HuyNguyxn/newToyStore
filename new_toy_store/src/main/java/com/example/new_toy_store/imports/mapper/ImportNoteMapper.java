@@ -61,6 +61,7 @@ public class ImportNoteMapper {
                 note.getTotalAmount(),
                 note.getNote(),
                 note.getCreatedAt(),
+                note.getUpdatedAt(),
                 "TK10",
                 items
         );

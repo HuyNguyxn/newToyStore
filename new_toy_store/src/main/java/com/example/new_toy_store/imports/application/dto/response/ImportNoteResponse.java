@@ -15,6 +15,7 @@ public class ImportNoteResponse {
     private double totalAmount;
     private String note;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String createdBy;
     private List<ImportNoteItemResponse> items;
 
@@ -27,6 +28,7 @@ public class ImportNoteResponse {
                               double totalAmount,
                               String note,
                               LocalDateTime createdAt,
+                              LocalDateTime updatedAt,
                               String createdBy,
                               List<ImportNoteItemResponse> items) {
         this.id = id;
@@ -38,6 +40,7 @@ public class ImportNoteResponse {
         this.totalAmount = totalAmount;
         this.note = note;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.createdBy = createdBy;
         this.items = items;
     }
@@ -51,6 +54,7 @@ public class ImportNoteResponse {
     public double getTotalAmount() { return totalAmount; }
     public String getNote() { return note; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
     public String getCreatedBy() { return createdBy; }
     public List<ImportNoteItemResponse> getItems() { return items; }
 }

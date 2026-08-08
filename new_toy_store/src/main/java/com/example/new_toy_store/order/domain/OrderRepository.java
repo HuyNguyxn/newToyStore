@@ -138,6 +138,29 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             """)
     List<Object[]> aggregateDailyRevenue(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @Query(value = """
+            SELECT DATE(o.created_at),
+                   COALESCE(SUM(i.quantity), 0),
+                   COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
+              FROM orders o
+              JOIN users u ON u.id = o.user_id
+                         AND u.id > 3
+                         AND (u.role IS NULL OR u.role = 'CUSTOMER')
+                         AND u.deleted_at IS NULL
+              JOIN order_items i ON i.order_id = o.id AND i.deleted_at IS NULL
+              LEFT JOIN product_variants pv ON pv.id = i.variant_id AND pv.deleted_at IS NULL
+             WHERE o.status IN (:statuses)
+               AND o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+             GROUP BY DATE(o.created_at)
+            """, nativeQuery = true)
+    List<Object[]> aggregateDailyCostAndSoldQuantity(
+            @Param("statuses") List<String> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
     @Query("""
             SELECT i.productId, i.productName, SUM(i.quantity), COUNT(DISTINCT o.id), SUM(i.quantity * i.price)
               FROM Order o JOIN o.items i JOIN User u ON o.userId = u.id
@@ -156,15 +179,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     );
 
     @Query(value = """
-            SELECT p.id, p.name, COALESCE(SUM(i.quantity), 0) AS sold_qty, COUNT(DISTINCT o.id) AS order_cnt, COALESCE(SUM(i.quantity * i.price), 0) AS total_rev
+            SELECT p.id,
+                   p.name,
+                   COALESCE(SUM(CASE WHEN o.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) AS sold_qty,
+                   COUNT(DISTINCT CASE WHEN u.id IS NOT NULL THEN o.id END) AS order_cnt,
+                   COALESCE(SUM(CASE WHEN o.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity * i.price ELSE 0 END), 0) AS total_rev
               FROM products p
               LEFT JOIN order_items i ON i.product_id = p.id AND i.deleted_at IS NULL
               LEFT JOIN orders o ON o.id = i.order_id AND o.status IN (:statuses) AND o.created_at >= :from AND o.created_at < :to AND o.deleted_at IS NULL
               LEFT JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
              WHERE p.deleted_at IS NULL
              GROUP BY p.id, p.name
-            HAVING COALESCE(SUM(i.quantity), 0) <= :maxUnits
-             ORDER BY COALESCE(SUM(i.quantity), 0) ASC, p.id DESC
+            HAVING COALESCE(SUM(CASE WHEN o.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) <= :maxUnits
+             ORDER BY sold_qty ASC, p.id DESC
             """, nativeQuery = true)
     List<Object[]> findSlowSellingProducts(
             @Param("statuses") List<String> statuses,
@@ -265,7 +292,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                    COALESCE(SUM(i.quantity), 0),
                    COALESCE(SUM(i.quantity * i.price), 0),
                    MAX(COALESCE(refunds.refund_amount, 0)),
-                   COALESCE(SUM(i.quantity * pv.cost_price), 0)
+                   COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
               FROM orders o
               JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
@@ -300,7 +327,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
              ORDER BY (
                     COALESCE(SUM(i.quantity * i.price), 0)
                     - MAX(COALESCE(refunds.refund_amount, 0))
-                    - COALESCE(SUM(i.quantity * COALESCE(pv.cost_price, 0)), 0)
+                    - COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
              ) DESC
             """, nativeQuery = true)
     List<Object[]> aggregateProfitMarginByProduct(

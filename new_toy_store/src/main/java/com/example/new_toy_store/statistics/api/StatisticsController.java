@@ -8,6 +8,8 @@ import com.example.new_toy_store.statistics.application.dto.response.PaymentMeth
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -80,6 +82,27 @@ public class StatisticsController {
     @GetMapping("/customers/top-spending")
     public List<BreakdownStatisticResponse> getTopSpendingCustomers(@Valid @ModelAttribute StatisticsOverviewRequest request) {
         return facade.getTopSpendingCustomers(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/inventory/snapshot")
+    public List<InventoryMovementStatisticResponse> getInventorySnapshot(
+            @RequestParam(defaultValue = "5") int lowStockThreshold
+    ) {
+        return facade.getInventorySnapshot(lowStockThreshold);
+    }
+
+    @GetMapping("/inventory/movements")
+    public List<InventoryMovementStatisticResponse> getInventoryMovements(
+            @Valid @ModelAttribute StatisticsOverviewRequest request
+    ) {
+        return facade.getInventoryMovements(toPeriod(request), request.getLowStockThreshold());
+    }
+
+    @GetMapping("/profit-margin")
+    public List<ProfitMarginStatisticResponse> getProfitMargin(
+            @Valid @ModelAttribute StatisticsOverviewRequest request
+    ) {
+        return facade.getProfitMargin(toPeriod(request), request.getTopLimit());
     }
 
     private StatisticPeriod toPeriod(StatisticsOverviewRequest request) {

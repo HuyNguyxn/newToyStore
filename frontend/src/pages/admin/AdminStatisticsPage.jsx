@@ -10,6 +10,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ComposedChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -21,6 +22,8 @@ import {
 import { getAdminOrders } from '../../services/adminOrderService.js';
 import { getImports } from '../../services/adminImportService.js';
 import { getAdminReviews } from '../../services/adminReviewService.js';
+import { getAdminProducts } from '../../services/adminProductService.js';
+import { getCustomerReturns } from '../../services/adminReturnService.js';
 import {
   getInventorySnapshot,
   getRevenueByCategory,
@@ -149,6 +152,158 @@ function getProductTicks(data = []) {
   if (max === 0) return [0, 5, 10, 15, 20];
   const step = Math.ceil(max / 4) || 5;
   return [0, step, step * 2, step * 3, step * 4];
+}
+
+function buildMacSeries(imports = [], orders = [], from, to) {
+  const dates = generateDateSeries(from, to);
+  const byDate = new Map(dates.map((date) => [date, {
+    date,
+    sellingPrice: null,
+    importPrice: null,
+    mac: null,
+    importedQuantity: 0,
+    soldQuantity: 0,
+    grossMarginGap: null,
+    stockQuantity: null,
+  }]));
+
+  const dateInfo = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { iso, key: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` };
+  };
+
+  const events = [];
+  imports.forEach((receipt) => {
+    const receiptStatus = typeof receipt.status === 'object'
+      ? receipt.status?.code || receipt.status?.name || receipt.status?.status
+      : receipt.status;
+    if (String(receiptStatus || '').toUpperCase() !== 'COMPLETED') return;
+    const date = dateInfo(receipt.updatedAt || receipt.completedAt || receipt.createdAt || receipt.importDate);
+    if (!date || date.iso > to) return;
+    (receipt.items || []).forEach((item) => {
+      const quantity = Number(item.quantity || 0);
+      const unitCost = Number(item.importPrice || item.price || 0);
+      if (quantity > 0) events.push({ ...date, type: 'IMPORT', quantity, unitCost });
+    });
+  });
+
+  orders.forEach((order) => {
+    const status = typeof order.status === 'object' ? order.status?.code || order.status?.name : order.status;
+    const date = dateInfo(order.createdAt || order.orderDate);
+    if (!date || date.iso > to || !['COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'].includes(String(status || '').toUpperCase())) return;
+    (order.items || []).forEach((item) => {
+      const quantity = Number(item.quantity || 0);
+      const unitPrice = Number(item.price || item.unitPrice || 0);
+      if (quantity > 0) events.push({ ...date, type: 'SALE', quantity, unitPrice });
+    });
+  });
+
+  events.sort((a, b) => a.iso.localeCompare(b.iso) || (a.type === 'IMPORT' ? -1 : 1));
+  let runningStock = 0;
+  let stockValue = 0;
+  let runningMac = null;
+  let lastSellingPrice = null;
+  let openingStock = 0;
+  let openingMac = null;
+  let openingSellingPrice = null;
+  let openingCaptured = false;
+  events.forEach((event) => {
+    if (!openingCaptured && event.iso >= from) {
+      openingStock = runningStock;
+      openingMac = runningMac;
+      openingSellingPrice = lastSellingPrice;
+      openingCaptured = true;
+    }
+    const point = event.iso >= from ? byDate.get(event.key) : null;
+    if (event.type === 'IMPORT') {
+      stockValue += event.quantity * event.unitCost;
+      runningStock += event.quantity;
+      runningMac = runningStock > 0 ? stockValue / runningStock : runningMac;
+      if (point) {
+        const previousQuantity = point.importedQuantity;
+        point.importedQuantity += event.quantity;
+        point.importPrice = point.importPrice === null
+          ? event.unitCost
+          : ((point.importPrice * previousQuantity) + (event.unitCost * event.quantity)) / point.importedQuantity;
+      }
+    } else {
+      lastSellingPrice = event.unitPrice;
+      const fulfilledQuantity = Math.min(event.quantity, Math.max(0, runningStock));
+      stockValue = Math.max(0, stockValue - fulfilledQuantity * Number(runningMac || 0));
+      runningStock = Math.max(0, runningStock - fulfilledQuantity);
+      if (point) {
+        const previousQuantity = point.soldQuantity;
+        point.soldQuantity += event.quantity;
+        point.sellingPrice = point.sellingPrice === null
+          ? event.unitPrice
+          : ((point.sellingPrice * previousQuantity) + (event.unitPrice * event.quantity)) / point.soldQuantity;
+      }
+    }
+    if (point) {
+      point.mac = runningMac;
+      point.stockQuantity = runningStock;
+    }
+  });
+
+  let displayedStock = openingCaptured ? openingStock : runningStock;
+  runningMac = openingCaptured ? openingMac : runningMac;
+  lastSellingPrice = openingCaptured ? openingSellingPrice : lastSellingPrice;
+  return dates.map((date) => {
+    const point = byDate.get(date);
+    if (point.mac !== null) runningMac = point.mac;
+    point.mac = runningMac;
+    if (point.stockQuantity !== null) displayedStock = point.stockQuantity;
+    point.stockQuantity = displayedStock;
+    if (point.sellingPrice !== null) lastSellingPrice = point.sellingPrice;
+    point.sellingPrice = lastSellingPrice;
+    point.grossMarginGap = point.sellingPrice !== null && point.mac !== null
+      ? Math.max(0, point.sellingPrice - point.mac)
+      : null;
+    return point;
+  });
+}
+
+const MacTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  const point = payload[0]?.payload || {};
+  return (
+    <div style={{ background: '#fff', border: '1px solid #dbeafe', borderRadius: 10, padding: '10px 12px', boxShadow: '0 8px 18px rgba(15,23,42,.12)', minWidth: 220 }}>
+      <div style={{ fontWeight: 800, color: '#334155', marginBottom: 6 }}>Ngày: {label}</div>
+      <div style={{ color: '#2563eb' }}>Giá bán: {point.sellingPrice == null ? '—' : formatVndText(point.sellingPrice)}</div>
+      <div style={{ color: '#16a34a' }}>MAC: {point.mac == null ? '—' : formatVndText(point.mac)}</div>
+      <div style={{ color: '#dc2626' }}>Giá nhập lô: {point.importPrice == null ? '—' : formatVndText(point.importPrice)}</div>
+      <div style={{ color: '#64748b', marginTop: 4 }}>Nhập {point.importedQuantity} · Bán {point.soldQuantity}</div>
+    </div>
+  );
+};
+
+function MacChartCard({ data, dates, products, selectedVariant, setSelectedVariant, visibility, setVisibility }) {
+  const toggles = [
+    ['selling', 'Giá bán', '#2563eb'], ['mac', 'MAC', '#16a34a'], ['margin', 'Lợi nhuận gộp', '#22c55e'],
+    ['importPrice', 'Điểm giá nhập', '#dc2626'], ['imported', 'Nhập kho', '#94a3b8'], ['sold', 'Bán ra', '#f97316'], ['stock', 'Tồn kho', '#7c3aed'],
+  ];
+  return (
+    <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', padding: '24px', border: '1px solid #dbeafe', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div><h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Biểu đồ MAC</h2><span style={{ fontSize: '12px', color: '#64748b' }}>Giá bán, MAC, giá nhập từng lô và dòng chảy tồn kho từ {dates.from} đến {dates.to}</span></div>
+        <select value={selectedVariant} onChange={(e) => setSelectedVariant(e.target.value)} style={{ minWidth: 210, padding: '7px 10px', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e3a8a', fontWeight: 700, background: '#eff6ff' }}>
+          <option value="ALL">Tất cả sản phẩm / biến thể</option>
+          {products.flatMap((product) => (product.variants || []).map((variant) => <option key={variant.id} value={variant.id}>{product.name || `Sản phẩm #${product.id}`} · {variant.type || `Variant #${variant.id}`}</option>))}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', margin: '12px 0' }}>
+        {toggles.map(([key, label, color]) => <button key={key} type="button" onClick={() => setVisibility((prev) => ({ ...prev, [key]: !prev[key] }))} style={{ border: `1px solid ${visibility[key] ? color : '#cbd5e1'}`, background: visibility[key] ? `${color}18` : '#fff', color: visibility[key] ? color : '#64748b', borderRadius: 999, padding: '5px 10px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>{visibility[key] ? '✓' : '□'} {label}</button>)}
+      </div>
+      <div style={{ width: '100%', height: '330px' }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+        <defs><linearGradient id="macMarginGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22c55e" stopOpacity={0.28} /><stop offset="95%" stopColor="#22c55e" stopOpacity={0.04} /></linearGradient></defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} /><XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} /><YAxis yAxisId="price" stroke="#334155" fontSize={10} tickFormatter={formatYMoneyTick} /><YAxis yAxisId="quantity" orientation="right" stroke="#94a3b8" fontSize={10} allowDecimals={false} /><Tooltip content={<MacTooltip />} /><Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} />
+        {visibility.imported && <Bar yAxisId="quantity" dataKey="importedQuantity" name="Nhập kho" fill="#cbd5e1" barSize={8} />}{visibility.sold && <Bar yAxisId="quantity" dataKey="soldQuantity" name="Bán ra" fill="#f97316" barSize={8} />}{visibility.stock && <Line yAxisId="quantity" dataKey="stockQuantity" name="Tồn kho" stroke="#7c3aed" strokeDasharray="5 5" strokeWidth={2} dot={false} />}{visibility.margin && <Area yAxisId="price" dataKey="grossMarginGap" name="Lợi nhuận gộp" stroke="#22c55e" fill="url(#macMarginGradient)" connectNulls />}{visibility.selling && <Line yAxisId="price" type="stepAfter" dataKey="sellingPrice" name="Giá bán" stroke="#2563eb" strokeWidth={3} dot={false} connectNulls />}{visibility.mac && <Line yAxisId="price" dataKey="mac" name="MAC" stroke="#16a34a" strokeWidth={3} dot={false} connectNulls />}{visibility.importPrice && <Line yAxisId="price" dataKey="importPrice" name="Giá nhập từng lô" stroke="#dc2626" strokeWidth={0} dot={{ r: 4, fill: '#dc2626', stroke: '#fff', strokeWidth: 1.5 }} connectNulls />}
+      </ComposedChart></ResponsiveContainer></div>
+    </div>
+  );
 }
 
 const renderCustomDot = (dataKey) => (props) => {
@@ -355,6 +510,7 @@ function AdminStatisticsPage() {
     productsImported: 0,
     alerts: {
       pendingPayment: 0,
+      pendingReturn: 0,
       lowStock: 0,
       cancelledOrder: 0,
       lowRatingCount: 0,
@@ -364,6 +520,11 @@ function AdminStatisticsPage() {
 
   const [dataMode, setDataMode] = useState('REAL'); // 'REAL' (Kinh doanh Thực tế) vs 'TEST' (Đơn Thử nghiệm Nội bộ)
   const [mainChartData, setMainChartData] = useState([]);
+  const [macChartData, setMacChartData] = useState([]);
+  const [previousMacChartData, setPreviousMacChartData] = useState([]);
+  const [macProducts, setMacProducts] = useState([]);
+  const [selectedMacVariant, setSelectedMacVariant] = useState('ALL');
+  const [macVisibility, setMacVisibility] = useState({ selling: true, mac: true, margin: true, importPrice: false, imported: false, sold: true, stock: false });
   const [orderComparisonData, setOrderComparisonData] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowRatingReviews, setLowRatingReviews] = useState([]);
@@ -383,11 +544,14 @@ function AdminStatisticsPage() {
 
   useEffect(() => {
     loadLowRatingReviews();
+    getAdminProducts({ page: 0, size: 200, sort: 'name,asc' })
+      .then((res) => setMacProducts(res?.content || (Array.isArray(res) ? res : [])))
+      .catch(() => setMacProducts([]));
   }, []);
 
   useEffect(() => {
     loadDashboardData();
-  }, [dates, dataMode]);
+  }, [dates, dataMode, selectedMacVariant]);
 
   function handleRangeClick(code) {
     setSelectedRange(code);
@@ -438,6 +602,7 @@ function AdminStatisticsPage() {
         slowProdRes,
         inventorySnapshotRes,
         reviewsRes,
+        customerReturnsRes,
       ] = await Promise.allSettled([
         getStatisticsOverview(params),
         getRevenueTrend(params),
@@ -447,9 +612,10 @@ function AdminStatisticsPage() {
         getRevenueByPaymentMethod(params),
         getTopSellingProducts({ from: dates.from, to: dates.to, limit: 10 }),
         getTopSpendingCustomers(params),
-        getSlowSellingProducts({ limit: 100, maxUnits: 5 }),
-        getInventorySnapshot(10),
+        getSlowSellingProducts({ from: dates.from, to: dates.to, timezone: params.timezone, groupBy: params.groupBy, limit: 50, maxUnits: 5 }),
+        getInventorySnapshot({ lowStockThreshold: 10 }),
         getAdminReviews({ page: 0, size: 500 }),
+        getCustomerReturns({ status: 'REQUESTED', page: 0, size: 1, sort: 'createdAt,desc' }),
       ]);
 
       const overviewData = overviewRes.status === 'fulfilled' ? overviewRes.value || {} : {};
@@ -458,12 +624,11 @@ function AdminStatisticsPage() {
       const allImportsList = importsRes.status === 'fulfilled' ? (importsRes.value?.content || (Array.isArray(importsRes.value) ? importsRes.value : [])) : [];
       const slowSellingProducts = slowProdRes.status === 'fulfilled' ? (slowProdRes.value?.content || (Array.isArray(slowProdRes.value) ? slowProdRes.value : [])) : [];
       const inventoryList = inventorySnapshotRes.status === 'fulfilled' ? (inventorySnapshotRes.value?.content || (Array.isArray(inventorySnapshotRes.value) ? inventorySnapshotRes.value : [])) : [];
-      const lowStockVariants = inventoryList.filter((item) => {
-        const stock = Number(item.quantity ?? item.stockQuantity ?? item.stock ?? item.inventoryQuantity ?? 0);
-        return stock <= 10;
-      });
       const allReviewsList = reviewsRes.status === 'fulfilled' ? (reviewsRes.value?.content || (Array.isArray(reviewsRes.value) ? reviewsRes.value : [])) : [];
-      const lowRatingReviews = allReviewsList.filter((r) => Number(r.rating || r.stars || 5) <= 3);
+      const lowRatingReviews = allReviewsList.filter((r) => Number(r.rating || r.stars || 5) < 3);
+      const customerReturnsList = customerReturnsRes.status === 'fulfilled'
+        ? (customerReturnsRes.value?.content || (Array.isArray(customerReturnsRes.value) ? customerReturnsRes.value : []))
+        : [];
 
       const getStatusCode = (st) => (typeof st === 'object' ? (st?.code || st?.name || st?.status || '') : String(st || '')).toUpperCase();
 
@@ -527,7 +692,7 @@ function AdminStatisticsPage() {
       };
 
       const rangeOrdersList = modeOrdersList.filter((o) => isDateInRange(o.createdAt || o.orderDate));
-      const rangeImportsList = allImportsList.filter((imp) => isDateInRange(imp.createdAt || imp.importDate));
+      const rangeImportsList = allImportsList.filter((imp) => isDateInRange(imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate));
 
       const getKpiVal = (code) => {
         if (!Array.isArray(overviewData.kpis)) return 0;
@@ -536,31 +701,47 @@ function AdminStatisticsPage() {
       };
 
       // Calculate strictly from real orders and imports without artificial dummy estimates
-      const validOrders = rangeOrdersList.filter(
-        (o) => !['CANCELLED', 'FAILED', 'REFUNDED'].includes(getStatusCode(o.status))
-      );
+      const revenueStatusCodes = ['COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
+      const validOrders = rangeOrdersList.filter((o) => revenueStatusCodes.includes(getStatusCode(o.status)));
 
-      const revenue = validOrders.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
-      const profit = revenue > 0 ? Math.round(revenue * 0.28) : 0;
-      const productsSold = validOrders.reduce((sum, o) => sum + (o.items?.length || 1), 0);
+      const fallbackRevenue = validOrders.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
+      const backendRevenue = getKpiVal('NET_REVENUE');
+      const revenue = dataMode === 'REAL' && overviewRes.status === 'fulfilled' ? backendRevenue : fallbackRevenue;
+      const backendProfit = trendData.reduce((sum, point) => sum + Number(point.grossProfit || 0), 0);
+      const profit = dataMode === 'REAL' && trendRes.status === 'fulfilled' ? backendProfit : 0;
+      const fallbackSoldQuantity = validOrders.reduce(
+        (sum, order) => sum + (order.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0),
+        0
+      );
+      const productsSold = dataMode === 'REAL' && overviewRes.status === 'fulfilled'
+        ? getKpiVal('SOLD_QUANTITY')
+        : fallbackSoldQuantity;
 
       // Import metrics MUST come strictly from real import receipts
-      const importCost = rangeImportsList.reduce(
-        (sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0),
-        0
+      const completedRangeImports = rangeImportsList.filter((imp) => getStatusCode(imp.status) === 'COMPLETED');
+      const fallbackImportCost = completedRangeImports.reduce(
+        (sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0), 0
       );
-      const productsImported = rangeImportsList.reduce(
-        (sum, imp) => sum + (imp.totalQuantity || imp.quantity || imp.items?.reduce((iSum, item) => iSum + (item.quantity || 1), 0) || 0),
-        0
+      const fallbackImportedQuantity = completedRangeImports.reduce(
+        (sum, imp) => sum + (imp.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0
       );
+      const importCost = dataMode === 'REAL' && trendRes.status === 'fulfilled'
+        ? trendData.reduce((sum, point) => sum + Number(point.importCost || 0), 0)
+        : fallbackImportCost;
+      const productsImported = dataMode === 'REAL' && trendRes.status === 'fulfilled'
+        ? trendData.reduce((sum, point) => sum + Number(point.importedQuantity || 0), 0)
+        : fallbackImportedQuantity;
 
       const cancelledCountFromOverview = Array.isArray(overviewData.orderStatus)
         ? (overviewData.orderStatus.find((s) => getStatusCode(s.code || s.label || s.status || s.name) === 'CANCELLED')?.count || 0)
         : 0;
 
-      const pendingCountFromOverview = Array.isArray(overviewData.orderStatus)
-        ? (overviewData.orderStatus.find((s) => getStatusCode(s.code || s.label || s.status || s.name) === 'PENDING')?.count || 0)
+      const pendingCountFromOverview = Array.isArray(overviewData.paymentStatus)
+        ? (overviewData.paymentStatus.find((s) => getStatusCode(s.code || s.label || s.status || s.name) === 'PENDING')?.count || 0)
         : 0;
+      const pendingReturnCount = customerReturnsRes.status === 'fulfilled' && Number.isFinite(Number(customerReturnsRes.value?.totalElements))
+        ? Number(customerReturnsRes.value.totalElements)
+        : customerReturnsList.filter((request) => getStatusCode(request.status) === 'REQUESTED').length;
 
       // Calculate Previous Period Date Range based on user's exact comparison rules
       const calcPrevDateRange = () => {
@@ -596,9 +777,22 @@ function AdminStatisticsPage() {
       };
 
       const prevRange = calcPrevDateRange();
+      let previousTrendData = [];
+      if (dataMode === 'REAL') {
+        try {
+          const result = await getRevenueTrend({
+            ...params,
+            from: prevRange.from,
+            to: prevRange.to,
+          });
+          previousTrendData = Array.isArray(result) ? result : [];
+        } catch (previousTrendError) {
+          console.warn('Không thể tải dữ liệu kỳ trước:', previousTrendError);
+        }
+      }
 
       const prevOrdersList = modeOrdersList.filter((o) => {
-        if (getStatusCode(o.status) === 'CANCELLED') return false;
+        if (!revenueStatusCodes.includes(getStatusCode(o.status))) return false;
         const dVal = o.createdAt || o.orderDate;
         if (!dVal) return false;
         const d = new Date(dVal);
@@ -608,7 +802,7 @@ function AdminStatisticsPage() {
       });
 
       const prevImportsList = allImportsList.filter((imp) => {
-        const dVal = imp.createdAt || imp.importDate;
+        const dVal = imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate;
         if (!dVal) return false;
         const d = new Date(dVal);
         if (isNaN(d.getTime())) return false;
@@ -616,11 +810,21 @@ function AdminStatisticsPage() {
         return iso >= prevRange.from && iso <= prevRange.to;
       });
 
-      const prevRevenue = prevOrdersList.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
-      const prevProfit = prevRevenue > 0 ? Math.round(prevRevenue * 0.28) : 0;
-      const prevCost = prevImportsList.reduce((sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0), 0) || (prevRevenue > 0 ? Math.max(0, prevRevenue - prevProfit) : 0);
-      const prevSales = prevOrdersList.reduce((sum, o) => sum + (o.items?.length || 1), 0);
-      const prevImports = prevImportsList.reduce((sum, imp) => sum + (imp.totalQuantity || imp.quantity || imp.items?.reduce((iSum, item) => iSum + (item.quantity || 1), 0) || 1), 0) || (prevCost > 0 ? Math.max(1, prevSales) : 0);
+      const fallbackPrevRevenue = prevOrdersList.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
+      const prevRevenue = previousTrendData.length
+        ? previousTrendData.reduce((sum, point) => sum + Number(point.netRevenue || 0), 0)
+        : fallbackPrevRevenue;
+      const prevProfit = previousTrendData.reduce((sum, point) => sum + Number(point.grossProfit || 0), 0);
+      const completedPrevImports = prevImportsList.filter((imp) => getStatusCode(imp.status) === 'COMPLETED');
+      const prevCost = previousTrendData.length
+        ? previousTrendData.reduce((sum, point) => sum + Number(point.importCost || 0), 0)
+        : completedPrevImports.reduce((sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0), 0);
+      const prevSales = previousTrendData.length
+        ? previousTrendData.reduce((sum, point) => sum + Number(point.soldQuantity || 0), 0)
+        : prevOrdersList.reduce((sum, order) => sum + (order.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0);
+      const prevImports = previousTrendData.length
+        ? previousTrendData.reduce((sum, point) => sum + Number(point.importedQuantity || 0), 0)
+        : completedPrevImports.reduce((sum, imp) => sum + (imp.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0);
 
       // Helper to calculate exact growth % comparing Current Period vs Previous Period
       const calcGrowthRate = (currVal, prevVal) => {
@@ -652,14 +856,19 @@ function AdminStatisticsPage() {
         productsImported,
         growthPercents: computedGrowthPercents,
         alerts: {
-          pendingPayment: pendingCountFromOverview || rangeOrdersList.filter((o) => {
+          pendingPayment: dataMode === 'REAL' && overviewRes.status === 'fulfilled'
+            ? pendingCountFromOverview
+            : rangeOrdersList.filter((o) => {
             const st = getStatusCode(o.status);
             return st.includes('PENDING') || st.includes('UNPAID') || st.includes('CREATED') || st.includes('AWAITING');
-          }).length || 0,
-          lowStock: lowStockVariants.length || overviewData.inventory?.lowStockCount || overviewData.alerts?.lowStock || 0,
-          cancelledOrder: cancelledCountFromOverview || rangeOrdersList.filter((o) => getStatusCode(o.status) === 'CANCELLED').length || 0,
-          lowRatingCount: lowRatingReviews.length || overviewData.alerts?.lowRatingCount || 0,
-          slowSelling: slowSellingProducts.length || overviewData.alerts?.slowSelling || 0,
+          }).length,
+          pendingReturn: pendingReturnCount,
+          lowStock: overviewData.inventory?.lowStockVariantCount || 0,
+          cancelledOrder: dataMode === 'REAL' && overviewRes.status === 'fulfilled'
+            ? cancelledCountFromOverview
+            : rangeOrdersList.filter((o) => getStatusCode(o.status) === 'CANCELLED').length,
+          lowRatingCount: lowRatingReviews.length,
+          slowSelling: slowSellingProducts.length,
         },
       });
 
@@ -675,27 +884,14 @@ function AdminStatisticsPage() {
         return `${day}/${m}`;
       };
 
-      const hasTrendData = trendData.some(
-        (item) => Number(item.grossRevenue || item.revenue || item.netRevenue || item.totalRevenue || item.amount || 0) > 0
-      );
-
       let series = [];
-      if (trendData.length > 0 && hasTrendData) {
+      if (trendData.length > 0 && dataMode === 'REAL') {
         series = trendData.map((item) => {
-          const rev = Number(item.grossRevenue || item.revenue || item.netRevenue || item.totalRevenue || item.amount || 0);
-          const prof = Number(item.profit || item.grossProfit || Math.round(rev * 0.28));
-          const cost = Number(item.importCost || item.costOfGoodsSold || 0);
-          const sold = Number(item.orderCount || item.soldQuantity || item.itemsSold || 0);
-
-          const pStr = String(item.period || item.date || item.label || '');
-          const matchedImports = allImportsList.filter((imp) => {
-            const impDateStr = toDayMonth(imp.createdAt || imp.importDate);
-            return impDateStr && pStr.includes(impDateStr);
-          });
-          const imported = Number(
-            item.itemsImported ||
-              matchedImports.reduce((sum, imp) => sum + (imp.totalQuantity || imp.quantity || imp.items?.reduce((iSum, it) => iSum + (it.quantity || 1), 0) || 0), 0)
-          );
+          const rev = Number(item.netRevenue || 0);
+          const prof = Number(item.grossProfit || 0);
+          const cost = Number(item.importCost || 0);
+          const sold = Number(item.soldQuantity || 0);
+          const imported = Number(item.importedQuantity || 0);
 
           return {
             date: item.period || item.date || item.label || 'Ngày',
@@ -715,15 +911,16 @@ function AdminStatisticsPage() {
           });
 
           const matchedImports = allImportsList.filter((imp) => {
-            const impDateStr = toDayMonth(imp.createdAt || imp.importDate);
+            const impDateStr = toDayMonth(imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate);
             return impDateStr === dStr;
           });
 
           const rev = matchedOrders.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
-          const sold = matchedOrders.reduce((sum, o) => sum + (o.items?.length || 1), 0);
-          const prof = rev > 0 ? Math.round(rev * 0.28) : 0;
-          const cost = matchedImports.reduce((sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0), 0);
-          const imported = matchedImports.reduce((sum, imp) => sum + (imp.totalQuantity || imp.quantity || imp.items?.reduce((iSum, it) => iSum + (it.quantity || 1), 0) || 0), 0);
+          const sold = matchedOrders.reduce((sum, order) => sum + (order.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0);
+          const prof = 0;
+          const completedImports = matchedImports.filter((imp) => getStatusCode(imp.status) === 'COMPLETED');
+          const cost = completedImports.reduce((sum, imp) => sum + Number(imp.totalCost || imp.totalAmount || imp.grandTotal || 0), 0);
+          const imported = completedImports.reduce((sum, imp) => sum + (imp.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0);
 
           return {
             date: dStr,
@@ -736,6 +933,20 @@ function AdminStatisticsPage() {
         });
       }
       setMainChartData(series);
+      const macImports = selectedMacVariant === 'ALL'
+        ? allImportsList
+        : allImportsList.map((receipt) => ({
+          ...receipt,
+          items: (receipt.items || []).filter((item) => String(item.variantId || item.variant?.id || '') === String(selectedMacVariant)),
+        }));
+      const macOrders = selectedMacVariant === 'ALL'
+        ? modeOrdersList
+        : modeOrdersList.map((order) => ({
+          ...order,
+          items: (order.items || []).filter((item) => String(item.variantId || item.variant?.id || '') === String(selectedMacVariant)),
+        }));
+      setMacChartData(buildMacSeries(macImports, macOrders, dates.from, dates.to));
+      setPreviousMacChartData(buildMacSeries(macImports, macOrders, prevRange.from, prevRange.to));
 
       // Order Comparison Series
       const comparisonSeries = datesArray.slice(-8).map((dStr) => {
@@ -762,21 +973,22 @@ function AdminStatisticsPage() {
       const paymentMap = {};
       
       // 1. Fill from Backend API if available
-      if (paymentRes.status === 'fulfilled' && Array.isArray(paymentRes.value) && paymentRes.value.length > 0) {
+      const hasBackendPaymentData = dataMode === 'REAL' && paymentRes.status === 'fulfilled' && Array.isArray(paymentRes.value);
+      if (hasBackendPaymentData) {
         paymentRes.value.forEach((p) => {
           let rawM = String(p.method || p.paymentMethod || p.label || 'VNPAY').toUpperCase();
           const label = rawM.includes('COD') || rawM.includes('TIỀN MẶT')
             ? 'COD (Thanh toán khi nhận hàng)'
             : (rawM.includes('VNPAY') ? 'VNPAY (Thanh toán online)' : rawM);
           const amt = Number(p.amount || p.revenue || p.value || p.totalAmount || 0);
-          const cnt = Number(p.count || p.orderCount || p.transactionCount || 1);
+          const cnt = Number(p.count ?? p.orderCount ?? p.transactionCount ?? 0);
           paymentMap[label] = { method: label, label: label, name: label, amount: amt, count: cnt };
         });
       }
 
       // 2. Guarantee ALL order payment methods (COD and VNPAY) from modeOrdersList are present
-      const activeOrdersList = modeOrdersList.filter((o) => getStatusCode(o.status) !== 'CANCELLED');
-      (activeOrdersList.length > 0 ? activeOrdersList : modeOrdersList).forEach((o) => {
+      const activeOrdersList = validOrders;
+      if (!hasBackendPaymentData) activeOrdersList.forEach((o) => {
         let rawM = String(o.paymentMethod || o.paymentMethodName || o.payment?.method || 'COD').toUpperCase();
         const label = rawM.includes('VNPAY')
           ? 'VNPAY (Thanh toán online)'
@@ -794,16 +1006,17 @@ function AdminStatisticsPage() {
 
       // Compute Revenue Category breakdown combining backend API and modeOrdersList
       const categoryMap = {};
-      if (categoryRes.status === 'fulfilled' && Array.isArray(categoryRes.value) && categoryRes.value.length > 0) {
+      const hasBackendCategoryData = dataMode === 'REAL' && categoryRes.status === 'fulfilled' && Array.isArray(categoryRes.value);
+      if (hasBackendCategoryData) {
         categoryRes.value.forEach((c) => {
           const catName = String(c.label || c.name || c.categoryName || 'Danh mục khác');
           const amt = Number(c.amount || c.revenue || c.totalAmount || c.value || 0);
-          const cnt = Number(c.count || c.quantity || c.soldQuantity || 1);
+          const cnt = Number(c.count ?? c.quantity ?? c.soldQuantity ?? 0);
           categoryMap[catName] = { label: catName, name: catName, amount: amt, count: cnt };
         });
       }
 
-      (activeOrdersList.length > 0 ? activeOrdersList : modeOrdersList).forEach((o) => {
+      if (!hasBackendCategoryData) activeOrdersList.forEach((o) => {
         if (Array.isArray(o.items) && o.items.length > 0) {
           o.items.forEach((it) => {
             const catName = String(it.categoryName || it.category?.name || it.productCategory || 'Đồ chơi sáng tạo');
@@ -811,10 +1024,8 @@ function AdminStatisticsPage() {
             if (!categoryMap[catName]) {
               categoryMap[catName] = { label: catName, name: catName, amount: 0, count: 0 };
             }
-            if (categoryMap[catName].amount === 0) {
-              categoryMap[catName].amount += itemTotal;
-              categoryMap[catName].count += Number(it.quantity || 1);
-            }
+            categoryMap[catName].amount += itemTotal;
+            categoryMap[catName].count += Number(it.quantity || 0);
           });
         }
       });
@@ -843,6 +1054,39 @@ function AdminStatisticsPage() {
 
   const moneyTicks = useMemo(() => getMoneyTicks(mainChartData), [mainChartData]);
   const productTicks = useMemo(() => getProductTicks(mainChartData), [mainChartData]);
+  const macSummary = useMemo(() => {
+    const latest = [...macChartData].reverse().find((point) => point.mac !== null || point.sellingPrice !== null) || {};
+    const latestImport = [...macChartData].reverse().find((point) => point.importPrice !== null) || {};
+    const marginPercent = latest.sellingPrice > 0 && latest.mac !== null
+      ? ((latest.sellingPrice - latest.mac) / latest.sellingPrice) * 100
+      : 0;
+    return { latest, latestImport, marginPercent };
+  }, [macChartData]);
+  const previousMacSummary = useMemo(() => {
+    const latest = [...previousMacChartData].reverse().find((point) => point.mac !== null || point.sellingPrice !== null) || {};
+    const latestImport = [...previousMacChartData].reverse().find((point) => point.importPrice !== null) || {};
+    const marginPercent = latest.sellingPrice > 0 && latest.mac !== null
+      ? ((latest.sellingPrice - latest.mac) / latest.sellingPrice) * 100
+      : 0;
+    return { latest, latestImport, marginPercent };
+  }, [previousMacChartData]);
+  const macGrowthPercents = useMemo(() => {
+    const compare = (current, previous) => {
+      const currentValue = Number(current || 0);
+      const previousValue = Number(previous || 0);
+      if (currentValue === 0 && previousValue === 0) return '0%';
+      if (previousValue === 0) return '+100%';
+      const percent = Math.round(((currentValue - previousValue) / previousValue) * 100);
+      return `${percent > 0 ? '+' : ''}${percent}%`;
+    };
+    return {
+      selling: compare(macSummary.latest.sellingPrice, previousMacSummary.latest.sellingPrice),
+      mac: compare(macSummary.latest.mac, previousMacSummary.latest.mac),
+      importPrice: compare(macSummary.latestImport.importPrice, previousMacSummary.latestImport.importPrice),
+      stock: compare(macSummary.latest.stockQuantity, previousMacSummary.latest.stockQuantity),
+      margin: compare(macSummary.marginPercent, previousMacSummary.marginPercent),
+    };
+  }, [macSummary, previousMacSummary]);
 
   return (
     <section className="admin-statistics-page" style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -965,7 +1209,18 @@ function AdminStatisticsPage() {
             />
           </div>
 
-          {/* ROW 2: FINANCIAL & QUANTITY TREND CHARTS */}
+          {/* ROW 1B: MAC DATA CARDS REQUIRED BY MAC DESIGN */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <KpiSparklineCard title="Giá bán lịch sử" rawNumber={macSummary.latest.sellingPrice} change={macGrowthPercents.selling} strokeColor="#2563eb" data={macChartData.map((p) => ({ v: p.sellingPrice }))} unit="VND" />
+            <KpiSparklineCard title="Giá vốn bình quân MAC" rawNumber={macSummary.latest.mac} change={macGrowthPercents.mac} strokeColor="#16a34a" data={macChartData.map((p) => ({ v: p.mac }))} unit="VND" />
+            <KpiSparklineCard title="Giá nhập từng lô" rawNumber={macSummary.latestImport.importPrice} change={macGrowthPercents.importPrice} strokeColor="#dc2626" data={macChartData.map((p) => ({ v: p.importPrice }))} unit="VND" />
+            <KpiSparklineCard title="Sản phẩm tồn kho" rawNumber={macSummary.latest.stockQuantity} change={macGrowthPercents.stock} strokeColor="#7c3aed" data={macChartData.map((p) => ({ v: p.stockQuantity }))} unit="Sản phẩm" />
+            <KpiSparklineCard title="Biên lợi nhuận gộp" rawNumber={macSummary.marginPercent} formattedValue={`${macSummary.marginPercent.toFixed(1)}%`} change={macGrowthPercents.margin} strokeColor="#22c55e" data={macChartData.map((p) => ({ v: p.grossMarginGap }))} unit="%" />
+          </div>
+
+          <MacChartCard data={macChartData} dates={dates} products={macProducts} selectedVariant={selectedMacVariant} setSelectedVariant={setSelectedMacVariant} visibility={macVisibility} setVisibility={setMacVisibility} />
+
+          {/* ROW 2: FINANCIAL TREND CHART */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '24px', marginBottom: '24px' }}>
             {/* FINANCIAL CHART */}
             <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', padding: '24px', border: '1px solid #f1f5f9' }}>
@@ -1060,8 +1315,8 @@ function AdminStatisticsPage() {
               </div>
             </div>
 
-            {/* QUANTITY CHART */}
-            <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', padding: '24px', border: '1px solid #f1f5f9' }}>
+            {/* QUANTITY CHART REMOVED: its metrics are now part of the MAC chart */}
+            <div style={{ display: 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
@@ -1124,6 +1379,45 @@ function AdminStatisticsPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          </div>
+
+          {/* MAC ANALYSIS LEGACY BLOCK: replaced by the filtered MAC chart above */}
+          <div style={{ display: 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', gap: 16, flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Lịch sử giá bán & MAC</h2>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  MAC được tính theo giá nhập có trọng số; điểm giá nhập phản ánh từng lô hàng trong kỳ.
+                </span>
+              </div>
+              <span style={{ padding: '4px 10px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontSize: '11px', fontWeight: '800', border: '1px solid #bfdbfe' }}>
+                Đơn vị: VND · Sản phẩm
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '330px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={macChartData} margin={{ top: 10, right: 18, left: -8, bottom: 8 }}>
+                  <defs>
+                    <linearGradient id="macMarginGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} />
+                  <XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} />
+                  <YAxis yAxisId="price" stroke="#334155" fontSize={11} tickFormatter={formatYMoneyTick} />
+                  <YAxis yAxisId="quantity" orientation="right" stroke="#94a3b8" fontSize={11} allowDecimals={false} />
+                  <Tooltip content={<MacTooltip />} />
+                  <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
+                  <Bar yAxisId="quantity" dataKey="importedQuantity" name="Nhập kho" fill="#cbd5e1" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="quantity" dataKey="soldQuantity" name="Bán ra" fill="#f97316" barSize={10} radius={[4, 4, 0, 0]} />
+                  <Area yAxisId="price" type="monotone" dataKey="grossMarginGap" name="Khoảng lợi nhuận gộp" stroke="#22c55e" fill="url(#macMarginGradient)" strokeWidth={1.5} connectNulls />
+                  <Line yAxisId="price" type="stepAfter" dataKey="sellingPrice" name="Giá bán lịch sử" stroke="#2563eb" strokeWidth={3} connectNulls dot={false} />
+                  <Line yAxisId="price" type="monotone" dataKey="mac" name="MAC" stroke="#16a34a" strokeWidth={3} connectNulls dot={false} />
+                  <Line yAxisId="price" type="monotone" dataKey="importPrice" name="Giá nhập từng lô" stroke="#dc2626" strokeWidth={0} dot={{ r: 4, fill: '#dc2626', stroke: '#fff', strokeWidth: 1.5 }} connectNulls />
+                </ComposedChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -1485,6 +1779,14 @@ function AdminStatisticsPage() {
                   onClick={() => navigate('/admin/payments?status=PENDING')}
                 />
                 <OperationalAlertCard
+                  category="HOÀN TRẢ"
+                  title="Yêu cầu hoàn trả hàng"
+                  count={overview.alerts.pendingReturn}
+                  hint="Kiểm tra các yêu cầu hoàn trả mới và xử lý trong thời hạn cam kết."
+                  tone="return"
+                  onClick={() => navigate('/admin/returns?status=REQUESTED')}
+                />
+                <OperationalAlertCard
                   category="TỒN KHO"
                   title="Biến thể sắp hết hàng"
                   count={overview.alerts.lowStock}
@@ -1607,7 +1909,7 @@ function KpiSparklineCard({ title, rawNumber, formattedValue, change, strokeColo
   const displayChange = change ? `${arrow} ${change.replace(/^[+-]/, '')}` : '—';
 
   const numericVal = typeof rawNumber === 'number' ? rawNumber : Number(rawNumber || 0);
-  const bigDisplay = formatCompactValue(numericVal, unit);
+  const bigDisplay = formattedValue ?? formatCompactValue(numericVal, unit);
   const gradId = useMemo(() => `sparkGrad-${title.replace(/[^a-zA-Z0-9]/g, '')}`, [title]);
 
   // Strictly plot 100% real timeline data without artificial mountain peaks or sine waves
@@ -1699,9 +2001,10 @@ function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
   const isDanger = tone === 'danger';
   const isWarning = tone === 'warning';
   const isCancelled = tone === 'cancelled';
+  const isReturn = tone === 'return';
 
-  const badgeBg = isDanger ? '#fef2f2' : isWarning ? '#fffbebfb' : isCancelled ? '#f8fafc' : '#f0fdf4';
-  const badgeColor = isDanger ? '#dc2626' : isWarning ? '#d97706' : isCancelled ? '#64748b' : '#16a34a';
+  const badgeBg = isDanger ? '#fef2f2' : isWarning ? '#fffbebfb' : isCancelled ? '#f8fafc' : isReturn ? '#eff6ff' : '#f0fdf4';
+  const badgeColor = isDanger ? '#dc2626' : isWarning ? '#d97706' : isCancelled ? '#64748b' : isReturn ? '#2563eb' : '#16a34a';
 
   return (
     <div
@@ -1713,7 +2016,7 @@ function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
         padding: '14px 18px',
         borderRadius: '12px',
         background: badgeBg,
-        border: `1px solid ${isDanger ? '#fecaca' : isWarning ? '#fef3c7' : '#e2e8f0'}`,
+        border: `1px solid ${isDanger ? '#fecaca' : isWarning ? '#fef3c7' : isReturn ? '#bfdbfe' : '#e2e8f0'}`,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.15s ease',
         userSelect: 'none',

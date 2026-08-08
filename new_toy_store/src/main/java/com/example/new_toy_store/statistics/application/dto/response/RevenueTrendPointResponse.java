@@ -7,13 +7,29 @@ public class RevenueTrendPointResponse {
     private final double refundAmount;
     private final double netRevenue;
     private final long orderCount;
+    private final long soldQuantity;
+    private final long importedQuantity;
+    private final double costOfGoodsSold;
+    private final double importCost;
+    private final double grossProfit;
 
     public RevenueTrendPointResponse(String period, double grossRevenue, double refundAmount, long orderCount) {
+        this(period, grossRevenue, refundAmount, orderCount, 0, 0, 0.0, 0.0);
+    }
+
+    public RevenueTrendPointResponse(String period, double grossRevenue, double refundAmount, long orderCount,
+                                     long soldQuantity, long importedQuantity,
+                                     double costOfGoodsSold, double importCost) {
         this.period = period;
         this.grossRevenue = round(grossRevenue);
         this.refundAmount = round(refundAmount);
         this.netRevenue = round(grossRevenue - refundAmount);
         this.orderCount = orderCount;
+        this.soldQuantity = soldQuantity;
+        this.importedQuantity = importedQuantity;
+        this.costOfGoodsSold = round(costOfGoodsSold);
+        this.importCost = round(importCost);
+        this.grossProfit = round(this.netRevenue - this.costOfGoodsSold);
     }
 
     public String getPeriod() { return period; }
@@ -21,8 +37,13 @@ public class RevenueTrendPointResponse {
     public double getRefundAmount() { return refundAmount; }
     public double getNetRevenue() { return netRevenue; }
     public long getOrderCount() { return orderCount; }
+    public long getSoldQuantity() { return soldQuantity; }
+    public long getImportedQuantity() { return importedQuantity; }
+    public double getCostOfGoodsSold() { return costOfGoodsSold; }
+    public double getImportCost() { return importCost; }
+    public double getGrossProfit() { return grossProfit; }
 
     private static double round(double value) {
-        return Math.max(0.0, Math.round(value * 100.0) / 100.0);
+        return Math.round(value * 100.0) / 100.0;
     }
 }

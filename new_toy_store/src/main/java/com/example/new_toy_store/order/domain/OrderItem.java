@@ -39,6 +39,9 @@ public class OrderItem extends BaseSoftDeleteEntity {
     @Column(nullable = false)
     private double price;
 
+    @Column(name = "cost_price_snapshot")
+    private double costPriceSnapshot;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
@@ -54,7 +57,8 @@ public class OrderItem extends BaseSoftDeleteEntity {
 
     protected OrderItem() {}
 
-    public OrderItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
+    public OrderItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot,
+                     int quantity, double price, double costPriceSnapshot) {
         if (productId == null) throw new InvalidOrderDataException("productId", "ID sản phẩm không được để trống");
         if (variantId == null) throw new InvalidOrderDataException("variantId", "ID biến thể không được để trống");
         if (quantity <= 0) throw new InvalidOrderDataException("quantity", "Số lượng phải lớn hơn 0");
@@ -65,6 +69,7 @@ public class OrderItem extends BaseSoftDeleteEntity {
         this.variantAttributesSnapshot = variantAttributesSnapshot;
         this.quantity = quantity;
         this.price = price;
+        this.costPriceSnapshot = Math.max(0.0, costPriceSnapshot);
     }
 
     void setOrder(Order order) { this.order = order; }
@@ -75,6 +80,7 @@ public class OrderItem extends BaseSoftDeleteEntity {
     public String getProductName() { return productName; }
     public int getQuantity() { return quantity; }
     public double getPrice() { return price; }
+    public double getCostPriceSnapshot() { return costPriceSnapshot; }
     public Order getOrder() { return order; }
     public Integer getProductId() { return productId; }
     public Integer getVariantId() { return variantId; }

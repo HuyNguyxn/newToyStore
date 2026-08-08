@@ -73,8 +73,10 @@ public class Order extends BaseRootEntity {
         this.recordHistory(this.status, "Đơn hàng được tạo mới");
     }
 
-    public void addItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot, int quantity, double price) {
-        OrderItem item = new OrderItem(productId, variantId, productName, variantAttributesSnapshot, quantity, price);
+    public void addItem(Integer productId, Integer variantId, String productName, String variantAttributesSnapshot,
+                        int quantity, double price, double costPriceSnapshot) {
+        OrderItem item = new OrderItem(productId, variantId, productName, variantAttributesSnapshot,
+                quantity, price, costPriceSnapshot);
         item.setOrder(this);
         this.items.add(item);
         calculateTotal();

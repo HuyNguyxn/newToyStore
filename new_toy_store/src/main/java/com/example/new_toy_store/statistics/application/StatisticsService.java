@@ -47,8 +47,6 @@ public class StatisticsService {
 
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
     private static final List<OrderStatus> REVENUE_ORDER_STATUSES = List.of(
-            OrderStatus.CONFIRMED,
-            OrderStatus.SHIPPED,
             OrderStatus.COMPLETED,
             OrderStatus.PARTIALLY_REFUNDED,
             OrderStatus.FULLY_REFUNDED
@@ -441,13 +439,19 @@ public class StatisticsService {
         Map<String, TrendAccumulator> buckets = createBuckets(period);
         applyDailyRevenueRows(buckets, period);
         applyDailyRefundRows(buckets, period);
+        applyDailyCostRows(buckets, period);
+        applyDailyImportRows(buckets, period);
 
         return buckets.entrySet().stream()
                 .map(entry -> new RevenueTrendPointResponse(
                         entry.getKey(),
                         entry.getValue().grossRevenue(),
                         entry.getValue().refundAmount(),
-                        entry.getValue().orderCount()
+                        entry.getValue().orderCount(),
+                        entry.getValue().soldQuantity(),
+                        entry.getValue().importedQuantity(),
+                        entry.getValue().costOfGoodsSold(),
+                        entry.getValue().importCost()
                 ))
                 .toList();
     }
@@ -478,6 +482,33 @@ public class StatisticsService {
             TrendAccumulator accumulator = buckets.get(bucketKey);
             if (accumulator != null) {
                 accumulator.addRefund(((Number) row[1]).doubleValue());
+            }
+        }
+    }
+
+    private void applyDailyCostRows(Map<String, TrendAccumulator> buckets, StatisticPeriod period) {
+        List<Object[]> rows = orderRepository.aggregateDailyCostAndSoldQuantity(
+                REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
+                period.startDateTime(),
+                period.endExclusiveDateTime()
+        );
+        for (Object[] row : rows) {
+            TrendAccumulator accumulator = buckets.get(bucketKey(toLocalDate(row[0]), period));
+            if (accumulator != null) {
+                accumulator.addCostAndSoldQuantity(((Number) row[2]).doubleValue(), ((Number) row[1]).longValue());
+            }
+        }
+    }
+
+    private void applyDailyImportRows(Map<String, TrendAccumulator> buckets, StatisticPeriod period) {
+        List<Object[]> rows = importNoteRepository.aggregateDailyInboundMovement(
+                period.startDateTime(),
+                period.endExclusiveDateTime()
+        );
+        for (Object[] row : rows) {
+            TrendAccumulator accumulator = buckets.get(bucketKey(toLocalDate(row[0]), period));
+            if (accumulator != null) {
+                accumulator.addImport(((Number) row[2]).doubleValue(), ((Number) row[1]).longValue());
             }
         }
     }
@@ -642,6 +673,10 @@ public class StatisticsService {
         private double grossRevenue;
         private double refundAmount;
         private long orderCount;
+        private long soldQuantity;
+        private long importedQuantity;
+        private double costOfGoodsSold;
+        private double importCost;
 
         void addRevenue(double amount, long count) {
             this.grossRevenue += amount;
@@ -652,8 +687,22 @@ public class StatisticsService {
             this.refundAmount += amount;
         }
 
+        void addCostAndSoldQuantity(double cost, long quantity) {
+            this.costOfGoodsSold += cost;
+            this.soldQuantity += quantity;
+        }
+
+        void addImport(double cost, long quantity) {
+            this.importCost += cost;
+            this.importedQuantity += quantity;
+        }
+
         double grossRevenue() { return grossRevenue; }
         double refundAmount() { return refundAmount; }
         long orderCount() { return orderCount; }
+        long soldQuantity() { return soldQuantity; }
+        long importedQuantity() { return importedQuantity; }
+        double costOfGoodsSold() { return costOfGoodsSold; }
+        double importCost() { return importCost; }
     }
 }

@@ -343,7 +343,7 @@ public class OrderService {
 
             order.addItem(
                     product.getId(), variant.getId(), product.getName(),
-                    snapshot, itemRequest.getQuantity(), variant.getPrice()
+                    snapshot, itemRequest.getQuantity(), variant.getPrice(), variant.getCostPrice()
             );
         }
     }
