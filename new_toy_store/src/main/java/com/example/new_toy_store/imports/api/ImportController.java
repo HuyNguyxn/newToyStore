@@ -25,8 +25,9 @@ public class ImportController {
     public Page<ImportNoteResponse> search(
             @RequestParam(required = false) Integer supplierId,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
             Pageable pageable) {
-        return service.searchImportNotes(supplierId, status, pageable);
+        return service.searchImportNotes(supplierId, status, keyword, pageable);
     }
 
     @GetMapping("/{id}")

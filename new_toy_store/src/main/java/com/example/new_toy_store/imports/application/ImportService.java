@@ -56,12 +56,17 @@ public class ImportService {
 
     @Transactional(readOnly = true)
     public Page<ImportNoteResponse> searchImportNotes(Integer supplierId, String statusValue, Pageable pageable) {
+        return searchImportNotes(supplierId, statusValue, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ImportNoteResponse> searchImportNotes(Integer supplierId, String statusValue, String keyword, Pageable pageable) {
         ImportStatus status = null;
         if (statusValue != null && !statusValue.trim().isEmpty()) {
             status = ImportStatus.from(statusValue);
         }
 
-        Page<ImportNote> notes = repository.findAll(ImportNoteSpecification.filter(supplierId, status), pageable);
+        Page<ImportNote> notes = repository.findAll(ImportNoteSpecification.filter(supplierId, status, keyword), pageable);
 
         Set<Integer> supplierIds = notes.stream()
                 .map(ImportNote::getSupplierId)

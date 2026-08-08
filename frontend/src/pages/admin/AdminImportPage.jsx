@@ -448,19 +448,10 @@ function AdminImportPage() {
     try {
       const queryParams = { page, size: 10, sort: 'createdAt,desc' };
       if (filters.supplierId) queryParams.supplierId = filters.supplierId;
+      if (filters.code.trim()) queryParams.keyword = filters.code.trim();
 
       const result = await getImports(queryParams);
-      let list = result?.content || result || [];
-
-      if (filters.code.trim()) {
-        const kw = filters.code.trim().toLowerCase();
-        list = list.filter(
-          (item) =>
-            String(item.id).toLowerCase().includes(kw) ||
-            `pn${item.id}`.toLowerCase().includes(kw) ||
-            `pnb8cc2630`.toLowerCase().includes(kw)
-        );
-      }
+      const list = result?.content || result || [];
 
       setImports(list);
       setPageInfo({

@@ -30,9 +30,10 @@ public class WarehouseController {
     public Page<ImportNoteResponse> getBatches(
             @RequestParam(required = false) Integer supplierId,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
             Pageable pageable
     ) {
-        return warehouseService.getBatches(supplierId, status, pageable);
+        return warehouseService.getBatches(supplierId, status, keyword, pageable);
     }
 
     @GetMapping("/{batchId}")

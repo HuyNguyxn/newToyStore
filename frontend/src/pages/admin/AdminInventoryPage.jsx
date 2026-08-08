@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminProducts } from '../../services/adminProductService.js';
 import {
@@ -120,6 +120,7 @@ function AdminInventoryPage() {
   const [products, setProducts] = useState(new Map());
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({ keyword: '', status: '' });
+  const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
@@ -127,17 +128,18 @@ function AdminInventoryPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  async function loadWarehouse() {
+  async function loadWarehouse(page = 0, appliedFilters = filters) {
     setLoading(true);
     setError('');
     try {
       const [importResult, productResult] = await Promise.all([
-        getWarehouseBatches({ page: 0, size: 100, sort: 'createdAt,desc' }),
+        getWarehouseBatches({ page, size: 10, sort: 'createdAt,desc', keyword: appliedFilters.keyword, status: appliedFilters.status }),
         getAdminProducts({ page: 0, size: 300 }),
       ]);
       const importList = importResult?.content || importResult || [];
       const productList = productResult?.content || productResult || [];
       setImports(importList);
+      setPageInfo({ number: importResult?.number ?? page, totalPages: importResult?.totalPages ?? 1, totalElements: importResult?.totalElements ?? importList.length });
       setProducts(new Map(productList.map((product) => [Number(product.id), product])));
     } catch (err) {
       setError(err?.message || 'Không thể tải dữ liệu kho.');
@@ -148,12 +150,7 @@ function AdminInventoryPage() {
 
   useEffect(() => { loadWarehouse(); }, []);
 
-  const visibleImports = useMemo(() => imports.filter((item) => {
-    const keyword = filters.keyword.trim().toLowerCase();
-    const matchesKeyword = !keyword || String(item.id).includes(keyword) || String(item.supplierName || '').toLowerCase().includes(keyword);
-    const matchesStatus = !filters.status || statusCode(item.status) === filters.status;
-    return matchesKeyword && matchesStatus;
-  }), [imports, filters]);
+  const visibleImports = imports;
 
   async function openDetails(id) {
     setDetailLoading(true);
@@ -200,7 +197,7 @@ function AdminInventoryPage() {
       setMessage(isComplete
         ? 'Đã xác nhận lô hàng. Tồn kho hiện đã sẵn sàng để bán.'
         : 'Đã hủy lô hàng đang chờ xử lý.');
-      await loadWarehouse();
+      await loadWarehouse(pageInfo.number);
     } catch (err) {
       setError(err?.message || 'Không thể thay đổi trạng thái lô hàng.');
     } finally {
@@ -223,8 +220,8 @@ function AdminInventoryPage() {
         {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
         {error && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{error}</div>}
 
-        <form onSubmit={(event) => event.preventDefault()} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-          <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} placeholder="Tìm mã lô hoặc nhà cung cấp..." style={{ flex: 1, minWidth: 220, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13 }} />
+        <form onSubmit={(event) => { event.preventDefault(); loadWarehouse(0, filters); }} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+          <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} placeholder="Tìm mã lô hoặc ghi chú..." style={{ flex: 1, minWidth: 220, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13 }} />
           <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13, background: '#ffffff' }}>
             <option value="">Tất cả trạng thái</option>
             <option value="PENDING">Chờ kiểm đếm</option>
@@ -259,6 +256,13 @@ function AdminInventoryPage() {
           </div>
           {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} statusAction={statusAction} navigate={navigate} />}
         </div>
+        {pageInfo.totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 18 }}>
+            <button type="button" disabled={pageInfo.number === 0} onClick={() => loadWarehouse(pageInfo.number - 1)} style={{ border: '1px solid #cbd5e1', background: '#ffffff', borderRadius: 8, padding: '8px 14px' }}>Trang trước</button>
+            <span style={{ color: '#475569', fontSize: 13, fontWeight: 700 }}>Trang {pageInfo.number + 1} / {pageInfo.totalPages} · {pageInfo.totalElements} lô hàng</span>
+            <button type="button" disabled={pageInfo.number >= pageInfo.totalPages - 1} onClick={() => loadWarehouse(pageInfo.number + 1)} style={{ border: '1px solid #cbd5e1', background: '#ffffff', borderRadius: 8, padding: '8px 14px' }}>Trang sau</button>
+          </div>
+        )}
       </section>
     </BatchStatusActionContext.Provider>
   );

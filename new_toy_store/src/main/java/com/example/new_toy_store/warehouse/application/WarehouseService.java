@@ -25,8 +25,8 @@ public class WarehouseService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ImportNoteResponse> getBatches(Integer supplierId, String status, Pageable pageable) {
-        return importService.searchImportNotes(supplierId, status, pageable);
+    public Page<ImportNoteResponse> getBatches(Integer supplierId, String status, String keyword, Pageable pageable) {
+        return importService.searchImportNotes(supplierId, status, keyword, pageable);
     }
 
     @Transactional(readOnly = true)
