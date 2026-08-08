@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getAdminCategories, getAdminCategoryTree } from '../../services/adminCategoryService.js';
 import {
   cancelImportNote,
@@ -333,6 +333,7 @@ function productMatchesCategory(product, targetCategoryIds, categoryNameMap = {}
 }
 
 function AdminImportPage() {
+  const navigate = useNavigate();
   // Main Data States
   const [imports, setImports] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -1501,6 +1502,16 @@ function AdminImportPage() {
 
             {/* CLOSE BUTTON */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewNote(null);
+                  navigate('/admin/inventory');
+                }}
+                style={{ marginRight: '10px', padding: '10px 18px', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Mở trong Quản lý Kho
+              </button>
               <button type="button" onClick={() => setViewNote(null)} style={{ padding: '10px 24px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}>
                 Đóng
               </button>

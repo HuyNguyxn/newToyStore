@@ -30,7 +30,8 @@ public class InventoryEventListener {
                 .map(item -> new ImportedStockRequest(
                         item.variantId(),
                         item.quantity(),
-                        item.importPrice()
+                        item.importPrice(),
+                        item.batchNumber()
                 ))
                 .toList();
 

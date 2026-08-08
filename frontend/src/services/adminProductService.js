@@ -29,6 +29,13 @@ export function updateAdminProduct(productId, payload) {
   });
 }
 
+export function updateProductStatus(productId, status) {
+  return apiClient(`/products/${productId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function deleteAdminProduct(productId) {
   return apiClient(`/products/${productId}`, {
     method: 'DELETE',

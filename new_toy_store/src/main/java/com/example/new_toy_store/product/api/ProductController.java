@@ -6,6 +6,7 @@ import com.example.new_toy_store.product.application.dto.request.AddVariantStock
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
+import com.example.new_toy_store.product.application.dto.request.UpdateProductStatusRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateVariantPriceRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import jakarta.validation.Valid;
@@ -98,6 +99,14 @@ public class ProductController {
             @Valid @RequestBody UpdateProductRequest request
     ) {
         return facade.updateInfo(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ProductResponse updateStatus(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id,
+            @Valid @RequestBody UpdateProductStatusRequest request
+    ) {
+        return facade.updateStatus(id, request);
     }
 
     @PostMapping("/{id}/images")

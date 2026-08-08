@@ -4,6 +4,7 @@ import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.application.dto.request.CreateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
+import com.example.new_toy_store.product.application.dto.request.UpdateProductStatusRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
 import org.springframework.data.domain.Page;
@@ -89,6 +90,10 @@ public class ProductFacade {
 
     public ProductResponse updateInfo(Integer id, UpdateProductRequest request) {
         return productService.updateInfo(id, request);
+    }
+
+    public ProductResponse updateStatus(Integer id, UpdateProductStatusRequest request) {
+        return productService.updateStatus(id, request);
     }
 
     public ProductResponse addImage(Integer id, String imageUrl, boolean thumbnail) {

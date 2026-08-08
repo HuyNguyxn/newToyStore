@@ -14,13 +14,17 @@ public class ImportedStockRequest {
     @Min(value = 0, message = "Giá nhập kho không được là số âm")
     private double importPrice;
 
-    public ImportedStockRequest(Integer variantId, int quantity, double importPrice) {
+    private String batchNumber;
+
+    public ImportedStockRequest(Integer variantId, int quantity, double importPrice, String batchNumber) {
         this.variantId = variantId;
         this.quantity = quantity;
         this.importPrice = importPrice;
+        this.batchNumber = batchNumber;
     }
 
     public Integer getVariantId() { return variantId; }
     public int getQuantity() { return quantity; }
     public double getImportPrice() { return importPrice; }
+    public String getBatchNumber() { return batchNumber; }
 }

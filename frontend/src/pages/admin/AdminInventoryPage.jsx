@@ -1,157 +1,207 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getVariantInventoryBatches } from '../../services/inventoryService.js';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getImportDetails, getImports } from '../../services/adminImportService.js';
+import { getAdminProducts, updateProductStatus } from '../../services/adminProductService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
-function AdminInventoryPage() {
-  const [searchParams] = useSearchParams();
-  const isLowStockFilter = searchParams.get('lowStock') === 'true';
+function statusCode(status) {
+  if (status && typeof status === 'object') return String(status.code || status.name || '').toUpperCase();
+  return String(status || '').toUpperCase();
+}
 
-  const [variantId, setVariantId] = useState('');
-  const [batches, setBatches] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [infoNotice, setInfoNotice] = useState(
-    isLowStockFilter ? '⚠️ Đang lọc danh sách các biến thể có lượng tồn kho thấp dưới mức cảnh báo.' : ''
+function importStatus(status) {
+  const code = statusCode(status);
+  if (code === 'COMPLETED') return { label: 'Đã nhập kho', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' };
+  if (code === 'CANCELLED') return { label: 'Đã hủy', color: '#b91c1c', bg: '#fef2f2', border: '#fecaca' };
+  return { label: 'Chờ kiểm đếm', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' };
+}
+
+function productStatus(product) {
+  const code = statusCode(product?.status);
+  if (code === 'ACTIVE') return { label: 'Đang bán', color: '#15803d', bg: '#f0fdf4' };
+  if (code === 'OUT_OF_STOCK') return { label: 'Hết hàng', color: '#b45309', bg: '#fffbeb' };
+  return { label: 'Chưa bán', color: '#64748b', bg: '#f8fafc' };
+}
+
+function stockOf(product) {
+  return (product?.variants || []).reduce((sum, variant) => {
+    const inventory = variant.inventory || {};
+    return sum + Number(inventory.availableQuantity ?? inventory.stockQuantity ?? variant.stockQuantity ?? 0);
+  }, 0);
+}
+
+function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, navigate }) {
+  if (!note) return null;
+  const badge = importStatus(note.status);
+
+  return (
+    <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 22, position: 'sticky', top: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, marginBottom: 18 }}>
+        <div>
+          <div style={{ color: '#ea580c', fontSize: 12, fontWeight: 900, letterSpacing: .6 }}>CHI TIẾT LÔ NHẬP</div>
+          <h2 style={{ margin: '4px 0 0', color: '#0f172a', fontSize: 21 }}>PN{String(note.id).padStart(6, '0')}</h2>
+        </div>
+        <button type="button" onClick={onClose} style={{ border: 0, background: '#f1f5f9', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18 }}>×</button>
+      </div>
+
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, display: 'grid', gap: 8, fontSize: 13 }}>
+        <div><strong>Nhà cung cấp:</strong> {note.supplierName || '—'}</div>
+        <div><strong>Ngày nhập:</strong> {note.createdAt ? formatDateTime(note.createdAt) : '—'}</div>
+        <div><strong>Trạng thái:</strong> <span style={{ color: badge.color, background: badge.bg, padding: '3px 8px', borderRadius: 8, fontWeight: 800 }}>{badge.label}</span></div>
+        <div><strong>Tổng tiền:</strong> {formatPrice(note.totalAmount || 0)}</div>
+      </div>
+
+      <h3 style={{ fontSize: 15, margin: '22px 0 10px', color: '#0f172a' }}>Sản phẩm trong lô</h3>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {(note.items || []).map((item) => {
+          const product = products.get(Number(item.productId));
+          const state = productStatus(product);
+          const stock = stockOf(product);
+          const canPublish = statusCode(note.status) === 'COMPLETED' && product && statusCode(product.status) !== 'ACTIVE' && stock > 0;
+          return (
+            <div key={item.id || `${item.productId}-${item.variantId}`} style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 800, color: '#0f172a' }}>{item.productName || `Sản phẩm #${item.productId}`}</div>
+                  <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Variant #{item.variantId} · Nhập {item.quantity} sản phẩm</div>
+                </div>
+                <span style={{ alignSelf: 'start', color: state.color, background: state.bg, borderRadius: 8, padding: '3px 7px', fontSize: 11, fontWeight: 800 }}>{state.label}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ color: '#475569', fontSize: 12 }}>Tồn khả dụng: <strong>{stock}</strong></span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button type="button" onClick={() => navigate('/admin/products')} style={{ border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', borderRadius: 7, padding: '6px 9px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Quản lý sản phẩm</button>
+                  {canPublish && (
+                    <button type="button" disabled={publishingId === item.productId} onClick={() => onPublish(item.productId)} style={{ border: 0, background: '#16a34a', color: '#ffffff', borderRadius: 7, padding: '6px 9px', cursor: 'pointer', fontSize: 12, fontWeight: 800 }}>
+                      {publishingId === item.productId ? 'Đang cập nhật...' : 'Đưa lên cửa hàng'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </aside>
   );
+}
 
-  useEffect(() => {
-    if (isLowStockFilter) {
-      // Auto fetch batches if variantId or low-stock warning requested
-      setInfoNotice('⚠️ Đang hiển thị các biến thể sắp hết hàng cần bổ sung tồn kho.');
-    }
-  }, [isLowStockFilter]);
+function AdminInventoryPage() {
+  const navigate = useNavigate();
+  const [imports, setImports] = useState([]);
+  const [products, setProducts] = useState(new Map());
+  const [selected, setSelected] = useState(null);
+  const [filters, setFilters] = useState({ keyword: '', status: '' });
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [publishingId, setPublishingId] = useState(null);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    if (!variantId.trim()) return;
+  async function loadWarehouse() {
     setLoading(true);
     setError('');
-
     try {
-      const result = await getVariantInventoryBatches(variantId.trim());
-      setBatches(Array.isArray(result) ? result : []);
+      const [importResult, productResult] = await Promise.all([
+        getImports({ page: 0, size: 100, sort: 'createdAt,desc' }),
+        getAdminProducts({ page: 0, size: 300 }),
+      ]);
+      const importList = importResult?.content || importResult || [];
+      const productList = productResult?.content || productResult || [];
+      setImports(importList);
+      setProducts(new Map(productList.map((product) => [Number(product.id), product])));
     } catch (err) {
-      setBatches([]);
-      setError(err.message || 'Không thể tải danh sách lô hàng tồn kho.');
+      setError(err?.message || 'Không thể tải dữ liệu kho.');
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => { loadWarehouse(); }, []);
+
+  const visibleImports = useMemo(() => imports.filter((item) => {
+    const keyword = filters.keyword.trim().toLowerCase();
+    const matchesKeyword = !keyword || String(item.id).includes(keyword) || String(item.supplierName || '').toLowerCase().includes(keyword);
+    const matchesStatus = !filters.status || statusCode(item.status) === filters.status;
+    return matchesKeyword && matchesStatus;
+  }), [imports, filters]);
+
+  async function openDetails(id) {
+    setDetailLoading(true);
+    setError('');
+    try {
+      setSelected(await getImportDetails(id));
+    } catch (err) {
+      setError(err?.message || 'Không thể tải chi tiết lô nhập.');
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function publishProduct(productId) {
+    setPublishingId(productId);
+    setError('');
+    try {
+      const updated = await updateProductStatus(productId, 'ACTIVE');
+      setProducts((current) => new Map(current).set(Number(productId), updated));
+      setMessage('Đã đưa sản phẩm lên cửa hàng.');
+    } catch (err) {
+      setError(err?.message || 'Không thể đưa sản phẩm lên cửa hàng.');
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
   return (
-    <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      
-      {/* HEADER ROW */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Quản lý lô hàng tồn kho
-        </h1>
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Lô hàng: {batches.length}
+    <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start', marginBottom: 20, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ color: '#ea580c', fontSize: 12, fontWeight: 900, letterSpacing: .8 }}>WAREHOUSE MANAGEMENT</div>
+          <h1 style={{ margin: '5px 0 0', color: '#0f172a', fontSize: 26 }}>Quản lý Kho & Lô hàng</h1>
+          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>Các lô hàng được tạo từ mục “Tạo phiếu Nhập hàng”. Chọn một lô để xử lý sản phẩm đưa lên cửa hàng.</p>
         </div>
+        <button type="button" onClick={() => navigate('/admin/imports')} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
       </div>
 
-      {/* INFO NOTICE ALERT */}
-      {infoNotice && (
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>
-          {infoNotice}
-        </div>
-      )}
+      {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
+      {error && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{error}</div>}
 
-      {/* ERROR ALERT */}
-      {error && (
-        <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: '700' }}>
-          {error}
-        </div>
-      )}
-
-      {/* FILTER SEARCH CARD */}
-      <form
-        onSubmit={handleSubmit}
-        style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
-      >
-        <div style={{ flex: '1', minWidth: '240px' }}>
-          <input
-            type="text"
-            placeholder="Nhập mã biến thể sản phẩm (Variant ID)..."
-            value={variantId}
-            onChange={(event) => setVariantId(event.target.value)}
-            required
-            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ padding: '9px 24px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
-        >
-          {loading ? 'Đang tải...' : 'Tìm kiếm lô hàng'}
-        </button>
+      <form onSubmit={(event) => event.preventDefault()} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} placeholder="Tìm mã lô hoặc nhà cung cấp..." style={{ flex: 1, minWidth: 220, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13 }} />
+        <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13, background: '#ffffff' }}>
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ kiểm đếm</option>
+          <option value="COMPLETED">Đã nhập kho</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
       </form>
 
-      {/* DATA TABLE */}
-      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'visible' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
-              <th style={{ padding: '14px 16px', width: '80px' }}>Mã Lô</th>
-              <th style={{ padding: '14px 16px', width: '120px' }}>Mã Biến Thể</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right', width: '140px' }}>Số Lượng Nhập</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right', width: '120px' }}>Còn Lại</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right', width: '140px' }}>Giá Vốn</th>
-              <th style={{ padding: '14px 16px', width: '160px' }}>Hạn Sử Dụng</th>
-              <th style={{ padding: '14px 16px', width: '160px' }}>Ngày Nhập Lô</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches.length === 0 ? (
-              <tr>
-                <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                  Vui lòng nhập Mã biến thể sản phẩm để xem danh sách lô hàng.
-                </td>
-              </tr>
-            ) : (
-              batches.map((batch, idx) => (
-                <tr
-                  key={batch.id || idx}
-                  style={{
-                    borderBottom: '1px solid #f1f5f9',
-                    background: idx % 2 === 0 ? '#ffffff' : '#fafafa',
-                  }}
-                >
-                  <td style={{ padding: '14px 16px', fontWeight: '600', color: '#334155' }}>
-                    #{batch.id}
-                  </td>
-                  <td style={{ padding: '14px 16px', color: '#475569' }}>
-                    {batch.variantId}
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '600' }}>
-                    {batch.quantity}
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '700', color: batch.remainingQuantity <= 5 ? '#dc2626' : '#16a34a' }}>
-                    {batch.remainingQuantity}
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '700', color: '#0f172a' }}>
-                    {formatPrice(batch.costPrice)}
-                  </td>
-                  <td style={{ padding: '14px 16px', color: '#64748b' }}>
-                    {batch.expiryDate ? formatDateTime(batch.expiryDate) : '-'}
-                  </td>
-                  <td style={{ padding: '14px 16px', color: '#64748b' }}>
-                    {batch.createdAt ? formatDateTime(batch.createdAt) : '-'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div style={{ display: 'grid', gridTemplateColumns: selected ? 'minmax(0, 1.4fr) minmax(340px, .9fr)' : '1fr', gap: 18, alignItems: 'start' }}>
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead><tr style={{ background: '#f8fafc', color: '#475569', textAlign: 'left' }}>
+              <th style={{ padding: 13 }}>Mã lô</th><th style={{ padding: 13 }}>Nhà cung cấp</th><th style={{ padding: 13 }}>Sản phẩm</th><th style={{ padding: 13 }}>Tổng tiền</th><th style={{ padding: 13 }}>Trạng thái</th><th style={{ padding: 13 }}>Ngày tạo</th><th style={{ padding: 13 }} />
+            </tr></thead>
+            <tbody>
+              {loading ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu kho...</td></tr>
+                : visibleImports.length === 0 ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#94a3b8' }}>Chưa có lô hàng phù hợp.</td></tr>
+                  : visibleImports.map((item, index) => {
+                    const badge = importStatus(item.status);
+                    return <tr key={item.id} style={{ borderTop: index ? '1px solid #f1f5f9' : 0 }}>
+                      <td style={{ padding: 13, color: '#ea580c', fontWeight: 900 }}>PN{String(item.id).padStart(6, '0')}</td>
+                      <td style={{ padding: 13, fontWeight: 700 }}>{item.supplierName || '—'}</td>
+                      <td style={{ padding: 13 }}>{item.itemCount ?? 'Xem trong chi tiết'}</td>
+                      <td style={{ padding: 13, fontWeight: 800 }}>{formatPrice(item.totalAmount || 0)}</td>
+                      <td style={{ padding: 13 }}><span style={{ color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, borderRadius: 8, padding: '4px 8px', fontWeight: 800, fontSize: 11 }}>{badge.label}</span></td>
+                      <td style={{ padding: 13, color: '#64748b' }}>{item.createdAt ? formatDateTime(item.createdAt) : '—'}</td>
+                      <td style={{ padding: 13, textAlign: 'right' }}><button type="button" onClick={() => openDetails(item.id)} style={{ border: '1px solid #fed7aa', color: '#c2410c', background: '#fff7ed', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontWeight: 800 }}>Chi tiết</button></td>
+                    </tr>;
+                  })}
+            </tbody>
+          </table>
+        </div>
+        {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} navigate={navigate} />}
       </div>
-
-      {/* FOOTER */}
-      <footer style={{ textAlign: 'center', marginTop: '30px', padding: '16px 0', borderTop: '1px solid #cbd5e1', fontSize: '12px', color: '#94a3b8' }}>
-        © 2026 ToyStore Admin Panel
-      </footer>
     </section>
   );
 }

@@ -144,7 +144,8 @@ public class ImportService {
                 .map(item -> new ImportNoteCompletedItemPayload(
                         item.getVariantId(),
                         item.getQuantity(),
-                        item.getImportPrice()
+                        item.getImportPrice(),
+                        String.format("PN%06d", note.getId())
                 ))
                 .collect(Collectors.toList());
 

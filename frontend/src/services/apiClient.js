@@ -40,6 +40,13 @@ export async function apiClient(endpoint, options = {}) {
     };
   }
 
+  if (response.status === 403) {
+    throw {
+      status: 403,
+      message: 'Bạn không có quyền thực hiện thao tác này (Chỉ dành cho Quản lý / Quản trị viên).',
+    };
+  }
+
   if (response.status === 204) {
     return null;
   }

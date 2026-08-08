@@ -85,6 +85,10 @@ public class ProductVariant extends BaseRootEntity {
     }
 
     public void importStock(int addedQuantity, double importPrice) {
+        importStock(addedQuantity, importPrice, "DEFAULT_BATCH");
+    }
+
+    public void importStock(int addedQuantity, double importPrice, String batchNumber) {
         if (addedQuantity <= 0 || importPrice < 0) throw InvalidProductOperationException.invalidImportData();
         int currentStock = this.inventory != null ? this.inventory.getStockQuantity() : 0;
 
@@ -98,7 +102,12 @@ public class ProductVariant extends BaseRootEntity {
             this.costPrice = Math.max(0.0, Math.round(mac * 100.0) / 100.0);
         }
 
-        if (this.inventory != null) this.inventory.addStock(addedQuantity);
+        if (this.inventory != null) {
+            String resolvedBatchNumber = batchNumber == null || batchNumber.isBlank()
+                    ? "DEFAULT_BATCH"
+                    : batchNumber;
+            this.inventory.addStock(addedQuantity, resolvedBatchNumber, java.time.LocalDate.now().plusYears(5));
+        }
     }
 
     public void updatePrice(double newPrice) {

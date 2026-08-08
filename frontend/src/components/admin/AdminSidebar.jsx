@@ -22,7 +22,7 @@ const navGroups = [
     items: [
       { to: '/admin/categories', label: 'Danh mục sản phẩm', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/products', label: 'Sản phẩm & Biến thể', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-      { to: '/admin/inventory', label: 'Quản lý Tồn kho', badgeKey: 'lowStockVariants', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/inventory', label: 'Quản lý Kho & Lô hàng', badgeKey: 'lowStockVariants', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/uploads', label: 'Thư viện hình ảnh', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
     ],
   },
@@ -43,7 +43,7 @@ const navGroups = [
     title: 'QUẢN LÝ NHÀ CUNG CẤP & MUA HÀNG',
     items: [
       { to: '/admin/suppliers', label: 'Danh sách Nhà cung cấp', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-      { to: '/admin/imports', label: 'Nhập hàng vào kho', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/imports', label: 'Tạo phiếu Nhập hàng', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/supplier-returns', label: 'Xuất trả Nhà cung cấp', badgeKey: 'pendingSupplierReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
     ],
   },

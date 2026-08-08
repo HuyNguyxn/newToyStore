@@ -6,6 +6,7 @@ import com.example.new_toy_store.product.application.dto.request.CreateProductRe
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
+import com.example.new_toy_store.product.application.dto.request.UpdateProductStatusRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductStatus;
@@ -75,7 +76,7 @@ public class ProductService {
             ProductVariant variant = variantRepository.findById(req.getVariantId())
                     .orElseThrow(InvalidProductOperationException::variantNotFound);
 
-            variant.importStock(req.getQuantity(), req.getImportPrice());
+            variant.importStock(req.getQuantity(), req.getImportPrice(), req.getBatchNumber());
         }
     }
 
@@ -310,6 +311,18 @@ public class ProductService {
         }
 
         repository.save(product);
+        return ProductMapper.toResponseWithSupplier(product, supplier);
+    }
+
+    @Transactional
+    public ProductResponse updateStatus(Integer id, UpdateProductStatusRequest request) {
+        Product product = getProductEntity(id);
+        product.changeStatus(ProductStatus.from(request.getStatus()));
+        repository.save(product);
+
+        SupplierResponse supplier = product.getSupplierId() != null
+                ? supplierFacade.getSupplierDetails(product.getSupplierId())
+                : null;
         return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 
