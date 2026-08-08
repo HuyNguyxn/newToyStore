@@ -25,8 +25,8 @@ public class CustomerReturnNotificationEventListener {
                 NotificationType.RETURN_STATUS_CHANGED,
                 NotificationReferenceType.CUSTOMER_RETURN,
                 payload.returnId(),
-                "Return request status updated",
-                "Your return request for order #" + payload.orderId() + " changed to " + payload.currentStatus().name() + ".",
+                "Cập nhật yêu cầu trả hàng",
+                "Yêu cầu trả hàng cho đơn hàng #" + payload.orderId() + " đã chuyển sang trạng thái: " + payload.currentStatus().name() + ".",
                 "RETURN_STATUS:" + payload.returnId() + ":" + payload.currentStatus().name(),
                 event.occurredAt(),
                 true

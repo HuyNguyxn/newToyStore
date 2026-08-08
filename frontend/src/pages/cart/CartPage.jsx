@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
-import { sampleCart } from '../../data/sampleData.js';
 import {
   clearCart,
   getCart,
@@ -11,6 +10,8 @@ import {
   updateCartItemQuantity,
 } from '../../services/cartService.js';
 import { formatPrice } from '../../utils/formatters.js';
+
+import { isUserProfileComplete } from '../../utils/userValidation.js';
 
 function CartPage() {
   const navigate = useNavigate();
@@ -23,11 +24,19 @@ function CartPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (user && !isUserProfileComplete(user)) {
+      navigate('/profile', {
+        state: { requireInfoNotice: 'Bạn phải bổ sung đầy đủ họ tên, số điện thoại và địa chỉ.' },
+      });
+      return;
+    }
     loadCart('');
-  }, [user?.id]);
+  }, [user]);
 
   function loadCart(code = promoCode) {
     if (!user?.id) {
+      setCart({ items: [], cartTotal: 0, finalTotal: 0, orderDiscountAmount: 0 });
+      setLoading(false);
       return;
     }
 
@@ -36,12 +45,11 @@ function CartPage() {
 
     getCart(user.id, code)
       .then((result) => {
-        setCart(result);
-        setPromoCode(result.appliedPromoCode || code || '');
+        setCart(result || { items: [], cartTotal: 0, finalTotal: 0, orderDiscountAmount: 0 });
+        setPromoCode(result?.appliedPromoCode || code || '');
       })
       .catch(() => {
-        setCart(sampleCart);
-        setNotice('Backend chưa sẵn sàng, đang hiển thị giỏ hàng mẫu.');
+        setCart({ items: [], cartTotal: 0, finalTotal: 0, orderDiscountAmount: 0 });
       })
       .finally(() => setLoading(false));
   }
@@ -119,15 +127,15 @@ function CartPage() {
   return (
     <div className="cart-page container">
       <section className="cart-content">
-        <BackLink fallback="/products" label="Tiep tuc mua sam" />
+        <BackLink fallback="/products" label="Tiếp tục mua sắm" />
 
         <div className="cart-heading">
           <div>
-            <p>Gio hang cua ban</p>
+            <p>Giỏ hàng của bạn</p>
             <h1>{items.length} sản phẩm</h1>
           </div>
           {items.length > 0 && (
-            <button type="button" onClick={handleClearCart}>Xoa tat ca</button>
+            <button type="button" onClick={handleClearCart}>Xóa tất cả</button>
           )}
         </div>
 
@@ -136,7 +144,7 @@ function CartPage() {
 
         {items.length === 0 ? (
           <div className="empty-state">
-            Gio hang dang trong. <Link to="/products">Tiep tuc mua sam</Link>
+            Giỏ hàng đang trống. <Link to="/products">Tiếp tục mua sắm</Link>
           </div>
         ) : (
           <div className="cart-items">
@@ -160,7 +168,7 @@ function CartPage() {
 
                 <div className="cart-item__info">
                   <Link to={`/products/${item.productId}`}>{item.productName}</Link>
-                  <p>{item.variantAttributes || 'Mac dinh'}</p>
+                  <p>{item.variantAttributes || 'Mặc định'}</p>
                   {item.hasPriceChanged && <strong>Giá sản phẩm đã thay đổi</strong>}
                   {item.message && <strong>{item.message}</strong>}
                 </div>
@@ -178,7 +186,7 @@ function CartPage() {
                   >
                     -
                   </button>
-                  <input value={item.quantity} readOnly aria-label="So luong" />
+                  <input value={item.quantity} readOnly aria-label="Số lượng" />
                   <button
                     type="button"
                     disabled={updatingItemId === item.id}
@@ -194,7 +202,7 @@ function CartPage() {
                   disabled={updatingItemId === item.id}
                   onClick={() => handleRemoveItem(item)}
                 >
-                  Xoa
+                  Xóa
                 </button>
               </article>
             ))}
@@ -209,9 +217,9 @@ function CartPage() {
           <input
             value={promoCode}
             onChange={(event) => setPromoCode(event.target.value)}
-            placeholder="Ma giam gia"
+            placeholder="Mã giảm giá"
           />
-          <button type="submit">Ap dung</button>
+          <button type="submit">Áp dụng</button>
         </form>
 
         {cart?.promoMessage && <p className="promo-message">{cart.promoMessage}</p>}
@@ -221,18 +229,26 @@ function CartPage() {
           <strong>{formatPrice(cart?.cartTotal)}</strong>
         </div>
         <div className="summary-line">
-          <span>Giam gia</span>
+          <span>Giảm giá</span>
           <strong>-{formatPrice(cart?.orderDiscountAmount)}</strong>
         </div>
         <div className="summary-line summary-line--total">
-          <span>Tong thanh toan</span>
+          <span>Tổng thanh toán</span>
           <strong>{formatPrice(cart?.finalTotal)}</strong>
         </div>
 
         <button
           type="button"
           disabled={!canCheckout}
-          onClick={() => navigate('/checkout', { state: { promoCode } })}
+          onClick={() => {
+            if (user && !isUserProfileComplete(user)) {
+              navigate('/profile', {
+                state: { requireInfoNotice: 'Bạn phải bổ sung đầy đủ họ tên, số điện thoại và địa chỉ.' },
+              });
+              return;
+            }
+            navigate('/checkout', { state: { promoCode } });
+          }}
         >
           Thanh toán
         </button>

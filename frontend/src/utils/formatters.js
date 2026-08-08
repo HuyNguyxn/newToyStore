@@ -1,6 +1,20 @@
 export function formatPrice(value) {
+  if (typeof value === 'object' && value !== null) {
+    value = value.amount || value.value || 0;
+  }
   const amount = Number(value || 0);
-  return new Intl.NumberFormat('vi-VN').format(amount) + 'd';
+  return new Intl.NumberFormat('vi-VN').format(amount) + ' ₫';
+}
+
+export function formatPaymentMethodText(method) {
+  if (!method) return 'Khác';
+  if (typeof method === 'object') {
+    return method.displayName || method.name || method.code || 'Khác';
+  }
+  const str = String(method).toUpperCase();
+  if (str === 'VNPAY') return 'Cổng VNPAY';
+  if (str === 'COD') return 'Thanh toán khi nhận hàng (COD)';
+  return String(method);
 }
 
 export function getProductPrice(product) {
@@ -56,6 +70,12 @@ export function formatDateTime(value) {
 }
 
 export function getOrderStatusLabel(status) {
+  if (!status) return '';
+  if (typeof status === 'object') {
+    if (status.displayName) return status.displayName;
+    status = status.name || status.code || '';
+  }
+  const code = String(status).toUpperCase();
   const labels = {
     PENDING: 'Chờ xác nhận',
     CONFIRMED: 'Đã xác nhận',
@@ -66,10 +86,16 @@ export function getOrderStatusLabel(status) {
     CANCELLED: 'Đã hủy',
   };
 
-  return labels[status] || status || '';
+  return labels[code] || String(status);
 }
 
 export function getPaymentStatusLabel(status) {
+  if (!status) return '';
+  if (typeof status === 'object') {
+    if (status.displayName) return status.displayName;
+    status = status.name || status.code || '';
+  }
+  const code = String(status).toUpperCase();
   const labels = {
     PENDING: 'Chờ thanh toán',
     SUCCEEDED: 'Thành công',
@@ -81,5 +107,5 @@ export function getPaymentStatusLabel(status) {
     REFUND_FAILED: 'Hoàn tiền thất bại',
   };
 
-  return labels[status] || status || '';
+  return labels[code] || String(status);
 }

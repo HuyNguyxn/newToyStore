@@ -74,3 +74,9 @@ export function addProductVariant(productId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function toggleProductFeatured(productId) {
+  return apiClient(`/products/${productId}/featured`, {
+    method: 'PATCH',
+  });
+}

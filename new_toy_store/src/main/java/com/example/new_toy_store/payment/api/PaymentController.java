@@ -126,7 +126,7 @@ public class PaymentController {
     }
 
     @DeleteMapping("/refunds/{refundId}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteRefund(@PathVariable Integer refundId) {
         service.deleteRefund(refundId);
     }
@@ -160,7 +160,7 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
     }

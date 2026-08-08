@@ -40,16 +40,31 @@ function HomePage() {
   useEffect(() => {
     let active = true;
 
-    getProducts({ page: 0, size: 4, sort: 'createdAt,desc' })
-      .then((result) => {
+    // Fetch products marked as featured = true first
+    getProducts({ page: 0, size: 5, featured: true, sort: 'updatedAt,desc' })
+      .then(async (result) => {
+        let items = result.content || [];
+
+        // If fewer than 5 featured products exist, fill up with latest active products
+        if (items.length < 5) {
+          try {
+            const fallbackRes = await getProducts({ page: 0, size: 5, sort: 'createdAt,desc' });
+            const extraItems = (fallbackRes.content || []).filter(
+              (p) => !items.some((f) => f.id === p.id)
+            );
+            items = [...items, ...extraItems].slice(0, 5);
+          } catch {
+            // Keep items as is
+          }
+        }
+
         if (active) {
-          setFeaturedProducts(result.content || []);
+          setFeaturedProducts(items);
         }
       })
       .catch(() => {
         if (active) {
-          setFeaturedProducts(sampleProducts.slice(0, 4));
-          setNotice('Backend chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');
+          setFeaturedProducts(sampleProducts.slice(0, 5));
         }
       });
 

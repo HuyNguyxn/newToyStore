@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import {
@@ -9,6 +9,7 @@ import {
   setCurrentDefaultAddress,
 } from '../../services/authService.js';
 import { uploadImage } from '../../services/uploadService.js';
+import { isValidVietnamesePhoneNumber } from '../../utils/userValidation.js';
 
 const emptyAddressForm = {
   receiverName: '',
@@ -24,7 +25,8 @@ const emptyPasswordForm = {
 };
 
 function ProfilePage() {
-  const { user, logout, updateProfile } = useAuth();
+  const location = useLocation();
+  const { user, logout, updateProfile, setUserProfile } = useAuth();
   const [profileForm, setProfileForm] = useState({ fullName: '', phoneNumber: '', avatarUrl: '' });
   const [addressForm, setAddressForm] = useState(emptyAddressForm);
   const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
@@ -39,6 +41,8 @@ function ProfilePage() {
   const [profileError, setProfileError] = useState('');
   const [addressError, setAddressError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  const requireInfoNotice = location.state?.requireInfoNotice || '';
 
   useEffect(() => {
     setProfileForm({
@@ -88,6 +92,12 @@ function ProfilePage() {
     setProfileError('');
     setProfileMessage('');
 
+    if (profileForm.phoneNumber && !isValidVietnamesePhoneNumber(profileForm.phoneNumber)) {
+      setProfileError('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số chuẩn Việt Nam (ví dụ: 0987654321).');
+      setSavingProfile(false);
+      return;
+    }
+
     try {
       await updateProfile({
         fullName: profileForm.fullName.trim(),
@@ -108,6 +118,12 @@ function ProfilePage() {
     setAddressError('');
     setAddressMessage('');
 
+    if (!isValidVietnamesePhoneNumber(addressForm.receiverPhone)) {
+      setAddressError('Số điện thoại nhận hàng không hợp lệ. Vui lòng nhập 10 chữ số chuẩn Việt Nam (ví dụ: 0987654321).');
+      setSavingAddress(false);
+      return;
+    }
+
     try {
       const updatedProfile = await addCurrentAddress({
         receiverName: addressForm.receiverName.trim(),
@@ -116,6 +132,9 @@ function ProfilePage() {
         isDefault: addressForm.isDefault,
       });
       setAddresses(updatedProfile?.addresses || []);
+      if (updatedProfile && setUserProfile) {
+        setUserProfile(updatedProfile);
+      }
       setAddressForm(emptyAddressForm);
       setAddressMessage('Đã thêm địa chỉ giao hàng.');
     } catch (err) {
@@ -132,6 +151,9 @@ function ProfilePage() {
     try {
       const updatedProfile = await setCurrentDefaultAddress(addressId);
       setAddresses(updatedProfile?.addresses || []);
+      if (updatedProfile && setUserProfile) {
+        setUserProfile(updatedProfile);
+      }
       setAddressMessage('Đã đặt địa chỉ mặc định.');
     } catch (err) {
       setAddressError(err.message || 'Không thể đặt địa chỉ mặc định.');
@@ -145,6 +167,9 @@ function ProfilePage() {
     try {
       const updatedProfile = await removeCurrentAddress(addressId);
       setAddresses(updatedProfile?.addresses || []);
+      if (updatedProfile && setUserProfile) {
+        setUserProfile(updatedProfile);
+      }
       setAddressMessage('Đã xóa địa chỉ.');
     } catch (err) {
       setAddressError(err.message || 'Không thể xóa địa chỉ.');
@@ -180,6 +205,26 @@ function ProfilePage() {
   return (
     <section className="profile-page container">
       <BackLink fallback="/" label="Quay lại trang chủ" />
+
+      {requireInfoNotice && (
+        <div style={{
+          background: '#fef2f2',
+          color: '#b91c1c',
+          border: '2px solid #ef4444',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          fontSize: '15px',
+          fontWeight: '800',
+          marginBottom: '24px',
+          boxShadow: '0 4px 14px rgba(239,68,68,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{ fontSize: '22px' }}>🚨</span>
+          <span>{requireInfoNotice}</span>
+        </div>
+      )}
 
       <div className="profile-card profile-card--hero">
         <img src={profileForm.avatarUrl || user?.avatarUrl || '/toystore-assets/logo.png'} alt={user?.fullName || 'User avatar'} />
@@ -307,17 +352,6 @@ function ProfilePage() {
           ))}
         </div>
       </section>
-
-      <div className="profile-panel profile-panel--wide">
-        <h2>🧸 Thao tác mua hàng</h2>
-        <div className="admin-resource-table__actions">
-          <Link className="login-link" to="/reviews/new">Viết đánh giá</Link>
-          <Link className="login-link" to="/reviews/me">Đánh giá của tôi</Link>
-          <Link className="login-link" to="/returns/new">Tạo yêu cầu trả hàng</Link>
-          <Link className="login-link" to="/returns">Yêu cầu trả hàng của tôi</Link>
-          <Link className="login-link" to="/shipments">Theo dõi vận chuyển</Link>
-        </div>
-      </div>
     </section>
   );
 }

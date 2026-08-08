@@ -91,10 +91,8 @@ function Footer() {
               }}
             >
               {[
-                { label: 'Chính sách bảo hành', to: '/policy/warranty' },
-                { label: 'Chính sách giao hàng', to: '/policy/shipping' },
-                { label: 'Chính sách thanh toán', to: '/policy/payment' },
-                { label: 'Chính sách sỉ, đại lý', to: '/policy/wholesale' },
+                { label: 'Chính sách đổi trả', to: '/policy/returns' },
+                { label: 'Chính sách bảo mật', to: '/policy/privacy' },
               ].map((item, idx) => (
                 <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ color: '#ea580c', fontWeight: 'bold' }}>•</span>

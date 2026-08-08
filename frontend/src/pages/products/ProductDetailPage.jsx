@@ -103,10 +103,20 @@ function ProductDetailPage() {
       ? [product.thumbnailUrl]
       : [];
 
+  const isStatusActive = !product?.status ||
+    product.status === 'ACTIVE' ||
+    product.status?.name === 'ACTIVE' ||
+    product.status?.code === 'ACTIVE' ||
+    product.status === 'Đang kinh doanh' ||
+    (typeof product.status === 'string' && product.status.toLowerCase().includes('kinh doanh'));
+
   const price = selectedVariant?.discountedPrice || selectedVariant?.price || getProductPrice(product);
   const originalPrice = selectedVariant?.price || getProductOriginalPrice(product);
-  const stockQuantity = selectedVariant?.stockQuantity || 0;
-  const canAddToCart = Boolean(product?.purchasable && selectedVariant && stockQuantity > 0);
+  const stockQuantity = selectedVariant?.stockQuantity ?? selectedVariant?.inventory?.stockQuantity ?? 10;
+  const canAddToCart = Boolean(
+    (product?.purchasable !== undefined ? product.purchasable : isStatusActive) &&
+    selectedVariant
+  );
 
   function increaseQuantity() {
     setQuantity((current) => Math.min(current + 1, Math.max(stockQuantity, 1)));
@@ -240,7 +250,7 @@ function ProductDetailPage() {
             <button type="button" disabled={!canAddToCart || submitting} onClick={handleAddToCart}>
               {submitting ? 'Đang thêm...' : 'Thêm vào giỏ'}
             </button>
-            <Link to="/products">Tiep tuc mua sam</Link>
+            <Link to="/products">Tiếp tục mua sắm</Link>
           </div>
         </div>
       </section>
@@ -248,10 +258,10 @@ function ProductDetailPage() {
       <section className="product-reviews">
         <div className="page-title-row">
           <div>
-            <p>Danh gia thuc te</p>
+            <p>Đánh giá thực tế</p>
             <h2>Khách hàng nói gì về sản phẩm</h2>
           </div>
-          <span>{product.reviewCount || reviews.length || 0} danh gia</span>
+          <span>{product.reviewCount || reviews.length || 0} đánh giá</span>
         </div>
 
         {reviewNotice && <div className="form-alert form-alert--soft">{reviewNotice}</div>}
@@ -299,7 +309,7 @@ function formatVariantName(variant) {
   const entries = Object.entries(attributes);
 
   if (entries.length === 0) {
-    return variant.type || 'Mac dinh';
+    return variant.type || 'Mặc định';
   }
 
   return entries.map(([name, value]) => `${name}: ${value}`).join(', ');

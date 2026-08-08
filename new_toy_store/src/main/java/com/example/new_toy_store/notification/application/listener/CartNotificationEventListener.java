@@ -28,8 +28,8 @@ public class CartNotificationEventListener {
                     NotificationType.CART_EXPIRING,
                     NotificationReferenceType.CART,
                     null,
-                    "Cart item is expiring",
-                    "A product in your cart will expire in " + event.getDaysLeft() + " day(s).",
+                    "Sản phẩm giỏ hàng sắp hết hạn",
+                    "Sản phẩm trong giỏ hàng của bạn sẽ hết hạn sau " + event.getDaysLeft() + " ngày.",
                     "CART_EXPIRING:" + event.getDaysLeft() + ":" + item.userId() + ":" + item.productId() + ":" + item.variantId(),
                     Instant.now(),
                     false
@@ -39,16 +39,7 @@ public class CartNotificationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleCartStatusChanged(CartStatusChangedEvent event) {
-        notificationFacade.notifyUser(
-                event.userId(),
-                NotificationType.CART_EXPIRING,
-                NotificationReferenceType.CART,
-                event.cartId(),
-                "Cart status updated",
-                "Your cart status changed to " + event.currentStatus().name() + ".",
-                "CART_STATUS:" + event.cartId() + ":" + event.currentStatus().name(),
-                event.occurredAt(),
-                false
-        );
+        // Internal cart status switches (ACTIVE <-> CHECKING_OUT) are technical UI states.
+        // We do not send redundant notification center alerts to the user for internal state changes.
     }
 }

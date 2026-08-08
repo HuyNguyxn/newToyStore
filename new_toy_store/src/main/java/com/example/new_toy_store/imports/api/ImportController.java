@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/imports")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
 @Validated
 public class ImportController {
     private final ImportService service;

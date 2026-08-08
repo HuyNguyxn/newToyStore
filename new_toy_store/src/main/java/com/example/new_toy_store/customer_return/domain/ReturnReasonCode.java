@@ -85,6 +85,20 @@ public enum ReturnReasonCode {
                 return reason;
             }
         }
+        // Friendly alias mappings for backward compatibility
+        if (normalized.contains("MIND") || normalized.contains("CHANGE")) {
+            return CHANGED_MIND;
+        }
+        if (normalized.contains("DEFECT") || normalized.contains("ERROR") || normalized.contains("DESCRIBE")) {
+            return DEFECTIVE;
+        }
+        if (normalized.contains("WRONG")) {
+            return WRONG_ITEM;
+        }
+        if (normalized.contains("DAMAGE") || normalized.contains("BROKEN") || normalized.contains("FAIL")) {
+            return DAMAGED_IN_TRANSIT;
+        }
+
         throw InvalidCustomerReturnDataException.invalidReason(value);
     }
 }

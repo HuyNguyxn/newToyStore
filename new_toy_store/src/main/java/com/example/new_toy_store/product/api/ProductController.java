@@ -60,8 +60,16 @@ public class ProductController {
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean featured,
             Pageable pageable) {
-        return facade.filterProducts(keyword, categoryId, minPrice, maxPrice, status, pageable);
+        return facade.filterProducts(keyword, categoryId, minPrice, maxPrice, status, featured, pageable);
+    }
+
+    @PatchMapping("/{id}/featured")
+    public ProductResponse toggleFeatured(
+            @PathVariable @Positive(message = "ID sản phẩm phải lớn hơn 0") Integer id
+    ) {
+        return facade.toggleFeatured(id);
     }
 
     @GetMapping("/{id}")

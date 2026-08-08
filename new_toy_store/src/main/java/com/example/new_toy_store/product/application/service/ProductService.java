@@ -161,7 +161,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductResponse> filterProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String status, Pageable pageable) {
+    public Page<ProductResponse> filterProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String status, Boolean featured, Pageable pageable) {
         ProductStatus targetStatus = (status != null && !status.trim().isEmpty()) ? ProductStatus.from(status) : null;
 
         Specification<Product> spec = Specification.where(ProductSpecification.isDistinct());
@@ -181,9 +181,17 @@ public class ProductService {
         if (targetStatus != null) {
             spec = spec.and(ProductSpecification.hasStatus(targetStatus));
         }
+        if (featured != null) {
+            spec = spec.and(ProductSpecification.isFeatured(featured));
+        }
 
         Page<Product> productPage = repository.findAll(spec, pageable);
         return mapProductsToResponsesWithBatchData(productPage);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> filterProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String status, Pageable pageable) {
+        return filterProducts(keyword, categoryId, minPrice, maxPrice, status, null, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -348,5 +356,16 @@ public class ProductService {
         Product product = getProductEntity(productId);
         product.removeImage(imageId);
         repository.save(product);
+    }
+
+    @Transactional
+    public ProductResponse toggleFeatured(Integer productId) {
+        Product product = getProductEntity(productId);
+        product.toggleFeatured();
+        repository.save(product);
+
+        SupplierResponse supplier = product.getSupplierId() != null ?
+                supplierFacade.getSupplierDetails(product.getSupplierId()) : null;
+        return ProductMapper.toResponseWithSupplier(product, supplier);
     }
 }

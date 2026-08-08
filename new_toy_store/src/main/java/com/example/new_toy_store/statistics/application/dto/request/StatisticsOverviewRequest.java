@@ -24,6 +24,7 @@ public class StatisticsOverviewRequest {
     private StatisticGroupBy groupBy = StatisticGroupBy.AUTO;
     private StatisticDateField dateField = StatisticDateField.CREATED_AT;
     private boolean compareWithPreviousPeriod;
+    private Boolean includeTestOrders = false;
 
     @Min(1)
     @Max(20)
@@ -44,6 +45,8 @@ public class StatisticsOverviewRequest {
     public void setDateField(StatisticDateField dateField) { this.dateField = dateField; }
     public boolean isCompareWithPreviousPeriod() { return compareWithPreviousPeriod; }
     public void setCompareWithPreviousPeriod(boolean compareWithPreviousPeriod) { this.compareWithPreviousPeriod = compareWithPreviousPeriod; }
+    public Boolean getIncludeTestOrders() { return includeTestOrders; }
+    public void setIncludeTestOrders(Boolean includeTestOrders) { this.includeTestOrders = includeTestOrders; }
     public int getTopLimit() { return topLimit; }
     public void setTopLimit(int topLimit) { this.topLimit = topLimit; }
     public int getLowStockThreshold() { return lowStockThreshold; }

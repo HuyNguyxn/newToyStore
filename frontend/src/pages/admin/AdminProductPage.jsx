@@ -7,6 +7,7 @@ import {
   getAdminProducts,
   removeProductImage,
   setProductThumbnail,
+  toggleProductFeatured,
   updateAdminProduct,
 } from '../../services/adminProductService.js';
 import { uploadImage } from '../../services/uploadService.js';
@@ -259,8 +260,6 @@ function TableCategoryBadge({ product, categoriesMap }) {
   }, []);
 
   const catIds = product.categoryIds || [];
-
-  // Traverse parentId chain to gather category hierarchy (ancestors -> direct child)
   const categoryChain = [];
   const visited = new Set();
 
@@ -273,20 +272,44 @@ function TableCategoryBadge({ product, categoriesMap }) {
     }
   });
 
-  // Sort chain by level ascending: Level 1 -> Level 2 -> Level 3
-  categoryChain.sort((a, b) => (a.level ?? 1) - (b.level ?? 1));
+  // Sort chain topologically: Root / Level 1 -> Level 2 -> Level 3
+  categoryChain.sort((a, b) => {
+    if (a.parentId === b.id) return 1;
+    if (b.parentId === a.id) return -1;
+    return (a.level ?? 1) - (b.level ?? 1);
+  });
 
-  // Level 1 category name is displayed FIRST on the main button
-  const level1Cat = categoryChain.length > 0 ? categoryChain[0] : null;
-  const primaryLabel = level1Cat ? level1Cat.name : (product.categoryNames?.[0] || 'DM01');
+  // Combine categoryChain and product.categoryNames to guarantee ALL categories are shown
+  const chainNamesSet = new Set(categoryChain.map((c) => c.name));
+  const rawCategoryNames = Array.isArray(product.categoryNames) ? product.categoryNames : [];
+
+  // Add any extra category names attached to the product
+  const extraNames = rawCategoryNames.filter((name) => !chainNamesSet.has(name));
+
+  const displayList = [
+    ...categoryChain.map((c, idx) => ({
+      id: c.id,
+      name: c.name,
+      level: idx,
+      isPrimary: idx === 0,
+    })),
+    ...extraNames.map((name, idx) => ({
+      id: `extra-${idx}`,
+      name,
+      level: categoryChain.length > 0 ? 1 : 0,
+      isPrimary: categoryChain.length === 0 && idx === 0,
+    })),
+  ];
+
+  const primaryLabel = displayList.length > 0 ? displayList[0].name : 'Chưa phân loại';
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
-      {/* MAIN BLUE PILL BUTTON (DANH MỤC CẤP 1 + MŨI TÊN ▼ DUY NHẤT Ở NGOÀI CÙNG) */}
+      {/* MAIN BLUE PILL BUTTON */}
       <button
         type="button"
         onClick={() => setShowList((prev) => !prev)}
-        title="Bấm để xem các danh mục con bên dưới"
+        title="Bấm để xem đầy đủ tất cả các danh mục liên quan"
         style={{
           background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
           color: '#ffffff',
@@ -303,7 +326,7 @@ function TableCategoryBadge({ product, categoriesMap }) {
           transition: 'all 0.15s ease',
         }}
       >
-        <span style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ maxWidth: '130px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {primaryLabel}
         </span>
         <span style={{ fontSize: '9px', opacity: 0.9 }}>▼</span>
@@ -321,37 +344,40 @@ function TableCategoryBadge({ product, categoriesMap }) {
             borderRadius: '14px',
             boxShadow: '0 10px 28px rgba(0,0,0,0.15)',
             zIndex: 900,
-            minWidth: '180px',
+            minWidth: '200px',
             padding: '8px 10px',
             textAlign: 'left',
           }}
         >
-          {categoryChain.length > 0 ? (
-            categoryChain.map((cat, idx) => (
+          <div style={{ fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', padding: '0 4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            🏷️ Danh mục liên quan ({displayList.length})
+          </div>
+
+          {displayList.length > 0 ? (
+            displayList.map((item, idx) => (
               <div
-                key={cat.id}
+                key={item.id || idx}
                 style={{
                   fontSize: '12px',
-                  fontWeight: idx === 0 ? '800' : '600',
-                  color: idx === 0 ? '#0284c7' : '#1e293b',
-                  padding: '5px 8px',
-                  paddingLeft: `${8 + idx * 14}px`,
-                  borderRadius: '6px',
-                  background: idx === 0 ? '#f0f9ff' : 'transparent',
+                  fontWeight: item.isPrimary ? '800' : '600',
+                  color: item.isPrimary ? '#0284c7' : '#1e293b',
+                  padding: '6px 10px',
+                  paddingLeft: `${8 + item.level * 14}px`,
+                  borderRadius: '8px',
+                  background: item.isPrimary ? '#f0f9ff' : 'transparent',
                   marginBottom: '2px',
                   whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                {idx > 0 && <span style={{ color: '#94a3b8', marginRight: '5px' }}>↳</span>}
-                {cat.name}
+                {idx > 0 && <span style={{ color: '#94a3b8', fontSize: '11px' }}>↳</span>}
+                <span>{item.name}</span>
               </div>
             ))
           ) : (
-            (product.categoryNames || []).map((name, idx) => (
-              <div key={idx} style={{ fontSize: '12px', fontWeight: '700', color: '#334155', padding: '4px 8px' }}>
-                • {name}
-              </div>
-            ))
+            <div style={{ fontSize: '12px', color: '#94a3b8', padding: '6px' }}>Chưa có danh mục nào</div>
           )}
         </div>
       )}
@@ -362,7 +388,7 @@ function TableCategoryBadge({ product, categoriesMap }) {
 function AdminProductPage() {
   const { userRole } = useOutletContext();
   const navigate = useNavigate();
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+  const canDelete = userRole === 'ADMIN';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryTree, setCategoryTree] = useState([]);
@@ -372,6 +398,7 @@ function AdminProductPage() {
   // Top & Slow selling products state
   const [topSellingList, setTopSellingList] = useState([]);
   const [slowSellingList, setSlowSellingList] = useState([]);
+  const [slowPage, setSlowPage] = useState(0);
 
   // Filters state (Keyword, Category, Status)
   const [filters, setFilters] = useState({ keyword: '', categoryId: '', status: '' });
@@ -404,8 +431,8 @@ function AdminProductPage() {
   async function loadTopAndSlowSelling() {
     try {
       const [topRes, slowRes] = await Promise.allSettled([
-        getTopSellingProducts({ limit: 5 }),
-        getSlowSellingProducts({ limit: 5, maxUnits: 5 }),
+        getTopSellingProducts({ limit: 10 }),
+        getSlowSellingProducts({ limit: 100, maxUnits: 5 }),
       ]);
       if (topRes.status === 'fulfilled' && Array.isArray(topRes.value)) {
         setTopSellingList(topRes.value);
@@ -427,20 +454,36 @@ function AdminProductPage() {
     try {
       const [treeRes, flatRes] = await Promise.allSettled([
         getAdminCategoryTree(),
-        getAdminCategories({ page: 0, size: 200 }),
+        getAdminCategories({ page: 0, size: 500 }),
       ]);
+
+      const map = {};
+
+      const flattenTree = (nodes) => {
+        if (!Array.isArray(nodes)) return;
+        nodes.forEach((n) => {
+          if (n && n.id) {
+            map[n.id] = n;
+            const children = n.subCategories || n.children || [];
+            if (children.length > 0) {
+              flattenTree(children);
+            }
+          }
+        });
+      };
+
+      if (flatRes.status === 'fulfilled') {
+        const flatList = flatRes.value?.content || (Array.isArray(flatRes.value) ? flatRes.value : []);
+        setCategories(flatList);
+        flatList.forEach((c) => { if (c && c.id) map[c.id] = c; });
+      }
 
       if (treeRes.status === 'fulfilled' && Array.isArray(treeRes.value)) {
         setCategoryTree(treeRes.value);
+        flattenTree(treeRes.value);
       }
 
-      if (flatRes.status === 'fulfilled') {
-        const flatList = flatRes.value?.content || [];
-        setCategories(flatList);
-        const map = {};
-        flatList.forEach((c) => { map[c.id] = c; });
-        setCategoriesMap(map);
-      }
+      setCategoriesMap(map);
     } catch {
       setCategoryTree([]);
       setCategories([]);
@@ -599,6 +642,23 @@ function AdminProductPage() {
     }
   }
 
+  /* Toggle Featured Product */
+  async function handleToggleFeatured(productId) {
+    try {
+      const updated = await toggleProductFeatured(productId);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, featured: updated.featured } : p))
+      );
+      setMessage(
+        updated.featured
+          ? 'Đã ghim sản phẩm làm "Sản Phẩm Nổi Bật" ở Trang chủ.'
+          : 'Đã hủy ghim sản phẩm nổi bật.'
+      );
+    } catch (err) {
+      setError(err.message || 'Không thể thay đổi trạng thái nổi bật.');
+    }
+  }
+
   return (
     <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
@@ -634,12 +694,13 @@ function AdminProductPage() {
                 <th style={{ padding: '8px 10px' }}>SẢN PHẨM</th>
                 <th style={{ padding: '8px 10px', textAlign: 'center' }}>ĐÃ BÁN</th>
                 <th style={{ padding: '8px 10px', textAlign: 'right' }}>DOANH THU</th>
+                <th style={{ padding: '8px 10px', textAlign: 'center' }}>THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
               {topSellingList.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Chưa có dữ liệu sản phẩm bán chạy.</td>
+                  <td colSpan="5" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Chưa có dữ liệu sản phẩm bán chạy.</td>
                 </tr>
               ) : (
                 topSellingList.slice(0, 5).map((item) => (
@@ -648,6 +709,25 @@ function AdminProductPage() {
                     <td style={{ padding: '10px', fontWeight: '700', color: '#0f172a' }}>{item.productName}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#16a34a' }}>{item.unitsSold} món</td>
                     <td style={{ padding: '10px', textAlign: 'right', fontWeight: '800', color: '#dc2626' }}>{formatPrice(item.totalRevenue)}</td>
+                    <td style={{ padding: '10px', textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/imports?productId=${item.productId}&supplierId=${item.supplierId || ''}&productName=${encodeURIComponent(item.productName || '')}`)}
+                        style={{
+                          fontSize: '11px',
+                          background: '#f0fdf4',
+                          color: '#16a34a',
+                          border: '1px solid #bbf7d0',
+                          padding: '3px 10px',
+                          borderRadius: '8px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        + Nhập hàng
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -662,7 +742,7 @@ function AdminProductPage() {
               ⚠️ SẢN PHẨM BÁN CHẬM (Ứ ĐỌNG VỐN)
             </h3>
             <span style={{ fontSize: '11px', background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', padding: '2px 8px', borderRadius: '8px', fontWeight: '800' }}>
-              Đã bán ≤ 5 món
+              Tổng: {slowSellingList.length} SP
             </span>
           </div>
 
@@ -681,7 +761,7 @@ function AdminProductPage() {
                   <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Không có sản phẩm bị ứ đọng vốn.</td>
                 </tr>
               ) : (
-                slowSellingList.slice(0, 5).map((item) => (
+                slowSellingList.slice(slowPage * 5, (slowPage + 1) * 5).map((item) => (
                   <tr key={item.productId} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '10px', fontWeight: '800', color: '#475569' }}>PT{item.productId}</td>
                     <td style={{ padding: '10px', fontWeight: '700', color: '#0f172a' }}>{item.productName}</td>
@@ -712,6 +792,31 @@ function AdminProductPage() {
               )}
             </tbody>
           </table>
+
+          {/* LOCAL PAGINATION CONTROLS FOR SLOW SELLING PRODUCTS */}
+          {slowSellingList.length > 5 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+              <button
+                type="button"
+                disabled={slowPage === 0}
+                onClick={() => setSlowPage((p) => p - 1)}
+                style={{ padding: '4px 10px', fontSize: '11px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: slowPage === 0 ? 'not-allowed' : 'pointer', fontWeight: '700' }}
+              >
+                Trang trước
+              </button>
+              <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569' }}>
+                Trang {slowPage + 1} / {Math.ceil(slowSellingList.length / 5)}
+              </span>
+              <button
+                type="button"
+                disabled={slowPage >= Math.ceil(slowSellingList.length / 5) - 1}
+                onClick={() => setSlowPage((p) => p + 1)}
+                style={{ padding: '4px 10px', fontSize: '11px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: slowPage >= Math.ceil(slowSellingList.length / 5) - 1 ? 'not-allowed' : 'pointer', fontWeight: '700' }}
+              >
+                Trang sau
+              </button>
+            </div>
+          )}
         </div>
 
       </div>
@@ -784,6 +889,7 @@ function AdminProductPage() {
               <th style={{ padding: '16px 14px', width: '140px' }}>GIÁ</th>
               <th style={{ padding: '16px 12px', width: '90px' }}>TỒN KHO</th>
               <th style={{ padding: '16px 14px', width: '160px' }}>DANH MỤC</th>
+              <th style={{ padding: '16px 14px', width: '130px' }}>NỔI BẬT</th>
               <th style={{ padding: '16px 14px', width: '150px' }}>TRẠNG THÁI</th>
               <th style={{ padding: '16px 14px', width: '90px' }}>ẢNH</th>
               <th style={{ padding: '16px 16px', width: '150px' }}>THAO TÁC</th>
@@ -792,11 +898,11 @@ function AdminProductPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="8" style={{ padding: '40px', color: '#64748b' }}>Đang tải danh sách sản phẩm từ hệ thống...</td>
+                <td colSpan="9" style={{ padding: '40px', color: '#64748b' }}>Đang tải danh sách sản phẩm từ hệ thống...</td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ padding: '40px', color: '#94a3b8' }}>Không tìm thấy sản phẩm nào.</td>
+                <td colSpan="9" style={{ padding: '40px', color: '#94a3b8' }}>Không tìm thấy sản phẩm nào.</td>
               </tr>
             ) : (
               products.map((product, idx) => {
@@ -835,6 +941,36 @@ function AdminProductPage() {
                     {/* DANH MỤC (NÚT BLUE PILL THỐNG NHẤT CÓ CHỨA MŨI TÊN ▼ CHÍNH XÁC DANH MỤC CON) */}
                     <td style={{ padding: '16px 14px' }}>
                       <TableCategoryBadge product={product} categoriesMap={categoriesMap} />
+                    </td>
+
+                    {/* NỔI BẬT TOGGLE BUTTON */}
+                    <td style={{ padding: '16px 14px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFeatured(product.id)}
+                        title={product.featured ? 'Đang hiển thị Nổi bật ở trang chủ (Bấm để hủy)' : 'Ghim làm Sản phẩm Nổi bật ở trang chủ'}
+                        style={{
+                          background: product.featured ? '#fff7ed' : '#f8fafc',
+                          color: product.featured ? '#d97706' : '#94a3b8',
+                          border: `1px solid ${product.featured ? '#fed7aa' : '#cbd5e1'}`,
+                          padding: '5px 10px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span style={{ fontSize: '14px', color: product.featured ? '#f59e0b' : '#cbd5e1' }}>
+                          {product.featured ? '★' : '☆'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: product.featured ? '#b45309' : '#64748b' }}>
+                          {product.featured ? 'Nổi bật' : 'Thường'}
+                        </span>
+                      </button>
                     </td>
 
                     {/* TRẠNG THÁI */}

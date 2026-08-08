@@ -41,9 +41,25 @@ public class ProductFacade {
             Double minPrice,
             Double maxPrice,
             String status,
+            Boolean featured,
             Pageable pageable
     ) {
-        return productService.filterProducts(keyword, categoryId, minPrice, maxPrice, status, pageable);
+        return productService.filterProducts(keyword, categoryId, minPrice, maxPrice, status, featured, pageable);
+    }
+
+    public Page<ProductResponse> filterProducts(
+            String keyword,
+            Integer categoryId,
+            Double minPrice,
+            Double maxPrice,
+            String status,
+            Pageable pageable
+    ) {
+        return productService.filterProducts(keyword, categoryId, minPrice, maxPrice, status, null, pageable);
+    }
+
+    public ProductResponse toggleFeatured(Integer id) {
+        return productService.toggleFeatured(id);
     }
 
     public Page<ProductResponse> filterProductsByPriceAndStatus(

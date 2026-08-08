@@ -23,7 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/statistics")
 @Validated
-@PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 public class StatisticsController {
 
     private final StatisticsFacade facade;

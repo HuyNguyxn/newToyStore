@@ -91,6 +91,12 @@ export function AuthProvider({ children }) {
     return user;
   }
 
+  function setUserProfile(userProfile) {
+    if (userProfile) {
+      dispatch({ type: 'AUTH_PROFILE_SUCCESS', payload: userProfile });
+    }
+  }
+
   function logout() {
     clearStoredToken();
     dispatch({ type: 'AUTH_LOGOUT' });
@@ -104,6 +110,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     updateProfile,
+    setUserProfile,
     logout,
   }), [state]);
 

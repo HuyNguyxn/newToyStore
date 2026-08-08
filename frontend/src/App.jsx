@@ -43,6 +43,8 @@ import ReturnListPage from './pages/returns/ReturnListPage.jsx';
 import ReviewCreatePage from './pages/reviews/ReviewCreatePage.jsx';
 import ReviewListPage from './pages/reviews/ReviewListPage.jsx';
 import ShipmentListPage from './pages/shipments/ShipmentListPage.jsx';
+import ReturnPolicyPage from './pages/policy/ReturnPolicyPage.jsx';
+import PrivacyPolicyPage from './pages/policy/PrivacyPolicyPage.jsx';
 
 const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
 
@@ -105,7 +107,10 @@ function App() {
             </ProtectedRoute>
           )}
         />
+        <Route path="/payment" element={<Navigate to="/payments" replace />} />
         <Route path="/payments/vnpay-return" element={<VnpayReturnPage />} />
+        <Route path="/vnpay-return" element={<VnpayReturnPage />} />
+        <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -143,6 +148,14 @@ function App() {
           )}
         />
         <Route
+          path="/returns/me"
+          element={(
+            <ProtectedRoute>
+              <ReturnListPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
           path="/reviews/new"
           element={(
             <ProtectedRoute>
@@ -166,6 +179,8 @@ function App() {
             </ProtectedRoute>
           )}
         />
+        <Route path="/policy/returns" element={<ReturnPolicyPage />} />
+        <Route path="/policy/privacy" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

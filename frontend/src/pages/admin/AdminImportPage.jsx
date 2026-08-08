@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getAdminCategories, getAdminCategoryTree } from '../../services/adminCategoryService.js';
 import {
   cancelImportNote,
@@ -368,9 +369,30 @@ function AdminImportPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const [searchParams] = useSearchParams();
+  const restockProductId = searchParams.get('productId');
+  const restockProductName = searchParams.get('productName');
+  const restockSupplierId = searchParams.get('supplierId');
+
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (restockProductId) {
+      setIsCreatingView(true);
+      if (restockSupplierId) {
+        setForm((f) => ({ ...f, supplierId: restockSupplierId }));
+      }
+      setItems([{
+        productId: Number(restockProductId),
+        variantId: '',
+        productName: restockProductName ? decodeURIComponent(restockProductName) : `SP #${restockProductId}`,
+        quantity: 10,
+        importPrice: 100000,
+      }]);
+    }
+  }, [restockProductId, restockProductName, restockSupplierId]);
 
   useEffect(() => {
     loadImports(0);

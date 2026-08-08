@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   cancelAdminOrder,
   completeAdminOrder,
@@ -36,12 +36,43 @@ function getOrderStatusInfo(status) {
   return { label: label || statusStr, bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
 }
 
+// Helper to check internal test orders
+function isInternalTestOrder(item) {
+  if (!item) return false;
+  
+  // 1. If user role is CUSTOMER, it is ALWAYS a real business customer order!
+  const userRole = String(item.user?.role || item.userRole || '').toUpperCase();
+  if (userRole === 'CUSTOMER') return false;
+
+  // 2. Check direct user ID of the buyer (Seed Admin/Staff IDs 1 and 2 only)
+  const uid = Number(item.userId || item.user?.id || item.customerId || 0);
+  if (uid === 1 || uid === 2) return true;
+
+  // 3. Check buyer user role if attached (ADMIN, STAFF, MANAGER are internal test users)
+  if (['ADMIN', 'STAFF', 'MANAGER'].includes(userRole)) return true;
+
+  // 4. Check buyer email if attached (Only admin@, staff@, manager@ internal staff emails)
+  const email = String(item.user?.email || item.customerEmail || item.email || '').toLowerCase();
+  if (email.includes('admin@') || email.includes('staff@') || email.includes('manager@') || email.includes('@toystore.internal')) {
+    return true;
+  }
+
+  // 5. Check explicit test note on order itself
+  const note = String(item.note || item.customerNote || item.description || '').toLowerCase();
+  if (note.includes('đơn test') || note.includes('thử nghiệm nội bộ') || note.includes('[test]')) {
+    return true;
+  }
+
+  return false;
+}
+
 function AdminOrderPage() {
   const { userRole } = useOutletContext();
   const [searchParams] = useSearchParams();
   const initialStatus = searchParams.get('status') || '';
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+  const canDelete = userRole === 'ADMIN';
 
+  const [dataMode, setDataMode] = useState('REAL'); // 'REAL' or 'TEST'
   const [orders, setOrders] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({ status: initialStatus, userId: '' });
@@ -57,6 +88,13 @@ function AdminOrderPage() {
   const [tempStatus, setTempStatus] = useState('PENDING');
   const [tempAddress, setTempAddress] = useState('');
   const [tempPhone, setTempPhone] = useState('0398616546');
+
+  const displayOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const isTest = isInternalTestOrder(o);
+      return dataMode === 'REAL' ? !isTest : isTest;
+    });
+  }, [orders, dataMode]);
 
   useEffect(() => {
     loadOrders(initialStatus);
@@ -570,13 +608,57 @@ function AdminOrderPage() {
   return (
     <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* HEADER BAR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Quản lý đơn hàng
-        </h1>
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Tổng đơn hàng: {orders.length}
+      {/* HEADER BAR WITH MODE SWITCHER */}
+      <div style={{ background: 'linear-gradient(135deg, #fff8f3 0%, #fff1f2 100%)', border: '1px solid #ffedd5', padding: '16px 24px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(234,88,12,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#9a3412', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Quản lý đơn hàng
+          </h1>
+          <div style={{ fontSize: '13px', color: dataMode === 'REAL' ? '#15803d' : '#7e22ce', fontWeight: '800', marginTop: '4px' }}>
+            {dataMode === 'REAL' ? '🟢 Đang xem: Đơn hàng Kinh doanh Thực tế (Đã lọc đơn test Admin)' : '🧪 Đang xem: Đơn hàng Thử nghiệm Nội bộ (ADMIN/STAFF/MANAGER)'}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* MODE TOGGLE TAB BUTTONS */}
+          <div style={{ display: 'inline-flex', background: '#ffffff', padding: '4px', borderRadius: '12px', border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <button
+              type="button"
+              onClick={() => setDataMode('REAL')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent',
+                color: dataMode === 'REAL' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🟢 Đơn Kinh doanh ({orders.filter(o => !isInternalTestOrder(o)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDataMode('TEST')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent',
+                color: dataMode === 'TEST' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🧪 Đơn Thử nghiệm ({orders.filter(o => isInternalTestOrder(o)).length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -609,18 +691,18 @@ function AdminOrderPage() {
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ xác nhận</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="SHIPPED">Đang giao</option>
-            <option value="COMPLETED">Hoàn thành</option>
-            <option value="CANCELLED">Đã hủy</option>
+            <option value="PENDING">Đang xử lý (PENDING)</option>
+            <option value="CONFIRMED">Đã xác nhận (CONFIRMED)</option>
+            <option value="SHIPPED">Đang giao (SHIPPED)</option>
+            <option value="COMPLETED">Đã giao (COMPLETED)</option>
+            <option value="CANCELLED">Đã hủy (CANCELLED)</option>
           </select>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             type="submit"
-            style={{ padding: '9px 18px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+            style={{ padding: '9px 20px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
           >
             Lọc
           </button>
@@ -634,15 +716,15 @@ function AdminOrderPage() {
         </div>
       </form>
 
-      {/* DATA TABLE */}
-      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'visible' }}>
+      {/* ORDERS TABLE */}
+      <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
           <thead>
             <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
-              <th style={{ padding: '14px 16px' }}>Mã ĐH</th>
-              <th style={{ padding: '14px 16px' }}>Ngày đặt</th>
-              <th style={{ padding: '14px 16px', width: '150px' }}>Mã KH</th>
-              <th style={{ padding: '14px 16px', textAlign: 'right', width: '160px' }}>Tổng tiền</th>
+              <th style={{ padding: '14px 16px', width: '90px' }}>Mã ĐH</th>
+              <th style={{ padding: '14px 16px', width: '140px' }}>Ngày đặt</th>
+              <th style={{ padding: '14px 16px', width: '120px' }}>Mã KH</th>
+              <th style={{ padding: '14px 16px', textAlign: 'right', width: '140px' }}>Tổng tiền</th>
               <th style={{ padding: '14px 16px', width: '160px' }}>Trạng thái</th>
               <th style={{ padding: '14px 16px', width: '160px', textAlign: 'center' }}>Thao tác</th>
             </tr>
@@ -654,14 +736,14 @@ function AdminOrderPage() {
                   Đang tải danh sách đơn hàng...
                 </td>
               </tr>
-            ) : orders.length === 0 ? (
+            ) : displayOrders.length === 0 ? (
               <tr>
                 <td colSpan="6" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                  Không tìm thấy đơn hàng nào.
+                  {dataMode === 'REAL' ? 'Không có đơn hàng kinh doanh thực tế nào.' : 'Không có đơn hàng thử nghiệm nội bộ nào.'}
                 </td>
               </tr>
             ) : (
-              orders.map((order, idx) => {
+              displayOrders.map((order, idx) => {
                 const statusInfo = getOrderStatusInfo(order.status);
                 return (
                   <tr
@@ -683,22 +765,26 @@ function AdminOrderPage() {
 
                     {/* Mã KH */}
                     <td style={{ padding: '14px 16px' }}>
-                      <span
-                        style={{
-                          background: '#f1f5f9',
-                          color: '#475569',
-                          border: '1px solid #cbd5e1',
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                      >
-                        ND{order.userId}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                        <span
+                          style={{
+                            background: '#f1f5f9',
+                            color: '#475569',
+                            border: '1px solid #cbd5e1',
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                          }}
+                        >
+                          ND{order.userId}
+                        </span>
+                        {(order.isTestOrder || ['ADMIN', 'MANAGER', 'STAFF'].includes(typeof order.userRole === 'object' ? order.userRole?.code : order.userRole)) && (
+                          <span style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', padding: '2px 6px', borderRadius: '6px', fontSize: '10.5px', fontWeight: '800' }}>
+                            🧪 Dữ liệu mẫu
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Tổng tiền */}
@@ -720,7 +806,7 @@ function AdminOrderPage() {
                           display: 'inline-block',
                         }}
                       >
-                        {statusInfo.label}
+                        {statusInfo.label || 'Chưa xác định'}
                       </span>
                     </td>
 

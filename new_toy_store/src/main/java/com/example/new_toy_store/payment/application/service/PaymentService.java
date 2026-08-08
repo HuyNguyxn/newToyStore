@@ -85,7 +85,15 @@ public class PaymentService {
         OrderPaymentSnapshot order = orderFacade.getPaymentSnapshot(request.getOrderId());
         validateOrderCanBePaid(order);
         validateOwnership(order.getOrderId(), order.getUserId(), currentUserId, isAdmin, "checkout");
-        validateNoActivePayment(order.getOrderId());
+        
+        PaymentTransaction activePayment = repository.findFirstByOrderIdAndStatusInOrderByCreatedAtDesc(order.getOrderId(), ACTIVE_PAYMENT_STATUSES).orElse(null);
+        if (activePayment != null) {
+            if (activePayment.getMethod() == PaymentMethod.VNPAY && activePayment.getStatus() == PaymentStatus.PENDING) {
+                String paymentUrl = vnpayService.createPaymentUrl(activePayment, clientIp);
+                return PaymentMapper.toCheckoutResponse(activePayment, paymentUrl, "Open this paymentUrl to pay with VNPay sandbox.");
+            }
+            throw new DuplicateActivePaymentException(order.getOrderId());
+        }
 
         PaymentTransaction payment = new PaymentTransaction(
                 order.getOrderId(),
@@ -323,7 +331,7 @@ public class PaymentService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public VnpayReturnResponse handleVnpayReturn(Map<String, String> params) {
         boolean validSignature = vnpayService.isValidSignature(params);
         Integer paymentId = vnpayService.extractPaymentId(params);
@@ -333,6 +341,19 @@ public class PaymentService {
         String message = validSignature
                 ? resolveVnpayMessage(responseCode, transactionStatus)
                 : "VNPay signature is invalid. Do not trust this payment result.";
+
+        if (validSignature && payment.getStatus() == PaymentStatus.PENDING) {
+            String vnpayTxnNo = params.get("vnp_TransactionNo");
+            if ("00".equals(responseCode) || "00".equals(transactionStatus)) {
+                payment.succeed(vnpayTxnNo == null || vnpayTxnNo.isBlank() ? "VNPAY-" + payment.getId() : vnpayTxnNo);
+                repository.save(payment);
+                publishPaymentCompleted(payment);
+            } else if (responseCode != null && !responseCode.isBlank()) {
+                payment.fail(message);
+                repository.save(payment);
+                publishPaymentFailed(payment);
+            }
+        }
 
         return new VnpayReturnResponse(
                 validSignature,

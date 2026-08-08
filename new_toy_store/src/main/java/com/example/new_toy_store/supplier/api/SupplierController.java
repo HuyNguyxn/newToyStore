@@ -7,6 +7,7 @@ import com.example.new_toy_store.supplier.application.dto.request.SupplierStatus
 import com.example.new_toy_store.supplier.application.dto.request.SupplierUpdateRequest;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/suppliers")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
 @Validated
 public class SupplierController {
 
@@ -48,6 +49,7 @@ public class SupplierController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
     }

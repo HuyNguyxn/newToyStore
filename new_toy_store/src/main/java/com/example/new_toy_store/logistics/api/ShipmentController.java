@@ -82,7 +82,7 @@ public class ShipmentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public void delete(@PathVariable Integer id) {
         service.delete(id);
     }

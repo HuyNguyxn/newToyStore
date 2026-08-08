@@ -1,4 +1,7 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useAuth from '../../../hooks/useAuth.js';
+import { addCartItem } from '../../../services/cartService.js';
 import {
   formatPrice,
   getProductOriginalPrice,
@@ -7,6 +10,12 @@ import {
 } from '../../../utils/formatters.js';
 
 function ProductCard({ product }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
+  const [adding, setAdding] = useState(false);
+  const [addedMessage, setAddedMessage] = useState('');
+
   const price = getProductPrice(product);
   const originalPrice = getProductOriginalPrice(product);
   const showOriginalPrice = originalPrice > price;
@@ -14,7 +23,47 @@ function ProductCard({ product }) {
   const rating = Number(product.averageRating || product.rating || 0);
   const firstLetter = product.name?.charAt(0) || 'P';
   const thumbnailUrl = normalizeThumbnailUrl(product.thumbnailUrl);
-  const canQuickAdd = Boolean(product.quickAddAvailable);
+  const defaultVariantId = product.defaultVariantId || product.variants?.[0]?.id;
+  const canQuickAdd = Boolean((product.quickAddAvailable || defaultVariantId) && defaultVariantId);
+
+  async function handleQuickAdd(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    const targetUserId = user?.id || 1;
+    const targetVariantId = defaultVariantId || product?.defaultVariantId || product?.variants?.[0]?.id;
+
+    if (!targetVariantId) {
+      navigate(`/products/${product.id}`);
+      return;
+    }
+
+    setAdding(true);
+    try {
+      await addCartItem(targetUserId, {
+        productId: product.id,
+        variantId: targetVariantId,
+        quantity: 1,
+      });
+      setAddedMessage('✓ Đã thêm vào giỏ hàng');
+      setTimeout(() => setAddedMessage(''), 2500);
+    } catch (err) {
+      const errorText = typeof err === 'string' ? err : (err?.message || err?.error || err?.title || '');
+      if (errorText) {
+        setAddedMessage(`✖ ${errorText}`);
+      } else {
+        setAddedMessage('✖ Vui lòng kiểm tra Server Backend Java');
+      }
+      setTimeout(() => setAddedMessage(''), 4000);
+    } finally {
+      setAdding(false);
+    }
+  }
 
   return (
     <article className="product-card">
@@ -40,9 +89,30 @@ function ProductCard({ product }) {
           <strong>{formatPrice(price)}</strong>
         </p>
 
+        {addedMessage && (
+          <div
+            style={{
+              fontSize: '11px',
+              color: addedMessage.startsWith('✓') ? '#16a34a' : '#dc2626',
+              fontWeight: '800',
+              marginBottom: '8px',
+              textAlign: 'center',
+              background: addedMessage.startsWith('✓') ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${addedMessage.startsWith('✓') ? '#bbf7d0' : '#fecaca'}`,
+              padding: '4px 8px',
+              borderRadius: '8px',
+              wordBreak: 'break-word',
+            }}
+          >
+            {addedMessage}
+          </div>
+        )}
+
         <div className="product-card__actions">
           {canQuickAdd ? (
-            <button type="button">Thêm</button>
+            <button type="button" onClick={handleQuickAdd} disabled={adding}>
+              {adding ? '...' : 'Thêm'}
+            </button>
           ) : (
             <Link to={`/products/${product.id}`} className="product-card__select">Chọn loại</Link>
           )}

@@ -43,6 +43,10 @@ public class CartService {
         Cart cart = repository.findForUpdateByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(userId)));
 
+        if (cart.getStatus() != CartStatus.ACTIVE) {
+            cart.changeStatus(CartStatus.ACTIVE);
+        }
+
         cart.addItem(request.getProductId(), request.getVariantId(), request.getQuantity(), currentPrice);
         return repository.save(cart);
     }

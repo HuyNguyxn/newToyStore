@@ -47,7 +47,7 @@ function AdminPromotionPage() {
   const [searchParams] = useSearchParams();
   const createForProduct = searchParams.get('createForProduct');
   const initialProductName = searchParams.get('productName');
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+  const canDelete = userRole === 'ADMIN';
 
   const [promotions, setPromotions] = useState([]);
   const [productsMap, setProductsMap] = useState({});

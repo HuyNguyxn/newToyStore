@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   deletePaymentRefund,
@@ -36,10 +36,46 @@ function getMethodBadgeStyle(method) {
   return { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' };
 }
 
-function AdminRefundPage() {
-  const { userRole } = useOutletContext();
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+// Helper to check internal test refund requests
+function isInternalTestOrder(item) {
+  if (!item) return false;
+  
+  // 1. If user role is CUSTOMER, it is ALWAYS a real business customer refund!
+  const userRole = String(item.user?.role || item.userRole || '').toUpperCase();
+  if (userRole === 'CUSTOMER') return false;
 
+  // 2. Check direct user ID of the buyer (Seed Admin/Staff IDs 1 and 2 only)
+  const uid = Number(item.userId || item.user?.id || item.customerId || 0);
+  if (uid === 1 || uid === 2) return true;
+
+  // 3. Check test seed order IDs 1, 2, 3
+  const oid = Number(item.orderId || item.order?.id || 0);
+  if (oid === 1 || oid === 2 || oid === 3) return true;
+
+  // 4. Check buyer user role if attached
+  if (['ADMIN', 'STAFF', 'MANAGER'].includes(userRole)) return true;
+
+  // 5. Check buyer email if attached
+  const email = String(item.user?.email || item.customerEmail || item.email || '').toLowerCase();
+  if (email.includes('admin@') || email.includes('staff@') || email.includes('manager@') || email.includes('@toystore.internal')) {
+    return true;
+  }
+
+  // 6. Check explicit test note on refund request
+  const note = String(item.reason || item.note || '').toLowerCase();
+  if (note.includes('đơn test') || note.includes('thử nghiệm nội bộ') || note.includes('[test]')) {
+    return true;
+  }
+
+  return false;
+}
+
+function AdminRefundPage() {
+  const context = useOutletContext() || {};
+  const userRole = context.userRole || 'STAFF';
+  const canDelete = userRole === 'ADMIN';
+
+  const [dataMode, setDataMode] = useState('REAL'); // 'REAL' or 'TEST'
   const [paymentId, setPaymentId] = useState('');
   const [refunds, setRefunds] = useState([]);
   const [form, setForm] = useState({ amount: '', method: 'COD', reason: '' });
@@ -47,6 +83,13 @@ function AdminRefundPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const displayRefunds = useMemo(() => {
+    return refunds.filter((r) => {
+      const isTest = isInternalTestOrder(r);
+      return dataMode === 'REAL' ? !isTest : isTest;
+    });
+  }, [refunds, dataMode]);
 
   async function loadRefunds(event) {
     event?.preventDefault();
@@ -103,13 +146,57 @@ function AdminRefundPage() {
   return (
     <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* HEADER ROW */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Quản lý hoàn tiền
-        </h1>
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Yêu cầu hoàn tiền: {refunds.length}
+      {/* HEADER ROW WITH MODE SWITCHER */}
+      <div style={{ background: 'linear-gradient(135deg, #fff8f3 0%, #fff1f2 100%)', border: '1px solid #ffedd5', padding: '16px 24px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(234,88,12,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#9a3412', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Quản lý hoàn tiền
+          </h1>
+          <div style={{ fontSize: '13px', color: dataMode === 'REAL' ? '#15803d' : '#7e22ce', fontWeight: '800', marginTop: '4px' }}>
+            {dataMode === 'REAL' ? '🟢 Đang xem: Yêu cầu Hoàn tiền Thực tế (Đã lọc đơn test Admin)' : '🧪 Đang xem: Yêu cầu Hoàn tiền Thử nghiệm Nội bộ (ADMIN/STAFF/MANAGER)'}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* MODE TOGGLE TAB BUTTONS */}
+          <div style={{ display: 'inline-flex', background: '#ffffff', padding: '4px', borderRadius: '12px', border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <button
+              type="button"
+              onClick={() => setDataMode('REAL')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent',
+                color: dataMode === 'REAL' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🟢 Hoàn tiền Kinh doanh ({refunds.filter(r => !isInternalTestOrder(r)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDataMode('TEST')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent',
+                color: dataMode === 'TEST' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🧪 Đơn Thử nghiệm ({refunds.filter(r => isInternalTestOrder(r)).length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -124,20 +211,19 @@ function AdminRefundPage() {
       >
         <div style={{ flex: '1', minWidth: '240px' }}>
           <input
-            type="text"
-            placeholder="Nhập Mã giao dịch thanh toán..."
+            type="number"
+            placeholder="Nhập Mã Giao dịch thanh toán để xem danh sách hoàn tiền..."
             value={paymentId}
-            onChange={(event) => setPaymentId(event.target.value)}
-            required
+            onChange={(e) => setPaymentId(e.target.value)}
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          style={{ padding: '9px 24px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+          style={{ padding: '9px 20px', background: '#ea580c', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
         >
-          {loading ? 'Đang tải...' : 'Tìm yêu cầu hoàn tiền'}
+          {loading ? 'Đang tải...' : 'Tìm kiếm'}
         </button>
       </form>
 

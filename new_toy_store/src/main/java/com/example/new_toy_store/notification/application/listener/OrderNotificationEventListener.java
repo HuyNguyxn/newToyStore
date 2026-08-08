@@ -19,16 +19,31 @@ public class OrderNotificationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
-        NotificationType type = "CANCELLED".equals(event.currentStatus().name())
-                ? NotificationType.ORDER_CANCELLED
-                : NotificationType.ORDER_STATUS_CHANGED;
+        boolean isCancelled = "CANCELLED".equals(event.currentStatus().name());
+        NotificationType type = isCancelled ? NotificationType.ORDER_CANCELLED : NotificationType.ORDER_STATUS_CHANGED;
+        
+        String title = isCancelled 
+                ? "Đơn hàng #" + event.orderId() + " đã bị hủy"
+                : "Cập nhật đơn hàng #" + event.orderId();
+
+        String statusVi = switch (event.currentStatus().name()) {
+            case "PENDING" -> "Chờ xác nhận";
+            case "CONFIRMED" -> "Đã xác nhận";
+            case "SHIPPED" -> "Đang giao hàng";
+            case "COMPLETED" -> "Đã hoàn thành";
+            case "CANCELLED" -> "Đã hủy";
+            default -> event.currentStatus().name();
+        };
+
+        String message = "Đơn hàng #" + event.orderId() + " của bạn hiện đang ở trạng thái: " + statusVi + ".";
+
         notificationFacade.notifyUser(
                 event.userId(),
                 type,
                 NotificationReferenceType.ORDER,
                 event.orderId(),
-                "Order #" + event.orderId() + " status updated",
-                "Your order moved from " + event.previousStatus().name() + " to " + event.currentStatus().name() + ".",
+                title,
+                message,
                 "ORDER_STATUS:" + event.orderId() + ":" + event.currentStatus().name(),
                 event.occurredAt(),
                 true

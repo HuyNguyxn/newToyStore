@@ -5,42 +5,54 @@ export function getCart(userId, promoCode = '') {
   return apiClient(`/carts/${userId}${query}`);
 }
 
-export function addCartItem(userId, payload) {
-  return apiClient(`/carts/${userId}/items`, {
+export async function addCartItem(userId, payload) {
+  const result = await apiClient(`/carts/${userId}/items`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }
 
-export function updateCartItemQuantity(userId, itemId, quantity) {
-  return apiClient(`/carts/${userId}/items/${itemId}`, {
+export async function updateCartItemQuantity(userId, itemId, quantity) {
+  const result = await apiClient(`/carts/${userId}/items/${itemId}`, {
     method: 'PUT',
     body: JSON.stringify({ quantity }),
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }
 
-export function toggleCartItemSelection(userId, itemId, selected) {
-  return apiClient(`/carts/${userId}/items/${itemId}/toggle`, {
+export async function toggleCartItemSelection(userId, itemId, selected) {
+  const result = await apiClient(`/carts/${userId}/items/${itemId}/toggle`, {
     method: 'PATCH',
     body: JSON.stringify({ selected }),
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }
 
-export function removeCartItem(userId, itemId) {
-  return apiClient(`/carts/${userId}/items/${itemId}`, {
+export async function removeCartItem(userId, itemId) {
+  const result = await apiClient(`/carts/${userId}/items/${itemId}`, {
     method: 'DELETE',
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }
 
-export function clearCart(userId) {
-  return apiClient(`/carts/${userId}`, {
+export async function clearCart(userId) {
+  const result = await apiClient(`/carts/${userId}`, {
     method: 'DELETE',
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }
 
-export function checkoutCart(userId, payload) {
-  return apiClient(`/carts/${userId}/checkout`, {
+export async function checkoutCart(userId, payload) {
+  const result = await apiClient(`/carts/${userId}/checkout`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  window.dispatchEvent(new Event('cart_updated'));
+  return result;
 }

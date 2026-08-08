@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -41,26 +42,44 @@ public class VnpayService {
     public String createPaymentUrl(PaymentTransaction payment, String clientIp) {
         validateEnabled();
 
+        LocalDateTime now = LocalDateTime.now(VN_ZONE);
+        String createDate = now.format(VNPAY_DATE_FORMAT);
+        String expireDate = now.plusMinutes(15).format(VNPAY_DATE_FORMAT);
+
         Map<String, String> params = new TreeMap<>();
         params.put("vnp_Version", properties.getVersion());
         params.put("vnp_Command", properties.getCommand());
         params.put("vnp_TmnCode", properties.getTmnCode());
         params.put("vnp_Amount", String.valueOf(toVnpayAmount(payment.getAmount())));
         params.put("vnp_CurrCode", properties.getCurrencyCode());
-        params.put("vnp_TxnRef", String.valueOf(payment.getId()));
-        params.put("vnp_OrderInfo", "Pay order " + payment.getOrderId() + " with payment " + payment.getId());
+        params.put("vnp_TxnRef", payment.getId() + "_" + System.currentTimeMillis());
+        params.put("vnp_OrderInfo", "Thanh toan don hang " + payment.getOrderId());
         params.put("vnp_OrderType", properties.getOrderType());
         params.put("vnp_Locale", properties.getLocale());
         params.put("vnp_ReturnUrl", properties.getReturnUrl());
-        params.put("vnp_IpnUrl", properties.getIpnUrl());
         params.put("vnp_IpAddr", resolveClientIp(clientIp));
-        params.put("vnp_CreateDate", LocalDateTime.now(VN_ZONE).format(VNPAY_DATE_FORMAT));
-        params.put("vnp_ExpireDate", payment.getExpiredAt().atZone(VN_ZONE).toLocalDateTime().format(VNPAY_DATE_FORMAT));
+        params.put("vnp_CreateDate", createDate);
+        params.put("vnp_ExpireDate", expireDate);
 
-        String hashData = buildQuery(params, true);
-        String queryUrl = buildQuery(params, true);
-        String secureHash = hmacSha512(properties.getHashSecret(), hashData);
-        return properties.getPayUrl() + "?" + queryUrl + "&vnp_SecureHash=" + secureHash;
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+        Iterator<Map.Entry<String, String>> itr = params.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, String> entry = itr.next();
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                hashData.append(entry.getKey()).append('=').append(URLEncoder.encode(entry.getValue(), StandardCharsets.US_ASCII));
+                query.append(URLEncoder.encode(entry.getKey(), StandardCharsets.US_ASCII)).append('=').append(URLEncoder.encode(entry.getValue(), StandardCharsets.US_ASCII));
+                if (itr.hasNext()) {
+                    hashData.append('&');
+                    query.append('&');
+                }
+            }
+        }
+
+        String secureHash = hmacSha512(properties.getHashSecret(), hashData.toString());
+        query.append("&vnp_SecureHash=").append(secureHash);
+
+        return properties.getPayUrl() + "?" + query.toString();
     }
 
     public boolean isValidSignature(Map<String, String> rawParams) {
@@ -75,8 +94,19 @@ public class VnpayService {
                 .filter(entry -> !"vnp_SecureHashType".equals(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left, TreeMap::new));
 
-        String hashData = buildQuery(signedParams, true);
-        String expectedHash = hmacSha512(properties.getHashSecret(), hashData);
+        StringBuilder hashData = new StringBuilder();
+        Iterator<Map.Entry<String, String>> itr = signedParams.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, String> entry = itr.next();
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                hashData.append(entry.getKey()).append('=').append(URLEncoder.encode(entry.getValue(), StandardCharsets.US_ASCII));
+                if (itr.hasNext()) {
+                    hashData.append('&');
+                }
+            }
+        }
+
+        String expectedHash = hmacSha512(properties.getHashSecret(), hashData.toString());
         return expectedHash.equalsIgnoreCase(receivedHash);
     }
 
@@ -126,8 +156,12 @@ public class VnpayService {
 
     public Integer extractPaymentId(Map<String, String> params) {
         try {
-            return Integer.valueOf(params.get("vnp_TxnRef"));
-        } catch (NumberFormatException ex) {
+            String txnRef = params.get("vnp_TxnRef");
+            if (txnRef != null && txnRef.contains("_")) {
+                txnRef = txnRef.split("_")[0];
+            }
+            return Integer.valueOf(txnRef);
+        } catch (Exception ex) {
             throw new InvalidPaymentDataException("vnp_TxnRef", "VNPay transaction reference is invalid.");
         }
     }
@@ -203,7 +237,10 @@ public class VnpayService {
     }
 
     private String resolveClientIp(String clientIp) {
-        return isBlank(clientIp) ? "127.0.0.1" : clientIp;
+        if (isBlank(clientIp) || clientIp.contains(":") || clientIp.equals("0:0:0:0:0:0:0:1") || clientIp.equals("::1")) {
+            return "127.0.0.1";
+        }
+        return clientIp;
     }
 
     private boolean isBlank(String value) {

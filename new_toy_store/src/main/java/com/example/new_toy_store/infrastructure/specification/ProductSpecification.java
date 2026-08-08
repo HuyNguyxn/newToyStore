@@ -47,4 +47,8 @@ public class ProductSpecification {
             return categories.get("id").in(categoryIds);
         };
     }
+
+    public static Specification<Product> isFeatured(Boolean isFeatured) {
+        return (root, query, cb) -> isFeatured == null ? null : cb.equal(root.get("isFeatured"), isFeatured);
+    }
 }

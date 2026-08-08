@@ -104,8 +104,30 @@ function ProductListPage() {
           return;
         }
 
-        setProducts(sampleProducts);
-        setPageInfo({ number: 0, totalPages: 1, totalElements: sampleProducts.length });
+        const filteredSample = sampleProducts.filter((product) => {
+          if (categoryId && String(product.categoryId || product.category?.id) !== String(categoryId)) {
+            return false;
+          }
+          if (activeFilters.keyword && activeFilters.keyword.trim()) {
+            const kw = activeFilters.keyword.trim().toLowerCase();
+            const name = String(product.name || product.productName || '').toLowerCase();
+            const desc = String(product.description || '').toLowerCase();
+            if (!name.includes(kw) && !desc.includes(kw)) {
+              return false;
+            }
+          }
+          const price = Number(product.basePrice || product.price || product.salePrice || 0);
+          if (activeFilters.minPrice !== '' && activeFilters.minPrice !== null && activeFilters.minPrice !== undefined) {
+            if (price < Number(activeFilters.minPrice)) return false;
+          }
+          if (activeFilters.maxPrice !== '' && activeFilters.maxPrice !== null && activeFilters.maxPrice !== undefined) {
+            if (price > Number(activeFilters.maxPrice)) return false;
+          }
+          return true;
+        });
+
+        setProducts(filteredSample);
+        setPageInfo({ number: 0, totalPages: 1, totalElements: filteredSample.length });
         setError('Không lấy được dữ liệu từ backend, đang hiển thị dữ liệu mẫu.');
       })
       .finally(() => {
@@ -126,10 +148,10 @@ function ProductListPage() {
     if (keyword.trim()) {
       nextParams.keyword = keyword.trim();
     }
-    if (minPrice) {
+    if (minPrice !== '') {
       nextParams.minPrice = minPrice;
     }
-    if (maxPrice) {
+    if (maxPrice !== '') {
       nextParams.maxPrice = maxPrice;
     }
     if (sort) {
@@ -249,24 +271,25 @@ function ProductListPage() {
 }
 
 function buildProductRequest(categoryId, filters, requestParams) {
+  const queryParams = {
+    ...requestParams,
+    status: 'ACTIVE',
+  };
+
   if (categoryId) {
-    return () => getProductsByCategory(categoryId, requestParams);
+    queryParams.categoryId = categoryId;
+  }
+  if (filters.keyword && filters.keyword.trim()) {
+    queryParams.keyword = filters.keyword.trim();
+  }
+  if (filters.minPrice !== '' && filters.minPrice !== null && filters.minPrice !== undefined) {
+    queryParams.minPrice = filters.minPrice;
+  }
+  if (filters.maxPrice !== '' && filters.maxPrice !== null && filters.maxPrice !== undefined) {
+    queryParams.maxPrice = filters.maxPrice;
   }
 
-  if (filters.keyword) {
-    return () => searchProducts(filters.keyword, requestParams);
-  }
-
-  if (filters.minPrice || filters.maxPrice) {
-    return () => filterProducts({
-      ...requestParams,
-      minPrice: filters.minPrice,
-      maxPrice: filters.maxPrice,
-      status: 'ACTIVE',
-    });
-  }
-
-  return () => getProducts(requestParams);
+  return () => filterProducts(queryParams);
 }
 
 export default ProductListPage;

@@ -24,20 +24,43 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
     @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.paymentId = :paymentId AND r.status IN :statuses")
     double sumAmountByPaymentIdAndStatuses(@Param("paymentId") Integer paymentId, @Param("statuses") Collection<RefundStatus> statuses);
 
-    @Query("SELECT COUNT(r) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to")
+    @Query("""
+            SELECT COUNT(r)
+              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+             WHERE r.status = :status
+               AND r.createdAt >= :from
+               AND r.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
     long countByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to")
+    @Query("""
+            SELECT COALESCE(SUM(r.amount), 0)
+              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+             WHERE r.status = :status
+               AND r.createdAt >= :from
+               AND r.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
     double sumAmountByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.status = :status AND r.createdAt >= :from AND r.createdAt < :to GROUP BY FUNCTION('date', r.createdAt)")
+    @Query("""
+            SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0)
+              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+             WHERE r.status = :status
+               AND r.createdAt >= :from
+               AND r.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+             GROUP BY FUNCTION('date', r.createdAt)
+            """)
     java.util.List<Object[]> aggregateDailyRefundAmount(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
             SELECT COALESCE(r.reason, 'UNKNOWN'), COALESCE(r.reason, 'Unknown'), COUNT(r), COALESCE(SUM(r.amount), 0)
-              FROM PaymentRefund r
+              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.createdAt >= :from
                AND r.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
              GROUP BY r.reason
              ORDER BY COALESCE(SUM(r.amount), 0) DESC
             """)
@@ -53,6 +76,7 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
                    END), 0)
               FROM payment_refunds r
               JOIN orders o ON o.id = r.order_id
+              JOIN users u ON u.id = o.user_id AND u.role = 'CUSTOMER' AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
              WHERE r.status = 'SUCCEEDED'
                AND r.created_at >= :from

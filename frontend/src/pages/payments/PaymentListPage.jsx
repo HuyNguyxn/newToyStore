@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { samplePayments } from '../../data/sampleData.js';
 import { getMyPayments } from '../../services/paymentService.js';
-import { formatDateTime, formatPrice, getPaymentStatusLabel } from '../../utils/formatters.js';
+import { formatDateTime, formatPaymentMethodText, formatPrice, getPaymentStatusLabel } from '../../utils/formatters.js';
 
 const pageSize = 8;
 
@@ -35,9 +34,8 @@ function PaymentListPage() {
         if (!active) {
           return;
         }
-        setPayments(samplePayments);
-        setPageInfo({ number: 0, totalPages: 1, totalElements: samplePayments.length });
-        setNotice('Backend chưa sẵn sàng, đang hiển thị thanh toán mẫu.');
+        setPayments([]);
+        setPageInfo({ number: 0, totalPages: 1, totalElements: 0 });
       })
       .finally(() => {
         if (active) {
@@ -79,7 +77,7 @@ function PaymentListPage() {
               <p>Don hang #{payment.orderId} - {formatDateTime(payment.createdAt)}</p>
             </div>
             <div>
-              <span>{payment.method}</span>
+              <span>{formatPaymentMethodText(payment.method)}</span>
               <strong>{formatPrice(payment.amount)}</strong>
             </div>
             <Link to={`/orders/${payment.orderId}`}>Xem don</Link>

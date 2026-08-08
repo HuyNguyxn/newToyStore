@@ -21,7 +21,8 @@ import java.util.Set;
         indexes = {
                 @Index(name = "idx_product_status", columnList = "status"),
                 @Index(name = "idx_product_created_at", columnList = "created_at"),
-                @Index(name = "idx_product_supplier_id", columnList = "supplier_id")
+                @Index(name = "idx_product_supplier_id", columnList = "supplier_id"),
+                @Index(name = "idx_product_is_featured", columnList = "is_featured")
         }
 )
 public class Product extends BaseRootEntity {
@@ -47,6 +48,9 @@ public class Product extends BaseRootEntity {
 
     @Column(name = "review_count", nullable = false)
     private int reviewCount = 0;
+
+    @Column(name = "is_featured", nullable = false)
+    private boolean isFeatured = false;
 
     @ManyToMany
     @JoinTable(
@@ -84,6 +88,11 @@ public class Product extends BaseRootEntity {
         }
         this.status = newStatus;
     }
+
+    public boolean isFeatured() { return isFeatured; }
+    public void setFeatured(boolean isFeatured) { this.isFeatured = isFeatured; }
+    public void toggleFeatured() { this.isFeatured = !this.isFeatured; }
+
     public void addCategory(Category category) { if (category != null) this.categories.add(category); }
     public void removeCategory(Category category) { if (category != null) this.categories.remove(category); }
 

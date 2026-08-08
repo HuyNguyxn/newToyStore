@@ -26,8 +26,8 @@ public class PaymentNotificationEventListener {
                 NotificationType.PAYMENT_COMPLETED,
                 NotificationReferenceType.PAYMENT,
                 event.paymentId(),
-                "Payment completed",
-                "Payment for order #" + event.orderId() + " was completed successfully.",
+                "Thanh toán thành công",
+                "Thanh toán cho đơn hàng #" + event.orderId() + " đã hoàn tất thành công.",
                 "PAYMENT_COMPLETED:" + event.paymentId(),
                 event.occurredAt(),
                 true
@@ -41,8 +41,8 @@ public class PaymentNotificationEventListener {
                 NotificationType.PAYMENT_FAILED,
                 NotificationReferenceType.PAYMENT,
                 event.paymentId(),
-                "Payment failed",
-                "Payment for order #" + event.orderId() + " failed. Reason: " + event.reason(),
+                "Thanh toán thất bại",
+                "Thanh toán cho đơn hàng #" + event.orderId() + " thất bại. Lý do: " + event.reason(),
                 "PAYMENT_FAILED:" + event.paymentId(),
                 event.occurredAt(),
                 true
@@ -56,8 +56,8 @@ public class PaymentNotificationEventListener {
                 NotificationType.PAYMENT_REFUNDED,
                 NotificationReferenceType.PAYMENT,
                 event.paymentId(),
-                "Refund completed",
-                "Refund for order #" + event.orderId() + " was completed.",
+                "Hoàn tiền thành công",
+                "Yêu cầu hoàn tiền cho đơn hàng #" + event.orderId() + " đã được xử lý.",
                 "PAYMENT_REFUNDED:" + event.refundId(),
                 event.occurredAt(),
                 true

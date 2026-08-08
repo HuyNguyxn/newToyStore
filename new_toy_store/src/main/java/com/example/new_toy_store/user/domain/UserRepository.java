@@ -20,12 +20,26 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     long countByStatus(UserStatus status);
 
-    @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status AND u.createdAt >= :from AND u.createdAt < :to")
+    @Query("""
+            SELECT COUNT(u)
+              FROM User u
+             WHERE u.status = :status
+               AND u.createdAt >= :from
+               AND u.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
     long countByStatusBetween(@Param("status") UserStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :from AND u.createdAt < :to")
+    @Query("""
+            SELECT COUNT(u)
+              FROM User u
+             WHERE u.createdAt >= :from
+               AND u.createdAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
     long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
+    @EntityGraph(attributePaths = "addresses")
     Optional<User> findByEmail(String email);
 
     List<User> findAllByStatus(UserStatus status);

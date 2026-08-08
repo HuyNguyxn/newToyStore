@@ -82,13 +82,13 @@ public class ReviewController {
     }
 
     @GetMapping("/admin/products/{productId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public Page<ReviewResponse> getAllReviewsForAdmin(@PathVariable Integer productId, Pageable pageable) {
         return service.getAllReviewsForAdmin(productId, pageable);
     }
 
     @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public Page<ReviewResponse> getGlobalReviewsForAdmin(
             @Valid @ModelAttribute ReviewFilterRequest filterRequest,
             Pageable pageable
@@ -97,13 +97,13 @@ public class ReviewController {
     }
 
     @PatchMapping("/admin/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public void changeStatus(@PathVariable Integer id, @RequestParam String status) {
         service.changeReviewStatus(id, status);
     }
 
     @PatchMapping("/admin/{id}/reply")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public void replyToReview(@PathVariable Integer id, @Valid @RequestBody AdminReplyRequest request) {
         service.replyToReview(id, request);
     }

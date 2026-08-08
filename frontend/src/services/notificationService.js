@@ -1,8 +1,22 @@
 import { apiClient } from './apiClient.js';
 
+function buildQueryString(params = {}) {
+  const parts = [];
+  Object.keys(params).forEach((key) => {
+    const val = params[key];
+    if (val !== undefined && val !== null && val !== '') {
+      if (key === 'sort') {
+        parts.push(`sort=${val}`);
+      } else {
+        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`);
+      }
+    }
+  });
+  return parts.length > 0 ? `?${parts.join('&')}` : '';
+}
+
 export function getNotifications(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  return apiClient(`/notifications${query ? `?${query}` : ''}`);
+  return apiClient(`/notifications${buildQueryString(params)}`);
 }
 
 export function getUnreadNotificationCount() {

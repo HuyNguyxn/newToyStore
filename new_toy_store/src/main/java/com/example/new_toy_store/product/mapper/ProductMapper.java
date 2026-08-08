@@ -77,6 +77,7 @@ public final class ProductMapper {
                 toImageResponses(product),
                 product.getAverageRating(),
                 product.getReviewCount(),
+                product.isFeatured(),
                 variants,
                 toStatusOption(status),
                 toStatusOptions(status.getNextValidStates()),
@@ -245,14 +246,14 @@ public final class ProductMapper {
     }
 
     private static Integer findDefaultVariantId(List<ProductVariantResponse> variants) {
-        if (variants == null || variants.size() != 1) {
+        if (variants == null || variants.isEmpty()) {
             return null;
         }
         return variants.get(0).getId();
     }
 
     private static int findDefaultVariantStockQuantity(List<ProductVariantResponse> variants) {
-        if (variants == null || variants.size() != 1) {
+        if (variants == null || variants.isEmpty()) {
             return 0;
         }
         return variants.get(0).getStockQuantity();

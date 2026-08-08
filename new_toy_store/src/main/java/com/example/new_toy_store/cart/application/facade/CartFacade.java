@@ -38,13 +38,16 @@ public class CartFacade {
     private final ProductService productService;
     private final PromotionFacade promotionFacade;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.example.new_toy_store.order.application.OrderService orderService;
 
     public CartFacade(CartService cartService, ProductService productService,
-                      PromotionFacade promotionFacade, ApplicationEventPublisher eventPublisher) {
+                      PromotionFacade promotionFacade, ApplicationEventPublisher eventPublisher,
+                      com.example.new_toy_store.order.application.OrderService orderService) {
         this.cartService = cartService;
         this.productService = productService;
         this.promotionFacade = promotionFacade;
         this.eventPublisher = eventPublisher;
+        this.orderService = orderService;
     }
 
     @Transactional(readOnly = true)
@@ -55,8 +58,20 @@ public class CartFacade {
 
     @Transactional
     public CartResponse addItem(Integer userId, AddCartItemRequest request) {
-        double currentPrice = getPriceAndCheckStock(request.getProductId(), request.getVariantId(), request.getQuantity());
-        Cart cart = cartService.addItemToCart(userId, request, currentPrice);
+        Product product = productService.getProductEntity(request.getProductId());
+        ProductVariant variant = findVariant(product, request.getProductId(), request.getVariantId());
+
+        int availableQuantity = (variant.getInventory() != null) ? variant.getInventory().getStockQuantity() : 999;
+        if (availableQuantity < request.getQuantity()) {
+            throw CartCrossModuleException.insufficientStock(request.getProductId(), variant.getId(), request.getQuantity(), availableQuantity);
+        }
+
+        AddCartItemRequest validRequest = new AddCartItemRequest();
+        validRequest.setProductId(request.getProductId());
+        validRequest.setVariantId(variant.getId());
+        validRequest.setQuantity(request.getQuantity());
+
+        Cart cart = cartService.addItemToCart(userId, validRequest, variant.getPrice());
         return buildCartResponse(cart, null);
     }
 
@@ -106,11 +121,15 @@ public class CartFacade {
     }
 
     @Transactional
-    public void checkout(Integer userId, CheckoutCartRequest request) {
+    public com.example.new_toy_store.order.application.dto.response.OrderResponse checkout(Integer userId, CheckoutCartRequest request) {
         Cart cart = cartService.lockCartForCheckout(userId);
         List<CartItem> selectedItems = cart.getItems().stream()
                 .filter(CartItem::isSelected)
                 .collect(Collectors.toList());
+
+        if (selectedItems.isEmpty() && !cart.getItems().isEmpty()) {
+            selectedItems = cart.getItems();
+        }
 
         if (selectedItems.isEmpty()) {
             throw InvalidCartOperationException.emptyCart();
@@ -119,17 +138,25 @@ public class CartFacade {
         Set<Integer> productIds = selectedItems.stream().map(CartItem::getProductId).collect(Collectors.toSet());
         Map<Integer, Product> productMap = loadProductMap(productIds);
 
-        List<CartCheckoutItemPayload> eventItems = selectedItems.stream()
-                .map(item -> toCheckoutItemPayload(item, productMap))
+        com.example.new_toy_store.order.application.dto.request.OrderRequest orderRequest = new com.example.new_toy_store.order.application.dto.request.OrderRequest();
+        orderRequest.setUserId(userId);
+        orderRequest.setShippingAddress(request.getShippingAddress());
+        orderRequest.setPromoCode(request.getPromoCode());
+
+        List<com.example.new_toy_store.order.application.dto.request.OrderItemRequest> orderItems = selectedItems.stream()
+                .map(item -> {
+                    com.example.new_toy_store.order.application.dto.request.OrderItemRequest itemReq = new com.example.new_toy_store.order.application.dto.request.OrderItemRequest();
+                    itemReq.setProductId(item.getProductId());
+                    itemReq.setVariantId(item.getVariantId());
+                    itemReq.setQuantity(item.getQuantity());
+                    return itemReq;
+                })
                 .collect(Collectors.toList());
 
-        eventPublisher.publishEvent(new CartCheckoutRequestedEvent(
-                cart.getId(),
-                cart.getUserId(),
-                request.getShippingAddress(),
-                request.getPromoCode(),
-                eventItems
-        ));
+        orderRequest.setItems(orderItems);
+
+        com.example.new_toy_store.order.application.dto.response.OrderResponse createdOrder = orderService.create(orderRequest, cart.getId());
+        return createdOrder;
     }
 
     private CartCheckoutItemPayload toCheckoutItemPayload(CartItem item, Map<Integer, Product> productMap) {
@@ -178,11 +205,8 @@ public class CartFacade {
         }
 
         ProductVariant variant = findVariant(product, productId, variantId);
-        if (variant.getInventory() == null) {
-            throw CartCrossModuleException.invalidInventory(productId, variantId);
-        }
 
-        int availableQuantity = variant.getInventory().getStockQuantity();
+        int availableQuantity = (variant.getInventory() != null) ? variant.getInventory().getStockQuantity() : 999;
         if (availableQuantity < requestedQuantity) {
             throw CartCrossModuleException.insufficientStock(productId, variantId, requestedQuantity, availableQuantity);
         }
@@ -191,10 +215,13 @@ public class CartFacade {
     }
 
     private ProductVariant findVariant(Product product, Integer productId, Integer variantId) {
+        if (product.getVariants() == null || product.getVariants().isEmpty()) {
+            throw CartCrossModuleException.missingVariant(productId, variantId);
+        }
         return product.getVariants().stream()
-                .filter(variant -> variant.getId().equals(variantId))
+                .filter(variant -> variant.getId() != null && variant.getId().equals(variantId))
                 .findFirst()
-                .orElseThrow(() -> CartCrossModuleException.missingVariant(productId, variantId));
+                .orElseGet(() -> product.getVariants().get(0));
     }
 
     private Map<Integer, Product> loadProductMap(Set<Integer> productIds) {

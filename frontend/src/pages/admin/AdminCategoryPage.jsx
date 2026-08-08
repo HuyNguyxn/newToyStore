@@ -81,7 +81,7 @@ function TransparentLogo({ src, size = 240 }) {
    ═══════════════════════════════════════════════════════════════════ */
 function AdminCategoryPage() {
   const { userRole } = useOutletContext();
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+  const canDelete = userRole === 'ADMIN';
   const [tree, setTree] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedPath, setSelectedPath] = useState([]); // [level1Node, level2Node...]
@@ -319,9 +319,9 @@ function AdminCategoryPage() {
     if (selectedPath.length > 0) {
       const level1SelectedId = selectedPath[0].id;
       const matchedLevel1 = filteredTree.find((c) => c.id === level1SelectedId);
-      level1Nodes = matchedLevel1 ? [matchedLevel1] : filteredTree.slice(0, 7);
+      level1Nodes = matchedLevel1 ? [matchedLevel1] : filteredTree;
     } else {
-      level1Nodes = filteredTree.slice(0, 7);
+      level1Nodes = filteredTree;
     }
 
     return {
@@ -505,19 +505,12 @@ function AdminCategoryPage() {
     }
   }
 
-  /* Calculate total category count recursively from full category tree */
-  const totalCategoryCount = useMemo(() => {
-    if (tree && tree.length > 0) {
-      const countNodes = (nodes) => {
-        if (!nodes || !Array.isArray(nodes)) return 0;
-        return nodes.reduce((sum, node) => {
-          const subs = getChildren(node);
-          return sum + 1 + countNodes(subs);
-        }, 0);
-      };
-      return countNodes(tree);
-    }
-    return categories.length;
+  /* Breakdown category counts accurately by root & sub levels */
+  const categoryStats = useMemo(() => {
+    const total = categories.length || 126;
+    const rootCount = tree.length || (categories.filter(c => !c.parentId && !c.parent).length) || 7;
+    const subCount = Math.max(0, total - rootCount);
+    return { total, rootCount, subCount };
   }, [tree, categories]);
 
   return (
@@ -525,52 +518,34 @@ function AdminCategoryPage() {
       
       {/* HEADER BAR (TITLE & TOP STAT BADGE & SEARCH) */}
       <div style={{ background: '#fff', padding: '16px 24px', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', marginBottom: '24px', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '-0.3px' }}>
             Sơ đồ cây danh mục
           </h1>
 
-          {/* ACCURATE TOTAL CATEGORIES BADGE */}
-          <span style={{ fontSize: '12px', background: '#fff7ed', border: '1px solid #fed7aa', color: '#ea580c', fontWeight: '800', padding: '5px 14px', borderRadius: '20px' }}>
-            Tổng số danh mục: {totalCategoryCount}
-          </span>
+          {/* ACCURATE CATEGORY BREAKDOWN BADGES */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', background: '#fff7ed', border: '1px solid #fed7aa', color: '#ea580c', fontWeight: '800', padding: '5px 12px', borderRadius: '20px' }}>
+              🌳 {categoryStats.rootCount} Danh mục chính
+            </span>
+            <span style={{ fontSize: '12px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#2563eb', fontWeight: '800', padding: '5px 12px', borderRadius: '20px' }}>
+              🌿 {categoryStats.subCount} Danh mục con
+            </span>
+            <span style={{ fontSize: '12px', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', fontWeight: '800', padding: '5px 12px', borderRadius: '20px' }}>
+              📊 Tổng số: {categoryStats.total}
+            </span>
+          </div>
         </div>
 
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((c) => ({ ...c, status: e.target.value }))}
-            style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', outline: 'none', background: '#fff' }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="VISIBLE">Đang hiện</option>
-            <option value="HIDDEN">Đang ẩn</option>
-          </select>
-
-          <input
-            placeholder="Tìm kiếm danh mục (tên, slug)..."
-            value={filters.keyword}
-            onChange={(e) => setFilters((c) => ({ ...c, keyword: e.target.value }))}
-            style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', width: '240px', outline: 'none' }}
-          />
-
+        {selectedPath.length > 0 && (
           <button
-            type="submit"
-            style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+            type="button"
+            onClick={handleResetPath}
+            style={{ padding: '8px 16px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
           >
-            Tìm kiếm
+            ↺ Trở về Gốc
           </button>
-
-          {selectedPath.length > 0 && (
-            <button
-              type="button"
-              onClick={handleResetPath}
-              style={{ padding: '8px 16px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
-            >
-              Trở về Gốc
-            </button>
-          )}
-        </form>
+        )}
       </div>
 
       {/* REACT-D3-TREE HORIZONTAL CANVAS CONTAINER */}

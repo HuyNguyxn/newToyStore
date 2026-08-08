@@ -57,7 +57,7 @@ function getSupplierStatusInfo(supplier) {
 
 function AdminSupplierPage() {
   const { userRole } = useOutletContext();
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+  const canDelete = userRole === 'ADMIN';
   const [suppliers, setSuppliers] = useState([]);
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
 

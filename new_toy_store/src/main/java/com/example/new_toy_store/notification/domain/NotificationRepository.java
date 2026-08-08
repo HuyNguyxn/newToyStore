@@ -20,6 +20,7 @@ public interface NotificationRepository
               from Notification n
              where n.recipientUserId = :userId
                and n.status = :status
+               and n.deduplicationKey not like 'CART_STATUS:%'
                and (n.expiresAt is null or n.expiresAt > :now)
             """)
     long countUnreadNotExpired(

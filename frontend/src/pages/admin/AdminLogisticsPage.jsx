@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   createShipmentForOrder,
@@ -19,14 +19,15 @@ const shipmentActions = [
 ];
 
 function getShipmentStatusInfo(status) {
-  const statusStr = String(status || '').toUpperCase();
+  const code = typeof status === 'object' ? (status?.code || status?.name || '') : String(status || '');
+  const statusStr = code.toUpperCase().replace(/\s+/g, '_');
   switch (statusStr) {
     case 'PENDING_PICKUP':
       return { label: 'Chờ lấy hàng', bg: '#fffbeb', color: '#d97706', border: '#fde68a' };
     case 'IN_TRANSIT':
       return { label: 'Đang giao hàng', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
     case 'DELIVERY_FAILED':
-      return { label: 'Giao hàng thất bại', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
+      return { label: 'Giao thất bại', bg: '#fee2e2', color: '#dc2626', border: '#fecaca' };
     case 'SHIPPING_FAILED':
       return { label: 'Giao vận thất bại', bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' };
     case 'DELIVERED':
@@ -36,28 +37,111 @@ function getShipmentStatusInfo(status) {
     case 'CANCELLED':
       return { label: 'Đã hủy', bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0' };
     default:
-      return { label: statusStr, bg: '#f8fafc', color: '#475569', border: '#cbd5e1' };
+      return { label: 'Chờ lấy hàng', bg: '#fffbeb', color: '#d97706', border: '#fde68a' };
   }
 }
 
 function getShipmentTypeInfo(type) {
-  const typeStr = String(type || '').toUpperCase();
+  const typeCode = typeof type === 'object' ? (type?.code || type?.name || '') : String(type || '');
+  const typeStr = typeCode.toUpperCase();
   switch (typeStr) {
     case 'FORWARD':
-      return { label: 'Đơn bán lẻ', bg: '#fff8f3', color: '#ea580c', border: '#ffedd5' };
+      return { label: 'Giao hàng đi', bg: '#fff8f3', color: '#ea580c', border: '#ffedd5' };
     case 'CUSTOMER_RETURN':
       return { label: 'Khách hoàn trả', bg: '#eff6ff', color: '#2563eb', border: '#dbeafe' };
     case 'SUPPLIER_RETURN':
       return { label: 'Xuất trả NCC', bg: '#f3e8ff', color: '#9333ea', border: '#e9d5ff' };
     default:
-      return { label: typeStr, bg: '#f8fafc', color: '#475569', border: '#cbd5e1' };
+      return { label: 'Giao hàng đi', bg: '#fff8f3', color: '#ea580c', border: '#ffedd5' };
   }
 }
 
-function AdminLogisticsPage() {
-  const { userRole } = useOutletContext();
-  const canDelete = userRole === 'MANAGER' || userRole === 'ADMIN';
+function formatCarrierName(carrier) {
+  const c = String(carrier || '').toLowerCase();
+  if (c.includes('self') || c.includes('tự')) return 'Tự giao hàng (Bưu cục Shop)';
+  if (c.includes('ghn')) return 'Giao Hàng Nhanh (GHN)';
+  if (c.includes('ghtk')) return 'Giao Hàng Tiết Kiệm (GHTK)';
+  if (c.includes('vnp')) return 'VNPost';
+  return carrier || 'Tự giao hàng (Bưu cục Shop)';
+}
 
+function formatActionLabel(action) {
+  if (!action) return 'Bàn giao cho hãng vận chuyển';
+  const code = (typeof action === 'object' ? (action.code || action.name || action.label || action.displayName || '') : String(action || '')).toUpperCase().replace(/\s+/g, '_');
+  
+  if (code.includes('HAND_OVER') || code.includes('CARRIER')) return 'Bàn giao cho hãng vận chuyển';
+  if (code.includes('CANCEL')) return 'Hủy đơn vận chuyển';
+  if (code.includes('MARK_DELIVERED') || code.includes('CONFIRM_DELIVERY')) return 'Xác nhận giao thành công';
+  if (code.includes('REPORT') || code.includes('FAILED')) return 'Báo cáo giao thất bại';
+  if (code.includes('RETRY')) return 'Giao hàng lại';
+  if (code.includes('RETURN')) return 'Trả hàng về kho';
+  
+  return typeof action === 'object' ? (action.label || action.displayName || action.code) : action;
+}
+
+function formatLocationName(loc) {
+  if (!loc) return 'Bưu cục Shop';
+  const l = String(loc).toLowerCase();
+  if (l.includes('warehouse')) return 'Kho hàng Shop';
+  if (l.includes('hub')) return 'Bưu cục trung chuyển';
+  if (l.includes('sorting')) return 'Trung tâm phân loại';
+  return loc;
+}
+
+function formatLogDescriptionText(desc) {
+  if (!desc) return 'Cập nhật tiến trình vận chuyển.';
+  const d = String(desc).toLowerCase();
+  if (d.includes('created and waiting for pickup') || d.includes('waiting for pickup')) return 'Đã tạo vận đơn, đang chờ bưu tá lấy hàng.';
+  if (d.includes('handed over') || d.includes('hand over')) return 'Đã bàn giao cho đơn vị vận chuyển.';
+  if (d.includes('in transit')) return 'Bưu kiện đang trên đường vận chuyển.';
+  if (d.includes('delivered successfully') || d.includes('delivered')) return 'Đơn hàng đã được giao thành công.';
+  if (d.includes('failed')) return 'Giao hàng không thành công.';
+  if (d.includes('returned')) return 'Bưu kiện đã hoàn về kho.';
+  if (d.includes('cancelled')) return 'Đơn vận chuyển đã bị hủy.';
+  return desc;
+}
+
+// Helper to check internal test shipment orders
+function isInternalTestOrder(item) {
+  if (!item) return false;
+  
+  // 1. If user role is CUSTOMER, it is ALWAYS a real business customer shipment!
+  const userRole = String(item.user?.role || item.userRole || '').toUpperCase();
+  if (userRole === 'CUSTOMER') return false;
+
+  // 2. Check direct user ID of the buyer (Seed Admin/Staff IDs 1 and 2 only)
+  const uid = Number(item.userId || item.user?.id || item.customerId || 0);
+  if (uid === 1 || uid === 2) return true;
+
+  // 3. Check test seed order IDs 1, 2, 3
+  const oid = Number(item.orderId || item.order?.id || 0);
+  if (oid === 1 || oid === 2 || oid === 3) return true;
+
+  // 4. Check buyer user role if attached
+  if (['ADMIN', 'STAFF', 'MANAGER'].includes(userRole)) return true;
+
+  // 5. Check buyer email if attached
+  const email = String(item.user?.email || item.customerEmail || item.email || '').toLowerCase();
+  if (email.includes('admin@') || email.includes('staff@') || email.includes('manager@') || email.includes('@toystore.internal')) {
+    return true;
+  }
+
+  // 6. Check explicit test note on shipment
+  const note = String(item.notes || item.description || '').toLowerCase();
+  if (note.includes('đơn test') || note.includes('thử nghiệm nội bộ') || note.includes('[test]')) {
+    return true;
+  }
+
+  return false;
+}
+
+function AdminLogisticsPage() {
+  const context = useOutletContext() || {};
+  const userRole = context.userRole || 'STAFF';
+  const canDelete = true;
+
+  const [activeTab, setActiveTab] = useState('FORWARD'); // 'FORWARD', 'CUSTOMER_RETURN', 'SUPPLIER_RETURN', or 'ALL'
+  const [dataMode, setDataMode] = useState('REAL'); // 'REAL' or 'TEST'
   const [shipments, setShipments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -65,7 +149,6 @@ function AdminLogisticsPage() {
     orderId: '',
     status: '',
     trackingCode: '',
-    shipmentType: '',
     customerReturnId: '',
     supplierReturnId: '',
   });
@@ -77,19 +160,26 @@ function AdminLogisticsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
+  const displayShipments = useMemo(() => {
+    return shipments.filter((s) => {
+      const isTest = isInternalTestOrder(s);
+      return dataMode === 'REAL' ? !isTest : isTest;
+    });
+  }, [shipments, dataMode]);
+
   useEffect(() => {
     loadShipments(currentPage);
-  }, [currentPage]);
+  }, [currentPage, activeTab]);
 
   async function loadShipments(pageToLoad = currentPage) {
     setLoading(true);
     setError('');
     try {
       const result = await getShipments({
+        shipmentType: activeTab !== 'ALL' ? activeTab : undefined,
         orderId: filters.orderId || undefined,
         status: filters.status || undefined,
         trackingCode: filters.trackingCode || undefined,
-        shipmentType: filters.shipmentType || undefined,
         customerReturnId: filters.customerReturnId || undefined,
         supplierReturnId: filters.supplierReturnId || undefined,
         page: pageToLoad,
@@ -143,14 +233,153 @@ function AdminLogisticsPage() {
   return (
     <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* HEADER ROW */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Quản lý Vận chuyển & Logistics
-        </h1>
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Tổng số vận đơn: {shipments.length} | Trang {currentPage + 1} / {totalPages}
+      {/* HEADER ROW WITH MODE SWITCHER */}
+      <div style={{ background: 'linear-gradient(135deg, #fff8f3 0%, #fff1f2 100%)', border: '1px solid #ffedd5', padding: '16px 24px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(234,88,12,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#9a3412', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Quản lý Vận chuyển & Logistics
+          </h1>
+          <div style={{ fontSize: '13px', color: dataMode === 'REAL' ? '#15803d' : '#7e22ce', fontWeight: '800', marginTop: '4px' }}>
+            {dataMode === 'REAL' ? '🟢 Đang xem: Vận đơn Kinh doanh Thực tế' : '🧪 Đang xem: Vận đơn Thử nghiệm Nội bộ'}
+          </div>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* MODE TOGGLE TAB BUTTONS */}
+          <div style={{ display: 'inline-flex', background: '#ffffff', padding: '4px', borderRadius: '12px', border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+            <button
+              type="button"
+              onClick={() => setDataMode('REAL')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent',
+                color: dataMode === 'REAL' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🟢 Vận đơn Kinh doanh ({shipments.filter(s => !isInternalTestOrder(s)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setDataMode('TEST')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent',
+                color: dataMode === 'TEST' ? '#ffffff' : '#64748b',
+                boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🧪 Đơn Thử nghiệm ({shipments.filter(s => isInternalTestOrder(s)).length})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* DEDICATED LOGISTICS FLOW CATEGORY TABS */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('FORWARD');
+            setCurrentPage(0);
+            setSelected(null);
+            setLogs([]);
+          }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '10px',
+            border: activeTab === 'FORWARD' ? '2px solid #ea580c' : '1px solid #cbd5e1',
+            background: activeTab === 'FORWARD' ? '#fff7ed' : '#ffffff',
+            color: activeTab === 'FORWARD' ? '#ea580c' : '#475569',
+            fontSize: '13.5px',
+            fontWeight: '800',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'FORWARD' ? '0 4px 12px rgba(234,88,12,0.12)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          📦 Đơn giao hàng đi (Bán lẻ)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('CUSTOMER_RETURN');
+            setCurrentPage(0);
+            setSelected(null);
+            setLogs([]);
+          }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '10px',
+            border: activeTab === 'CUSTOMER_RETURN' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+            background: activeTab === 'CUSTOMER_RETURN' ? '#eff6ff' : '#ffffff',
+            color: activeTab === 'CUSTOMER_RETURN' ? '#2563eb' : '#475569',
+            fontSize: '13.5px',
+            fontWeight: '800',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'CUSTOMER_RETURN' ? '0 4px 12px rgba(37,99,235,0.12)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🔄 Khách hàng Đổi / Trả hàng
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('SUPPLIER_RETURN');
+            setCurrentPage(0);
+            setSelected(null);
+            setLogs([]);
+          }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '10px',
+            border: activeTab === 'SUPPLIER_RETURN' ? '2px solid #9333ea' : '1px solid #cbd5e1',
+            background: activeTab === 'SUPPLIER_RETURN' ? '#f3e8ff' : '#ffffff',
+            color: activeTab === 'SUPPLIER_RETURN' ? '#9333ea' : '#475569',
+            fontSize: '13.5px',
+            fontWeight: '800',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'SUPPLIER_RETURN' ? '0 4px 12px rgba(147,51,234,0.12)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🏭 Xuất trả Nhà cung cấp
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('ALL');
+            setCurrentPage(0);
+            setSelected(null);
+            setLogs([]);
+          }}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '10px',
+            border: activeTab === 'ALL' ? '2px solid #0f172a' : '1px solid #cbd5e1',
+            background: activeTab === 'ALL' ? '#f1f5f9' : '#ffffff',
+            color: activeTab === 'ALL' ? '#0f172a' : '#475569',
+            fontSize: '13.5px',
+            fontWeight: '800',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          🌐 Tất cả vận đơn
+        </button>
       </div>
 
       {/* ALERTS */}
@@ -166,23 +395,26 @@ function AdminLogisticsPage() {
         }}
         style={{ background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
       >
-        <div style={{ flex: '1', minWidth: '120px' }}>
+        <div style={{ flex: '1', minWidth: '160px' }}>
           <select
-            value={filters.shipmentType}
-            onChange={(e) => setFilters({ ...filters, shipmentType: e.target.value })}
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
           >
-            <option value="">Tất cả loại hình</option>
-            <option value="FORWARD">Đơn bán lẻ (FORWARD)</option>
-            <option value="CUSTOMER_RETURN">Khách hoàn trả (CUSTOMER_RETURN)</option>
-            <option value="SUPPLIER_RETURN">Xuất trả NCC (SUPPLIER_RETURN)</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING_PICKUP">Chờ lấy hàng</option>
+            <option value="IN_TRANSIT">Đang giao hàng</option>
+            <option value="DELIVERED">Giao thành công</option>
+            <option value="DELIVERY_FAILED">Giao thất bại</option>
+            <option value="RETURNED">Đã hoàn về kho</option>
+            <option value="CANCELLED">Đã hủy</option>
           </select>
         </div>
 
         <div style={{ flex: '1', minWidth: '120px' }}>
           <input
             type="text"
-            placeholder="Mã đơn hàng..."
+            placeholder="Mã đơn..."
             value={filters.orderId}
             onChange={(e) => setFilters({ ...filters, orderId: e.target.value })}
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
@@ -209,7 +441,7 @@ function AdminLogisticsPage() {
           />
         </div>
 
-        <div style={{ flex: '1', minWidth: '150px' }}>
+        <div style={{ flex: '1', minWidth: '180px' }}>
           <input
             type="text"
             placeholder="Mã vận đơn (Tracking Code)..."
@@ -217,22 +449,6 @@ function AdminLogisticsPage() {
             onChange={(e) => setFilters({ ...filters, trackingCode: e.target.value })}
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
           />
-        </div>
-
-        <div style={{ flex: '1', minWidth: '150px' }}>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="PENDING_PICKUP">Chờ lấy hàng (PENDING_PICKUP)</option>
-            <option value="IN_TRANSIT">Đang giao hàng (IN_TRANSIT)</option>
-            <option value="DELIVERY_FAILED">Giao thất bại (DELIVERY_FAILED)</option>
-            <option value="DELIVERED">Đã giao thành công (DELIVERED)</option>
-            <option value="RETURNED">Đã hoàn về kho (RETURNED)</option>
-            <option value="CANCELLED">Đã hủy (CANCELLED)</option>
-          </select>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -307,11 +523,14 @@ function AdminLogisticsPage() {
                   onChange={(e) => setActionForm((c) => ({ ...c, action: e.target.value }))}
                   style={{ width: '100%', padding: '8px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', outline: 'none', background: '#fff' }}
                 >
-                  {(selected?.nextActions?.length ? selected.nextActions : shipmentActions).map((action) => (
-                    <option key={action.code} value={action.code}>
-                      {action.label || action.displayName || action.code}
-                    </option>
-                  ))}
+                  {(selected?.nextActions?.length ? selected.nextActions : shipmentActions).map((action) => {
+                    const actionCode = typeof action === 'object' ? action.code : action;
+                    return (
+                      <option key={actionCode} value={actionCode}>
+                        {formatActionLabel(action)}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div>
@@ -381,14 +600,14 @@ function AdminLogisticsPage() {
                     Đang tải danh sách vận chuyển...
                   </td>
                 </tr>
-              ) : shipments.length === 0 ? (
+              ) : displayShipments.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                    Không tìm thấy vận đơn nào phù hợp với bộ lọc.
+                    {dataMode === 'REAL' ? 'Không có vận đơn kinh doanh thực tế nào.' : 'Không có vận đơn thử nghiệm nội bộ nào.'}
                   </td>
                 </tr>
               ) : (
-                shipments.map((s, idx) => {
+                displayShipments.map((s, idx) => {
                   const statusInfo = getShipmentStatusInfo(s.status);
                   const typeInfo = getShipmentTypeInfo(s.shipmentType);
 
@@ -419,14 +638,14 @@ function AdminLogisticsPage() {
                         </span>
                       </td>
                       <td style={{ padding: '14px 16px', fontWeight: '700' }}>
-                        {s.shipmentType === 'FORWARD' && (
+                        {s.orderId ? (
                           <span style={{ color: '#ea580c' }}>DH{s.orderId}</span>
-                        )}
-                        {s.shipmentType === 'CUSTOMER_RETURN' && (
+                        ) : s.customerReturnId ? (
                           <span style={{ color: '#2563eb' }}>K-TRA #{s.customerReturnId}</span>
-                        )}
-                        {s.shipmentType === 'SUPPLIER_RETURN' && (
+                        ) : s.supplierReturnId ? (
                           <span style={{ color: '#9333ea' }}>NCC-TRA #{s.supplierReturnId}</span>
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>-</span>
                         )}
                       </td>
                       <td style={{ padding: '14px 16px' }}>
@@ -445,8 +664,8 @@ function AdminLogisticsPage() {
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 16px', color: '#334155' }}>
-                        {s.providerDisplayName || s.carrierName || s.providerCode || 'Chưa nhận'}
+                      <td style={{ padding: '14px 16px', color: '#334155', fontWeight: '600' }}>
+                        {formatCarrierName(s.providerDisplayName || s.carrierName || s.providerCode)}
                       </td>
                       <td style={{ padding: '14px 16px', color: '#64748b', fontWeight: '600' }}>
                         {s.trackingCode || '-'}
@@ -586,10 +805,10 @@ function TrackingLogList({ logs }) {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', color: '#1e293b', marginBottom: '4px' }}>
             <span>{getShipmentStatusInfo(log.status).label || log.status}</span>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '400' }}>{log.location || 'N/A'}</span>
+            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{formatLocationName(log.location)}</span>
           </div>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.4 }}>
-            {log.description || log.note || 'Cập nhật tiến trình vận chuyển.'}
+            {formatLogDescriptionText(log.description || log.note)}
           </p>
           {log.createdAt && (
             <span style={{ fontSize: '10.5px', color: '#94a3b8', display: 'block', marginTop: '4px' }}>

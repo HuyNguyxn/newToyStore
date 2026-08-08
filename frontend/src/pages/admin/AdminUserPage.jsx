@@ -11,10 +11,10 @@ import {
 import { formatDateTime } from '../../utils/formatters.js';
 
 const roleOptions = [
-  { value: 'CUSTOMER', label: 'Khách hàng', bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
-  { value: 'STAFF', label: 'Nhân viên', bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  { value: 'MANAGER', label: 'Quản lý', bg: '#fffbebfb', color: '#d97706', border: '#fef3c7' },
-  { value: 'ADMIN', label: 'Admin', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  { value: 'CUSTOMER', label: 'Khách hàng', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  { value: 'STAFF', label: 'Nhân viên', bg: '#f3e8ff', color: '#7e22ce', border: '#e9d5ff' },
+  { value: 'MANAGER', label: 'Quản lý', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' },
+  { value: 'ADMIN', label: 'Admin', bg: '#fef3c7', color: '#b45309', border: '#fde68a' },
 ];
 
 const statusOptions = [

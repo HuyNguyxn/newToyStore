@@ -40,17 +40,18 @@ h3 {
   top: 0;
   z-index: 50;
   background: rgba(255, 255, 255, 0.98);
-  border-bottom: 4px solid var(--color-secondary-soft);
+  border-bottom: 3px solid var(--color-secondary-soft);
   box-shadow: 0 4px 12px rgba(45, 67, 86, 0.05);
   backdrop-filter: blur(10px);
 }
 
 .site-header__inner {
-  min-height: 132px;
-  display: grid;
-  grid-template-columns: 120px auto minmax(360px, 1fr) max-content;
-  gap: 28px;
+  min-height: 76px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 0;
 }
 
 .brand {
@@ -58,19 +59,21 @@ h3 {
   align-items: center;
   gap: 0;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
 .brand__logo {
-  width: 120px;
-  height: 120px;
+  width: 58px;
+  height: 58px;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   border-radius: 50%;
   background: var(--color-accent-soft);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s ease;
+  flex-shrink: 0;
 }
 
 .brand:hover .brand__logo {
@@ -98,10 +101,11 @@ h3 {
 .header-main-nav {
   display: inline-flex;
   align-items: center;
-  gap: 36px;
+  gap: 20px;
   white-space: nowrap;
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 14.5px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
 .header-main-nav a:hover,
@@ -109,9 +113,17 @@ h3 {
   color: var(--color-primary);
 }
 
+.search-area {
+  position: relative;
+  flex: 1;
+  max-width: 440px;
+  min-width: 220px;
+}
+
 .search-box {
   display: flex;
   min-width: 0;
+  height: 42px;
   border: 2px solid var(--color-secondary);
   border-radius: var(--radius-pill);
   background: #fff;
@@ -127,24 +139,19 @@ h3 {
   width: 100%;
   border: 0;
   outline: 0;
-  padding: 16px 26px;
+  padding: 0 18px;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .search-box button {
   border: 0;
-  min-width: 86px;
-  padding: 0 28px;
+  min-width: 56px;
+  padding: 0 16px;
   background: var(--color-secondary);
   color: #fff;
   cursor: pointer;
   font-weight: 900;
-}
-
-.search-area {
-  position: relative;
-  min-width: 0;
 }
 
 .search-suggestions {
@@ -257,13 +264,14 @@ h3 {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cart-link,
 .login-link {
-  min-height: 38px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,33 +281,32 @@ h3 {
 
 .cart-link {
   position: relative;
-  min-width: 54px;
-  min-height: 54px;
-  border: 1px solid rgba(74, 64, 57, 0.08);
-  padding: 0 14px;
-  background: #fff;
-  border: 0;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
   background: transparent;
   color: var(--color-text);
-  font-size: 21px;
+  font-size: 20px;
+  border: 0;
 }
 
 .cart-link__badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 20px;
-  height: 20px;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--color-primary);
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .login-link {
-  padding: 0 22px;
+  padding: 0 20px;
   background: var(--color-primary-gradient);
   color: #fff;
   box-shadow: var(--shadow-sm);
@@ -310,28 +317,29 @@ h3 {
 }
 
 .plain-header-link {
-  min-height: 38px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-pill);
   padding: 0 6px;
   color: var(--color-text);
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13.5px;
   white-space: nowrap;
 }
 
 .user-menu {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   white-space: nowrap;
 }
 
 .user-menu__profile {
-  min-height: 38px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   padding: 0 10px;
@@ -339,8 +347,8 @@ h3 {
 }
 
 .user-menu__profile span {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -351,7 +359,7 @@ h3 {
 }
 
 .user-menu__profile strong {
-  max-width: 120px;
+  max-width: 90px;
   overflow: hidden;
   color: var(--color-text);
   font-size: 13px;
@@ -360,12 +368,13 @@ h3 {
 }
 
 .user-menu button {
-  min-height: 38px;
+  min-height: 36px;
   border: 0;
   border-radius: var(--radius-pill);
-  padding: 0 12px;
+  padding: 0 14px;
   background: var(--color-primary);
   color: #fff;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }

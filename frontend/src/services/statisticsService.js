@@ -32,3 +32,7 @@ export function getRevenueByCategory(params = {}) {
 export function getTopSpendingCustomers(params = {}) {
   return apiClient(`/statistics/customers/top-spending${buildQuery(params)}`);
 }
+
+export function getInventorySnapshot(params = {}) {
+  return apiClient(`/statistics/inventory/snapshot${buildQuery(params)}`);
+}

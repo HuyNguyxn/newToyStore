@@ -57,7 +57,7 @@ public class Cart extends BaseRootEntity {
     public void addItem(Integer productId, Integer variantId, int quantity, double addedPrice) {
         checkIfCartIsActive();
         Optional<CartItem> existingItem = items.stream()
-                .filter(item -> item.getProductId().equals(productId) && item.getVariantId().equals(variantId))
+                .filter(item -> item.getVariantId() != null && item.getVariantId().equals(variantId))
                 .findFirst();
 
         if (existingItem.isPresent()) {

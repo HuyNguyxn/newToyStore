@@ -8,6 +8,7 @@ import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.domain.exception.OrderAccessDeniedException;
 import com.example.new_toy_store.user.application.UserFacade;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
+import java.util.List;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +50,7 @@ public class OrderController {
         UserProfileResponse user = getAuthenticatedUser(userDetails);
         OrderResponse order = service.getOrderDetails(id);
 
-        if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!order.getUserId().equals(user.getId()) && !List.of("ADMIN", "MANAGER", "STAFF").contains(user.getRole())) {
             throw new OrderAccessDeniedException(id, user.getId(), "xem");
         }
         return order;
@@ -63,19 +64,19 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public OrderResponse confirm(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.confirm(id, note);
     }
 
     @PatchMapping("/{id}/ship")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public OrderResponse ship(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.ship(id, note);
     }
 
     @PatchMapping("/{id}/complete")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public OrderResponse complete(@PathVariable Integer id, @RequestParam(required = false) String note) {
         return service.complete(id, note);
     }
@@ -89,7 +90,7 @@ public class OrderController {
         UserProfileResponse user = getAuthenticatedUser(userDetails);
         OrderResponse order = service.getOrderDetails(id);
 
-        if (!order.getUserId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!order.getUserId().equals(user.getId()) && !List.of("ADMIN", "MANAGER", "STAFF").contains(user.getRole())) {
             throw new OrderAccessDeniedException(id, user.getId(), "hủy");
         }
         return service.cancel(id, note);
@@ -102,7 +103,7 @@ public class OrderController {
     }
 
     @GetMapping("/admin/filter")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public Page<OrderResponse> filterOrders(OrderFilterRequest filterRequest, Pageable pageable) {
         return service.filterOrders(filterRequest, pageable);
     }

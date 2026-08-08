@@ -15,49 +15,49 @@ public enum CustomerReturnStatus {
     REQUESTED("REQUESTED", "Yêu cầu mới") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(APPROVED, REJECTED, NEEDS_MORE_INFO, CANCELLED);
+            return Arrays.asList(APPROVED, REJECTED, NEEDS_MORE_INFO, CANCELLED, RECEIVED, INSPECTED_OK, INSPECTED_FAILED);
         }
     },
     NEEDS_MORE_INFO("NEEDS_MORE_INFO", "Cần bổ sung thông tin") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(REQUESTED, REJECTED, CANCELLED);
+            return Arrays.asList(REQUESTED, REJECTED, CANCELLED, RECEIVED, INSPECTED_OK, INSPECTED_FAILED);
         }
     },
     APPROVED("APPROVED", "Đã duyệt - Chờ bưu tá lấy hàng") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(RETURNING, CANCELLED);
+            return Arrays.asList(RETURNING, CANCELLED, RECEIVED, INSPECTED_OK, INSPECTED_FAILED);
         }
     },
     RETURNING("RETURNING", "Đang hoàn về kho") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(RECEIVED, SHIPPING_FAILED);
+            return Arrays.asList(RECEIVED, SHIPPING_FAILED, INSPECTED_OK, INSPECTED_FAILED, CANCELLED);
         }
     },
     SHIPPING_FAILED("SHIPPING_FAILED", "Giao vận thất bại") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(APPROVED, CANCELLED);
+            return Arrays.asList(APPROVED, CANCELLED, RECEIVED, INSPECTED_OK, INSPECTED_FAILED);
         }
     },
     RECEIVED("RECEIVED", "Kho đã nhận - Đang kiểm định QC") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(INSPECTED_OK, INSPECTED_FAILED);
+            return Arrays.asList(INSPECTED_OK, INSPECTED_FAILED, REJECTED, CANCELLED);
         }
     },
     INSPECTED_OK("INSPECTED_OK", "Kiểm định đạt - Chờ xử lý hoàn tiền/đổi trả") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(REFUNDED, REPLACED);
+            return Arrays.asList(REFUNDED, REPLACED, REJECTED, CANCELLED);
         }
     },
     INSPECTED_FAILED("INSPECTED_FAILED", "Kiểm định thất bại - Hàng không đúng mô tả") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(REJECTED, DISPUTED);
+            return Arrays.asList(REJECTED, DISPUTED, INSPECTED_OK, CANCELLED);
         }
     },
     REJECTED("REJECTED", "Từ chối trả hàng") {

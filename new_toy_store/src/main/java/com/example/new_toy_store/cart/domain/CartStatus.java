@@ -2,6 +2,7 @@ package com.example.new_toy_store.cart.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.example.new_toy_store.cart.domain.exception.InvalidCartDataException;
 
 import java.util.List;
@@ -43,8 +44,10 @@ public enum CartStatus {
 
     public String getName() { return this.name(); }
 
+    @JsonIgnore
     public abstract boolean isCheckoutInProgress();
 
+    @JsonIgnore
     public abstract List<CartStatus> getNextValidStates();
 
     public boolean canTransitionTo(CartStatus nextStatus) {

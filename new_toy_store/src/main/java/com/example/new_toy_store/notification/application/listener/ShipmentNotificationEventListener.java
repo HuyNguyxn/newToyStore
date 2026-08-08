@@ -24,31 +24,31 @@ public class ShipmentNotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleShipmentCreated(ShipmentCreatedEvent event) {
         notifyShipment(event.userId(), event.shipmentId(), event.orderId(), event.trackingCode(),
-                NotificationType.SHIPMENT_CREATED, "Shipment created", "Shipment for order #" + event.orderId() + " was created.", event.occurredAt());
+                NotificationType.SHIPMENT_CREATED, "Đã tạo đơn vận chuyển", "Đơn vận chuyển cho đơn hàng #" + event.orderId() + " đã được tạo.", event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleShipmentInTransit(ShipmentInTransitEvent event) {
         notifyShipment(event.userId(), event.shipmentId(), event.orderId(), event.trackingCode(),
-                NotificationType.SHIPMENT_IN_TRANSIT, "Shipment in transit", "Order #" + event.orderId() + " is now in transit.", event.occurredAt());
+                NotificationType.SHIPMENT_IN_TRANSIT, "Đang vận chuyển", "Đơn hàng #" + event.orderId() + " đang trên đường giao tới bạn.", event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleShipmentDelivered(ShipmentDeliveredEvent event) {
         notifyShipment(event.userId(), event.shipmentId(), event.orderId(), event.trackingCode(),
-                NotificationType.SHIPMENT_DELIVERED, "Shipment delivered", "Order #" + event.orderId() + " was delivered.", event.occurredAt());
+                NotificationType.SHIPMENT_DELIVERED, "Giao hàng thành công", "Đơn hàng #" + event.orderId() + " đã được giao thành công.", event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleShipmentReturned(ShipmentReturnedEvent event) {
         notifyShipment(event.userId(), event.shipmentId(), event.orderId(), event.trackingCode(),
-                NotificationType.SHIPMENT_RETURNED, "Shipment returned", "Shipment for order #" + event.orderId() + " was returned.", event.occurredAt());
+                NotificationType.SHIPMENT_RETURNED, "Trả hàng thành công", "Đơn vận chuyển cho đơn hàng #" + event.orderId() + " đã được trả lại.", event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleShipmentCancelled(ShipmentCancelledEvent event) {
         notifyShipment(event.userId(), event.shipmentId(), event.orderId(), event.trackingCode(),
-                NotificationType.SHIPMENT_CANCELLED, "Shipment cancelled", "Shipment for order #" + event.orderId() + " was cancelled.", event.occurredAt());
+                NotificationType.SHIPMENT_CANCELLED, "Đã hủy đơn vận chuyển", "Đơn vận chuyển cho đơn hàng #" + event.orderId() + " đã bị hủy.", event.occurredAt());
     }
 
     private void notifyShipment(Integer userId, Integer shipmentId, Integer orderId, String trackingCode,
@@ -59,7 +59,7 @@ public class ShipmentNotificationEventListener {
                 NotificationReferenceType.SHIPMENT,
                 shipmentId,
                 title,
-                message + " Tracking code: " + trackingCode,
+                message + (trackingCode != null && !trackingCode.isBlank() ? " Mã vận đơn: " + trackingCode : ""),
                 type.name() + ":" + shipmentId,
                 occurredAt,
                 true

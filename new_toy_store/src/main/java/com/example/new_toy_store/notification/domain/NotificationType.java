@@ -6,23 +6,23 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum NotificationType {
-    ORDER_CREATED("Order created", NotificationCategory.ORDER, false),
-    ORDER_STATUS_CHANGED("Order status changed", NotificationCategory.ORDER, true),
-    ORDER_CANCELLED("Order cancelled", NotificationCategory.ORDER, true),
-    PAYMENT_COMPLETED("Payment completed", NotificationCategory.PAYMENT, true),
-    PAYMENT_FAILED("Payment failed", NotificationCategory.PAYMENT, true),
-    PAYMENT_REFUNDED("Payment refunded", NotificationCategory.PAYMENT, true),
-    SHIPMENT_CREATED("Shipment created", NotificationCategory.SHIPMENT, false),
-    SHIPMENT_IN_TRANSIT("Shipment in transit", NotificationCategory.SHIPMENT, false),
-    SHIPMENT_DELIVERED("Shipment delivered", NotificationCategory.SHIPMENT, true),
-    SHIPMENT_RETURNED("Shipment returned", NotificationCategory.SHIPMENT, true),
-    SHIPMENT_CANCELLED("Shipment cancelled", NotificationCategory.SHIPMENT, true),
-    RETURN_STATUS_CHANGED("Return status changed", NotificationCategory.RETURN, true),
-    RETURN_REFUNDED("Return refunded", NotificationCategory.RETURN, true),
-    REVIEW_REPLIED("Review replied", NotificationCategory.REVIEW, false),
-    REVIEW_STATUS_CHANGED("Review status changed", NotificationCategory.REVIEW, false),
-    CART_EXPIRING("Cart item expiring", NotificationCategory.CART, false),
-    SYSTEM_ANNOUNCEMENT("System announcement", NotificationCategory.SYSTEM, true);
+    ORDER_CREATED("Tạo đơn hàng", NotificationCategory.ORDER, false),
+    ORDER_STATUS_CHANGED("Cập nhật đơn hàng", NotificationCategory.ORDER, true),
+    ORDER_CANCELLED("Hủy đơn hàng", NotificationCategory.ORDER, true),
+    PAYMENT_COMPLETED("Thanh toán thành công", NotificationCategory.PAYMENT, true),
+    PAYMENT_FAILED("Thanh toán thất bại", NotificationCategory.PAYMENT, true),
+    PAYMENT_REFUNDED("Hoàn tiền thanh toán", NotificationCategory.PAYMENT, true),
+    SHIPMENT_CREATED("Tạo đơn vận chuyển", NotificationCategory.SHIPMENT, false),
+    SHIPMENT_IN_TRANSIT("Đang vận chuyển", NotificationCategory.SHIPMENT, false),
+    SHIPMENT_DELIVERED("Giao hàng thành công", NotificationCategory.SHIPMENT, true),
+    SHIPMENT_RETURNED("Trả hàng thành công", NotificationCategory.SHIPMENT, true),
+    SHIPMENT_CANCELLED("Hủy đơn vận chuyển", NotificationCategory.SHIPMENT, true),
+    RETURN_STATUS_CHANGED("Cập nhật yêu cầu trả hàng", NotificationCategory.RETURN, true),
+    RETURN_REFUNDED("Hoàn tiền trả hàng", NotificationCategory.RETURN, true),
+    REVIEW_REPLIED("Phản hồi đánh giá", NotificationCategory.REVIEW, false),
+    REVIEW_STATUS_CHANGED("Cập nhật đánh giá", NotificationCategory.REVIEW, false),
+    CART_EXPIRING("Giỏ hàng", NotificationCategory.CART, false),
+    SYSTEM_ANNOUNCEMENT("Thông báo hệ thống", NotificationCategory.SYSTEM, true);
 
     private final String displayName;
     private final NotificationCategory category;

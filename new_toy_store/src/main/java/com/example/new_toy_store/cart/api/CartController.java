@@ -88,11 +88,10 @@ public class CartController {
     }
 
     @PostMapping("/{userId}/checkout")
-    public ResponseEntity<String> checkout(
+    public com.example.new_toy_store.order.application.dto.response.OrderResponse checkout(
             @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer userId,
             @Valid @RequestBody CheckoutCartRequest request
     ) {
-        cartFacade.checkout(userId, request);
-        return ResponseEntity.ok("Yêu cầu thanh toán đã được tiếp nhận và đang xử lý.");
+        return cartFacade.checkout(userId, request);
     }
 }

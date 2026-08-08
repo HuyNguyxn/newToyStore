@@ -139,10 +139,14 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request) {
 
+        String detailedMessage = ex.getMessage() != null && !ex.getMessage().trim().isEmpty()
+                ? ex.getMessage()
+                : ex.getClass().getSimpleName();
+
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Lỗi hệ thống",
-                "Đã xảy ra sự cố không mong muốn. Vui lòng thử lại sau.",
+                ex.getClass().getSimpleName(),
+                detailedMessage,
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

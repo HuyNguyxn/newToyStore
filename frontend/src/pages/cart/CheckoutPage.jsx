@@ -7,13 +7,19 @@ import { getMyOrders } from '../../services/orderService.js';
 import { checkoutPayment, createIdempotencyKey } from '../../services/paymentService.js';
 import { formatPrice } from '../../utils/formatters.js';
 
+import { isUserProfileComplete, isValidVietnamesePhoneNumber } from '../../utils/userValidation.js';
+
 function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   
   const [cart, setCart] = useState(null);
-  const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingForm, setShippingForm] = useState({
+    receiverName: '',
+    receiverPhone: '',
+    detailAddress: '',
+  });
   const [promoCode, setPromoCode] = useState(location.state?.promoCode || '');
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
@@ -29,14 +35,43 @@ function CheckoutPage() {
   useEffect(() => {
     if (!user?.id) return;
 
+    if (!isUserProfileComplete(user)) {
+      navigate('/profile', {
+        state: { requireInfoNotice: 'Bạn phải bổ sung đầy đủ họ tên, số điện thoại và địa chỉ.' },
+      });
+      return;
+    }
+
     // Load user's default address
-    const defaultAddress = user.addresses?.find((addr) => addr.default || addr.isDefault);
+    const defaultAddress = user.addresses?.find((addr) => addr.default || addr.isDefault) || user.addresses?.[0];
     if (defaultAddress) {
-      setShippingAddress(formatAddress(defaultAddress));
+      setShippingForm({
+        receiverName: defaultAddress.receiverName || user.fullName || '',
+        receiverPhone: defaultAddress.receiverPhone || user.phoneNumber || '',
+        detailAddress: defaultAddress.detailAddress || defaultAddress.fullAddress || defaultAddress.addressLine || '',
+      });
+    } else {
+      setShippingForm({
+        receiverName: user.fullName || '',
+        receiverPhone: user.phoneNumber || '',
+        detailAddress: user.detailAddress || user.address || '',
+      });
     }
 
     loadCartData(promoCode);
-  }, [user?.id]);
+  }, [user]);
+
+  function updateShippingField(field, value) {
+    setShippingForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function selectSavedAddress(addr) {
+    setShippingForm({
+      receiverName: addr.receiverName || '',
+      receiverPhone: addr.receiverPhone || '',
+      detailAddress: addr.detailAddress || addr.fullAddress || addr.addressLine || '',
+    });
+  }
 
   async function loadCartData(code = '') {
     try {
@@ -58,7 +93,9 @@ function CheckoutPage() {
   }
 
   const selectedItems = useMemo(() => {
-    return (cart?.items || []).filter((item) => Boolean(item.isSelected ?? item.selected));
+    const items = cart?.items || [];
+    const selected = items.filter((item) => Boolean(item.isSelected ?? item.selected));
+    return selected.length > 0 ? selected : items;
   }, [cart]);
 
   // Handle promo code application manually
@@ -73,54 +110,65 @@ function CheckoutPage() {
   }
 
   async function handleSubmit(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     setError('');
 
-    if (!shippingAddress.trim()) {
-      setError('Vui lòng nhập địa chỉ giao hàng.');
+    const fullName = (shippingForm.receiverName || '').trim();
+    const phone = (shippingForm.receiverPhone || '').trim();
+    const address = (shippingForm.detailAddress || '').trim();
+
+    if (!fullName || !phone || !address) {
+      const msg = 'Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng chi tiết.';
+      setError(msg);
+      window.alert(msg);
       return;
     }
+
+    if (!isValidVietnamesePhoneNumber(phone)) {
+      const msg = 'Số điện thoại nhận hàng không hợp lệ. Vui lòng nhập 10 chữ số chuẩn Việt Nam (ví dụ: 0987654321).';
+      setError(msg);
+      window.alert(msg);
+      return;
+    }
+
+    const shippingAddress = [fullName, phone, address].filter(Boolean).join(' - ');
 
     setSubmitting(true);
 
     try {
-      // 1. Submit cart checkout to create the order in backend
-      await checkoutCart(user.id, {
-        shippingAddress: shippingAddress.trim(),
+      // 1. Submit cart checkout -> Backend creates order and returns OrderResponse directly!
+      const createdOrder = await checkoutCart(user.id, {
+        shippingAddress,
         promoCode: promoCode.trim() || null,
       });
 
-      // 2. Wait 800ms to allow asynchronous order creation event to persist in db
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // 3. Query user's order history to find the latest created order (since it's sorted desc)
-      const orderHistory = await getMyOrders({ page: 0, size: 1 });
-      const ordersList = orderHistory.content || orderHistory || [];
-      const latestOrder = ordersList[0];
-
-      if (!latestOrder) {
-        throw new Error('Không thể định danh đơn hàng vừa tạo. Vui lòng kiểm tra Lịch sử mua hàng.');
+      const orderId = createdOrder?.id || createdOrder?.orderId;
+      if (!orderId) {
+        throw new Error('Không thể định danh đơn hàng vừa tạo.');
       }
 
-      // 4. Create payment transaction for the order
+      // 2. Create payment transaction for the order
       const paymentPayload = {
-        orderId: latestOrder.id,
+        orderId: orderId,
         method: paymentMethod,
-        idempotencyKey: createIdempotencyKey(latestOrder.id, paymentMethod),
+        idempotencyKey: createIdempotencyKey(orderId, paymentMethod),
       };
 
       const payment = await checkoutPayment(paymentPayload);
 
-      // 5. If VNPay -> redirect directly to gateway url
+      // 3. If VNPay -> redirect directly to gateway url
       if (payment.paymentUrl) {
         window.location.href = payment.paymentUrl;
         return;
       }
 
-      // 6. If COD -> show checkout success screen!
-      setSuccessOrder(latestOrder);
+      // 4. If COD -> show checkout success screen!
+      setSuccessOrder(createdOrder);
     } catch (err) {
-      setError(err.message || 'Đặt hàng thất bại. Vui lòng thử lại sau.');
+      console.error('Checkout error:', err);
+      const errMsg = err?.message || (typeof err === 'string' ? err : 'Đặt hàng thất bại. Vui lòng thử lại sau.');
+      setError(errMsg);
+      window.alert('Lỗi đặt hàng: ' + errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -201,41 +249,137 @@ function CheckoutPage() {
           <BackLink fallback="/cart" label="Quay lại giỏ hàng" />
         </div>
 
-        {/* Main Grid Layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '30px', alignItems: 'start' }}>
+        {/* Main Form Layout */}
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '30px', alignItems: 'start' }}>
           
           {/* LEFT COLUMN: Shipping & Payments */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* 1. SHIPPING ADDRESS SECTION */}
             <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: '0 0 16px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-                Địa chỉ giao hàng
-              </h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <textarea
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  placeholder="Nhập tên người nhận, số điện thoại và địa chỉ giao hàng chi tiết..."
-                  rows="4"
-                  maxLength="500"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '8px',
-                    fontSize: '13.5px',
-                    lineHeight: 1.5,
-                    outline: 'none',
-                    resize: 'none',
-                    fontFamily: 'inherit',
-                  }}
-                />
-                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
-                  * Định dạng khuyên dùng: Tên người nhận - Số điện thoại - Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố.
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📍</span> Thông tin giao hàng
+                </h2>
+                <Link to="/profile" style={{ fontSize: '12.5px', color: '#ea580c', fontWeight: '700', textDecoration: 'none' }}>
+                  ⚙️ Quản lý sổ địa chỉ
+                </Link>
+              </div>
+
+              {/* Saved Address Quick Selector */}
+              {user?.addresses && user.addresses.length > 0 && (
+                <div style={{ marginBottom: '18px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '8px' }}>
+                    Chọn nhanh từ sổ địa chỉ đã lưu:
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {user.addresses.map((addr) => {
+                      const isSelected = (
+                        shippingForm.receiverName === addr.receiverName &&
+                        shippingForm.receiverPhone === addr.receiverPhone &&
+                        shippingForm.detailAddress === (addr.detailAddress || addr.fullAddress || addr.addressLine)
+                      );
+                      return (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => selectSavedAddress(addr)}
+                          style={{
+                            padding: '7px 14px',
+                            background: isSelected ? '#fff7ed' : '#f8fafc',
+                            border: isSelected ? '2px solid #ea580c' : '1px solid #cbd5e1',
+                            color: isSelected ? '#ea580c' : '#334155',
+                            borderRadius: '10px',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>{addr.default ? '⭐' : '🏡'}</span>
+                          <span>{addr.receiverName} ({addr.receiverPhone})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {/* Structured Input Fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                      Tên người nhận <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.receiverName}
+                      onChange={(e) => updateShippingField('receiverName', e.target.value)}
+                      placeholder="Nguyễn Văn A"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                      Số điện thoại nhận hàng <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingForm.receiverPhone}
+                      onChange={(e) => updateShippingField('receiverPhone', e.target.value)}
+                      placeholder="0987654321"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                    Địa chỉ giao hàng chi tiết (Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố) <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <textarea
+                    value={shippingForm.detailAddress}
+                    onChange={(e) => updateShippingField('detailAddress', e.target.value)}
+                    placeholder="Ví dụ: 123 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+                    rows="3"
+                    maxLength="300"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      lineHeight: 1.5,
+                      outline: 'none',
+                      resize: 'none',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -341,7 +485,7 @@ function CheckoutPage() {
               </div>
 
               {/* PROMO CODE BOX */}
-              <form onSubmit={handleApplyPromo} style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginBottom: '16px' }}>
                 <input
                   type="text"
                   placeholder="Mã giảm giá..."
@@ -357,7 +501,8 @@ function CheckoutPage() {
                   }}
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleApplyPromo}
                   style={{
                     padding: '8px 16px',
                     background: '#f1f5f9',
@@ -371,7 +516,7 @@ function CheckoutPage() {
                 >
                   Áp dụng
                 </button>
-              </form>
+              </div>
               {promoError && <div style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: '700', marginBottom: '12px' }}>{promoError}</div>}
               {promoSuccess && <div style={{ color: '#16a34a', fontSize: '11.5px', fontWeight: '700', marginBottom: '12px' }}>{promoSuccess}</div>}
 
@@ -409,23 +554,23 @@ function CheckoutPage() {
 
               {/* MAIN PLACE ORDER BUTTON */}
               <button
-                onClick={handleSubmit}
-                disabled={submitting || selectedItems.length === 0}
+                type="submit"
+                disabled={submitting || (cart?.items || []).length === 0}
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: '#ea580c',
+                  background: (submitting || (cart?.items || []).length === 0) ? '#cbd5e1' : 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
                   color: '#ffffff',
                   border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '14.5px',
+                  borderRadius: '10px',
+                  fontSize: '15px',
                   fontWeight: '800',
-                  cursor: 'pointer',
+                  cursor: (submitting || (cart?.items || []).length === 0) ? 'not-allowed' : 'pointer',
                   marginTop: '20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 20px rgba(234,88,12,0.15)',
+                  boxShadow: (submitting || (cart?.items || []).length === 0) ? 'none' : '0 6px 20px rgba(234,88,12,0.25)',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -436,7 +581,7 @@ function CheckoutPage() {
 
           </div>
 
-        </div>
+        </form>
 
       </div>
     </div>

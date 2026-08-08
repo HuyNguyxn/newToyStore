@@ -16,6 +16,7 @@ public class ProductResponse {
     private List<ProductImageResponse> images;
     private double averageRating;
     private int reviewCount;
+    private boolean featured;
     private List<ProductVariantResponse> variants;
     private ProductEnumOptionResponse statusDetail;
     private List<ProductEnumOptionResponse> allowedNextStatuses;
@@ -27,7 +28,7 @@ public class ProductResponse {
 
     public ProductResponse(Integer id, String name, double basePrice, String status, Integer supplierId,
                            List<Integer> categoryIds, String thumbnailUrl, List<ProductImageResponse> images,
-                           double averageRating, int reviewCount,
+                           double averageRating, int reviewCount, boolean featured,
                            List<ProductVariantResponse> variants, ProductEnumOptionResponse statusDetail,
                            List<ProductEnumOptionResponse> allowedNextStatuses, List<String> allowedActions,
                            boolean purchasable, boolean quickAddAvailable,
@@ -42,6 +43,7 @@ public class ProductResponse {
         this.images = images == null ? List.of() : List.copyOf(images);
         this.averageRating = averageRating;
         this.reviewCount = reviewCount;
+        this.featured = featured;
         this.variants = variants;
         this.statusDetail = statusDetail;
         this.allowedNextStatuses = allowedNextStatuses == null ? List.of() : List.copyOf(allowedNextStatuses);
@@ -64,6 +66,8 @@ public class ProductResponse {
     public List<ProductImageResponse> getImages() { return images; }
     public double getAverageRating() { return averageRating; }
     public int getReviewCount() { return reviewCount; }
+    public boolean isFeatured() { return featured; }
+    public void setFeatured(boolean featured) { this.featured = featured; }
     public List<ProductVariantResponse> getVariants() { return variants; }
     public ProductEnumOptionResponse getStatusDetail() { return statusDetail; }
     public List<ProductEnumOptionResponse> getAllowedNextStatuses() { return allowedNextStatuses; }

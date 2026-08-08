@@ -264,15 +264,15 @@ public final class CartMapper {
     }
 
     private static ProductVariant findVariant(Product product, Integer variantId) {
-        if (product == null || product.getVariants() == null) {
+        if (product == null || product.getVariants() == null || product.getVariants().isEmpty()) {
             return null;
         }
 
         return product.getVariants()
                 .stream()
-                .filter(variant -> variant.getId().equals(variantId))
+                .filter(variant -> variant.getId() != null && variant.getId().equals(variantId))
                 .findFirst()
-                .orElse(null);
+                .orElseGet(() -> product.getVariants().get(0));
     }
 
     private static String findThumbnailUrl(Product product) {

@@ -21,12 +21,10 @@ public interface CartRepository extends JpaRepository<Cart, Integer>, JpaSpecifi
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "items")
     Optional<Cart> findById(Integer id);
 
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "items")
     @Query("SELECT c FROM Cart c WHERE c.userId = :userId")
     Optional<Cart> findForUpdateByUserId(@Param("userId") Integer userId);
 
-    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @EntityGraph(type = EntityGraph.EntityGraphType.LOAD, attributePaths = "items")
     @Query("SELECT c FROM Cart c WHERE c.id = :cartId")
     Optional<Cart> findForUpdateById(@Param("cartId") Integer cartId);

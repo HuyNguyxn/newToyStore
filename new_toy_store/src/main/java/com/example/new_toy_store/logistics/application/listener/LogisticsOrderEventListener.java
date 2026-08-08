@@ -16,9 +16,11 @@ public class LogisticsOrderEventListener {
     }
 
     @EventListener
-    public void handleOrderConfirmed(OrderStatusChangedEvent event) {
+    public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
         if (event.currentStatus() == OrderStatus.CONFIRMED) {
             logisticsService.createForConfirmedOrder(event.orderId());
+        } else if (event.currentStatus() == OrderStatus.SHIPPED || event.currentStatus() == OrderStatus.COMPLETED || event.currentStatus() == OrderStatus.CANCELLED) {
+            logisticsService.syncShipmentStatusWithOrder(event.orderId(), event.currentStatus(), event.note());
         }
     }
 }

@@ -190,18 +190,52 @@ public class LogisticsService {
         return ShipmentMapper.toResponse(shipment);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<ShipmentResponse> getMyShipments(Integer userId, Pageable pageable) {
-        return shipmentRepository.findByUserId(userId, pageable).map(ShipmentMapper::toResponse);
+        Page<Shipment> page = shipmentRepository.findByUserId(userId, pageable);
+        syncShipmentsWithOrderSnapshot(page.getContent());
+        return page.map(ShipmentMapper::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<ShipmentResponse> filter(ShipmentFilterRequest request, Pageable pageable) {
         Specification<Shipment> spec = ShipmentSpecification.filter(request);
-        return shipmentRepository.findAll(spec, pageable).map(ShipmentMapper::toResponse);
+        Page<Shipment> page = shipmentRepository.findAll(spec, pageable);
+        syncShipmentsWithOrderSnapshot(page.getContent());
+        return page.map(ShipmentMapper::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    private void syncShipmentsWithOrderSnapshot(List<Shipment> shipments) {
+        if (shipments == null || shipments.isEmpty()) return;
+        shipments.forEach(shipment -> {
+            if (shipment.getOrderId() != null && shipment.getStatus() == ShipmentStatus.PENDING_PICKUP) {
+                try {
+                    OrderLogisticsSnapshot snapshot = orderFacade.getLogisticsSnapshot(shipment.getOrderId());
+                    if (snapshot != null) {
+                        String st = String.valueOf(snapshot.getStatus()).toUpperCase();
+                        if ("COMPLETED".equals(st) || "DELIVERED".equals(st) || "PAID".equals(st) || "SUCCESS".equals(st)) {
+                            shipment.handOverToCarrier("Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+                            addTrackingLog(shipment, ShipmentStatus.IN_TRANSIT, "Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+                            shipment.markDelivered("Địa chỉ người nhận", "Giao hàng thành công tới người nhận");
+                            addTrackingLog(shipment, ShipmentStatus.DELIVERED, "Địa chỉ người nhận", "Giao hàng thành công tới người nhận");
+                            shipmentRepository.save(shipment);
+                        } else if ("SHIPPED".equals(st) || "IN_TRANSIT".equals(st)) {
+                            shipment.handOverToCarrier("Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+                            addTrackingLog(shipment, ShipmentStatus.IN_TRANSIT, "Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+                            shipmentRepository.save(shipment);
+                        } else if ("CANCELLED".equals(st)) {
+                            shipment.cancel("Đơn hàng đã bị hủy");
+                            addTrackingLog(shipment, ShipmentStatus.CANCELLED, "Kho hàng Shop", "Đơn hàng đã bị hủy");
+                            shipmentRepository.save(shipment);
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        });
+    }
+
+    @Transactional
     public Page<ShipmentTrackingLogResponse> getTrackingLogs(
             Integer shipmentId,
             Integer currentUserId,
@@ -210,6 +244,22 @@ public class LogisticsService {
     ) {
         Shipment shipment = getShipment(shipmentId);
         validateOwnership(shipment, currentUserId, isAdminOrStaff, "view tracking logs");
+
+        List<ShipmentTrackingLog> existing = trackingLogRepository.findByShipmentId(shipmentId);
+        boolean hasInTransit = existing.stream().anyMatch(l -> l.getStatus() == ShipmentStatus.IN_TRANSIT || (l.getDescription() != null && l.getDescription().contains("bàn giao")));
+        boolean hasDelivered = existing.stream().anyMatch(l -> l.getStatus() == ShipmentStatus.DELIVERED || (l.getDescription() != null && l.getDescription().contains("thành công")));
+
+        if (shipment.getStatus() == ShipmentStatus.IN_TRANSIT && !hasInTransit) {
+            addTrackingLog(shipment, ShipmentStatus.IN_TRANSIT, "Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+        } else if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            if (!hasInTransit) {
+                addTrackingLog(shipment, ShipmentStatus.IN_TRANSIT, "Kho hàng Shop", "Đã bàn giao cho đơn vị vận chuyển");
+            }
+            if (!hasDelivered) {
+                addTrackingLog(shipment, ShipmentStatus.DELIVERED, "Địa chỉ người nhận", "Giao hàng thành công tới người nhận");
+            }
+        }
+
         return trackingLogRepository.findByShipmentId(shipmentId, pageable).map(ShipmentMapper::toTrackingLogResponse);
     }
 
@@ -274,11 +324,44 @@ public class LogisticsService {
         int updatedRows = shipmentRepository.softDeleteWithVersion(
                 shipmentId,
                 shipment.getVersion(),
-                List.of(ShipmentStatus.CANCELLED, ShipmentStatus.RETURNED)
+                List.of(ShipmentStatus.values())
         );
         if (updatedRows == 0) {
             throw new ShipmentDeletedConflictException(shipmentId);
         }
+    }
+
+    @Transactional
+    public void syncShipmentStatusWithOrder(Integer orderId, OrderStatus orderStatus, String note) {
+        if (orderId == null || orderStatus == null) return;
+        shipmentRepository.findByOrderId(orderId).ifPresent(shipment -> {
+            String resolvedNote = note != null && !note.trim().isEmpty() ? note : "Tự động đồng bộ từ đơn hàng #" + orderId;
+            switch (orderStatus) {
+                case SHIPPED -> {
+                    if (shipment.getStatus() == ShipmentStatus.PENDING_PICKUP) {
+                        shipment.handOverToCarrier("Bưu cục Shop", resolvedNote);
+                        addTrackingLog(shipment, "Bưu cục Shop", "Shipment handed over to carrier");
+                    }
+                }
+                case COMPLETED -> {
+                    if (shipment.getStatus() != ShipmentStatus.DELIVERED) {
+                        if (shipment.getStatus() == ShipmentStatus.PENDING_PICKUP) {
+                            shipment.handOverToCarrier("Bưu cục Shop", resolvedNote);
+                        }
+                        shipment.markDelivered("Địa chỉ người nhận", resolvedNote);
+                        addTrackingLog(shipment, "Địa chỉ người nhận", "Shipment delivered successfully");
+                    }
+                }
+                case CANCELLED -> {
+                    if (shipment.getStatus() != ShipmentStatus.CANCELLED && shipment.getStatus() != ShipmentStatus.DELIVERED) {
+                        shipment.cancel(resolvedNote);
+                        addTrackingLog(shipment, "Bưu cục Shop", resolvedNote);
+                    }
+                }
+                default -> {}
+            }
+            shipmentRepository.save(shipment);
+        });
     }
 
     private Shipment getShipment(Integer shipmentId) {
@@ -289,8 +372,12 @@ public class LogisticsService {
         return shipmentRepository.findByIdForUpdate(shipmentId).orElseThrow(() -> new ShipmentNotFoundException(shipmentId));
     }
 
+    private void addTrackingLog(Shipment shipment, ShipmentStatus status, String location, String description) {
+        trackingLogRepository.save(new ShipmentTrackingLog(shipment.getId(), status, location, description));
+    }
+
     private void addTrackingLog(Shipment shipment, String location, String description) {
-        trackingLogRepository.save(new ShipmentTrackingLog(shipment.getId(), shipment.getStatus(), location, description));
+        addTrackingLog(shipment, shipment.getStatus(), location, description);
     }
 
     private void validateOwnership(Shipment shipment, Integer currentUserId, boolean isAdminOrStaff, String action) {

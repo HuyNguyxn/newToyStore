@@ -25,8 +25,8 @@ public class ReviewNotificationEventListener {
                 NotificationType.REVIEW_REPLIED,
                 NotificationReferenceType.REVIEW,
                 event.reviewId(),
-                "Your review has a reply",
-                "A staff member replied to your product review.",
+                "Phản hồi mới cho đánh giá của bạn",
+                "Quản trị viên đã phản hồi đánh giá sản phẩm của bạn.",
                 "REVIEW_REPLIED:" + event.reviewId(),
                 event.occurredAt(),
                 false
@@ -40,8 +40,8 @@ public class ReviewNotificationEventListener {
                 NotificationType.REVIEW_STATUS_CHANGED,
                 NotificationReferenceType.REVIEW,
                 event.reviewId(),
-                "Review status updated",
-                "Your review status changed to " + event.currentStatus().name() + ".",
+                "Cập nhật trạng thái đánh giá",
+                "Đánh giá sản phẩm của bạn đã chuyển sang trạng thái: " + event.currentStatus().name() + ".",
                 "REVIEW_STATUS:" + event.reviewId() + ":" + event.currentStatus().name(),
                 event.occurredAt(),
                 false

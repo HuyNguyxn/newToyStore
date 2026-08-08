@@ -111,7 +111,11 @@ public class CustomerReturn extends BaseRootEntity {
     }
 
     public void updateInfoFromCustomer(String actionBy, String note) {
-        changeStatus(CustomerReturnStatus.REQUESTED, actionBy, note);
+        if (this.status == CustomerReturnStatus.NEEDS_MORE_INFO) {
+            changeStatus(CustomerReturnStatus.REQUESTED, actionBy, note);
+        } else {
+            logHistory(this.status, this.status, actionBy, "Cập nhật ghi chú: " + note);
+        }
         this.adminNote = null;
         this.deadlineForExtraInfo = null;
     }
