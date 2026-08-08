@@ -5,11 +5,11 @@ import com.example.new_toy_store.logistics.domain.ShipmentStatus;
 import com.example.new_toy_store.imports.domain.ImportNoteRepository;
 import com.example.new_toy_store.order.domain.OrderRepository;
 import com.example.new_toy_store.order.domain.OrderStatus;
-import com.example.new_toy_store.payment.domain.PaymentMethod;
-import com.example.new_toy_store.payment.domain.PaymentRefundRepository;
-import com.example.new_toy_store.payment.domain.PaymentRepository;
-import com.example.new_toy_store.payment.domain.PaymentStatus;
-import com.example.new_toy_store.payment.domain.RefundStatus;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentMethod;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentRefundRepository;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentRepository;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentStatus;
+import com.example.new_toy_store.customer_payment.domain.RefundStatus;
 import com.example.new_toy_store.product.domain.InventoryRepository;
 import com.example.new_toy_store.product.domain.ProductRepository;
 import com.example.new_toy_store.product.domain.ProductStatus;
@@ -55,8 +55,8 @@ public class StatisticsService {
     );
 
     private final OrderRepository orderRepository;
-    private final PaymentRepository paymentRepository;
-    private final PaymentRefundRepository refundRepository;
+    private final CustomerPaymentRepository customerPaymentRepository;
+    private final CustomerPaymentRefundRepository refundRepository;
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
@@ -66,8 +66,8 @@ public class StatisticsService {
 
     public StatisticsService(
             OrderRepository orderRepository,
-            PaymentRepository paymentRepository,
-            PaymentRefundRepository refundRepository,
+            CustomerPaymentRepository customerPaymentRepository,
+            CustomerPaymentRefundRepository refundRepository,
             ShipmentRepository shipmentRepository,
             UserRepository userRepository,
             ProductRepository productRepository,
@@ -76,7 +76,7 @@ public class StatisticsService {
             ImportNoteRepository importNoteRepository
     ) {
         this.orderRepository = orderRepository;
-        this.paymentRepository = paymentRepository;
+        this.customerPaymentRepository = customerPaymentRepository;
         this.refundRepository = refundRepository;
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
@@ -186,8 +186,8 @@ public class StatisticsService {
 
     @Transactional(readOnly = true)
     public List<BreakdownStatisticResponse> getPaymentFailureReasons(StatisticPeriod period, int limit) {
-        return paymentRepository.aggregateFailureReasons(
-                        PaymentStatus.FAILED,
+        return customerPaymentRepository.aggregateFailureReasons(
+                        CustomerPaymentStatus.FAILED,
                         period.startDateTime(),
                         period.endExclusiveDateTime(),
                         PageRequest.of(0, safeLimit(limit, 50))
@@ -417,8 +417,8 @@ public class StatisticsService {
         long cancelledOrders = orderRepository.countByStatusBetween(OrderStatus.CANCELLED, from, to);
         long soldQuantity = orderRepository.sumSoldQuantityBetween(REVENUE_ORDER_STATUSES, from, to);
         long newCustomers = userRepository.countCreatedBetween(from, to);
-        long succeededPayments = paymentRepository.countByStatusBetween(PaymentStatus.SUCCEEDED, from, to);
-        long failedPayments = paymentRepository.countByStatusBetween(PaymentStatus.FAILED, from, to);
+        long succeededPayments = customerPaymentRepository.countByStatusBetween(CustomerPaymentStatus.SUCCEEDED, from, to);
+        long failedPayments = customerPaymentRepository.countByStatusBetween(CustomerPaymentStatus.FAILED, from, to);
         long deliveredShipments = shipmentRepository.countByStatusBetween(ShipmentStatus.DELIVERED, from, to);
         long failedShipments = shipmentRepository.countByStatusBetween(ShipmentStatus.DELIVERY_FAILED, from, to);
         long refundedOrders = orderRepository.countByStatusesBetween(List.of(OrderStatus.PARTIALLY_REFUNDED, OrderStatus.FULLY_REFUNDED), from, to);
@@ -542,8 +542,8 @@ public class StatisticsService {
     }
 
     private List<StatusCountResponse> buildPaymentStatus(StatisticPeriod period) {
-        return Arrays.stream(PaymentStatus.values())
-                .map(status -> statusCount(status.name(), status.getDisplayName(), paymentRepository.countByStatusBetween(status, period.startDateTime(), period.endExclusiveDateTime())))
+        return Arrays.stream(CustomerPaymentStatus.values())
+                .map(status -> statusCount(status.name(), status.getDisplayName(), customerPaymentRepository.countByStatusBetween(status, period.startDateTime(), period.endExclusiveDateTime())))
                 .toList();
     }
 
@@ -572,19 +572,19 @@ public class StatisticsService {
     }
 
     private List<PaymentMethodStatisticResponse> buildPaymentMethods(StatisticPeriod period) {
-        double totalAmount = paymentRepository.sumAmountByStatusBetween(
-                PaymentStatus.SUCCEEDED,
+        double totalAmount = customerPaymentRepository.sumAmountByStatusBetween(
+                CustomerPaymentStatus.SUCCEEDED,
                 period.startDateTime(),
                 period.endExclusiveDateTime()
         );
-        return paymentRepository.aggregateAmountByMethod(
-                        PaymentStatus.SUCCEEDED,
+        return customerPaymentRepository.aggregateAmountByMethod(
+                        CustomerPaymentStatus.SUCCEEDED,
                         period.startDateTime(),
                         period.endExclusiveDateTime()
                 )
                 .stream()
                 .map(row -> new PaymentMethodStatisticResponse(
-                        ((PaymentMethod) row[0]).name(),
+                        ((CustomerPaymentMethod) row[0]).name(),
                         ((Number) row[1]).longValue(),
                         ((Number) row[2]).doubleValue(),
                         totalAmount

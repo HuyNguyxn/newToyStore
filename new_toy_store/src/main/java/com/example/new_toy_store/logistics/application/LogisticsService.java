@@ -12,7 +12,6 @@ import com.example.new_toy_store.logistics.application.dto.response.ShipmentResp
 import com.example.new_toy_store.logistics.application.dto.response.ShipmentTrackingLogResponse;
 import com.example.new_toy_store.logistics.domain.Shipment;
 import com.example.new_toy_store.logistics.domain.ShipmentAction;
-import com.example.new_toy_store.logistics.domain.ShipmentType;
 import com.example.new_toy_store.logistics.domain.ShipmentRepository;
 import com.example.new_toy_store.logistics.domain.ShipmentStatus;
 import com.example.new_toy_store.logistics.domain.ShipmentTrackingLog;
@@ -27,7 +26,7 @@ import com.example.new_toy_store.logistics.mapper.ShipmentMapper;
 import com.example.new_toy_store.order.application.dto.response.OrderLogisticsSnapshot;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
 import com.example.new_toy_store.order.domain.OrderStatus;
-import com.example.new_toy_store.payment.application.facade.PaymentFacade;
+import com.example.new_toy_store.customer_payment.application.facade.CustomerPaymentFacade;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,20 +46,20 @@ public class LogisticsService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentTrackingLogRepository trackingLogRepository;
     private final OrderFacade orderFacade;
-    private final PaymentFacade paymentFacade;
+    private final CustomerPaymentFacade customerPaymentFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public LogisticsService(
             ShipmentRepository shipmentRepository,
             ShipmentTrackingLogRepository trackingLogRepository,
             OrderFacade orderFacade,
-            PaymentFacade paymentFacade,
+            CustomerPaymentFacade customerPaymentFacade,
             ApplicationEventPublisher eventPublisher
     ) {
         this.shipmentRepository = shipmentRepository;
         this.trackingLogRepository = trackingLogRepository;
         this.orderFacade = orderFacade;
-        this.paymentFacade = paymentFacade;
+        this.customerPaymentFacade = customerPaymentFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -75,7 +74,7 @@ public class LogisticsService {
             throw LogisticsCrossModuleException.invalidOrder(orderId, "only CONFIRMED orders can create shipments");
         }
 
-        double codAmount = paymentFacade.hasSucceededPaymentForOrder(orderId) ? 0.0 : order.getTotalAmount();
+        double codAmount = customerPaymentFacade.hasSucceededPaymentForOrder(orderId) ? 0.0 : order.getTotalAmount();
         Shipment shipment = new Shipment(
                 generateTrackingCode(orderId),
                 order.getOrderId(),

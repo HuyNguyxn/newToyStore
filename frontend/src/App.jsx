@@ -12,13 +12,14 @@ import AdminLogisticsPage from './pages/admin/AdminLogisticsPage.jsx';
 import AdminModerationPage from './pages/admin/AdminModerationPage.jsx';
 import AdminNotificationPage from './pages/admin/AdminNotificationPage.jsx';
 import AdminOrderPage from './pages/admin/AdminOrderPage.jsx';
-import AdminPaymentPage from './pages/admin/AdminPaymentPage.jsx';
+import AdminCustomerPaymentPage from './pages/admin/AdminCustomerPaymentPage.jsx';
 import AdminProductPage from './pages/admin/AdminProductPage.jsx';
 import AdminPromotionPage from './pages/admin/AdminPromotionPage.jsx';
-import AdminRefundPage from './pages/admin/AdminRefundPage.jsx';
+import AdminCustomerRefundPage from './pages/admin/AdminCustomerRefundPage.jsx';
 import AdminReturnInspectionPage from './pages/admin/AdminReturnInspectionPage.jsx';
 import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage.jsx';
 import AdminSupplierPage from './pages/admin/AdminSupplierPage.jsx';
+import AdminSupplierPaymentPage from './pages/admin/AdminSupplierPaymentPage.jsx';
 import AdminSupplierReturnPage from './pages/admin/AdminSupplierReturnPage.jsx';
 import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
 import AdminUserPage from './pages/admin/AdminUserPage.jsx';
@@ -33,8 +34,8 @@ import HomePage from './pages/home/HomePage.jsx';
 import NotificationPage from './pages/notifications/NotificationPage.jsx';
 import OrderDetailPage from './pages/orders/OrderDetailPage.jsx';
 import OrderListPage from './pages/orders/OrderListPage.jsx';
-import PaymentListPage from './pages/payments/PaymentListPage.jsx';
-import VnpayReturnPage from './pages/payments/VnpayReturnPage.jsx';
+import CustomerPaymentListPage from './pages/customer-payments/CustomerPaymentListPage.jsx';
+import CustomerVnpayReturnPage from './pages/customer-payments/CustomerVnpayReturnPage.jsx';
 import ProductDetailPage from './pages/products/ProductDetailPage.jsx';
 import ProductListPage from './pages/products/ProductListPage.jsx';
 import ProfilePage from './pages/profile/ProfilePage.jsx';
@@ -103,14 +104,16 @@ function App() {
           path="/payments"
           element={(
             <ProtectedRoute>
-              <PaymentListPage />
+              <CustomerPaymentListPage />
             </ProtectedRoute>
           )}
         />
         <Route path="/payment" element={<Navigate to="/payments" replace />} />
-        <Route path="/payments/vnpay-return" element={<VnpayReturnPage />} />
-        <Route path="/vnpay-return" element={<VnpayReturnPage />} />
-        <Route path="/payment/vnpay-return" element={<VnpayReturnPage />} />
+        <Route path="/payments/vnpay-return" element={<CustomerVnpayReturnPage />} />
+        <Route path="/customer-payments" element={<Navigate to="/payments" replace />} />
+        <Route path="/customer-payments/vnpay-return" element={<Navigate to="/payments/vnpay-return" replace />} />
+        <Route path="/vnpay-return" element={<CustomerVnpayReturnPage />} />
+        <Route path="/payment/vnpay-return" element={<CustomerVnpayReturnPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -197,8 +200,10 @@ function App() {
         <Route path="products" element={<AdminProductPage />} />
         <Route path="categories" element={<AdminCategoryPage />} />
         <Route path="orders" element={<AdminOrderPage />} />
-        <Route path="payments" element={<AdminPaymentPage />} />
-        <Route path="refunds" element={<AdminRefundPage />} />
+        <Route path="payments" element={<AdminCustomerPaymentPage />} />
+        <Route path="customer-payments" element={<Navigate to="/admin/payments" replace />} />
+        <Route path="refunds" element={<AdminCustomerRefundPage />} />
+        <Route path="customer-refunds" element={<Navigate to="/admin/refunds" replace />} />
         <Route
           path="users"
           element={(
@@ -217,6 +222,7 @@ function App() {
         />
         <Route path="suppliers" element={<AdminSupplierPage />} />
         <Route path="imports" element={<AdminImportPage />} />
+        <Route path="supplier-payments" element={<AdminSupplierPaymentPage />} />
         <Route path="supplier-returns" element={<AdminSupplierReturnPage />} />
         <Route path="logistics" element={<AdminLogisticsPage />} />
         <Route path="returns" element={<AdminReturnInspectionPage />} />

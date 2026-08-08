@@ -1,6 +1,6 @@
 package com.example.new_toy_store.global.event;
 
-import com.example.new_toy_store.payment.domain.RefundMethod;
+import com.example.new_toy_store.customer_payment.domain.RefundMethod;
 
 import java.time.Instant;
 

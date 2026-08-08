@@ -1,6 +1,6 @@
 package com.example.new_toy_store.global.event;
 
-import com.example.new_toy_store.payment.domain.PaymentMethod;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentMethod;
 
 import java.time.Instant;
 
@@ -8,7 +8,7 @@ public record PaymentCompletedEvent(
         Integer paymentId,
         Integer orderId,
         Integer userId,
-        PaymentMethod method,
+        CustomerPaymentMethod method,
         double amount,
         String providerTransactionId,
         Instant occurredAt
@@ -17,7 +17,7 @@ public record PaymentCompletedEvent(
             Integer paymentId,
             Integer orderId,
             Integer userId,
-            PaymentMethod method,
+            CustomerPaymentMethod method,
             double amount,
             String providerTransactionId
     ) {

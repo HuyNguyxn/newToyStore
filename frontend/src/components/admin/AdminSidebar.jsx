@@ -31,7 +31,7 @@ const navGroups = [
     title: 'QUẢN LÝ BÁN HÀNG',
     items: [
       { to: '/admin/orders', label: 'Đơn bán hàng', badgeKey: 'pendingOrders', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-      { to: '/admin/returns', label: 'Trả hàng từ Khách', badgeKey: 'pendingCustomerReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/returns', label: 'Trả hàng', badgeKey: 'pendingCustomerReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/payments', label: 'Thanh toán Khách hàng', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/refunds', label: 'Hoàn tiền', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/promotions', label: 'Khuyến mãi & Giảm giá', requiredRoles: ['ADMIN'] },
@@ -44,6 +44,7 @@ const navGroups = [
     items: [
       { to: '/admin/suppliers', label: 'Danh sách Nhà cung cấp', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/imports', label: 'Tạo phiếu Nhập hàng', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/supplier-payments', label: 'Thanh toán Nhà cung cấp', requiredRoles: ['MANAGER', 'ADMIN'] },
       { to: '/admin/supplier-returns', label: 'Xuất trả Nhà cung cấp', badgeKey: 'pendingSupplierReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
     ],
   },

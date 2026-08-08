@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import { cancelOrder, getOrderDetails } from '../../services/orderService.js';
-import { checkoutPayment, createIdempotencyKey } from '../../services/paymentService.js';
+import { checkoutCustomerPayment, createCustomerPaymentIdempotencyKey } from '../../services/customerPaymentService.js';
 import { formatDateTime, formatPrice, getOrderStatusLabel, getPaymentStatusLabel } from '../../utils/formatters.js';
 
 function OrderDetailPage() {
@@ -47,10 +47,10 @@ function OrderDetailPage() {
     setError('');
 
     try {
-      const payment = await checkoutPayment({
+      const payment = await checkoutCustomerPayment({
         orderId: order.id,
         method: paymentMethod,
-        idempotencyKey: createIdempotencyKey(order.id, paymentMethod),
+        idempotencyKey: createCustomerPaymentIdempotencyKey(order.id, paymentMethod),
       });
 
       if (payment.paymentUrl) {

@@ -1,8 +1,8 @@
 package com.example.new_toy_store.infrastructure.payment.vnpay;
 
-import com.example.new_toy_store.payment.domain.PaymentTransaction;
-import com.example.new_toy_store.payment.domain.PaymentRefund;
-import com.example.new_toy_store.payment.domain.exception.InvalidPaymentDataException;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentTransaction;
+import com.example.new_toy_store.customer_payment.domain.CustomerPaymentRefund;
+import com.example.new_toy_store.customer_payment.domain.exception.InvalidCustomerCustomerPaymentDataException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class VnpayService {
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    public String createPaymentUrl(PaymentTransaction payment, String clientIp) {
+    public String createPaymentUrl(CustomerPaymentTransaction payment, String clientIp) {
         validateEnabled();
 
         LocalDateTime now = LocalDateTime.now(VN_ZONE);
@@ -110,13 +110,13 @@ public class VnpayService {
         return expectedHash.equalsIgnoreCase(receivedHash);
     }
 
-    public VnpayRefundResponse requestRefund(PaymentTransaction payment, PaymentRefund refund, String adminUser, String clientIp) {
+    public VnpayRefundResponse requestRefund(CustomerPaymentTransaction payment, CustomerPaymentRefund refund, String adminUser, String clientIp) {
         validateEnabled();
         if (payment.getProviderTransactionId() == null || payment.getProviderTransactionId().isBlank()) {
-            throw new InvalidPaymentDataException("providerTransactionId", "VNPay transaction number is required to request refund.");
+            throw new InvalidCustomerCustomerPaymentDataException("providerTransactionId", "VNPay transaction number is required to request refund.");
         }
         if (payment.getPaidAt() == null) {
-            throw new InvalidPaymentDataException("paidAt", "Original VNPay payment time is required to request refund.");
+            throw new InvalidCustomerCustomerPaymentDataException("paidAt", "Original VNPay payment time is required to request refund.");
         }
 
         Map<String, String> params = new TreeMap<>();
@@ -162,7 +162,7 @@ public class VnpayService {
             }
             return Integer.valueOf(txnRef);
         } catch (Exception ex) {
-            throw new InvalidPaymentDataException("vnp_TxnRef", "VNPay transaction reference is invalid.");
+            throw new InvalidCustomerCustomerPaymentDataException("vnp_TxnRef", "VNPay transaction reference is invalid.");
         }
     }
 
@@ -170,7 +170,7 @@ public class VnpayService {
         try {
             return Long.parseLong(params.getOrDefault("vnp_Amount", "0"));
         } catch (NumberFormatException ex) {
-            throw new InvalidPaymentDataException("vnp_Amount", "VNPay amount is invalid.");
+            throw new InvalidCustomerCustomerPaymentDataException("vnp_Amount", "VNPay amount is invalid.");
         }
     }
 
@@ -180,13 +180,13 @@ public class VnpayService {
 
     private void validateEnabled() {
         if (!properties.isEnabled()) {
-            throw new InvalidPaymentDataException("method", "VNPay is disabled. Please enable app.payment.vnpay.enabled first.");
+            throw new InvalidCustomerCustomerPaymentDataException("method", "VNPay is disabled. Please enable app.payment.vnpay.enabled first.");
         }
         if (isBlank(properties.getPayUrl()) || isBlank(properties.getRefundUrl()) || isBlank(properties.getTmnCode())
                 || isPlaceholder(properties.getTmnCode()) || isBlank(properties.getHashSecret())
                 || isPlaceholder(properties.getHashSecret()) || isBlank(properties.getReturnUrl())
                 || isBlank(properties.getIpnUrl())) {
-            throw new InvalidPaymentDataException("vnpayConfig", "VNPay configuration is incomplete.");
+            throw new InvalidCustomerCustomerPaymentDataException("vnpayConfig", "VNPay configuration is incomplete.");
         }
     }
 
@@ -232,7 +232,7 @@ public class VnpayService {
             }
             return hash.toString();
         } catch (Exception ex) {
-            throw new InvalidPaymentDataException("secureHash", "Cannot create VNPay secure hash.");
+            throw new InvalidCustomerCustomerPaymentDataException("secureHash", "Cannot create VNPay secure hash.");
         }
     }
 

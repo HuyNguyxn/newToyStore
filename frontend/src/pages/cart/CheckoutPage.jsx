@@ -4,7 +4,7 @@ import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
 import { checkoutCart, getCart } from '../../services/cartService.js';
 import { getMyOrders } from '../../services/orderService.js';
-import { checkoutPayment, createIdempotencyKey } from '../../services/paymentService.js';
+import { checkoutCustomerPayment, createCustomerPaymentIdempotencyKey } from '../../services/customerPaymentService.js';
 import { formatPrice } from '../../utils/formatters.js';
 
 import { isUserProfileComplete, isValidVietnamesePhoneNumber } from '../../utils/userValidation.js';
@@ -151,10 +151,10 @@ function CheckoutPage() {
       const paymentPayload = {
         orderId: orderId,
         method: paymentMethod,
-        idempotencyKey: createIdempotencyKey(orderId, paymentMethod),
+        idempotencyKey: createCustomerPaymentIdempotencyKey(orderId, paymentMethod),
       };
 
-      const payment = await checkoutPayment(paymentPayload);
+      const payment = await checkoutCustomerPayment(paymentPayload);
 
       // 3. If VNPay -> redirect directly to gateway url
       if (payment.paymentUrl) {
