@@ -18,6 +18,7 @@ public class InventoryController {
     }
 
     @GetMapping("/variants/{variantId}/batches")
+    @Deprecated
     public ResponseEntity<List<InventoryBatchResponse>> getAvailableBatchesForVariant(@PathVariable Integer variantId) {
         List<InventoryBatchResponse> batches = inventoryService.getAvailableBatchesForVariant(variantId);
         return ResponseEntity.ok(batches);

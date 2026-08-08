@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getImportDetails, getImports } from '../../services/adminImportService.js';
-import { getAdminProducts, updateProductStatus } from '../../services/adminProductService.js';
+import { getAdminProducts } from '../../services/adminProductService.js';
+import { getWarehouseBatchDetails, getWarehouseBatches, publishWarehouseProduct } from '../../services/warehouseService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 function statusCode(status) {
@@ -103,7 +103,7 @@ function AdminInventoryPage() {
     setError('');
     try {
       const [importResult, productResult] = await Promise.all([
-        getImports({ page: 0, size: 100, sort: 'createdAt,desc' }),
+        getWarehouseBatches({ page: 0, size: 100, sort: 'createdAt,desc' }),
         getAdminProducts({ page: 0, size: 300 }),
       ]);
       const importList = importResult?.content || importResult || [];
@@ -130,7 +130,7 @@ function AdminInventoryPage() {
     setDetailLoading(true);
     setError('');
     try {
-      setSelected(await getImportDetails(id));
+      setSelected(await getWarehouseBatchDetails(id));
     } catch (err) {
       setError(err?.message || 'Không thể tải chi tiết lô nhập.');
     } finally {
@@ -142,7 +142,7 @@ function AdminInventoryPage() {
     setPublishingId(productId);
     setError('');
     try {
-      const updated = await updateProductStatus(productId, 'ACTIVE');
+      const updated = await publishWarehouseProduct(selected.id, productId);
       setProducts((current) => new Map(current).set(Number(productId), updated));
       setMessage('Đã đưa sản phẩm lên cửa hàng.');
     } catch (err) {
