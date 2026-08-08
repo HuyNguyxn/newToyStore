@@ -12,6 +12,11 @@ export function getPaymentRefunds(paymentId, params = {}) {
   return apiClient(`/payments/${paymentId}/refunds${query ? `?${query}` : ''}`);
 }
 
+export function getAllPaymentRefunds(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return apiClient(`/payments/refunds${query ? `?${query}` : ''}`);
+}
+
 export function processPaymentRefund(refundId) {
   return apiClient(`/payments/refunds/${refundId}/process`, {
     method: 'PATCH',

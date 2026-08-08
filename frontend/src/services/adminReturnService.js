@@ -39,7 +39,10 @@ export function resolveCustomerReturnDispute(returnId, { isApproved, resolutionN
   });
 }
 
-export function finalizeCustomerReturnRefund(returnId, note) {
+export function finalizeCustomerReturnRefund(returnId, payloadOrNote = '') {
+  const note = typeof payloadOrNote === 'object'
+    ? (payloadOrNote.refundNote || payloadOrNote.note || '')
+    : payloadOrNote;
   return apiClient(`/api/returns/${returnId}/finalize-refund?note=${encodeURIComponent(note)}`, {
     method: 'PATCH',
   });
