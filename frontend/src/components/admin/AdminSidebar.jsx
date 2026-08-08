@@ -45,7 +45,7 @@ const navGroups = [
       { to: '/admin/suppliers', label: 'Danh sách Nhà cung cấp', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/imports', label: 'Tạo phiếu Nhập hàng', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/supplier-payments', label: 'Thanh toán Nhà cung cấp', requiredRoles: ['MANAGER', 'ADMIN'] },
-      { to: '/admin/supplier-returns', label: 'Xuất trả Nhà cung cấp', badgeKey: 'pendingSupplierReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/supplier-returns', label: 'Trả hàng Nhà cung cấp', badgeKey: 'pendingSupplierReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
     ],
   },
 ];

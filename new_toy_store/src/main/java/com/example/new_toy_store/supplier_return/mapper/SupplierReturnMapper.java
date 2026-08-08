@@ -36,6 +36,23 @@ public class SupplierReturnMapper {
         return toDetailResponse(entity);
     }
 
+    /**
+     * Maps only fields needed by the paginated list. Keeping child collections
+     * out of this projection prevents one query per return for items, history,
+     * and images (N+1) while preserving the full detail endpoint.
+     */
+    public static SupplierReturnResponse toSummaryResponse(SupplierReturn entity) {
+        if (entity == null) {
+            return null;
+        }
+        SupplierReturnResponse response = createSupplierReturnResponse(entity);
+        response.setItems(Collections.emptyList());
+        response.setHistories(Collections.emptyList());
+        response.setImages(Collections.emptyList());
+        response.setAvailableActions(mapAvailableActions(entity.getStatus()));
+        return response;
+    }
+
     public static SupplierReturnResponse toDetailResponse(SupplierReturn entity) {
         SupplierReturnResponse response = createSupplierReturnResponse(entity);
         response.setItems(mapItemResponses(entity.getItems()));

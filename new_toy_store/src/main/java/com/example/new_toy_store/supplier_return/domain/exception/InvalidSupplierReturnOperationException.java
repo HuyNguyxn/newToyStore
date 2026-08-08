@@ -124,4 +124,16 @@ public class InvalidSupplierReturnOperationException extends RuntimeException {
                 context
         );
     }
+
+    public static InvalidSupplierReturnOperationException quantityExceedsImported(Integer variantId, int requested, int imported) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("variantId", variantId);
+        context.put("requestedQuantity", requested);
+        context.put("importedQuantity", imported);
+        return new InvalidSupplierReturnOperationException(
+                "Số lượng trả vượt quá số lượng đã nhập của biến thể " + variantId + ".",
+                "SUPPLIER_RETURN_QUANTITY_EXCEEDS_IMPORTED",
+                context
+        );
+    }
 }

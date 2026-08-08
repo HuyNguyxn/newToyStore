@@ -2,6 +2,10 @@ package com.example.new_toy_store.supplier_return.application;
 
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
 import com.example.new_toy_store.global.event.SupplierReturnStatusChangedEvent;
+import com.example.new_toy_store.imports.application.facade.ImportFacade;
+import com.example.new_toy_store.imports.application.dto.response.ImportNoteItemResponse;
+import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
+import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.infrastructure.specification.SupplierReturnSpecification;
 import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier_return.application.dto.request.SupplierReturnInspectionRequest;
@@ -12,6 +16,7 @@ import com.example.new_toy_store.supplier_return.domain.SupplierReturnItem;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturnRepository;
 import com.example.new_toy_store.supplier_return.domain.SupplierReturnStatus;
 import com.example.new_toy_store.supplier_return.domain.exception.DuplicateSupplierReturnException;
+import com.example.new_toy_store.supplier_return.domain.exception.InvalidSupplierReturnOperationException;
 import com.example.new_toy_store.supplier_return.domain.exception.SupplierReturnNotFoundException;
 import com.example.new_toy_store.supplier_return.mapper.SupplierReturnMapper;
 import org.slf4j.Logger;
@@ -35,13 +40,16 @@ public class SupplierReturnService {
 
     private final SupplierReturnRepository repository;
     private final SupplierFacade supplierFacade;
+    private final ImportFacade importFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public SupplierReturnService(SupplierReturnRepository repository,
                                  SupplierFacade supplierFacade,
+                                 ImportFacade importFacade,
                                  ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.supplierFacade = supplierFacade;
+        this.importFacade = importFacade;
         this.eventPublisher = eventPublisher;
     }
 
@@ -83,7 +91,7 @@ public class SupplierReturnService {
                                                       LocalDate endDate,
                                                       Pageable pageable) {
         return repository.findAll(SupplierReturnSpecification.filter(supplierId, status, startDate, endDate), pageable)
-                .map(SupplierReturnMapper::mapEntityToResponse);
+                .map(SupplierReturnMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +102,8 @@ public class SupplierReturnService {
     @Transactional
     public SupplierReturnResponse createDraft(SupplierReturnRequest request, String adminUsername) {
         supplierFacade.getRequiredSupplierDetails(request.getSupplierId(), "supplier_return");
+
+        validateImportedQuantities(request);
 
         if (request.getImportNoteId() != null) {
             boolean hasActiveReturn = repository.existsByImportNoteIdAndStatusNotIn(
@@ -108,6 +118,34 @@ public class SupplierReturnService {
 
         SupplierReturn entity = SupplierReturnMapper.mapRequestToNewEntity(request, adminUsername);
         return SupplierReturnMapper.mapEntityToResponse(repository.save(entity));
+    }
+
+    private void validateImportedQuantities(SupplierReturnRequest request) {
+        if (request.getImportNoteId() == null) {
+            return;
+        }
+
+        ImportNoteResponse importNote = importFacade.getImportNoteDetails(request.getImportNoteId());
+        if (importNote.getStatus() != ImportStatus.COMPLETED) {
+            throw InvalidSupplierReturnOperationException.invalidTransition(
+                    importNote.getStatus().getDisplayName(), "Tạo phiếu trả hàng");
+        }
+        if (!request.getSupplierId().equals(importNote.getSupplierId())) {
+            throw InvalidSupplierReturnOperationException.emptyField("Nhà cung cấp không khớp với phiếu nhập");
+        }
+
+        Map<Integer, Integer> importedByVariant = importNote.getItems().stream()
+                .collect(Collectors.toMap(ImportNoteItemResponse::getVariantId, ImportNoteItemResponse::getQuantity, Integer::sum));
+        Map<Integer, Integer> requestedByVariant = request.getItems().stream()
+                .collect(Collectors.toMap(item -> item.getVariantId(), item -> item.getQuantity(), Integer::sum));
+
+        requestedByVariant.forEach((variantId, requestedQuantity) -> {
+            int importedQuantity = importedByVariant.getOrDefault(variantId, 0);
+            if (requestedQuantity > importedQuantity) {
+                throw InvalidSupplierReturnOperationException.quantityExceedsImported(
+                        variantId, requestedQuantity, importedQuantity);
+            }
+        });
     }
 
     @Transactional

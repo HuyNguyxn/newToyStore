@@ -44,6 +44,7 @@ function getSupplierReturnStatusInfo(status) {
 
 function AdminSupplierReturnPage() {
   const [returns, setReturns] = useState([]);
+  const [totalReturns, setTotalReturns] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({ supplierId: '', status: '' });
@@ -84,6 +85,7 @@ function AdminSupplierReturnPage() {
         getSupplierReturnCriticalAlerts().catch(() => [])
       ]);
       setReturns(result.content || result || []);
+      setTotalReturns(result.totalElements ?? (result.content ? result.content.length : result.length || 0));
       setSlaAlerts(alertsResult || []);
       if (result.totalPages !== undefined) {
         setTotalPages(result.totalPages);
@@ -257,7 +259,7 @@ function AdminSupplierReturnPage() {
           Yêu cầu trả hàng Nhà cung cấp
         </h1>
         <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Phiếu trả: {returns.length}
+          Phiếu trả: {totalReturns}
         </div>
       </div>
 
@@ -344,21 +346,23 @@ function AdminSupplierReturnPage() {
               <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase' }}>
                 <th style={{ padding: '10px 12px', width: '60px' }}>Mã</th>
                 <th style={{ padding: '10px 12px', width: '90px' }}>Nhà CC</th>
+                <th style={{ padding: '10px 12px', width: '80px' }}>Phiếu nhập</th>
                 <th style={{ padding: '10px 12px', width: '110px' }}>Trạng thái</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', width: '110px' }}>Phí VC</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', width: '125px' }}>Tiền hoàn</th>
                 <th style={{ padding: '10px 12px', width: '140px', textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
                     Đang tải danh sách...
                   </td>
                 </tr>
               ) : returns.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                  <td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
                     Chưa có phiếu trả nhà cung cấp nào.
                   </td>
                 </tr>
@@ -370,6 +374,7 @@ function AdminSupplierReturnPage() {
                     <tr key={ret.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
                       <td style={{ padding: '10px 12px', fontWeight: '600' }}>#{ret.id}</td>
                       <td style={{ padding: '10px 12px', fontWeight: '600', color: '#475569' }}>NCC{ret.supplierId}</td>
+                      <td style={{ padding: '10px 12px', color: '#475569' }}>{ret.importNoteId ? `PN${ret.importNoteId}` : '—'}</td>
                       <td style={{ padding: '10px 12px' }}>
                         <span style={{ background: statusInfo.bg, color: statusInfo.color, border: `1px solid ${statusInfo.border}`, padding: '2px 8px', borderRadius: '6px', fontSize: '11.5px', fontWeight: '700', display: 'inline-block' }}>
                           {statusInfo.label}
@@ -377,6 +382,9 @@ function AdminSupplierReturnPage() {
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '600' }}>
                         {formatPrice(ret.freightCost || 0)}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: '800', color: '#15803d' }}>
+                        {formatPrice(ret.totalRefundAmount || 0)}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
