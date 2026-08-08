@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminProducts } from '../../services/adminProductService.js';
-import { getWarehouseBatchDetails, getWarehouseBatches, publishWarehouseProduct } from '../../services/warehouseService.js';
+import {
+  cancelWarehouseBatch,
+  completeWarehouseBatch,
+  getWarehouseBatchDetails,
+  getWarehouseBatches,
+  publishWarehouseProduct,
+} from '../../services/warehouseService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 function statusCode(status) {
@@ -30,7 +36,10 @@ function stockOf(product) {
   }, 0);
 }
 
-function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, navigate }) {
+const BatchStatusActionContext = createContext(() => {});
+
+function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, statusAction, navigate }) {
+  const onStatusAction = useContext(BatchStatusActionContext);
   if (!note) return null;
   const badge = importStatus(note.status);
 
@@ -45,6 +54,25 @@ function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, n
       </div>
 
       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, display: 'grid', gap: 8, fontSize: 13 }}>
+        {(note.allowedNextActions || []).length > 0 && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+            {(note.allowedNextActions || []).map((action) => {
+              const isComplete = action.action === 'COMPLETE';
+              const isRunning = statusAction === action.action;
+              return (
+                <button
+                  key={action.action}
+                  type="button"
+                  disabled={Boolean(statusAction)}
+                  onClick={() => onStatusAction(action.action)}
+                  style={{ border: 0, background: isComplete ? '#16a34a' : '#dc2626', color: '#ffffff', borderRadius: 8, padding: '8px 10px', cursor: statusAction ? 'wait' : 'pointer', fontSize: 12, fontWeight: 800 }}
+                >
+                  {isRunning ? 'Dang xu ly...' : action.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div><strong>Nhà cung cấp:</strong> {note.supplierName || '—'}</div>
         <div><strong>Ngày nhập:</strong> {note.createdAt ? formatDateTime(note.createdAt) : '—'}</div>
         <div><strong>Trạng thái:</strong> <span style={{ color: badge.color, background: badge.bg, padding: '3px 8px', borderRadius: 8, fontWeight: 800 }}>{badge.label}</span></div>
@@ -95,6 +123,7 @@ function AdminInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+  const [statusAction, setStatusAction] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -152,7 +181,35 @@ function AdminInventoryPage() {
     }
   }
 
+  async function changeBatchStatus(action) {
+    const isComplete = action === 'COMPLETE';
+    const confirmation = isComplete
+      ? 'Confirm this batch? Its variant stock will be added immediately.'
+      : 'Cancel this batch? A cancelled batch cannot be processed further.';
+    if (!window.confirm(confirmation)) return;
+
+    setStatusAction(action);
+    setError('');
+    setMessage('');
+    try {
+      const updated = isComplete
+        ? await completeWarehouseBatch(selected.id)
+        : await cancelWarehouseBatch(selected.id);
+      setSelected(updated);
+      setImports((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item));
+      setMessage(isComplete
+        ? 'Batch confirmed. Its inventory is now available.'
+        : 'The pending batch was cancelled.');
+      await loadWarehouse();
+    } catch (err) {
+      setError(err?.message || 'Unable to change the batch status.');
+    } finally {
+      setStatusAction(null);
+    }
+  }
+
   return (
+    <BatchStatusActionContext.Provider value={changeBatchStatus}>
     <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start', marginBottom: 20, flexWrap: 'wrap' }}>
         <div>
@@ -203,6 +260,7 @@ function AdminInventoryPage() {
         {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} navigate={navigate} />}
       </div>
     </section>
+    </BatchStatusActionContext.Provider>
   );
 }
 

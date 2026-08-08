@@ -32,6 +32,23 @@ public final class OrderMapper {
         return response;
     }
 
+    /**
+     * A paged order table only needs its row-level fields. Mapping collections
+     * here would initialize lazy histories for every row and create an N+1
+     * query pattern; details are loaded through {@link #toResponse(Order)}.
+     */
+    public static OrderResponse toSummaryResponse(Order order) {
+        if (order == null) return null;
+
+        OrderResponse response = new OrderResponse();
+        mapOrderFields(order, response);
+        response.setItems(List.of());
+        response.setHistories(List.of());
+        response.setAvailableActions(toAvailableActionCodes(order.getStatus()));
+        response.setAllowedNextActions(toAllowedNextActions(order.getStatus()));
+        return response;
+    }
+
     private static void mapOrderFields(Order order, OrderResponse response) {
         response.setId(order.getId());
         response.setUserId(order.getUserId());

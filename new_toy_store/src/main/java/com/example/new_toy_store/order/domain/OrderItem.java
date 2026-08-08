@@ -40,7 +40,7 @@ public class OrderItem extends BaseSoftDeleteEntity {
     private double price;
 
     @Column(name = "cost_price_snapshot")
-    private double costPriceSnapshot;
+    private Double costPriceSnapshot;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
@@ -80,7 +80,12 @@ public class OrderItem extends BaseSoftDeleteEntity {
     public String getProductName() { return productName; }
     public int getQuantity() { return quantity; }
     public double getPrice() { return price; }
-    public double getCostPriceSnapshot() { return costPriceSnapshot; }
+    /**
+     * Old order rows predate the cost snapshot column and legitimately contain
+     * NULL. Keep that distinction so Hibernate can load those orders; report
+     * queries already fall back to the current variant cost for legacy rows.
+     */
+    public Double getCostPriceSnapshot() { return costPriceSnapshot; }
     public Order getOrder() { return order; }
     public Integer getProductId() { return productId; }
     public Integer getVariantId() { return variantId; }

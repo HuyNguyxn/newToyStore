@@ -47,6 +47,8 @@ public class StatisticsService {
 
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
     private static final List<OrderStatus> REVENUE_ORDER_STATUSES = List.of(
+            OrderStatus.CONFIRMED,
+            OrderStatus.SHIPPED,
             OrderStatus.COMPLETED,
             OrderStatus.PARTIALLY_REFUNDED,
             OrderStatus.FULLY_REFUNDED

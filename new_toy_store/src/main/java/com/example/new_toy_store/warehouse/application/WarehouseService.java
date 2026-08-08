@@ -34,6 +34,25 @@ public class WarehouseService {
         return importService.getImportNoteDetails(batchId);
     }
 
+    /**
+     * Confirming a batch is the single warehouse action that makes its stock
+     * available. ImportService publishes the completion event, and the product
+     * module consumes that event in the same transaction to update inventory.
+     */
+    @Transactional
+    public ImportNoteResponse completeBatch(Integer batchId) {
+        return importService.completeImportNote(batchId);
+    }
+
+    /**
+     * A draft/counting batch can be cancelled, but completed stock is never
+     * silently reversed from this screen.
+     */
+    @Transactional
+    public ImportNoteResponse cancelBatch(Integer batchId) {
+        return importService.cancelImportNote(batchId);
+    }
+
     @Transactional
     public ProductResponse publishProduct(Integer batchId, Integer productId) {
         ImportNoteResponse batch = importService.getImportNoteDetails(batchId);

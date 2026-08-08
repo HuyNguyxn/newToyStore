@@ -193,7 +193,7 @@ function buildMacSeries(imports = [], orders = [], from, to) {
   orders.forEach((order) => {
     const status = typeof order.status === 'object' ? order.status?.code || order.status?.name : order.status;
     const date = dateInfo(order.createdAt || order.orderDate);
-    if (!date || date.iso > to || !['COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'].includes(String(status || '').toUpperCase())) return;
+    if (!date || date.iso > to || !['CONFIRMED', 'SHIPPED', 'COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'].includes(String(status || '').toUpperCase())) return;
     (order.items || []).forEach((item) => {
       const quantity = Number(item.quantity || 0);
       const unitPrice = Number(item.price || item.unitPrice || 0);
@@ -701,7 +701,7 @@ function AdminStatisticsPage() {
       };
 
       // Calculate strictly from real orders and imports without artificial dummy estimates
-      const revenueStatusCodes = ['COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
+      const revenueStatusCodes = ['CONFIRMED', 'SHIPPED', 'COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
       const validOrders = rangeOrdersList.filter((o) => revenueStatusCodes.includes(getStatusCode(o.status)));
 
       const fallbackRevenue = validOrders.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);

@@ -40,6 +40,16 @@ public class WarehouseController {
         return warehouseService.getBatchDetails(batchId);
     }
 
+    @PatchMapping("/{batchId}/complete")
+    public ImportNoteResponse completeBatch(@PathVariable Integer batchId) {
+        return warehouseService.completeBatch(batchId);
+    }
+
+    @PatchMapping("/{batchId}/cancel")
+    public ImportNoteResponse cancelBatch(@PathVariable Integer batchId) {
+        return warehouseService.cancelBatch(batchId);
+    }
+
     @PatchMapping("/{batchId}/products/{productId}/publish")
     public ProductResponse publishProduct(
             @PathVariable Integer batchId,

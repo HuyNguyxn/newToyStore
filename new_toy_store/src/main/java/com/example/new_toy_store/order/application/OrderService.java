@@ -70,7 +70,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getUserOrders(Integer userId, Pageable pageable) {
-        return repository.findByUserId(userId, pageable).map(OrderMapper::toResponse);
+        return repository.findByUserId(userId, pageable).map(OrderMapper::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)
@@ -190,7 +190,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderResponse> filterOrders(OrderFilterRequest filterRequest, Pageable pageable) {
         Specification<Order> spec = OrderSpecification.filter(filterRequest);
-        return repository.findAll(spec, pageable).map(OrderMapper::toResponse);
+        return repository.findAll(spec, pageable).map(OrderMapper::toSummaryResponse);
     }
 
     @Transactional
