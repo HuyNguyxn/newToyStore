@@ -94,7 +94,7 @@ function AdminSupplierPage() {
   useEffect(() => {
     if (viewSupplier?.id) {
       setLoadingProducts(true);
-      getAdminProducts({ page: 0, size: 100 })
+      getAdminProducts({ page: 0, size: 1000 })
         .then((res) => {
           const list = res?.content || res || [];
           const matched = list.filter(

@@ -79,7 +79,7 @@ function AdminSupplierReturnPage() {
           supplierId: filters.supplierId || undefined,
           status: filters.status || undefined,
           page: currentPage,
-          size: 50,
+          size: 20,
           sort: 'createdAt,desc',
         }),
         getSupplierReturnCriticalAlerts().catch(() => [])
@@ -93,6 +93,8 @@ function AdminSupplierReturnPage() {
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách trả hàng nhà cung cấp.');
       setReturns([]);
+      setTotalReturns(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }

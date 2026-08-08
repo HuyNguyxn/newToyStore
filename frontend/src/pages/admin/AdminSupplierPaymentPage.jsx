@@ -34,6 +34,7 @@ function AdminSupplierPaymentPage() {
   const [payments, setPayments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({ supplierId: '', importNoteId: '', status: '' });
+  const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
   const [createImportNoteId, setCreateImportNoteId] = useState('');
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
@@ -51,7 +52,7 @@ function AdminSupplierPaymentPage() {
     loadPayments();
   }, []);
 
-  async function loadPayments() {
+  async function loadPayments(page = pageInfo.number) {
     setLoading(true);
     setError('');
     try {
@@ -59,13 +60,20 @@ function AdminSupplierPaymentPage() {
         supplierId: filters.supplierId || undefined,
         importNoteId: filters.importNoteId || undefined,
         status: filters.status || undefined,
-        page: 0,
-        size: 50,
+        page,
+        size: 20,
         sort: 'createdAt,desc',
       });
-      setPayments(result.content || result || []);
+      const list = result.content || result || [];
+      setPayments(list);
+      setPageInfo({
+        number: result.number ?? page,
+        totalPages: result.totalPages ?? 1,
+        totalElements: result.totalElements ?? list.length,
+      });
     } catch (err) {
       setPayments([]);
+      setPageInfo({ number: 0, totalPages: 1, totalElements: 0 });
       setError(err.message || 'Không thể tải danh sách thanh toán nhà cung cấp.');
     } finally {
       setLoading(false);
@@ -93,7 +101,7 @@ function AdminSupplierPaymentPage() {
       if (result?.id) {
         await selectPayment(result);
       }
-      await loadPayments();
+      await loadPayments(pageInfo.number);
     } catch (err) {
       setError(err.message || 'Thao tác thanh toán nhà cung cấp thất bại.');
     }
@@ -153,7 +161,7 @@ function AdminSupplierPaymentPage() {
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: 12, borderRadius: 8, marginBottom: 12, fontWeight: 800 }}>{error}</div>}
       {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 12, borderRadius: 8, marginBottom: 12, fontWeight: 800 }}>{message}</div>}
 
-      <form onSubmit={(event) => { event.preventDefault(); loadPayments(); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+      <form onSubmit={(event) => { event.preventDefault(); loadPayments(0); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, marginBottom: 16 }}>
         <input type="number" placeholder="Mã nhà cung cấp" value={filters.supplierId} onChange={(event) => setFilters({ ...filters, supplierId: event.target.value })} style={{ flex: 1, minWidth: 160, border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px' }} />
         <input type="number" placeholder="Mã phiếu nhập" value={filters.importNoteId} onChange={(event) => setFilters({ ...filters, importNoteId: event.target.value })} style={{ flex: 1, minWidth: 160, border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px' }} />
         <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })} style={{ flex: 1, minWidth: 190, border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px', background: '#fff' }}>
@@ -202,6 +210,29 @@ function AdminSupplierPaymentPage() {
               })}
             </tbody>
           </table>
+          {pageInfo.totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, padding: '14px 0', borderTop: '1px solid #f1f5f9' }}>
+              <button
+                type="button"
+                disabled={pageInfo.number === 0}
+                onClick={() => loadPayments(pageInfo.number - 1)}
+                style={{ padding: '7px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: pageInfo.number === 0 ? 'not-allowed' : 'pointer', fontWeight: 800 }}
+              >
+                Trang trước
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#475569' }}>
+                Trang {pageInfo.number + 1} / {pageInfo.totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={pageInfo.number >= pageInfo.totalPages - 1}
+                onClick={() => loadPayments(pageInfo.number + 1)}
+                style={{ padding: '7px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: pageInfo.number >= pageInfo.totalPages - 1 ? 'not-allowed' : 'pointer', fontWeight: 800 }}
+              >
+                Trang sau
+              </button>
+            </div>
+          )}
         </div>
 
         {selected && (

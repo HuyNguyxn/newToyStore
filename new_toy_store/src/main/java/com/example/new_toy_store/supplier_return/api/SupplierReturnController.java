@@ -134,13 +134,17 @@ public class SupplierReturnController {
     }
 
     private void checkAdminRole(CustomUserDetails user, String action) {
-        if (user.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+        if (user.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MANAGER"))) {
             throw new SupplierReturnAccessDeniedException(user.getUsername(), action);
         }
     }
 
     private void checkWarehouseOrAdminRole(CustomUserDetails user, String action) {
-        if (user.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_WAREHOUSE_MANAGER"))) {
+        if (user.getAuthorities().stream().noneMatch(a ->
+                a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_MANAGER")
+                        || a.getAuthority().equals("ROLE_STAFF")
+                        || a.getAuthority().equals("ROLE_WAREHOUSE_MANAGER"))) {
             throw new SupplierReturnAccessDeniedException(user.getUsername(), action);
         }
     }

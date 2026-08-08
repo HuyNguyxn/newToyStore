@@ -402,8 +402,8 @@ function AdminImportPage() {
   async function loadInitialData() {
     try {
       const [supRes, prodRes, treeRes, catRes] = await Promise.allSettled([
-        getSuppliers({ page: 0, size: 100 }),
-        getAdminProducts({ page: 0, size: 300 }),
+        getSuppliers({ page: 0, size: 1000 }),
+        getAdminProducts({ page: 0, size: 1000 }),
         getAdminCategoryTree(),
         getAdminCategories(),
       ]);
@@ -432,7 +432,7 @@ function AdminImportPage() {
 
   async function reloadProducts() {
     try {
-      const prodRes = await getAdminProducts({ page: 0, size: 300 });
+      const prodRes = await getAdminProducts({ page: 0, size: 1000 });
       const list = prodRes?.content || prodRes || [];
       setAllProducts(list);
       return list;
