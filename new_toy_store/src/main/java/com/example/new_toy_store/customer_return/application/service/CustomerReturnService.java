@@ -53,6 +53,12 @@ public class CustomerReturnService {
                 .map(CustomerReturnMapper::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<CustomerReturnResponse> filterReturnsForCustomer(String status, Integer orderId, Integer customerId, Pageable pageable) {
+        return repository.findAll(CustomerReturnSpecification.filterForCustomer(status, orderId, customerId), pageable)
+                .map(CustomerReturnMapper::toResponse);
+    }
+
     @Transactional
     public CustomerReturnResponse createRequest(CustomerReturnRequest request, Integer customerId, String customerUsername) {
         orderFacade.verifyOrderOwnership(request.getOrderId(), customerId);

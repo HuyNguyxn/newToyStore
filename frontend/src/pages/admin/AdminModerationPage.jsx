@@ -22,6 +22,7 @@ function getCategoryLabel(category) {
 
 function AdminModerationPage() {
   const [words, setWords] = useState([]);
+  const [totalWords, setTotalWords] = useState(0);
   const [filters, setFilters] = useState({ keyword: '', category: '' });
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState('');
@@ -44,9 +45,11 @@ function AdminModerationPage() {
         sort: 'createdAt,desc',
       });
       setWords(result.content || result || []);
+      setTotalWords(Number(result?.totalElements ?? (Array.isArray(result) ? result.length : 0)));
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách từ khóa cấm.');
       setWords([]);
+      setTotalWords(0);
     } finally {
       setLoading(false);
     }
@@ -108,7 +111,7 @@ function AdminModerationPage() {
           Kiểm duyệt từ khóa (Blacklist Words)
         </h1>
         <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Từ khóa: {words.length}
+          Từ khóa: {totalWords}
         </div>
       </div>
 

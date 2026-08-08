@@ -20,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     long countByStatus(UserStatus status);
 
+    long countByRole(UserRole role);
+
     @Query("""
             SELECT COUNT(u)
               FROM User u

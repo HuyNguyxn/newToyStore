@@ -14,6 +14,7 @@ import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserAdminSummaryResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.domain.User;
 import org.springframework.data.domain.Page;
@@ -104,6 +105,10 @@ public class UserFacade {
 
     public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
         return userService.getUsers(request, pageable);
+    }
+
+    public UserAdminSummaryResponse getAdminSummary() {
+        return userService.getAdminSummary();
     }
 
     public UserAdminResponse getUserForAdmin(Integer id) {

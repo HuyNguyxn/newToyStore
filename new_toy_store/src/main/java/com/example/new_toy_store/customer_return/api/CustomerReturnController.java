@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +27,12 @@ public class CustomerReturnController {
     public Page<CustomerReturnResponse> filter(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer orderId,
+            @AuthenticationPrincipal CustomUserDetails currentUser,
             Pageable pageable) {
-        return service.filterReturns(status, orderId, pageable);
+        if (isStaff(currentUser)) {
+            return service.filterReturns(status, orderId, pageable);
+        }
+        return service.filterReturnsForCustomer(status, orderId, currentUser.getId(), pageable);
     }
 
     @PostMapping
@@ -61,6 +67,7 @@ public class CustomerReturnController {
     }
 
     @PatchMapping("/{id}/require-info")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public CustomerReturnResponse requireInfo(
             @PathVariable Integer id,
             @RequestParam String adminMessage,
@@ -69,6 +76,7 @@ public class CustomerReturnController {
     }
 
     @PatchMapping("/{id}/receive")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public CustomerReturnResponse receive(
             @PathVariable Integer id,
             @AuthenticationPrincipal CustomUserDetails warehouseUser) {
@@ -76,6 +84,7 @@ public class CustomerReturnController {
     }
 
     @PatchMapping("/{id}/inspect")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public CustomerReturnResponse inspectQuality(
             @PathVariable Integer id,
             @RequestParam boolean isPassed,
@@ -85,6 +94,7 @@ public class CustomerReturnController {
     }
 
     @PatchMapping("/{id}/resolve-dispute")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public CustomerReturnResponse resolveDispute(
             @PathVariable Integer id,
             @RequestParam boolean isApproved,
@@ -94,10 +104,17 @@ public class CustomerReturnController {
     }
 
     @PatchMapping("/{id}/finalize-refund")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
     public CustomerReturnResponse finalizeRefund(
             @PathVariable Integer id,
             @RequestParam String note,
             @AuthenticationPrincipal CustomUserDetails adminUser) {
         return service.finalizeRefundProcess(id, adminUser.getUsername(), note);
+    }
+
+    private boolean isStaff(CustomUserDetails currentUser) {
+        return currentUser.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> "ROLE_STAFF".equals(role) || "ROLE_MANAGER".equals(role) || "ROLE_ADMIN".equals(role));
     }
 }

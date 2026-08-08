@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   finalizeCustomerReturnRefund,
   getCustomerReturns,
-  getSupplierReturns,
   inspectCustomerReturn,
-  inspectSupplierReturn,
   receiveCustomerReturn,
   requireCustomerReturnInfo,
   resolveCustomerReturnDispute,
@@ -58,14 +56,9 @@ function getReturnStatusInfo(status) {
 }
 
 function AdminReturnInspectionPage() {
-  const [activeTab, setActiveTab] = useState('CUSTOMER'); // 'CUSTOMER' | 'SUPPLIER'
   const [customerReturns, setCustomerReturns] = useState([]);
-  const [supplierReturns, setSupplierReturns] = useState([]);
+  const [customerTotalElements, setCustomerTotalElements] = useState(0);
   const [selectedCustomerReturn, setSelectedCustomerReturn] = useState(null);
-  const [selectedSupplierReturn, setSelectedSupplierReturn] = useState(null);
-
-  // Interactive inspection items list for Supplier Returns
-  const [supplierInspectionItems, setSupplierInspectionItems] = useState([]);
 
   const [customerForm, setCustomerForm] = useState({
     adminMessage: '',
@@ -83,8 +76,6 @@ function AdminReturnInspectionPage() {
   // Pagination states
   const [customerPage, setCustomerPage] = useState(0);
   const [customerTotalPages, setCustomerTotalPages] = useState(1);
-  const [supplierPage, setSupplierPage] = useState(0);
-  const [supplierTotalPages, setSupplierTotalPages] = useState(1);
 
   // Filter states for Customer Returns
   const [customerFilters, setCustomerFilters] = useState({
@@ -101,10 +92,6 @@ function AdminReturnInspectionPage() {
     loadCustomerData();
   }, [customerPage, activeCustomerFilters]);
 
-  useEffect(() => {
-    loadSupplierData();
-  }, [supplierPage]);
-
   async function loadCustomerData() {
     setLoading(true);
     setError('');
@@ -119,23 +106,10 @@ function AdminReturnInspectionPage() {
 
       const res = await getCustomerReturns(filters);
       setCustomerReturns(res?.content || res || []);
+      setCustomerTotalElements(Number(res?.totalElements ?? (Array.isArray(res) ? res.length : 0)));
       setCustomerTotalPages(res?.totalPages || 1);
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách phiếu trả hàng khách hàng.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadSupplierData() {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await getSupplierReturns({ page: supplierPage, size: 10, sort: 'createdAt,desc' });
-      setSupplierReturns(res?.content || res || []);
-      setSupplierTotalPages(res?.totalPages || 1);
-    } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách phiếu trả hàng nhà cung cấp.');
     } finally {
       setLoading(false);
     }
@@ -153,26 +127,6 @@ function AdminReturnInspectionPage() {
     setCustomerPage(0);
   }
 
-  function handleSelectSupplierReturn(item) {
-    setSelectedSupplierReturn(item);
-    setSelectedCustomerReturn(null);
-
-    const mapped = (item.items || []).map((p) => ({
-      itemId: p.id,
-      productName: p.productName || `Sản phẩm ID: ${p.productId}`,
-      quantity: p.quantity,
-      acceptedQuantity: p.quantity,
-      discrepancyReason: '',
-    }));
-    setSupplierInspectionItems(mapped);
-  }
-
-  function handleUpdateInspectionItem(itemId, field, value) {
-    setSupplierInspectionItems((current) =>
-      current.map((item) => (item.itemId === itemId ? { ...item, [field]: value } : item))
-    );
-  }
-
   function updateCustomerForm(field, value) {
     setCustomerForm((current) => ({ ...current, [field]: value }));
   }
@@ -183,16 +137,14 @@ function AdminReturnInspectionPage() {
     try {
       await action();
       setMessage(successMessage);
-      await Promise.all([loadCustomerData(), loadSupplierData()]);
+      await loadCustomerData();
       setSelectedCustomerReturn(null);
-      setSelectedSupplierReturn(null);
-      setSupplierInspectionItems([]);
     } catch (err) {
       setError(err?.message || 'Thao tác kiểm định thất bại. Vui lòng kiểm tra lại.');
     }
   }
 
-  const selectedItem = selectedCustomerReturn || selectedSupplierReturn;
+  const selectedItem = selectedCustomerReturn;
 
   return (
     <section style={{ padding: '28px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
@@ -229,7 +181,6 @@ function AdminReturnInspectionPage() {
             type="button"
             onClick={() => {
               loadCustomerData();
-              loadSupplierData();
             }}
             style={{
               background: 'rgba(255,255,255,0.1)',
@@ -305,83 +256,12 @@ function AdminReturnInspectionPage() {
         </div>
       )}
 
-      {/* TAB SWITCHER */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        <button
-          type="button"
-          onClick={() => setActiveTab('CUSTOMER')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '16px',
-            border: activeTab === 'CUSTOMER' ? '2px solid #ea580c' : '1px solid #e2e8f0',
-            background: activeTab === 'CUSTOMER' ? '#fff7ed' : '#ffffff',
-            color: activeTab === 'CUSTOMER' ? '#ea580c' : '#475569',
-            fontSize: '14px',
-            fontWeight: '800',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '10px',
-            boxShadow: activeTab === 'CUSTOMER' ? '0 6px 20px rgba(234,88,12,0.12)' : '0 2px 6px rgba(0,0,0,0.02)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <span>Yêu cầu từ Khách hàng</span>
-          <span
-            style={{
-              fontSize: '11.5px',
-              fontWeight: '900',
-              background: activeTab === 'CUSTOMER' ? '#ea580c' : '#f1f5f9',
-              color: activeTab === 'CUSTOMER' ? '#ffffff' : '#64748b',
-              padding: '2px 8px',
-              borderRadius: '20px',
-            }}
-          >
-            {customerReturns.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('SUPPLIER')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '16px',
-            border: activeTab === 'SUPPLIER' ? '2px solid #9333ea' : '1px solid #e2e8f0',
-            background: activeTab === 'SUPPLIER' ? '#faf5ff' : '#ffffff',
-            color: activeTab === 'SUPPLIER' ? '#9333ea' : '#475569',
-            fontSize: '14px',
-            fontWeight: '800',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '10px',
-            boxShadow: activeTab === 'SUPPLIER' ? '0 6px 20px rgba(147,51,234,0.12)' : '0 2px 6px rgba(0,0,0,0.02)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <span>Trả hàng Nhà cung cấp</span>
-          <span
-            style={{
-              fontSize: '11.5px',
-              fontWeight: '900',
-              background: activeTab === 'SUPPLIER' ? '#9333ea' : '#f1f5f9',
-              color: activeTab === 'SUPPLIER' ? '#ffffff' : '#64748b',
-              padding: '2px 8px',
-              borderRadius: '20px',
-            }}
-          >
-            {supplierReturns.length}
-          </span>
-        </button>
-      </div>
-
       {/* MAIN TWO-COLUMN GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: selectedItem ? '1fr 420px' : '1fr', gap: '28px', alignItems: 'start' }}>
         
         {/* LEFT COLUMN: TABLE PANEL */}
         <div>
-          {activeTab === 'CUSTOMER' && (
+          {(
             <div style={{ background: '#ffffff', padding: '24px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
               
               {/* FILTER BAR */}
@@ -496,8 +376,6 @@ function AdminReturnInspectionPage() {
                             key={item.id}
                             onClick={() => {
                               setSelectedCustomerReturn(item);
-                              setSelectedSupplierReturn(null);
-                              setSupplierInspectionItems([]);
                             }}
                             style={{
                               borderBottom: '1px solid #f1f5f9',
@@ -563,7 +441,7 @@ function AdminReturnInspectionPage() {
               {/* PAGINATION */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 4px' }}>
                 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-                  Hiển thị {customerReturns.length} kết quả (Trang {customerPage + 1} / {customerTotalPages || 1})
+                  Hiển thị {customerReturns.length} / {customerTotalElements} kết quả (Trang {customerPage + 1} / {customerTotalPages || 1})
                 </span>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -603,139 +481,6 @@ function AdminReturnInspectionPage() {
 
             </div>
           )}
-
-          {activeTab === 'SUPPLIER' && (
-            <div style={{ background: '#ffffff', padding: '24px', borderRadius: '24px', border: '1px solid #f1f5f9', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-              <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #f1f5f9' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', color: '#475569', fontWeight: '800', fontSize: '12px', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      <th style={{ padding: '14px 16px', width: '80px' }}>Mã #</th>
-                      <th style={{ padding: '14px 16px', width: '130px' }}>Nhà cung cấp</th>
-                      <th style={{ padding: '14px 16px', width: '160px' }}>Trạng thái</th>
-                      <th style={{ padding: '14px 16px' }}>Ngày tạo phiếu</th>
-                      <th style={{ padding: '14px 16px', width: '130px', textAlign: 'center' }}>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {supplierReturns.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-                          🍃 Chưa có yêu cầu trả hàng nhà cung cấp nào.
-                        </td>
-                      </tr>
-                    ) : (
-                      supplierReturns.map((item) => {
-                        const statusInfo = getReturnStatusInfo(item.status);
-                        const isSelected = selectedSupplierReturn?.id === item.id;
-
-                        return (
-                          <tr
-                            key={item.id}
-                            onClick={() => handleSelectSupplierReturn(item)}
-                            style={{
-                              borderBottom: '1px solid #f1f5f9',
-                              background: isSelected ? '#faf5ff' : '#ffffff',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <td style={{ padding: '14px 16px', fontWeight: '800', color: '#0f172a' }}>
-                              #{item.id}
-                            </td>
-                            <td style={{ padding: '14px 16px' }}>
-                              <span style={{ fontWeight: '800', color: '#9333ea', background: '#faf5ff', border: '1px solid #f3e8ff', padding: '3px 8px', borderRadius: '8px', fontSize: '12px' }}>
-                                NCC{item.supplierId}
-                              </span>
-                            </td>
-                            <td style={{ padding: '14px 16px' }}>
-                              <span
-                                style={{
-                                  background: statusInfo.bg,
-                                  color: statusInfo.color,
-                                  border: `1px solid ${statusInfo.border}`,
-                                  padding: '4px 10px',
-                                  borderRadius: '20px',
-                                  fontSize: '12px',
-                                  fontWeight: '800',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                <span>{statusInfo.label}</span>
-                              </span>
-                            </td>
-                            <td style={{ padding: '14px 16px', color: '#64748b', fontWeight: '500' }}>
-                              {formatDateTime(item.createdAt)}
-                            </td>
-                            <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                              <button
-                                type="button"
-                                style={{
-                                  padding: '6px 14px',
-                                  background: isSelected ? '#9333ea' : '#ffffff',
-                                  color: isSelected ? '#ffffff' : '#9333ea',
-                                  border: '1px solid #9333ea',
-                                  borderRadius: '10px',
-                                  cursor: 'pointer',
-                                  fontSize: '12.5px',
-                                  fontWeight: '800',
-                                }}
-                              >
-                                {isSelected ? 'Đang chọn' : 'Đồng kiểm'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* PAGINATION */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 4px' }}>
-                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>
-                  Hiển thị {supplierReturns.length} kết quả (Trang {supplierPage + 1} / {supplierTotalPages || 1})
-                </span>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    disabled={supplierPage === 0}
-                    onClick={() => setSupplierPage((p) => p - 1)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                      background: supplierPage === 0 ? '#f1f5f9' : '#ffffff',
-                      color: supplierPage === 0 ? '#94a3b8' : '#0f172a',
-                      fontWeight: '700',
-                      cursor: supplierPage === 0 ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    ◄ Trang trước
-                  </button>
-
-                  <button
-                    disabled={supplierPage >= supplierTotalPages - 1}
-                    onClick={() => setSupplierPage((p) => p + 1)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '10px',
-                      border: '1px solid #cbd5e1',
-                      background: supplierPage >= supplierTotalPages - 1 ? '#f1f5f9' : '#ffffff',
-                      color: supplierPage >= supplierTotalPages - 1 ? '#94a3b8' : '#0f172a',
-                      fontWeight: '700',
-                      cursor: supplierPage >= supplierTotalPages - 1 ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    Trang sau ►
-                  </button>
-                </div>
-              </div>
-
-            </div>
-          )}
         </div>
 
         {/* RIGHT COLUMN: SMART QC INSPECTION PANEL */}
@@ -754,11 +499,11 @@ function AdminReturnInspectionPage() {
             {/* PANEL HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9' }}>
               <div>
-                <span style={{ fontSize: '11px', fontWeight: '900', color: selectedCustomerReturn ? '#ea580c' : '#9333ea', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {selectedCustomerReturn ? 'Bảng kiểm định Khách hàng' : 'Bảng kiểm định Nhà cung cấp'}
+                <span style={{ fontSize: '11px', fontWeight: '900', color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Bảng kiểm định Khách hàng
                 </span>
                 <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: '2px 0 0 0' }}>
-                  Phiếu #{selectedItem.id} {selectedCustomerReturn ? `(ĐH${selectedCustomerReturn.orderId})` : ''}
+                  Phiếu #{selectedItem.id} {`(ĐH${selectedCustomerReturn.orderId})`}
                 </h3>
               </div>
 
@@ -766,8 +511,6 @@ function AdminReturnInspectionPage() {
                 type="button"
                 onClick={() => {
                   setSelectedCustomerReturn(null);
-                  setSelectedSupplierReturn(null);
-                  setSupplierInspectionItems([]);
                 }}
                 style={{
                   border: 'none',
@@ -969,99 +712,6 @@ function AdminReturnInspectionPage() {
                   </button>
                 </div>
 
-              </div>
-            )}
-
-            {/* SUPPLIER INSPECTION ACTIONS */}
-            {selectedSupplierReturn && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: '#9333ea', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>Đồng kiểm thực tế danh sách sản phẩm trả NCC</span>
-                </div>
-
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                    <thead style={{ background: '#faf5ff', color: '#7e22ce', fontWeight: '800' }}>
-                      <tr>
-                        <th style={{ padding: '10px' }}>Sản phẩm</th>
-                        <th style={{ padding: '10px', textAlign: 'center', width: '50px' }}>SL Giao</th>
-                        <th style={{ padding: '10px', width: '60px' }}>SL Nhận</th>
-                        <th style={{ padding: '10px' }}>Lý do chênh lệch</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {supplierInspectionItems.length === 0 ? (
-                        <tr>
-                          <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>
-                            Phiếu không có danh sách sản phẩm.
-                          </td>
-                        </tr>
-                      ) : (
-                        supplierInspectionItems.map((item) => (
-                          <tr key={item.itemId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: '700', color: '#0f172a' }}>
-                              {item.productName}
-                            </td>
-                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: '900', color: '#64748b' }}>
-                              {item.quantity}
-                            </td>
-                            <td style={{ padding: '6px' }}>
-                              <input
-                                type="number"
-                                min="0"
-                                max={item.quantity}
-                                value={item.acceptedQuantity}
-                                onChange={(e) => handleUpdateInspectionItem(item.itemId, 'acceptedQuantity', Number(e.target.value))}
-                                style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', fontWeight: '800', textAlign: 'center' }}
-                              />
-                            </td>
-                            <td style={{ padding: '6px' }}>
-                              <input
-                                type="text"
-                                placeholder="Ghi chú..."
-                                value={item.discrepancyReason}
-                                onChange={(e) => handleUpdateInspectionItem(item.itemId, 'discrepancyReason', e.target.value)}
-                                style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px' }}
-                              />
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={supplierInspectionItems.length === 0}
-                  onClick={() =>
-                    runAction(
-                      () =>
-                        inspectSupplierReturn(selectedSupplierReturn.id, {
-                          items: supplierInspectionItems.map((item) => ({
-                            itemId: item.itemId,
-                            acceptedQuantity: item.acceptedQuantity,
-                            discrepancyReason: item.discrepancyReason.trim(),
-                          })),
-                        }),
-                      'Đã hoàn tất đồng kiểm hàng nhận về kho thành công!'
-                    )
-                  }
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: '#9333ea',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '12px',
-                    fontSize: '13.5px',
-                    fontWeight: '900',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(147,51,234,0.25)',
-                  }}
-                >
-                  XÁC NHẬN ĐỒNG KIỂM QC NCC
-                </button>
               </div>
             )}
           </aside>

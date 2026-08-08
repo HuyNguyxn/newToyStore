@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   deleteAdminUser,
+  getAdminUserSummary,
   getAdminUserDetails,
   getAdminUsers,
   lockAdminUser,
@@ -54,6 +55,14 @@ function getAvatarColor(id) {
 
 function AdminUserPage() {
   const [users, setUsers] = useState([]);
+  const [userSummary, setUserSummary] = useState({
+    totalUsers: 0,
+    adminCount: 0,
+    managerCount: 0,
+    staffCount: 0,
+    customerCount: 0,
+    activeCount: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -75,6 +84,7 @@ function AdminUserPage() {
 
   useEffect(() => {
     loadUsers();
+    loadUserSummary();
   }, []);
 
   // Trigger backend fetch automatically when filters change with 300ms debounce
@@ -115,6 +125,29 @@ function AdminUserPage() {
     }
   }
 
+  async function loadUserSummary() {
+    try {
+      const result = await getAdminUserSummary();
+      setUserSummary({
+        totalUsers: Number(result?.totalUsers || 0),
+        adminCount: Number(result?.adminCount || 0),
+        managerCount: Number(result?.managerCount || 0),
+        staffCount: Number(result?.staffCount || 0),
+        customerCount: Number(result?.customerCount || 0),
+        activeCount: Number(result?.activeCount || 0),
+      });
+    } catch (err) {
+      setUserSummary({
+        totalUsers: users.length,
+        adminCount: users.filter((u) => u.role === 'ADMIN').length,
+        managerCount: users.filter((u) => u.role === 'MANAGER').length,
+        staffCount: users.filter((u) => u.role === 'STAFF').length,
+        customerCount: users.filter((u) => u.role === 'CUSTOMER' || !u.role).length,
+        activeCount: users.filter((u) => u.status === 'ACTIVE' || !u.status).length,
+      });
+    }
+  }
+
   /* Combined Instant Real-time Filtered Users */
   const displayUsers = useMemo(() => {
     return users.filter((u) => {
@@ -139,12 +172,12 @@ function AdminUserPage() {
   }, [users, filters]);
 
   /* Stats calculation */
-  const totalUsersCount = users.length;
-  const adminCount = users.filter((u) => u.role === 'ADMIN').length;
-  const managerCount = users.filter((u) => u.role === 'MANAGER').length;
-  const staffCount = users.filter((u) => u.role === 'STAFF').length;
-  const activeCount = users.filter((u) => u.status === 'ACTIVE' || !u.status).length;
-  const customerCount = users.filter((u) => u.role === 'CUSTOMER' || !u.role).length;
+  const totalUsersCount = userSummary.totalUsers;
+  const adminCount = userSummary.adminCount;
+  const managerCount = userSummary.managerCount;
+  const staffCount = userSummary.staffCount;
+  const activeCount = userSummary.activeCount;
+  const customerCount = userSummary.customerCount;
 
   /* Handle Select All Checkboxes */
   function handleSelectAll(e) {
@@ -192,7 +225,7 @@ function AdminUserPage() {
         await lockAdminUser(user.id);
         setMessage(`Đã khóa tài khoản ${user.email}!`);
       }
-      loadUsers();
+      await Promise.all([loadUsers(), loadUserSummary()]);
     } catch (err) {
       setError(err?.message || 'Thao tác thất bại.');
     } finally {
@@ -209,7 +242,7 @@ function AdminUserPage() {
     try {
       await deleteAdminUser(user.id);
       setMessage(`Đã xóa người dùng ${user.email} khỏi hệ thống!`);
-      loadUsers();
+      await Promise.all([loadUsers(), loadUserSummary()]);
     } catch (err) {
       setError(err?.message || 'Xóa người dùng thất bại.');
     } finally {
@@ -227,7 +260,7 @@ function AdminUserPage() {
       await updateAdminUserRole(editRoleModalUser.id, selectedRole);
       setMessage(`Đã cập nhật vai trò của ${editRoleModalUser.email} thành ${selectedRole}!`);
       setEditRoleModalUser(null);
-      loadUsers();
+      await Promise.all([loadUsers(), loadUserSummary()]);
     } catch (err) {
       setError(err?.message || 'Cập nhật vai trò thất bại.');
     } finally {

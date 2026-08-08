@@ -31,7 +31,7 @@ const navGroups = [
     title: 'QUẢN LÝ BÁN HÀNG',
     items: [
       { to: '/admin/orders', label: 'Đơn bán hàng', badgeKey: 'pendingOrders', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-      { to: '/admin/returns', label: 'Trả hàng', badgeKey: 'pendingCustomerReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/returns', label: 'Yêu cầu trả hàng của khách hàng', badgeKey: 'pendingCustomerReturns', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/payments', label: 'Thanh toán Khách hàng', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/refunds', label: 'Hoàn tiền', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/promotions', label: 'Khuyến mãi & Giảm giá', requiredRoles: ['ADMIN'] },

@@ -14,6 +14,7 @@ import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserAdminSummaryResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -140,6 +141,12 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
         return facade.getUsers(request, pageable);
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserAdminSummaryResponse getUserSummary() {
+        return facade.getAdminSummary();
     }
 
     @GetMapping("/{id}")

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   createShipmentForOrder,
@@ -141,7 +141,6 @@ function AdminLogisticsPage() {
   const canDelete = true;
 
   const [activeTab, setActiveTab] = useState('FORWARD'); // 'FORWARD', 'CUSTOMER_RETURN', 'SUPPLIER_RETURN', or 'ALL'
-  const [dataMode, setDataMode] = useState('REAL'); // 'REAL' or 'TEST'
   const [shipments, setShipments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -159,13 +158,9 @@ function AdminLogisticsPage() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalShipments, setTotalShipments] = useState(0);
 
-  const displayShipments = useMemo(() => {
-    return shipments.filter((s) => {
-      const isTest = isInternalTestOrder(s);
-      return dataMode === 'REAL' ? !isTest : isTest;
-    });
-  }, [shipments, dataMode]);
+  const displayShipments = shipments;
 
   useEffect(() => {
     loadShipments(currentPage);
@@ -188,9 +183,11 @@ function AdminLogisticsPage() {
       });
       setShipments(result.content || result || []);
       setTotalPages(result.totalPages || 1);
+      setTotalShipments(Number(result?.totalElements ?? (Array.isArray(result) ? result.length : 0)));
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách vận chuyển.');
       setShipments([]);
+      setTotalShipments(0);
     } finally {
       setLoading(false);
     }
@@ -239,50 +236,8 @@ function AdminLogisticsPage() {
           <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#9a3412', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Quản lý Vận chuyển & Logistics
           </h1>
-          <div style={{ fontSize: '13px', color: dataMode === 'REAL' ? '#15803d' : '#7e22ce', fontWeight: '800', marginTop: '4px' }}>
-            {dataMode === 'REAL' ? '🟢 Đang xem: Vận đơn Kinh doanh Thực tế' : '🧪 Đang xem: Vận đơn Thử nghiệm Nội bộ'}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* MODE TOGGLE TAB BUTTONS */}
-          <div style={{ display: 'inline-flex', background: '#ffffff', padding: '4px', borderRadius: '12px', border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <button
-              type="button"
-              onClick={() => setDataMode('REAL')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '13px',
-                fontWeight: '900',
-                cursor: 'pointer',
-                background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent',
-                color: dataMode === 'REAL' ? '#ffffff' : '#64748b',
-                boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              🟢 Vận đơn Kinh doanh ({shipments.filter(s => !isInternalTestOrder(s)).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setDataMode('TEST')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '13px',
-                fontWeight: '900',
-                cursor: 'pointer',
-                background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent',
-                color: dataMode === 'TEST' ? '#ffffff' : '#64748b',
-                boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              🧪 Đơn Thử nghiệm ({shipments.filter(s => isInternalTestOrder(s)).length})
-            </button>
+          <div style={{ fontSize: '13px', color: '#15803d', fontWeight: '800', marginTop: '4px' }}>
+            Đang hiển thị dữ liệu vận đơn theo bộ lọc backend
           </div>
         </div>
       </div>
@@ -603,7 +558,7 @@ function AdminLogisticsPage() {
               ) : displayShipments.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                    {dataMode === 'REAL' ? 'Không có vận đơn kinh doanh thực tế nào.' : 'Không có vận đơn thử nghiệm nội bộ nào.'}
+                    Không có vận đơn phù hợp với bộ lọc hiện tại.
                   </td>
                 </tr>
               ) : (
@@ -715,8 +670,12 @@ function AdminLogisticsPage() {
             </tbody>
           </table>
           
-          {totalPages > 1 && (
-            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', gap: '10px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 700 }}>
+              Hiển thị {displayShipments.length} / {totalShipments} vận đơn (Trang {currentPage + 1} / {totalPages || 1})
+            </span>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
@@ -733,8 +692,9 @@ function AdminLogisticsPage() {
               >
                 Trang sau
               </button>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* LOGS PANEL */}

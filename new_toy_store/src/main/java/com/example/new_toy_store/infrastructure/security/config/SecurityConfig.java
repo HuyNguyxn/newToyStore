@@ -123,6 +123,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/payments/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/payments/**").hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/api/returns/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/returns/**").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/returns/*/cancel", "/api/returns/*/update-info", "/api/returns/*/dispute").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/returns/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
+
                         .requestMatchers(HttpMethod.GET, "/shipments/**").hasAnyRole("CUSTOMER", "STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/shipments/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/shipments/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")

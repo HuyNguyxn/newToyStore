@@ -18,4 +18,8 @@ public class CustomerReturnFacade {
     public Page<CustomerReturnResponse> filterReturns(String status, Integer orderId, Pageable pageable) {
         return customerReturnService.filterReturns(status, orderId, pageable);
     }
+
+    public Page<CustomerReturnResponse> filterReturnsForCustomer(String status, Integer orderId, Integer customerId, Pageable pageable) {
+        return customerReturnService.filterReturnsForCustomer(status, orderId, customerId, pageable);
+    }
 }

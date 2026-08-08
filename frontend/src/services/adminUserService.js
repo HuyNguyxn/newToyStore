@@ -9,6 +9,7 @@ const qs = (params = {}) => {
 };
 
 export const getAdminUsers = (params = {}) => apiClient(`/users${qs(params) ? `?${qs(params)}` : ''}`);
+export const getAdminUserSummary = () => apiClient('/users/summary');
 export const getAdminUserDetails = (id) => apiClient(`/users/${id}`);
 export const updateAdminUserRole = (id, role) => apiClient(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 export const updateAdminUserStatus = (id, status) => apiClient(`/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });

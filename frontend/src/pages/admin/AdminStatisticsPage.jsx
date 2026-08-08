@@ -602,6 +602,8 @@ function AdminStatisticsPage() {
         slowProdRes,
         inventorySnapshotRes,
         reviewsRes,
+        lowRatingOneRes,
+        lowRatingTwoRes,
         customerReturnsRes,
       ] = await Promise.allSettled([
         getStatisticsOverview(params),
@@ -615,6 +617,8 @@ function AdminStatisticsPage() {
         getSlowSellingProducts({ from: dates.from, to: dates.to, timezone: params.timezone, groupBy: params.groupBy, limit: 50, maxUnits: 5 }),
         getInventorySnapshot({ lowStockThreshold: 10 }),
         getAdminReviews({ page: 0, size: 500 }),
+        getAdminReviews({ rating: 1, page: 0, size: 1 }),
+        getAdminReviews({ rating: 2, page: 0, size: 1 }),
         getCustomerReturns({ status: 'REQUESTED', page: 0, size: 1, sort: 'createdAt,desc' }),
       ]);
 
@@ -626,6 +630,9 @@ function AdminStatisticsPage() {
       const inventoryList = inventorySnapshotRes.status === 'fulfilled' ? (inventorySnapshotRes.value?.content || (Array.isArray(inventorySnapshotRes.value) ? inventorySnapshotRes.value : [])) : [];
       const allReviewsList = reviewsRes.status === 'fulfilled' ? (reviewsRes.value?.content || (Array.isArray(reviewsRes.value) ? reviewsRes.value : [])) : [];
       const lowRatingReviews = allReviewsList.filter((r) => Number(r.rating || r.stars || 5) < 3);
+      const lowRatingCountFromBackend =
+        (lowRatingOneRes.status === 'fulfilled' ? Number(lowRatingOneRes.value?.totalElements || 0) : 0) +
+        (lowRatingTwoRes.status === 'fulfilled' ? Number(lowRatingTwoRes.value?.totalElements || 0) : 0);
       const customerReturnsList = customerReturnsRes.status === 'fulfilled'
         ? (customerReturnsRes.value?.content || (Array.isArray(customerReturnsRes.value) ? customerReturnsRes.value : []))
         : [];
@@ -867,7 +874,7 @@ function AdminStatisticsPage() {
           cancelledOrder: dataMode === 'REAL' && overviewRes.status === 'fulfilled'
             ? cancelledCountFromOverview
             : rangeOrdersList.filter((o) => getStatusCode(o.status) === 'CANCELLED').length,
-          lowRatingCount: lowRatingReviews.length,
+          lowRatingCount: lowRatingCountFromBackend || lowRatingReviews.length,
           slowSelling: slowSellingProducts.length,
         },
       });

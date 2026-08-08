@@ -15,6 +15,7 @@ import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
+import com.example.new_toy_store.user.application.dto.response.UserAdminSummaryResponse;
 import com.example.new_toy_store.user.application.dto.response.UserProfileResponse;
 import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.application.config.UserProfileProperties;
@@ -257,6 +258,20 @@ public class UserService {
     public Page<UserAdminResponse> getUsers(UserFilterRequest request, Pageable pageable) {
         return repository.findAll(UserSpecification.filter(request), pageable)
                 .map(user -> UserMapper.toAdminResponse(user, getDefaultAvatarUrl()));
+    }
+
+    @Transactional(readOnly = true)
+    public UserAdminSummaryResponse getAdminSummary() {
+        return new UserAdminSummaryResponse(
+                repository.count(),
+                repository.countByRole(UserRole.ADMIN),
+                repository.countByRole(UserRole.MANAGER),
+                repository.countByRole(UserRole.STAFF),
+                repository.countByRole(UserRole.CUSTOMER),
+                repository.countByStatus(UserStatus.ACTIVE),
+                repository.countByStatus(UserStatus.LOCKED),
+                repository.countByStatus(UserStatus.UNVERIFIED)
+        );
     }
 
     @Transactional(readOnly = true)
