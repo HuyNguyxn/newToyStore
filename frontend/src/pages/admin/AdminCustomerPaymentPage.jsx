@@ -62,6 +62,9 @@ function AdminCustomerPaymentPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const pageSize = 20;
 
   const displayPayments = useMemo(() => payments, [payments]);
 
@@ -69,7 +72,7 @@ function AdminCustomerPaymentPage() {
     loadPayments(initialStatus);
   }, []);
 
-  async function loadPayments(overrideStatus) {
+  async function loadPayments(overrideStatus, requestedPage = page) {
     setLoading(true);
     setError('');
     const targetStatus = overrideStatus !== undefined ? overrideStatus : filters.status;
@@ -79,11 +82,13 @@ function AdminCustomerPaymentPage() {
         method: filters.method || undefined,
         orderId: filters.orderId || undefined,
         userId: filters.userId || undefined,
-        page: 0,
-        size: 50,
+        page: requestedPage,
+        size: pageSize,
         sort: 'createdAt,desc',
       });
       setPayments(result.content || result || []);
+      setPage(result.number ?? requestedPage);
+      setTotalPages(result.totalPages ?? 0);
     } catch (err) {
       setPayments([]);
       setError(err.message || 'Không thể tải danh sách giao dịch thanh toán.');
@@ -129,7 +134,8 @@ function AdminCustomerPaymentPage() {
   function clearFilters() {
     const nextFilters = { status: '', method: '', orderId: '', userId: '' };
     setFilters(nextFilters);
-    setTimeout(() => loadPayments(''), 0);
+    setPage(0);
+    setTimeout(() => loadPayments('', 0), 0);
   }
 
   const selectedStatus = enumCode(selected?.status);
@@ -158,7 +164,7 @@ function AdminCustomerPaymentPage() {
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 700 }}>{error}</div>}
       {message && <div style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 700 }}>{message}</div>}
 
-      <form onSubmit={(event) => { event.preventDefault(); loadPayments(); }} style={{ background: '#ffffff', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <form onSubmit={(event) => { event.preventDefault(); setPage(0); loadPayments(undefined, 0); }} style={{ background: '#ffffff', padding: '14px 16px', borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <input type="number" placeholder="Mã đơn hàng..." value={filters.orderId} onChange={(event) => setFilters({ ...filters, orderId: event.target.value })} style={{ flex: 1, minWidth: 150, padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, outline: 'none' }} />
         <input type="number" placeholder="Mã khách hàng..." value={filters.userId} onChange={(event) => setFilters({ ...filters, userId: event.target.value })} style={{ flex: 1, minWidth: 150, padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, outline: 'none' }} />
         <select value={filters.method} onChange={(event) => setFilters({ ...filters, method: event.target.value })} style={{ flex: 1, minWidth: 170, padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff' }}>
@@ -238,6 +244,14 @@ function AdminCustomerPaymentPage() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
+            <button type="button" disabled={page <= 0 || loading} onClick={() => loadPayments(undefined, page - 1)} style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: page <= 0 ? 'not-allowed' : 'pointer', opacity: page <= 0 ? .5 : 1 }}>Trước</button>
+            <span style={{ color: '#475569', fontSize: 13, fontWeight: 700 }}>Trang {page + 1} / {totalPages}</span>
+            <button type="button" disabled={page >= totalPages - 1 || loading} onClick={() => loadPayments(undefined, page + 1)} style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', opacity: page >= totalPages - 1 ? .5 : 1 }}>Sau</button>
+          </div>
+        )}
 
         {selected && (
           <aside style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 24, boxShadow: '0 4px 16px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: 16 }}>

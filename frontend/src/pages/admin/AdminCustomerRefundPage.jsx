@@ -84,6 +84,8 @@ function AdminCustomerRefundPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const displayRefunds = useMemo(() => {
     return refunds.filter((r) => {
@@ -96,15 +98,17 @@ function AdminCustomerRefundPage() {
     loadRefunds();
   }, []);
 
-  async function loadRefunds(event) {
+  async function loadRefunds(event, requestedPage = page) {
     event?.preventDefault();
     setLoading(true);
     setError('');
     try {
       const result = paymentId
-        ? await getCustomerPaymentRefunds(paymentId, { page: 0, size: 20, sort: 'createdAt,desc' })
-        : await getAllCustomerPaymentRefunds({ page: 0, size: 50, sort: 'createdAt,desc' });
+        ? await getCustomerPaymentRefunds(paymentId, { page: requestedPage, size: 20, sort: 'createdAt,desc' })
+        : await getAllCustomerPaymentRefunds({ page: requestedPage, size: 20, sort: 'createdAt,desc' });
       setRefunds(result.content || result || []);
+      setPage(result.number ?? requestedPage);
+      setTotalPages(result.totalPages ?? 0);
     } catch (err) {
       setRefunds([]);
       setError(err.message || 'Không thể tải danh sách hoàn tiền.');
@@ -212,7 +216,7 @@ function AdminCustomerRefundPage() {
 
       {/* SEARCH/FILTER CARD */}
       <form
-        onSubmit={loadRefunds}
+        onSubmit={(event) => { event.preventDefault(); setPage(0); loadRefunds(undefined, 0); }}
         style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}
       >
         <div style={{ flex: '1', minWidth: '240px' }}>
@@ -458,6 +462,14 @@ function AdminCustomerRefundPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16 }}>
+          <button type="button" disabled={page <= 0 || loading} onClick={() => loadRefunds(undefined, page - 1)} style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: page <= 0 ? 'not-allowed' : 'pointer', opacity: page <= 0 ? .5 : 1 }}>Trước</button>
+          <span style={{ color: '#475569', fontSize: 13, fontWeight: 700 }}>Trang {page + 1} / {totalPages}</span>
+          <button type="button" disabled={page >= totalPages - 1 || loading} onClick={() => loadRefunds(undefined, page + 1)} style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer', opacity: page >= totalPages - 1 ? .5 : 1 }}>Sau</button>
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer style={{ textAlign: 'center', marginTop: '30px', padding: '16px 0', borderTop: '1px solid #cbd5e1', fontSize: '12px', color: '#94a3b8' }}>

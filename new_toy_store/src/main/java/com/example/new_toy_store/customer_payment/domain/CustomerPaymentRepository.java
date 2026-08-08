@@ -31,25 +31,25 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
     Optional<CustomerPaymentTransaction> findByOrderIdAndMethod(Integer orderId, CustomerPaymentMethod method);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM PaymentTransaction p WHERE p.id = :id")
+    @Query("SELECT p FROM CustomerPaymentTransaction p WHERE p.id = :id")
     Optional<CustomerPaymentTransaction> findByIdForUpdate(@Param("id") Integer id);
 
     Page<CustomerPaymentTransaction> findByUserId(Integer userId, Pageable pageable);
 
     Page<CustomerPaymentTransaction> findByOrderId(Integer orderId, Pageable pageable);
 
-    @Query("SELECT p FROM PaymentTransaction p WHERE p.orderId = :orderId ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM CustomerPaymentTransaction p WHERE p.orderId = :orderId ORDER BY p.createdAt DESC")
     java.util.List<CustomerPaymentTransaction> findAllByOrderId(@Param("orderId") Integer orderId);
 
-    @Query("SELECT COUNT(p) FROM PaymentTransaction p WHERE p.status = :status")
+    @Query("SELECT COUNT(p) FROM CustomerPaymentTransaction p WHERE p.status = :status")
     long countByStatus(@Param("status") CustomerPaymentStatus status);
 
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentTransaction p WHERE p.status = :status")
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM CustomerPaymentTransaction p WHERE p.status = :status")
     double sumAmountByStatus(@Param("status") CustomerPaymentStatus status);
 
     @Query("""
             SELECT COUNT(p)
-              FROM PaymentTransaction p JOIN User u ON p.userId = u.id
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
              WHERE p.status = :status
                AND p.createdAt >= :from
                AND p.createdAt < :to
@@ -59,7 +59,7 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     @Query("""
             SELECT COALESCE(SUM(p.amount), 0)
-              FROM PaymentTransaction p JOIN User u ON p.userId = u.id
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
              WHERE p.status = :status
                AND p.createdAt >= :from
                AND p.createdAt < :to
@@ -69,7 +69,7 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     @Query("""
             SELECT p.method, COUNT(p), COALESCE(SUM(p.amount), 0)
-              FROM PaymentTransaction p JOIN User u ON p.userId = u.id
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
              WHERE p.status = :status
                AND p.createdAt >= :from
                AND p.createdAt < :to
@@ -80,7 +80,7 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     @Query("""
             SELECT COALESCE(p.failureReason, 'UNKNOWN'), COALESCE(p.failureReason, 'Unknown'), COUNT(p), 0
-              FROM PaymentTransaction p JOIN User u ON p.userId = u.id
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
              WHERE p.status = :status
                AND p.createdAt >= :from
                AND p.createdAt < :to
@@ -95,7 +95,7 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE PaymentTransaction p
+            UPDATE CustomerPaymentTransaction p
                SET p.deletedAt = CURRENT_TIMESTAMP,
                    p.updatedAt = CURRENT_TIMESTAMP,
                    p.version = p.version + 1

@@ -2,6 +2,7 @@ package com.example.new_toy_store.order.application.dto.request;
 
 import com.example.new_toy_store.order.domain.OrderStatus;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.AssertTrue;
 
 import java.time.LocalDateTime;
 
@@ -29,4 +30,14 @@ public class OrderFilterRequest {
     public void setMinAmount(Double minAmount) { this.minAmount = minAmount; }
     public Double getMaxAmount() { return maxAmount; }
     public void setMaxAmount(Double maxAmount) { this.maxAmount = maxAmount; }
+
+    @AssertTrue(message = "Khoảng thời gian không hợp lệ")
+    public boolean isDateRangeValid() {
+        return fromDate == null || toDate == null || !fromDate.isAfter(toDate);
+    }
+
+    @AssertTrue(message = "Khoảng số tiền không hợp lệ")
+    public boolean isAmountRangeValid() {
+        return minAmount == null || maxAmount == null || minAmount <= maxAmount;
+    }
 }

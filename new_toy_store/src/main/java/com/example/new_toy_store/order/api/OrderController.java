@@ -104,7 +104,7 @@ public class OrderController {
 
     @GetMapping("/admin/filter")
     @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
-    public Page<OrderResponse> filterOrders(OrderFilterRequest filterRequest, Pageable pageable) {
+    public Page<OrderResponse> filterOrders(@Valid OrderFilterRequest filterRequest, Pageable pageable) {
         return service.filterOrders(filterRequest, pageable);
     }
 
@@ -115,7 +115,7 @@ public class OrderController {
             @Valid @RequestBody UpdateShippingRequest request
     ) {
         UserProfileResponse user = getAuthenticatedUser(userDetails);
-        boolean isAdmin = "ADMIN".equals(user.getRole());
+        boolean isAdmin = List.of("ADMIN", "MANAGER", "STAFF").contains(user.getRole());
         return service.updateShippingAddress(id, request, user.getId(), isAdmin);
     }
 
