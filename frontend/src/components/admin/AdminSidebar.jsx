@@ -22,7 +22,7 @@ const navGroups = [
     items: [
       { to: '/admin/categories', label: 'Danh mục sản phẩm', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/products', label: 'Sản phẩm & Biến thể', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
-      { to: '/admin/inventory', label: 'Quản lý Kho & Lô hàng', badgeKey: 'lowStockVariants', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
+      { to: '/admin/inventory', label: 'Quản lý Kho & Lô hàng', badgeKey: 'pendingImportNotes', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
       { to: '/admin/uploads', label: 'Thư viện hình ảnh', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },
     ],
   },
@@ -115,6 +115,7 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
     pendingOrders: 0,
     pendingCustomerReturns: 0,
     pendingSupplierReturns: 0,
+    pendingImportNotes: 0,
     lowStockVariants: 0,
   });
 

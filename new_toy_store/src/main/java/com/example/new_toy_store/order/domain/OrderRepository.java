@@ -205,19 +205,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             SELECT prod_root.root_id,
                    prod_root.root_name,
                    COALESCE(SUM(i.quantity), 0),
-                   COUNT(DISTINCT o.id),
                    COALESCE(SUM(i.quantity * i.price), 0)
               FROM orders o
               JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
               JOIN (
-                    SELECT DISTINCT pc.product_id,
-                           COALESCE(p2.id, p1.id, c.id) AS root_id,
-                           COALESCE(p2.name, p1.name, c.name) AS root_name
+                    SELECT pc.product_id,
+                           MIN(COALESCE(p2.id, p1.id, c.id)) AS root_id,
+                           MIN(COALESCE(p2.name, p1.name, c.name)) AS root_name
                       FROM product_categories pc
                       JOIN categories c ON c.id = pc.category_id AND c.deleted_at IS NULL
                       LEFT JOIN categories p1 ON p1.id = c.parent_id AND p1.deleted_at IS NULL
                       LEFT JOIN categories p2 ON p2.id = p1.parent_id AND p2.deleted_at IS NULL
+                     GROUP BY pc.product_id
               ) prod_root ON prod_root.product_id = i.product_id
              WHERE o.status IN (:statuses)
                AND o.created_at >= :from

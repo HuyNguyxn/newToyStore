@@ -106,6 +106,12 @@ public class PaymentController {
         return service.getRefunds(id, pageable);
     }
 
+    @GetMapping("/refunds")
+    @PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
+    public Page<PaymentRefundResponse> getAllRefunds(Pageable pageable) {
+        return service.getAllRefunds(pageable);
+    }
+
     @PatchMapping("/refunds/{refundId}/process")
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public PaymentRefundResponse processRefund(

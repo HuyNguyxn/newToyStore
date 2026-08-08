@@ -5,6 +5,7 @@ export function getAdminMenuBadges() {
     pendingOrders: 0,
     pendingCustomerReturns: 0,
     pendingSupplierReturns: 0,
+    pendingImportNotes: 0,
     lowStockVariants: 0,
   }));
 }

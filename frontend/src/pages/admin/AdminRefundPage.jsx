@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
   deletePaymentRefund,
+  getAllPaymentRefunds,
   getPaymentRefunds,
   processPaymentRefund,
   rejectPaymentRefund,
@@ -91,13 +92,18 @@ function AdminRefundPage() {
     });
   }, [refunds, dataMode]);
 
+  useEffect(() => {
+    loadRefunds();
+  }, []);
+
   async function loadRefunds(event) {
     event?.preventDefault();
-    if (!paymentId) return;
     setLoading(true);
     setError('');
     try {
-      const result = await getPaymentRefunds(paymentId, { page: 0, size: 20, sort: 'createdAt,desc' });
+      const result = paymentId
+        ? await getPaymentRefunds(paymentId, { page: 0, size: 20, sort: 'createdAt,desc' })
+        : await getAllPaymentRefunds({ page: 0, size: 50, sort: 'createdAt,desc' });
       setRefunds(result.content || result || []);
     } catch (err) {
       setRefunds([]);
@@ -321,14 +327,14 @@ function AdminRefundPage() {
             </tr>
           </thead>
           <tbody>
-            {refunds.length === 0 ? (
+            {displayRefunds.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                  {paymentId ? 'Không tìm thấy yêu cầu hoàn tiền nào.' : 'Vui lòng nhập Mã giao dịch thanh toán để xem danh sách hoàn tiền.'}
+                  {paymentId ? 'Không tìm thấy yêu cầu hoàn tiền nào.' : 'Chưa có yêu cầu hoàn tiền nào.'}
                 </td>
               </tr>
             ) : (
-              refunds.map((refund, idx) => {
+              displayRefunds.map((refund, idx) => {
                 const statusInfo = getRefundStatusInfo(refund.status);
                 const methodStyle = getMethodBadgeStyle(refund.method);
 

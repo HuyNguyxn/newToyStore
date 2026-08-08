@@ -21,6 +21,10 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, In
 
     boolean existsByRefundCode(String refundCode);
 
+    Optional<PaymentRefund> findByRefundCode(String refundCode);
+
+    Optional<PaymentRefund> findFirstByRefundCodeStartingWithOrderByCreatedAtDesc(String refundCodePrefix);
+
     @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.paymentId = :paymentId AND r.status IN :statuses")
     double sumAmountByPaymentIdAndStatuses(@Param("paymentId") Integer paymentId, @Param("statuses") Collection<RefundStatus> statuses);
 

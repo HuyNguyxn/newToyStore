@@ -45,6 +45,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -174,6 +175,45 @@ public class PaymentService {
         return PaymentMapper.toRefundResponse(refund);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentRefundResponse requestRefundForCustomerReturn(Integer returnId, Integer orderId, double amount, String reason) {
+        String existingRefundCode = "REF-RETURN-" + returnId;
+        PaymentRefund existingRefund = refundRepository.findFirstByRefundCodeStartingWithOrderByCreatedAtDesc(existingRefundCode).orElse(null);
+        if (existingRefund != null) {
+            return PaymentMapper.toRefundResponse(existingRefund);
+        }
+
+        PaymentTransaction payment = repository.findFirstByOrderIdAndStatusInOrderByCreatedAtDesc(
+                        orderId,
+                        List.of(PaymentStatus.SUCCEEDED)
+                )
+                .orElseThrow(() -> PaymentCrossModuleException.invalidOrder(orderId, "order has no succeeded payment to refund"));
+
+        RefundMethod refundMethod = payment.getMethod() == PaymentMethod.VNPAY
+                ? RefundMethod.VNPAY
+                : RefundMethod.COD_MANUAL;
+
+        validateRefundablePayment(payment);
+        validateRefundAmount(payment, amount);
+
+        String refundCode = generateCustomerReturnRefundCode(payment.getId(), returnId);
+
+        PaymentRefund refund = new PaymentRefund(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getUserId(),
+                refundCode,
+                refundMethod,
+                amount,
+                reason == null || reason.isBlank() ? "Hoàn tiền từ phiếu trả hàng #" + returnId : reason
+        );
+
+        payment.requestRefund();
+        refundRepository.save(refund);
+        repository.save(payment);
+        return PaymentMapper.toRefundResponse(refund);
+    }
+
     @Transactional
     public PaymentRefundResponse processRefund(Integer refundId, String adminEmail, String clientIp) {
         PaymentRefund refund = getRefundForUpdate(refundId);
@@ -218,6 +258,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Page<PaymentRefundResponse> getRefunds(Integer paymentId, Pageable pageable) {
         return refundRepository.findByPaymentId(paymentId, pageable).map(PaymentMapper::toRefundResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentRefundResponse> getAllRefunds(Pageable pageable) {
+        return refundRepository.findAll(pageable).map(PaymentMapper::toRefundResponse);
     }
 
     @Transactional
@@ -509,6 +554,10 @@ public class PaymentService {
             code = "REF-" + paymentId + "-" + System.currentTimeMillis();
         } while (refundRepository.existsByRefundCode(code));
         return code;
+    }
+
+    private String generateCustomerReturnRefundCode(Integer paymentId, Integer returnId) {
+        return "REF-RETURN-" + returnId + "-PAY-" + paymentId;
     }
 
     private String resolveVnpayMessage(String responseCode, String transactionStatus) {

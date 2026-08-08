@@ -81,4 +81,16 @@ public class InvalidCustomerReturnDataException extends RuntimeException {
                 context
         );
     }
+
+    public static InvalidCustomerReturnDataException invalidRefundAmount(Integer returnId, double refundAmount) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("returnId", returnId);
+        context.put("refundAmount", refundAmount);
+        context.put("validation", "greater_than_zero");
+        return new InvalidCustomerReturnDataException(
+                "Số tiền hoàn của phiếu trả hàng #" + returnId + " phải lớn hơn 0.",
+                "CUSTOMER_RETURN_INVALID_REFUND_AMOUNT",
+                context
+        );
+    }
 }

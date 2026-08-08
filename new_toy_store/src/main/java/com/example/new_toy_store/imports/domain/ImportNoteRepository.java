@@ -16,6 +16,8 @@ import java.util.List;
 
 public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>, JpaSpecificationExecutor<ImportNote> {
 
+    long countByStatus(ImportStatus status);
+
     @EntityGraph(attributePaths = "items")
     @Query("SELECT i FROM ImportNote i WHERE i.id = :id")
     Optional<ImportNote> findByIdWithItems(@Param("id") Integer id);

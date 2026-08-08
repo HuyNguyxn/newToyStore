@@ -197,11 +197,15 @@ public class CustomerReturnService {
     @Transactional
     public CustomerReturnResponse finalizeRefundProcess(Integer id, String adminUsername, String note) {
         CustomerReturn rma = getEntity(id);
+        double refundAmount = rma.calculateRawTotalRefund();
+        if (refundAmount <= 0) {
+            throw InvalidCustomerReturnDataException.invalidRefundAmount(rma.getId(), refundAmount);
+        }
         CustomerReturnStatus previousStatus = rma.getStatus();
         rma.finalizeRefund(adminUsername, note);
         CustomerReturn saved = repository.save(rma);
         publishStatusChanged(saved, previousStatus, adminUsername);
-        publishRefundFinalized(saved);
+        publishRefundFinalized(saved, refundAmount);
         return CustomerReturnMapper.toResponse(saved);
     }
 
@@ -217,7 +221,7 @@ public class CustomerReturnService {
         repository.saveAll(expiredList);
     }
 
-    private void publishRefundFinalized(CustomerReturn rma) {
+    private void publishRefundFinalized(CustomerReturn rma, double refundAmount) {
         Map<Integer, Integer> returnedItemsQty = rma.getItems().stream()
                 .collect(Collectors.toMap(
                         CustomerReturnItem::getOrderItemId,
@@ -227,6 +231,8 @@ public class CustomerReturnService {
         eventPublisher.publishEvent(CustomerReturnRefundFinalizedEvent.now(
                 rma.getId(),
                 rma.getOrderId(),
+                refundAmount,
+                "Hoàn tiền từ phiếu trả hàng #" + rma.getId(),
                 returnedItemsQty
         ));
     }

@@ -67,7 +67,7 @@ function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, s
                   onClick={() => onStatusAction(action.action)}
                   style={{ border: 0, background: isComplete ? '#16a34a' : '#dc2626', color: '#ffffff', borderRadius: 8, padding: '8px 10px', cursor: statusAction ? 'wait' : 'pointer', fontSize: 12, fontWeight: 800 }}
                 >
-                  {isRunning ? 'Dang xu ly...' : action.label}
+                  {isRunning ? 'Đang xử lý...' : action.label}
                 </button>
               );
             })}
@@ -91,7 +91,7 @@ function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, s
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <div>
                   <div style={{ fontWeight: 800, color: '#0f172a' }}>{item.productName || `Sản phẩm #${item.productId}`}</div>
-                  <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Variant #{item.variantId} · Nhập {item.quantity} sản phẩm</div>
+                  <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Biến thể #{item.variantId} · Nhập {item.quantity} sản phẩm</div>
                 </div>
                 <span style={{ alignSelf: 'start', color: state.color, background: state.bg, borderRadius: 8, padding: '3px 7px', fontSize: 11, fontWeight: 800 }}>{state.label}</span>
               </div>
@@ -184,8 +184,8 @@ function AdminInventoryPage() {
   async function changeBatchStatus(action) {
     const isComplete = action === 'COMPLETE';
     const confirmation = isComplete
-      ? 'Confirm this batch? Its variant stock will be added immediately.'
-      : 'Cancel this batch? A cancelled batch cannot be processed further.';
+      ? 'Xác nhận hoàn tất lô hàng này? Tồn kho của các biến thể sẽ được cộng ngay.'
+      : 'Hủy lô hàng này? Lô đã hủy sẽ không thể xử lý tiếp.';
     if (!window.confirm(confirmation)) return;
 
     setStatusAction(action);
@@ -198,11 +198,11 @@ function AdminInventoryPage() {
       setSelected(updated);
       setImports((current) => current.map((item) => item.id === updated.id ? { ...item, ...updated } : item));
       setMessage(isComplete
-        ? 'Batch confirmed. Its inventory is now available.'
-        : 'The pending batch was cancelled.');
+        ? 'Đã xác nhận lô hàng. Tồn kho hiện đã sẵn sàng để bán.'
+        : 'Đã hủy lô hàng đang chờ xử lý.');
       await loadWarehouse();
     } catch (err) {
-      setError(err?.message || 'Unable to change the batch status.');
+      setError(err?.message || 'Không thể thay đổi trạng thái lô hàng.');
     } finally {
       setStatusAction(null);
     }
@@ -210,56 +210,56 @@ function AdminInventoryPage() {
 
   return (
     <BatchStatusActionContext.Provider value={changeBatchStatus}>
-    <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start', marginBottom: 20, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ color: '#ea580c', fontSize: 12, fontWeight: 900, letterSpacing: .8 }}>WAREHOUSE MANAGEMENT</div>
-          <h1 style={{ margin: '5px 0 0', color: '#0f172a', fontSize: 26 }}>Quản lý Kho & Lô hàng</h1>
-          <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>Các lô hàng được tạo từ mục “Tạo phiếu Nhập hàng”. Chọn một lô để xử lý sản phẩm đưa lên cửa hàng.</p>
+      <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'start', marginBottom: 20, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ color: '#ea580c', fontSize: 12, fontWeight: 900, letterSpacing: .8 }}>QUẢN LÝ KHO</div>
+            <h1 style={{ margin: '5px 0 0', color: '#0f172a', fontSize: 26 }}>Quản lý Kho & Lô hàng</h1>
+            <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>Các lô hàng được tạo từ mục “Tạo phiếu nhập hàng”. Chọn một lô để xử lý sản phẩm đưa lên cửa hàng.</p>
+          </div>
+          <button type="button" onClick={() => navigate('/admin/imports')} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
         </div>
-        <button type="button" onClick={() => navigate('/admin/imports')} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
-      </div>
 
-      {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
-      {error && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{error}</div>}
+        {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
+        {error && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{error}</div>}
 
-      <form onSubmit={(event) => event.preventDefault()} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-        <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} placeholder="Tìm mã lô hoặc nhà cung cấp..." style={{ flex: 1, minWidth: 220, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13 }} />
-        <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13, background: '#ffffff' }}>
-          <option value="">Tất cả trạng thái</option>
-          <option value="PENDING">Chờ kiểm đếm</option>
-          <option value="COMPLETED">Đã nhập kho</option>
-          <option value="CANCELLED">Đã hủy</option>
-        </select>
-      </form>
+        <form onSubmit={(event) => event.preventDefault()} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+          <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} placeholder="Tìm mã lô hoặc nhà cung cấp..." style={{ flex: 1, minWidth: 220, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13 }} />
+          <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 11px', fontSize: 13, background: '#ffffff' }}>
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ kiểm đếm</option>
+            <option value="COMPLETED">Đã nhập kho</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+        </form>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? 'minmax(0, 1.4fr) minmax(340px, .9fr)' : '1fr', gap: 18, alignItems: 'start' }}>
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead><tr style={{ background: '#f8fafc', color: '#475569', textAlign: 'left' }}>
-              <th style={{ padding: 13 }}>Mã lô</th><th style={{ padding: 13 }}>Nhà cung cấp</th><th style={{ padding: 13 }}>Sản phẩm</th><th style={{ padding: 13 }}>Tổng tiền</th><th style={{ padding: 13 }}>Trạng thái</th><th style={{ padding: 13 }}>Ngày tạo</th><th style={{ padding: 13 }} />
-            </tr></thead>
-            <tbody>
-              {loading ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu kho...</td></tr>
-                : visibleImports.length === 0 ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#94a3b8' }}>Chưa có lô hàng phù hợp.</td></tr>
-                  : visibleImports.map((item, index) => {
-                    const badge = importStatus(item.status);
-                    return <tr key={item.id} style={{ borderTop: index ? '1px solid #f1f5f9' : 0 }}>
-                      <td style={{ padding: 13, color: '#ea580c', fontWeight: 900 }}>PN{String(item.id).padStart(6, '0')}</td>
-                      <td style={{ padding: 13, fontWeight: 700 }}>{item.supplierName || '—'}</td>
-                      <td style={{ padding: 13 }}>{item.itemCount ?? 'Xem trong chi tiết'}</td>
-                      <td style={{ padding: 13, fontWeight: 800 }}>{formatPrice(item.totalAmount || 0)}</td>
-                      <td style={{ padding: 13 }}><span style={{ color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, borderRadius: 8, padding: '4px 8px', fontWeight: 800, fontSize: 11 }}>{badge.label}</span></td>
-                      <td style={{ padding: 13, color: '#64748b' }}>{item.createdAt ? formatDateTime(item.createdAt) : '—'}</td>
-                      <td style={{ padding: 13, textAlign: 'right' }}><button type="button" onClick={() => openDetails(item.id)} style={{ border: '1px solid #fed7aa', color: '#c2410c', background: '#fff7ed', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontWeight: 800 }}>Chi tiết</button></td>
-                    </tr>;
-                  })}
-            </tbody>
-          </table>
+        <div style={{ display: 'grid', gridTemplateColumns: selected ? 'minmax(0, 1.4fr) minmax(340px, .9fr)' : '1fr', gap: 18, alignItems: 'start' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 14, overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f8fafc', color: '#475569', textAlign: 'left' }}>
+                <th style={{ padding: 13 }}>Mã lô</th><th style={{ padding: 13 }}>Nhà cung cấp</th><th style={{ padding: 13 }}>Sản phẩm</th><th style={{ padding: 13 }}>Tổng tiền</th><th style={{ padding: 13 }}>Trạng thái</th><th style={{ padding: 13 }}>Ngày tạo</th><th style={{ padding: 13 }} />
+              </tr></thead>
+              <tbody>
+                {loading ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu kho...</td></tr>
+                  : visibleImports.length === 0 ? <tr><td colSpan="7" style={{ padding: 36, textAlign: 'center', color: '#94a3b8' }}>Chưa có lô hàng phù hợp.</td></tr>
+                    : visibleImports.map((item, index) => {
+                      const badge = importStatus(item.status);
+                      return <tr key={item.id} style={{ borderTop: index ? '1px solid #f1f5f9' : 0 }}>
+                        <td style={{ padding: 13, color: '#ea580c', fontWeight: 900 }}>PN{String(item.id).padStart(6, '0')}</td>
+                        <td style={{ padding: 13, fontWeight: 700 }}>{item.supplierName || '—'}</td>
+                        <td style={{ padding: 13 }}>{item.itemCount ?? 'Xem trong chi tiết'}</td>
+                        <td style={{ padding: 13, fontWeight: 800 }}>{formatPrice(item.totalAmount || 0)}</td>
+                        <td style={{ padding: 13 }}><span style={{ color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`, borderRadius: 8, padding: '4px 8px', fontWeight: 800, fontSize: 11 }}>{badge.label}</span></td>
+                        <td style={{ padding: 13, color: '#64748b' }}>{item.createdAt ? formatDateTime(item.createdAt) : '—'}</td>
+                        <td style={{ padding: 13, textAlign: 'right' }}><button type="button" onClick={() => openDetails(item.id)} style={{ border: '1px solid #fed7aa', color: '#c2410c', background: '#fff7ed', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontWeight: 800 }}>Chi tiết</button></td>
+                      </tr>;
+                    })}
+              </tbody>
+            </table>
+          </div>
+          {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} statusAction={statusAction} navigate={navigate} />}
         </div>
-        {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} navigate={navigate} />}
-      </div>
-    </section>
+      </section>
     </BatchStatusActionContext.Provider>
   );
 }

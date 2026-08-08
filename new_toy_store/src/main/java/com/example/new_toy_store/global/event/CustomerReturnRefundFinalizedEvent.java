@@ -9,6 +9,8 @@ import java.util.Map;
 public record CustomerReturnRefundFinalizedEvent(
         Integer returnId,
         Integer orderId,
+        double refundAmount,
+        String reason,
         Map<Integer, Integer> returnedOrderItemQuantities,
         Instant occurredAt
 ) {
@@ -16,11 +18,15 @@ public record CustomerReturnRefundFinalizedEvent(
     public static CustomerReturnRefundFinalizedEvent now(
             Integer returnId,
             Integer orderId,
+            double refundAmount,
+            String reason,
             Map<Integer, Integer> returnedOrderItemQuantities
     ) {
         return new CustomerReturnRefundFinalizedEvent(
                 returnId,
                 orderId,
+                refundAmount,
+                reason,
                 Map.copyOf(returnedOrderItemQuantities),
                 Instant.now()
         );

@@ -5,14 +5,16 @@ public class AdminMenuBadgeResponse {
     private long pendingOrders;
     private long pendingCustomerReturns;
     private long pendingSupplierReturns;
+    private long pendingImportNotes;
     private long lowStockVariants;
 
     public AdminMenuBadgeResponse() {}
 
-    public AdminMenuBadgeResponse(long pendingOrders, long pendingCustomerReturns, long pendingSupplierReturns, long lowStockVariants) {
+    public AdminMenuBadgeResponse(long pendingOrders, long pendingCustomerReturns, long pendingSupplierReturns, long pendingImportNotes, long lowStockVariants) {
         this.pendingOrders = pendingOrders;
         this.pendingCustomerReturns = pendingCustomerReturns;
         this.pendingSupplierReturns = pendingSupplierReturns;
+        this.pendingImportNotes = pendingImportNotes;
         this.lowStockVariants = lowStockVariants;
     }
 
@@ -38,6 +40,14 @@ public class AdminMenuBadgeResponse {
 
     public void setPendingSupplierReturns(long pendingSupplierReturns) {
         this.pendingSupplierReturns = pendingSupplierReturns;
+    }
+
+    public long getPendingImportNotes() {
+        return pendingImportNotes;
+    }
+
+    public void setPendingImportNotes(long pendingImportNotes) {
+        this.pendingImportNotes = pendingImportNotes;
     }
 
     public long getLowStockVariants() {
