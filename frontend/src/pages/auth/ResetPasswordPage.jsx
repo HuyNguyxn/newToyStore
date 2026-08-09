@@ -6,6 +6,7 @@ function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const [token, setToken] = useState(searchParams.get('token') || '');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -16,10 +17,17 @@ function ResetPasswordPage() {
     setMessage('');
     setError('');
 
+    if (newPassword !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await resetPassword({ token: token.trim(), newPassword });
       setMessage('Đã đặt lại mật khẩu. Bạn có thể đăng nhập bằng mật khẩu mới.');
       setNewPassword('');
+      setConfirmPassword('');
     } catch (err) {
       setError(err.message || 'Đặt lại mật khẩu thất bại.');
     } finally {
@@ -53,7 +61,12 @@ function ResetPasswordPage() {
 
           <label>
             <span>Mật khẩu mới</span>
-            <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength="6" placeholder="Nhập mật khẩu mới" required />
+            <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength="6" maxLength="72" autoComplete="new-password" placeholder="Nhập mật khẩu mới" required />
+          </label>
+
+          <label>
+            <span>Xác nhận mật khẩu mới</span>
+            <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength="6" maxLength="72" autoComplete="new-password" placeholder="Nhập lại mật khẩu mới" required />
           </label>
 
           <button type="submit" disabled={submitting}>

@@ -21,7 +21,7 @@ function LoginPage() {
     setError('');
 
     try {
-      const loggedInUser = await login(form);
+      const loggedInUser = await login({ ...form, email: form.email.trim().toLowerCase() });
       const targetPath = loggedInUser?.role === 'ADMIN' ? '/admin/statistics' : from;
       navigate(targetPath, { replace: true });
     } catch (err) {
@@ -58,6 +58,8 @@ function LoginPage() {
               value={form.email}
               onChange={handleChange}
               placeholder="admin@gmail.com"
+              autoComplete="email"
+              maxLength="254"
               required
             />
           </label>
@@ -70,6 +72,8 @@ function LoginPage() {
               value={form.password}
               onChange={handleChange}
               placeholder="Nhập mật khẩu"
+              autoComplete="current-password"
+              maxLength="72"
               required
             />
           </label>

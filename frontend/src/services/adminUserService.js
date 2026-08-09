@@ -16,3 +16,5 @@ export const updateAdminUserStatus = (id, status) => apiClient(`/users/${id}/sta
 export const lockAdminUser = (id) => apiClient(`/users/${id}/lock`, { method: 'PATCH' });
 export const unlockAdminUser = (id) => apiClient(`/users/${id}/unlock`, { method: 'PATCH' });
 export const deleteAdminUser = (id) => apiClient(`/users/${id}`, { method: 'DELETE' });
+export const getAdminDeletedUsers = () => apiClient('/users/deleted');
+export const restoreAdminUser = (id) => apiClient(`/users/${id}/restore`, { method: 'PATCH' });

@@ -6,20 +6,17 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [resetToken, setResetToken] = useState('');
   const [error, setError] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
     setMessage('');
-    setResetToken('');
     setError('');
 
     try {
       const result = await requestPasswordReset({ email: email.trim() });
-      setResetToken(result?.token || result?.resetToken || '');
-      setMessage('Đã tạo yêu cầu đặt lại mật khẩu. Nếu email chưa gửi thật, token test sẽ hiển thị bên dưới.');
+      setMessage(result?.message || 'Nếu email tồn tại và tài khoản đang hoạt động, hướng dẫn đặt lại mật khẩu đã được gửi.');
     } catch (err) {
       setError(err.message || 'Không thể tạo yêu cầu đặt lại mật khẩu.');
     } finally {
@@ -50,7 +47,6 @@ function ForgotPasswordPage() {
 
         {error && <div className="form-alert">{error}</div>}
         {message && <div className="form-alert form-alert--success">{message}</div>}
-        {resetToken && <code className="token-box">{resetToken}</code>}
 
         <div className="auth-form auth-form--compact">
           <label>
@@ -60,6 +56,8 @@ function ForgotPasswordPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="Nhập email của bạn"
+              autoComplete="email"
+              maxLength="254"
               required
             />
           </label>

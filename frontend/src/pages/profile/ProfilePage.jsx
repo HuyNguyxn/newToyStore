@@ -282,17 +282,17 @@ function ProfilePage() {
 
           <label>
             Nhập mật khẩu cũ
-            <input type="password" value={passwordForm.oldPassword} onChange={(event) => updatePasswordField('oldPassword', event.target.value)} required />
+            <input type="password" value={passwordForm.oldPassword} onChange={(event) => updatePasswordField('oldPassword', event.target.value)} maxLength="72" autoComplete="current-password" required />
           </label>
 
           <label>
             Mật khẩu mới
-            <input type="password" value={passwordForm.newPassword} onChange={(event) => updatePasswordField('newPassword', event.target.value)} minLength="6" required />
+            <input type="password" value={passwordForm.newPassword} onChange={(event) => updatePasswordField('newPassword', event.target.value)} minLength="6" maxLength="72" autoComplete="new-password" required />
           </label>
 
           <label>
             Xác nhận mật khẩu mới
-            <input type="password" value={passwordForm.confirmPassword} onChange={(event) => updatePasswordField('confirmPassword', event.target.value)} minLength="6" required />
+            <input type="password" value={passwordForm.confirmPassword} onChange={(event) => updatePasswordField('confirmPassword', event.target.value)} minLength="6" maxLength="72" autoComplete="new-password" required />
           </label>
 
           <button type="submit" disabled={savingPassword}>
