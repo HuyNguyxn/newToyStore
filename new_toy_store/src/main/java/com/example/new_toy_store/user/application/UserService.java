@@ -1,6 +1,7 @@
 package com.example.new_toy_store.user.application;
 
 import com.example.new_toy_store.global.event.UserDeletedEvent;
+import com.example.new_toy_store.infrastructure.mail.MailService;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtProvider;
 import com.example.new_toy_store.user.application.dto.request.AddressRequest;
 import com.example.new_toy_store.user.application.dto.request.ChangePasswordRequest;
@@ -34,6 +35,7 @@ import com.example.new_toy_store.infrastructure.specification.UserSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -56,6 +58,8 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final ApplicationEventPublisher eventPublisher;
     private final UserProfileProperties profileProperties;
+    private final MailService mailService;
+    private final String frontendBaseUrl;
 
     public UserService(
             UserRepository repository,
@@ -64,7 +68,9 @@ public class UserService {
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             ApplicationEventPublisher eventPublisher,
-            UserProfileProperties profileProperties
+            UserProfileProperties profileProperties,
+            MailService mailService,
+            @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.repository = repository;
         this.tokenRepository = tokenRepository;
@@ -73,6 +79,8 @@ public class UserService {
         this.authenticationManager = authenticationManager;
         this.eventPublisher = eventPublisher;
         this.profileProperties = profileProperties;
+        this.mailService = mailService;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @Transactional
@@ -98,10 +106,12 @@ public class UserService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = UserMapper.toEntity(request, encodedPassword);
-        // Registration currently has no email-delivery flow or verification UI.
-        // Activate the account here so the successful registration response is usable immediately.
-        user.activate();
         repository.save(user);
+
+        String tokenValue = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(tokenValue, TokenType.VERIFICATION, user);
+        tokenRepository.save(verificationToken);
+        sendVerificationEmail(user, verificationToken);
 
         return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
@@ -352,5 +362,29 @@ public class UserService {
 
     private String getDefaultAvatarUrl() {
         return profileProperties.getDefaultAvatarUrl();
+    }
+
+    private void sendVerificationEmail(User user, VerificationToken token) {
+        String verificationLink = frontendBaseUrl.replaceAll("/+$", "")
+                + "/verify-email?token=" + token.getTokenValue();
+        String body = """
+                Xin chao %s,
+
+                Cam on ban da dang ky tai khoan NewToyStore.
+
+                Ma xac thuc cua ban la:
+                %s
+
+                Bam vao link duoi day de xac thuc tai khoan:
+                %s
+
+                Ma xac thuc het han luc: %s
+                """.formatted(
+                user.getFullName(),
+                token.getTokenValue(),
+                verificationLink,
+                token.getExpiryDate()
+        );
+        mailService.sendEmail(user.getEmail(), "[NewToyStore] Xac thuc tai khoan", body);
     }
 }

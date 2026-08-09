@@ -1,9 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import useAuth from '../../hooks/useAuth.js';
 
 function RegisterPage() {
-  const navigate = useNavigate();
   const { register, loading } = useAuth();
   const [form, setForm] = useState({
     email: '',
@@ -37,8 +36,7 @@ function RegisterPage() {
         fullName: form.fullName.trim(),
         phoneNumber: form.phoneNumber.trim() || null,
       });
-      setSuccess('Đăng ký thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.');
-      setTimeout(() => navigate('/login'), 900);
+      setSuccess('Đăng ký thành công. Vui lòng kiểm tra Gmail để xác thực tài khoản trước khi đăng nhập.');
     } catch (err) {
       setError(err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
     }
