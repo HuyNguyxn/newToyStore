@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLRestriction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -64,7 +65,10 @@ public class User extends BaseRootEntity {
         if (fullName == null || fullName.trim().isEmpty()) {
             throw InvalidUserOperationException.inputDataInvalid("fullName", "Họ và tên không được để trống");
         }
-        this.email = email; this.password = password; this.fullName = fullName; this.phoneNumber = phoneNumber;
+        this.email = email.trim().toLowerCase(Locale.ROOT);
+        this.password = password;
+        this.fullName = fullName.trim();
+        this.phoneNumber = phoneNumber == null || phoneNumber.isBlank() ? null : phoneNumber.trim();
         this.role = role != null ? role : UserRole.CUSTOMER;
         this.status = UserStatus.UNVERIFIED;
     }

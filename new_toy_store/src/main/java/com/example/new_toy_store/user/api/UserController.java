@@ -12,6 +12,7 @@ import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequ
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.DeletedUserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminSummaryResponse;
@@ -34,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -59,6 +62,11 @@ public class UserController {
     @GetMapping("/verify")
     public void verifyEmail(@RequestParam String token) {
         facade.verifyEmailToken(token);
+    }
+
+    @PostMapping("/resend-verification")
+    public void resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+        facade.resendVerificationEmail(request.getEmail());
     }
 
     @PostMapping("/forgot-password")
@@ -147,6 +155,20 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public UserAdminSummaryResponse getUserSummary() {
         return facade.getAdminSummary();
+    }
+
+    @GetMapping("/deleted")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<DeletedUserAdminResponse> getDeletedUsers() {
+        return facade.getDeletedUsers();
+    }
+
+    @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void restoreDeletedUser(
+            @PathVariable @Positive(message = "ID nguoi dung phai lon hon 0") Integer id
+    ) {
+        facade.restoreDeletedAccount(id);
     }
 
     @GetMapping("/{id}")

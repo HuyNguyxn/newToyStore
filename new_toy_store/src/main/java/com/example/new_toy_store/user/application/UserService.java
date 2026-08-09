@@ -14,6 +14,7 @@ import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequ
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.DeletedUserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminSummaryResponse;
@@ -21,6 +22,7 @@ import com.example.new_toy_store.user.application.dto.response.UserProfileRespon
 import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.application.config.UserProfileProperties;
 import com.example.new_toy_store.user.domain.Address;
+import com.example.new_toy_store.user.domain.DeletedUserProjection;
 import com.example.new_toy_store.user.domain.TokenType;
 import com.example.new_toy_store.user.domain.User;
 import com.example.new_toy_store.user.domain.UserRepository;
@@ -38,12 +40,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -85,27 +89,21 @@ public class UserService {
 
     @Transactional
     public UserProfileResponse register(RegisterRequest request) {
-        Optional<User> existingUser = repository.findByEmail(request.getEmail());
+        String email = normalizeEmail(request.getEmail());
+        Optional<User> existingUser = repository.findByEmail(email);
         if (existingUser.isPresent()) {
             if (existingUser.get().getStatus() == UserStatus.LOCKED) {
-                throw InvalidUserOperationException.lockedEmailCannotRegister(request.getEmail());
+                throw InvalidUserOperationException.lockedEmailCannotRegister(email);
             }
-            throw InvalidUserOperationException.duplicateEmail(request.getEmail());
+            throw InvalidUserOperationException.duplicateEmail(email);
         }
 
-        List<String> oldStatuses = repository.findStatusesOfSoftDeletedUsersByEmailPattern(request.getEmail());
-        if (oldStatuses.contains("LOCKED")) {
-            throw InvalidUserOperationException.lockedEmailCannotRegister(request.getEmail());
-        }
-
-        List<Integer> softDeletedUserIds = repository.findSoftDeletedUserIdsByEmailPattern(request.getEmail());
-        if (!softDeletedUserIds.isEmpty()) {
-            repository.hardDeleteAddressesByUserIds(softDeletedUserIds);
-            repository.hardDeleteUsersByIds(softDeletedUserIds);
+        if (repository.findSoftDeletedUserIdByOriginalEmail(email).isPresent()) {
+            throw InvalidUserOperationException.deletedEmailCannotRegister(email);
         }
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        User user = UserMapper.toEntity(request, encodedPassword);
+        User user = UserMapper.toEntity(request, encodedPassword, email);
         repository.save(user);
 
         String tokenValue = UUID.randomUUID().toString();
@@ -118,18 +116,21 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        User user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException(request.getEmail()));
+        String email = normalizeEmail(request.getEmail());
+        User user = repository.findByEmail(email)
+                .orElseThrow(InvalidUserOperationException::invalidCredentials);
 
         if (!user.getStatus().canLogin()) {
-            throw InvalidUserOperationException.accountCannotLogin(request.getEmail());
+            throw InvalidUserOperationException.accountCannotLogin(email);
         }
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
             );
         } catch (BadCredentialsException ex) {
+            throw InvalidUserOperationException.invalidCredentials();
+        } catch (AuthenticationException ex) {
             throw InvalidUserOperationException.invalidCredentials();
         }
 
@@ -139,7 +140,7 @@ public class UserService {
 
     @Transactional
     public void verifyEmailToken(String tokenValue) {
-        VerificationToken token = tokenRepository.findByTokenValue(tokenValue)
+        VerificationToken token = tokenRepository.findByTokenValue(normalizeToken(tokenValue))
                 .orElseThrow(InvalidUserOperationException::invalidToken);
         if (token.getTokenType() != TokenType.VERIFICATION) {
             throw InvalidUserOperationException.invalidToken();
@@ -156,29 +157,40 @@ public class UserService {
     }
 
     @Transactional
-    public PasswordResetTokenResponse requestPasswordReset(ForgotPasswordRequest request) {
-        User user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException(request.getEmail()));
-
-        if (!user.getStatus().canLogin()) {
-            throw InvalidUserOperationException.accountCannotLogin(request.getEmail());
+    public void resendVerificationEmail(String rawEmail) {
+        String email = normalizeEmail(rawEmail);
+        User user = repository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+        if (user.getStatus() != UserStatus.UNVERIFIED) {
+            throw InvalidUserOperationException.verificationNotAllowed(email);
         }
+
+        tokenRepository.deleteByUser_IdAndTokenType(user.getId(), TokenType.VERIFICATION);
+        VerificationToken token = new VerificationToken(UUID.randomUUID().toString(), TokenType.VERIFICATION, user);
+        tokenRepository.save(token);
+        sendVerificationEmail(user, token);
+    }
+
+    @Transactional
+    public PasswordResetTokenResponse requestPasswordReset(ForgotPasswordRequest request) {
+        String email = normalizeEmail(request.getEmail());
+        Optional<User> optionalUser = repository.findByEmail(email);
+        String genericMessage = "Nếu email tồn tại và tài khoản đang hoạt động, hướng dẫn đặt lại mật khẩu đã được gửi.";
+        if (optionalUser.isEmpty() || !optionalUser.get().getStatus().canLogin()) {
+            return new PasswordResetTokenResponse(genericMessage);
+        }
+        User user = optionalUser.get();
 
         tokenRepository.deleteByUser_IdAndTokenType(user.getId(), TokenType.RESET_PASSWORD);
         VerificationToken token = new VerificationToken(UUID.randomUUID().toString(), TokenType.RESET_PASSWORD, user);
         tokenRepository.save(token);
-
-        return new PasswordResetTokenResponse(
-                user.getEmail(),
-                token.getTokenValue(),
-                token.getExpiryDate(),
-                "Use this reset token in POST /users/reset-password. In a real production app, this token should be sent by email."
-        );
+        sendPasswordResetEmail(user, token);
+        return new PasswordResetTokenResponse(genericMessage);
     }
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        VerificationToken token = tokenRepository.findByTokenValue(request.getToken())
+        VerificationToken token = tokenRepository.findByTokenValue(normalizeToken(request.getToken()))
                 .orElseThrow(InvalidUserOperationException::invalidToken);
         if (token.getTokenType() != TokenType.RESET_PASSWORD) {
             throw InvalidUserOperationException.invalidToken();
@@ -188,13 +200,16 @@ public class UserService {
         }
 
         User user = token.getUser();
+        if (!user.getStatus().canLogin()) {
+            throw InvalidUserOperationException.accountCannotLogin(user.getEmail());
+        }
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             throw InvalidUserOperationException.duplicatedNewPassword();
         }
 
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
-        tokenRepository.delete(token);
+        tokenRepository.deleteByUser_IdAndTokenType(user.getId(), TokenType.RESET_PASSWORD);
     }
 
     @Transactional
@@ -205,13 +220,14 @@ public class UserService {
             throw InvalidUserOperationException.wrongOldPassword();
         }
 
-        if (request.getOldPassword().equals(request.getNewPassword())) {
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             throw InvalidUserOperationException.duplicatedNewPassword();
         }
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.updatePassword(encodedNewPassword);
         repository.save(user);
+        tokenRepository.deleteByUser_IdAndTokenType(user.getId(), TokenType.RESET_PASSWORD);
     }
 
     @Transactional
@@ -320,9 +336,35 @@ public class UserService {
     public void deleteAccount(Integer userId) {
         User user = getUserEntity(userId);
         String deletedEmail = user.getEmail();
+        tokenRepository.deleteByUser_Id(userId);
         user.delete();
         repository.save(user);
         eventPublisher.publishEvent(UserDeletedEvent.now(userId, deletedEmail));
+    }
+
+    @Transactional(readOnly = true)
+    public List<DeletedUserAdminResponse> getDeletedUsers() {
+        return repository.findAllSoftDeletedUsers().stream()
+                .map(this::toDeletedUserResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void restoreDeletedAccount(Integer userId) {
+        DeletedUserProjection deletedUser = repository.findAllSoftDeletedUsers().stream()
+                .filter(user -> userId.equals(user.getId()))
+                .findFirst()
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        String email = normalizeEmail(deletedUser.getEmail());
+        if (repository.existsByEmail(email)) {
+            throw InvalidUserOperationException.restoreConflict(email);
+        }
+
+        repository.restoreSoftDeletedAddresses(userId, deletedUser.getDeletedAt());
+        int restored = repository.restoreSoftDeletedUser(userId, email);
+        if (restored == 0) {
+            throw new UserNotFoundException(userId);
+        }
     }
 
     public User getAuthenticatedUser(String email) {
@@ -368,23 +410,54 @@ public class UserService {
         String verificationLink = frontendBaseUrl.replaceAll("/+$", "")
                 + "/verify-email?token=" + token.getTokenValue();
         String body = """
-                Xin chao %s,
+                Xin chào %s,
 
-                Cam on ban da dang ky tai khoan NewToyStore.
+                Cảm ơn bạn đã đăng ký tài khoản NewToyStore.
 
-                Ma xac thuc cua ban la:
+                Mã xác thực của bạn là:
                 %s
 
-                Bam vao link duoi day de xac thuc tai khoan:
+                Bấm vào liên kết dưới đây để xác thực tài khoản:
                 %s
 
-                Ma xac thuc het han luc: %s
+                Mã xác thực hết hạn lúc: %s
                 """.formatted(
                 user.getFullName(),
                 token.getTokenValue(),
                 verificationLink,
                 token.getExpiryDate()
         );
-        mailService.sendEmail(user.getEmail(), "[NewToyStore] Xac thuc tai khoan", body);
+        mailService.sendEmail(user.getEmail(), "[NewToyStore] Xác thực tài khoản", body);
+    }
+
+    private void sendPasswordResetEmail(User user, VerificationToken token) {
+        String resetLink = frontendBaseUrl.replaceAll("/+$", "")
+                + "/reset-password?token=" + token.getTokenValue();
+        String body = """
+                Xin chào %s,
+
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu NewToyStore của bạn.
+                Bấm vào liên kết dưới đây để tạo mật khẩu mới:
+                %s
+
+                Liên kết hết hạn lúc: %s
+                Nếu bạn không gửi yêu cầu này, hãy bỏ qua email.
+                """.formatted(user.getFullName(), resetLink, token.getExpiryDate());
+        mailService.sendEmail(user.getEmail(), "[NewToyStore] Đặt lại mật khẩu", body);
+    }
+
+    private DeletedUserAdminResponse toDeletedUserResponse(DeletedUserProjection user) {
+        return new DeletedUserAdminResponse(
+                user.getId(), user.getEmail(), user.getFullName(), user.getPhoneNumber(),
+                user.getRole(), user.getStatus(), user.getCreatedAt(), user.getUpdatedAt(), user.getDeletedAt()
+        );
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeToken(String token) {
+        return token == null ? "" : token.trim();
     }
 }

@@ -9,7 +9,7 @@ public class ResetPasswordRequest {
     private String token;
 
     @NotBlank(message = "New password must not be empty")
-    @Size(min = 6, message = "New password must have at least 6 characters")
+    @Size(min = 6, max = 72, message = "New password must have between 6 and 72 characters")
     private String newPassword;
 
     public String getToken() {

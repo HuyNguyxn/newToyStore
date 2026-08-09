@@ -37,6 +37,33 @@ public class InvalidUserOperationException extends UserDomainException {
         );
     }
 
+    public static InvalidUserOperationException deletedEmailCannotRegister(String email) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Tài khoản đã bị xóa",
+                "Email này thuộc một tài khoản đã xóa. Vui lòng liên hệ quản trị viên để khôi phục tài khoản",
+                Map.of("email", safe(email))
+        );
+    }
+
+    public static InvalidUserOperationException verificationNotAllowed(String email) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Không thể gửi lại email xác thực",
+                "Chỉ tài khoản chưa xác thực mới có thể nhận lại email xác thực",
+                Map.of("email", safe(email))
+        );
+    }
+
+    public static InvalidUserOperationException restoreConflict(String email) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Không thể khôi phục tài khoản",
+                "Email của tài khoản đã được sử dụng bởi một tài khoản khác",
+                Map.of("email", safe(email))
+        );
+    }
+
     public static InvalidUserOperationException invalidCredentials() {
         return new InvalidUserOperationException(
                 HttpStatus.UNAUTHORIZED,

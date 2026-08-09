@@ -20,9 +20,9 @@ public final class UserMapper {
     private UserMapper() {
     }
 
-    public static User toEntity(RegisterRequest request, String encodedPassword) {
+    public static User toEntity(RegisterRequest request, String encodedPassword, String normalizedEmail) {
         return new User(
-                request.getEmail(),
+                normalizedEmail,
                 encodedPassword,
                 request.getFullName(),
                 request.getPhoneNumber(),

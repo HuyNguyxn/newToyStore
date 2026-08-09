@@ -81,6 +81,7 @@ public class SecurityConfig {
                                 "/users/register",
                                 "/users/login",
                                 "/users/verify",
+                                "/users/resend-verification",
                                 "/users/forgot-password",
                                 "/users/reset-password"
                         ).permitAll()

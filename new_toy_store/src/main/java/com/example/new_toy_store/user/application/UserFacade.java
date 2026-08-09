@@ -11,6 +11,7 @@ import com.example.new_toy_store.user.application.dto.request.UpdateUserRoleRequ
 import com.example.new_toy_store.user.application.dto.request.UpdateUserStatusRequest;
 import com.example.new_toy_store.user.application.dto.request.UserFilterRequest;
 import com.example.new_toy_store.user.application.dto.response.AuthResponse;
+import com.example.new_toy_store.user.application.dto.response.DeletedUserAdminResponse;
 import com.example.new_toy_store.user.application.dto.response.PasswordResetTokenResponse;
 import com.example.new_toy_store.user.application.dto.response.NotificationRecipientResponse;
 import com.example.new_toy_store.user.application.dto.response.UserAdminResponse;
@@ -43,6 +44,10 @@ public class UserFacade {
 
     public void verifyEmailToken(String token) {
         userService.verifyEmailToken(token);
+    }
+
+    public void resendVerificationEmail(String email) {
+        userService.resendVerificationEmail(email);
     }
 
     public PasswordResetTokenResponse requestPasswordReset(ForgotPasswordRequest request) {
@@ -133,5 +138,13 @@ public class UserFacade {
 
     public void deleteAccount(Integer id) {
         userService.deleteAccount(id);
+    }
+
+    public List<DeletedUserAdminResponse> getDeletedUsers() {
+        return userService.getDeletedUsers();
+    }
+
+    public void restoreDeletedAccount(Integer id) {
+        userService.restoreDeletedAccount(id);
     }
 }

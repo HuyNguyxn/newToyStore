@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   deleteAdminUser,
+  getAdminDeletedUsers,
   getAdminUserSummary,
   getAdminUserDetails,
   getAdminUsers,
   lockAdminUser,
+  restoreAdminUser,
   unlockAdminUser,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -22,6 +24,7 @@ const statusOptions = [
   { value: 'ACTIVE', label: '• Hoạt động', bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
   { value: 'LOCKED', label: '• Đã khóa', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   { value: 'UNVERIFIED', label: '• Chờ xác thực', bg: '#fffbebfb', color: '#d97706', border: '#fef3c7' },
+  { value: 'DELETED', label: '• Đã xóa mềm', bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
 ];
 
 /* Helper to generate user avatar initials and background color */
@@ -67,6 +70,7 @@ function AdminUserPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Filters State
   const [filters, setFilters] = useState({ keyword: '', role: '', status: '' });
@@ -93,7 +97,7 @@ function AdminUserPage() {
       loadUsers();
     }, 300);
     return () => clearTimeout(timer);
-  }, [filters.keyword, filters.role, filters.status]);
+  }, [filters.keyword, filters.role, filters.status, showDeleted]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -114,9 +118,9 @@ function AdminUserPage() {
       if (filters.role) params.role = filters.role;
       if (filters.status) params.status = filters.status;
 
-      const result = await getAdminUsers(params);
+      const result = showDeleted ? await getAdminDeletedUsers() : await getAdminUsers(params);
       let list = result?.content || result || [];
-      setUsers(list);
+      setUsers(showDeleted ? list.map((user) => ({ ...user, originalStatus: user.status, status: 'DELETED' })) : list);
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách người dùng.');
       setUsers([]);
@@ -241,10 +245,27 @@ function AdminUserPage() {
     setActionLoading(true);
     try {
       await deleteAdminUser(user.id);
-      setMessage(`Đã xóa người dùng ${user.email} khỏi hệ thống!`);
+      setMessage(`Đã chuyển tài khoản ${user.email} vào danh sách xóa mềm.`);
       await Promise.all([loadUsers(), loadUserSummary()]);
     } catch (err) {
       setError(err?.message || 'Xóa người dùng thất bại.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleRestoreUser(user) {
+    setActiveMenuId(null);
+    if (!window.confirm(`Khôi phục tài khoản "${user.email}"?`)) return;
+    setError('');
+    setMessage('');
+    setActionLoading(true);
+    try {
+      await restoreAdminUser(user.id);
+      setMessage(`Đã khôi phục tài khoản ${user.email}.`);
+      await Promise.all([loadUsers(), loadUserSummary()]);
+    } catch (err) {
+      setError(err?.message || 'Khôi phục tài khoản thất bại.');
     } finally {
       setActionLoading(false);
     }
@@ -280,8 +301,21 @@ function AdminUserPage() {
         <h1 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Quản lý người dùng
         </h1>
-        <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-          Tổng người dùng: {totalUsersCount}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeleted((current) => !current);
+              setFilters({ keyword: '', role: '', status: '' });
+              setSelectedIds([]);
+            }}
+            style={{ background: showDeleted ? '#0f172a' : '#fff', color: showDeleted ? '#fff' : '#475569', border: '1px solid #cbd5e1', padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+          >
+            {showDeleted ? '← Tài khoản hiện tại' : 'Tài khoản đã xóa'}
+          </button>
+          <div style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+            {showDeleted ? `Đã xóa mềm: ${users.length}` : `Tổng người dùng: ${totalUsersCount}`}
+          </div>
         </div>
       </div>
 
@@ -373,7 +407,7 @@ function AdminUserPage() {
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
           >
             <option value="">Tất cả trạng thái</option>
-            {statusOptions.map((s) => (
+            {statusOptions.filter((s) => showDeleted ? s.value === 'DELETED' : s.value !== 'DELETED').map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
@@ -415,7 +449,7 @@ function AdminUserPage() {
               <th style={{ padding: '14px 16px', width: '130px' }}>VAI TRÒ</th>
               <th style={{ padding: '14px 16px', width: '140px' }}>TRẠNG THÁI</th>
               <th style={{ padding: '14px 16px', width: '140px' }}>SỐ ĐIỆN THOẠI</th>
-              <th style={{ padding: '14px 16px', width: '150px' }}>NGÀY THAM GIA</th>
+              <th style={{ padding: '14px 16px', width: '150px' }}>{showDeleted ? 'NGÀY XÓA' : 'NGÀY THAM GIA'}</th>
               <th style={{ padding: '14px 16px', width: '80px', textAlign: 'center' }}>THAO TÁC</th>
             </tr>
           </thead>
@@ -532,7 +566,7 @@ function AdminUserPage() {
 
                     {/* JOINED DATE */}
                     <td style={{ padding: '12px 16px', color: '#64748b', fontSize: '12.5px' }}>
-                      {user.createdAt ? formatDateTime(user.createdAt) : '—'}
+                      {(showDeleted ? user.deletedAt : user.createdAt) ? formatDateTime(showDeleted ? user.deletedAt : user.createdAt) : '—'}
                     </td>
 
                     {/* ACTION (3 DOTS MENU) */}
@@ -579,7 +613,18 @@ function AdminUserPage() {
                             textAlign: 'left',
                           }}
                         >
-                          <div
+                          {showDeleted && (
+                            <div
+                              onClick={() => handleRestoreUser(user)}
+                              style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', color: '#16a34a', cursor: 'pointer' }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = '#f0fdf4')}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              Khôi phục tài khoản
+                            </div>
+                          )}
+
+                          {!showDeleted && <div
                             onClick={() => openUserDetails(user)}
                             style={{
                               padding: '8px 12px',
@@ -593,9 +638,9 @@ function AdminUserPage() {
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
                             Xem chi tiết
-                          </div>
+                          </div>}
 
-                          <div
+                          {!showDeleted && <div
                             onClick={() => {
                               setActiveMenuId(null);
                               setEditRoleModalUser(user);
@@ -613,9 +658,9 @@ function AdminUserPage() {
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
                             Đổi vai trò
-                          </div>
+                          </div>}
 
-                          <div
+                          {!showDeleted && <div
                             onClick={() => handleToggleLock(user)}
                             style={{
                               padding: '8px 12px',
@@ -629,11 +674,11 @@ function AdminUserPage() {
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
                             {user.status === 'LOCKED' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
-                          </div>
+                          </div>}
 
-                          <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }} />
+                          {!showDeleted && <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }} />}
 
-                          <div
+                          {!showDeleted && <div
                             onClick={() => handleDeleteUser(user)}
                             style={{
                               padding: '8px 12px',
@@ -647,7 +692,7 @@ function AdminUserPage() {
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                           >
                             Xóa tài khoản
-                          </div>
+                          </div>}
                         </div>
                       )}
                     </td>

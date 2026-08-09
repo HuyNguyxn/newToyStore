@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -54,17 +53,52 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
     @EntityGraph(attributePaths = "addresses")
     Page<User> findAll(Specification<User> spec, Pageable pageable);
 
-    @Query(value = "SELECT id FROM users WHERE email LIKE CONCAT(:email, '\\_deleted\\_%')", nativeQuery = true)
-    List<Integer> findSoftDeletedUserIdsByEmailPattern(@Param("email") String email);
+    @Query(value = """
+            SELECT id
+              FROM users
+             WHERE deleted_at IS NOT NULL
+               AND REGEXP_REPLACE(email, '_deleted_[0-9]+$', '') = :email
+             LIMIT 1
+            """, nativeQuery = true)
+    Optional<Integer> findSoftDeletedUserIdByOriginalEmail(@Param("email") String email);
 
-    @Query(value = "SELECT status FROM users WHERE email LIKE CONCAT(:email, '\\_deleted\\_%')", nativeQuery = true)
-    List<String> findStatusesOfSoftDeletedUsersByEmailPattern(@Param("email") String email);
+    @Query(value = """
+            SELECT id AS id,
+                   REGEXP_REPLACE(email, '_deleted_[0-9]+$', '') AS email,
+                   full_name AS fullName,
+                   phone_number AS phoneNumber,
+                   role AS role,
+                   status AS status,
+                   created_at AS createdAt,
+                   updated_at AS updatedAt,
+                   deleted_at AS deletedAt
+              FROM users
+             WHERE deleted_at IS NOT NULL
+             ORDER BY deleted_at DESC
+            """, nativeQuery = true)
+    List<DeletedUserProjection> findAllSoftDeletedUsers();
 
-    @Modifying(clearAutomatically = true)
-    @Query(value = "DELETE FROM addresses WHERE user_id IN :userIds", nativeQuery = true)
-    void hardDeleteAddressesByUserIds(@Param("userIds") List<Integer> userIds);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query(value = """
+            UPDATE users
+               SET email = :email,
+                   deleted_at = NULL,
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE id = :userId
+               AND deleted_at IS NOT NULL
+            """, nativeQuery = true)
+    int restoreSoftDeletedUser(@Param("userId") Integer userId, @Param("email") String email);
 
-    @Modifying(clearAutomatically = true)
-    @Query(value = "DELETE FROM users WHERE id IN :userIds", nativeQuery = true)
-    void hardDeleteUsersByIds(@Param("userIds") List<Integer> userIds);
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query(value = """
+            UPDATE addresses
+               SET deleted_at = NULL,
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = :userId
+               AND deleted_at >= :deletedAt
+            """, nativeQuery = true)
+    void restoreSoftDeletedAddresses(
+            @Param("userId") Integer userId,
+            @Param("deletedAt") LocalDateTime deletedAt
+    );
 }

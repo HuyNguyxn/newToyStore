@@ -68,3 +68,10 @@ export function resetPassword(payload) {
 export function verifyEmail(token) {
   return apiClient(`/users/verify?token=${encodeURIComponent(token)}`);
 }
+
+export function resendVerificationEmail(payload) {
+  return apiClient('/users/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
