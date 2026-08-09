@@ -27,6 +27,8 @@ function authReducer(state, action) {
       return { ...state, user: action.payload, loading: false, error: null };
     case 'AUTH_ERROR':
       return { ...state, loading: false, error: action.payload };
+    case 'AUTH_IDLE':
+      return { ...state, loading: false, error: null };
     case 'AUTH_LOGOUT':
       return { user: null, token: null, loading: false, error: null };
     default:
@@ -65,30 +67,45 @@ export function AuthProvider({ children }) {
 
   async function login(credentials) {
     dispatch({ type: 'AUTH_LOADING' });
-    const response = await loginUser(credentials);
-    storeToken(response.accessToken);
-    dispatch({
-      type: 'AUTH_SUCCESS',
-      payload: {
-        token: response.accessToken,
-        user: response.user,
-      },
-    });
-    return response.user;
+    try {
+      const response = await loginUser(credentials);
+      storeToken(response.accessToken);
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          token: response.accessToken,
+          user: response.user,
+        },
+      });
+      return response.user;
+    } catch (error) {
+      dispatch({ type: 'AUTH_ERROR', payload: error?.message || 'Đăng nhập thất bại.' });
+      throw error;
+    }
   }
 
   async function register(payload) {
     dispatch({ type: 'AUTH_LOADING' });
-    const user = await registerUser(payload);
-    dispatch({ type: 'AUTH_ERROR', payload: null });
-    return user;
+    try {
+      const user = await registerUser(payload);
+      dispatch({ type: 'AUTH_IDLE' });
+      return user;
+    } catch (error) {
+      dispatch({ type: 'AUTH_ERROR', payload: error?.message || 'Đăng ký thất bại.' });
+      throw error;
+    }
   }
 
   async function updateProfile(payload) {
     dispatch({ type: 'AUTH_LOADING' });
-    const user = await updateCurrentUser(payload);
-    dispatch({ type: 'AUTH_PROFILE_SUCCESS', payload: user });
-    return user;
+    try {
+      const user = await updateCurrentUser(payload);
+      dispatch({ type: 'AUTH_PROFILE_SUCCESS', payload: user });
+      return user;
+    } catch (error) {
+      dispatch({ type: 'AUTH_ERROR', payload: error?.message || 'Cập nhật tài khoản thất bại.' });
+      throw error;
+    }
   }
 
   function setUserProfile(userProfile) {

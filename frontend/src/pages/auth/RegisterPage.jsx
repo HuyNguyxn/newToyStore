@@ -32,10 +32,10 @@ function RegisterPage() {
 
     try {
       await register({
-        email: form.email,
+        email: form.email.trim(),
         password: form.password,
-        fullName: form.fullName,
-        phoneNumber: form.phoneNumber,
+        fullName: form.fullName.trim(),
+        phoneNumber: form.phoneNumber.trim() || null,
       });
       setSuccess('Đăng ký thành công. Bạn có thể đăng nhập bằng tài khoản vừa tạo.');
       setTimeout(() => navigate('/login'), 900);

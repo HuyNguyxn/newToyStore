@@ -25,12 +25,12 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
 
     Optional<CustomerPaymentRefund> findFirstByRefundCodeStartingWithOrderByCreatedAtDesc(String refundCodePrefix);
 
-    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PaymentRefund r WHERE r.paymentId = :paymentId AND r.status IN :statuses")
+    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM CustomerPaymentRefund r WHERE r.paymentId = :paymentId AND r.status IN :statuses")
     double sumAmountByPaymentIdAndStatuses(@Param("paymentId") Integer paymentId, @Param("statuses") Collection<RefundStatus> statuses);
 
     @Query("""
             SELECT COUNT(r)
-              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+              FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status
                AND r.createdAt >= :from
                AND r.createdAt < :to
@@ -40,7 +40,7 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
 
     @Query("""
             SELECT COALESCE(SUM(r.amount), 0)
-              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+              FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status
                AND r.createdAt >= :from
                AND r.createdAt < :to
@@ -50,7 +50,7 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
 
     @Query("""
             SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0)
-              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+              FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status
                AND r.createdAt >= :from
                AND r.createdAt < :to
@@ -61,7 +61,7 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
 
     @Query("""
             SELECT COALESCE(r.reason, 'UNKNOWN'), COALESCE(r.reason, 'Unknown'), COUNT(r), COALESCE(SUM(r.amount), 0)
-              FROM PaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+              FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.createdAt >= :from
                AND r.createdAt < :to
                AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
@@ -97,12 +97,12 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
     java.util.List<Object[]> aggregateRefundByProduct(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT r FROM PaymentRefund r WHERE r.id = :id")
+    @Query("SELECT r FROM CustomerPaymentRefund r WHERE r.id = :id")
     Optional<CustomerPaymentRefund> findByIdForUpdate(@Param("id") Integer id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE PaymentRefund r
+            UPDATE CustomerPaymentRefund r
                SET r.deletedAt = CURRENT_TIMESTAMP,
                    r.updatedAt = CURRENT_TIMESTAMP,
                    r.version = r.version + 1

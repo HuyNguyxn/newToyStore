@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 const TOKEN_KEY = 'newToyStoreToken';
 
 export function getStoredToken() {
@@ -32,21 +32,6 @@ export async function apiClient(endpoint, options = {}) {
     headers,
   });
 
-  if (response.status === 401) {
-    clearStoredToken();
-    throw {
-      status: 401,
-      message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
-    };
-  }
-
-  if (response.status === 403) {
-    throw {
-      status: 403,
-      message: 'Bạn không có quyền thực hiện thao tác này (Chỉ dành cho Quản lý / Quản trị viên).',
-    };
-  }
-
   if (response.status === 204) {
     return null;
   }
@@ -55,9 +40,25 @@ export async function apiClient(endpoint, options = {}) {
   const data = contentType.includes('application/json') ? await response.json() : await response.text();
 
   if (!response.ok) {
-    throw typeof data === 'object'
-      ? data
-      : { status: response.status, message: data || 'Đã xảy ra lỗi. Vui lòng thử lại.' };
+    if (response.status === 401 && token) {
+      clearStoredToken();
+    }
+
+    if (typeof data === 'object' && data !== null) {
+      throw data;
+    }
+
+    const fallbackMessages = {
+      401: token
+        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+        : 'Email hoặc mật khẩu không chính xác.',
+      403: 'Bạn không có quyền thực hiện thao tác này.',
+    };
+
+    throw {
+      status: response.status,
+      message: data || fallbackMessages[response.status] || 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    };
   }
 
   return data;

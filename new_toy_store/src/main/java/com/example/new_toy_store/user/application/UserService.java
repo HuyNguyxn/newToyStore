@@ -98,11 +98,10 @@ public class UserService {
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = UserMapper.toEntity(request, encodedPassword);
+        // Registration currently has no email-delivery flow or verification UI.
+        // Activate the account here so the successful registration response is usable immediately.
+        user.activate();
         repository.save(user);
-
-        String tokenValue = java.util.UUID.randomUUID().toString();
-        VerificationToken verificationToken = new VerificationToken(tokenValue, TokenType.VERIFICATION, user);
-        tokenRepository.save(verificationToken);
 
         return UserMapper.toProfileResponse(user, getDefaultAvatarUrl());
     }
