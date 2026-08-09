@@ -64,3 +64,7 @@ export function resetPassword(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function verifyEmail(token) {
+  return apiClient(`/users/verify?token=${encodeURIComponent(token)}`);
+}
