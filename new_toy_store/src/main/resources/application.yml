@@ -44,9 +44,13 @@ spring:
           starttls:
             enable: true
 
+server:
+  port: ${PORT:8080}
+
 app:
   user:
     default-avatar-url: ${DEFAULT_AVATAR_URL:}
+
   seed:
     admin:
       enabled: ${SEED_ADMIN_ENABLED:false}
@@ -54,53 +58,62 @@ app:
       password: ${SEED_ADMIN_PASSWORD:}
       full-name: ${SEED_ADMIN_FULL_NAME:}
       phone-number: ${SEED_ADMIN_PHONE:}
+
     staff:
       enabled: ${SEED_STAFF_ENABLED:false}
       email: ${SEED_STAFF_EMAIL:}
       password: ${SEED_STAFF_PASSWORD:}
       full-name: ${SEED_STAFF_FULL_NAME:}
       phone-number: ${SEED_STAFF_PHONE:}
+
     manager:
       enabled: ${SEED_MANAGER_ENABLED:false}
       email: ${SEED_MANAGER_EMAIL:}
       password: ${SEED_MANAGER_PASSWORD:}
       full-name: ${SEED_MANAGER_FULL_NAME:}
       phone-number: ${SEED_MANAGER_PHONE:}
+
     customer:
       enabled: ${SEED_CUSTOMER_ENABLED:false}
       email: ${SEED_CUSTOMER_EMAIL:}
       password: ${SEED_CUSTOMER_PASSWORD:}
       full-name: ${SEED_CUSTOMER_FULL_NAME:}
       phone-number: ${SEED_CUSTOMER_PHONE:}
+
   cart:
     cleanup:
       cron: "0 0 0 * * ?"
       zone: "Asia/Ho_Chi_Minh"
+
   order:
     timeout:
       cron: "0 */15 * * * *"
       zone: "Asia/Ho_Chi_Minh"
       expiration-minutes: 30
+
   supplier-return:
     sla:
       cron: "0 0 8 * * ?"
       zone: "Asia/Ho_Chi_Minh"
       warning-hours: 48
       critical-hours: 96
+
   payment:
     vnpay:
       enabled: ${VNPAY_ENABLED:true}
       pay-url: "${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
       refund-url: "${VNPAY_REFUND_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}"
-      tmn-code: "${VNPAY_TMN_CODE:K0FNJ3HC}"
-      hash-secret: "${VNPAY_HASH_SECRET:CQYTEUDFQWEVLEYFNYWGQQLPHJTPRYXN}"
-      return-url: "${VNPAY_RETURN_URL:http://localhost:5173/vnpay-return}"
-      ipn-url: "${VNPAY_IPN_URL:http://localhost:8080/payments/vnpay-ipn}"
+      tmn-code: "${VNPAY_TMN_CODE:}"
+      hash-secret: "${VNPAY_HASH_SECRET:}"
+      return-url: "${VNPAY_RETURN_URL:}"
+      ipn-url: "${VNPAY_IPN_URL:}"
+
   notification:
     zone: "Asia/Ho_Chi_Minh"
     retention-days: 90
     cleanup:
       cron: "0 30 2 * * ?"
+
   cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
     api-key: ${CLOUDINARY_API_KEY:}
