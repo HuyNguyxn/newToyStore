@@ -2,6 +2,7 @@ package com.example.new_toy_store.infrastructure.security.config;
 
 import com.example.new_toy_store.infrastructure.security.jwt.JwtAuthenticationEntryPoint;
 import com.example.new_toy_store.infrastructure.security.jwt.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,7 +22,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
@@ -30,13 +33,16 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final String frontendBaseUrl;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            JwtAuthenticationEntryPoint authenticationEntryPoint
+            JwtAuthenticationEntryPoint authenticationEntryPoint,
+            @Value("${app.frontend.base-url:}") String frontendBaseUrl
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @Bean
@@ -52,12 +58,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:4173",
-                "http://127.0.0.1:4173"
-        ));
+        configuration.setAllowedOrigins(resolveAllowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -67,6 +68,29 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> resolveAllowedOrigins() {
+        Set<String> origins = new LinkedHashSet<>(List.of(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:4173",
+                "http://127.0.0.1:4173"
+        ));
+
+        String normalizedFrontendUrl = normalizeOrigin(frontendBaseUrl);
+        if (!normalizedFrontendUrl.isBlank()) {
+            origins.add(normalizedFrontendUrl);
+        }
+
+        return List.copyOf(origins);
+    }
+
+    private String normalizeOrigin(String origin) {
+        if (origin == null) {
+            return "";
+        }
+        return origin.trim().replaceAll("/+$", "");
     }
 
     @Bean
