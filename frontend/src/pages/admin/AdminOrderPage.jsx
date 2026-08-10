@@ -44,9 +44,9 @@ function isInternalTestOrder(item) {
   const userRole = String(item.user?.role || item.userRole || '').toUpperCase();
   if (userRole === 'CUSTOMER') return false;
 
-  // 2. Check direct user ID of the buyer (Seed Admin/Staff IDs 1 and 2 only)
+  // 2. Check direct user ID of seeded internal users.
   const uid = Number(item.userId || item.user?.id || item.customerId || 0);
-  if (uid === 1 || uid === 2) return true;
+  if (uid > 0 && uid <= 3) return true;
 
   // 3. Check buyer user role if attached (ADMIN, STAFF, MANAGER are internal test users)
   if (['ADMIN', 'STAFF', 'MANAGER'].includes(userRole)) return true;

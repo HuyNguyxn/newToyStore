@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
 import {
   cancelSupplierPayment,
   createSupplierPaymentFromImport,
@@ -30,17 +29,6 @@ function methodText(method) {
   if (code === 'OTHER') return 'Khác';
   return code || 'Chưa rõ';
 }
-
-const tabStyle = ({ isActive }) => ({
-  padding: '9px 14px',
-  borderRadius: 999,
-  border: isActive ? '1px solid #ea580c' : '1px solid #e2e8f0',
-  background: isActive ? '#fff7ed' : '#ffffff',
-  color: isActive ? '#c2410c' : '#475569',
-  fontSize: 13,
-  fontWeight: 900,
-  textDecoration: 'none',
-});
 
 function AdminSupplierPaymentPage() {
   const [payments, setPayments] = useState([]);
@@ -153,7 +141,7 @@ function AdminSupplierPaymentPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap' }}>
         <div>
           <p style={{ margin: '0 0 6px', color: '#ea580c', fontSize: 13, fontWeight: 900, textTransform: 'uppercase' }}>Quản lý mua hàng</p>
-          <h1 style={{ margin: 0, color: '#0f172a', fontSize: 26, fontWeight: 900 }}>Thanh toán đơn hàng nội bộ</h1>
+          <h1 style={{ margin: 0, color: '#0f172a', fontSize: 26, fontWeight: 900 }}>Thanh toán Nhà cung cấp</h1>
           <p style={{ margin: '8px 0 0', color: '#64748b' }}>Theo dõi công nợ phát sinh từ phiếu nhập và tiền đã chi cho nhà cung cấp.</p>
         </div>
         <form onSubmit={handleCreateFromImport} style={{ display: 'flex', gap: 8, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 10 }}>
@@ -168,11 +156,6 @@ function AdminSupplierPaymentPage() {
             Tạo công nợ
           </button>
         </form>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <NavLink to="/admin/payments" style={tabStyle}>Đơn hàng kinh doanh</NavLink>
-        <NavLink to="/admin/supplier-payments" style={tabStyle}>Đơn hàng nội bộ</NavLink>
       </div>
 
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: 12, borderRadius: 8, marginBottom: 12, fontWeight: 800 }}>{error}</div>}
@@ -200,7 +183,6 @@ function AdminSupplierPaymentPage() {
                 <th style={{ padding: 14 }}>Mã công nợ</th>
                 <th style={{ padding: 14 }}>Nhà cung cấp</th>
                 <th style={{ padding: 14 }}>Phiếu nhập</th>
-                <th style={{ padding: 14 }}>Loại đơn</th>
                 <th style={{ padding: 14 }}>Tổng tiền</th>
                 <th style={{ padding: 14 }}>Còn nợ</th>
                 <th style={{ padding: 14 }}>Trạng thái</th>
@@ -209,9 +191,9 @@ function AdminSupplierPaymentPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="8" style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan="7" style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>Đang tải dữ liệu...</td></tr>
               ) : payments.length === 0 ? (
-                <tr><td colSpan="8" style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>Chưa có khoản thanh toán nội bộ phù hợp.</td></tr>
+                <tr><td colSpan="7" style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}>Chưa có khoản thanh toán nhà cung cấp phù hợp.</td></tr>
               ) : payments.map((payment) => {
                 const info = statusInfo(payment.status);
                 return (
@@ -219,7 +201,6 @@ function AdminSupplierPaymentPage() {
                     <td style={{ padding: 14, fontWeight: 900, color: '#ea580c' }}>{payment.invoiceCode}</td>
                     <td style={{ padding: 14 }}>{payment.supplierName || `NCC${payment.supplierId}`}</td>
                     <td style={{ padding: 14 }}>PN{payment.importNoteId}</td>
-                    <td style={{ padding: 14, color: '#475569', fontWeight: 800 }}>Nội bộ</td>
                     <td style={{ padding: 14, fontWeight: 800 }}>{formatPrice(payment.totalAmount)}</td>
                     <td style={{ padding: 14, fontWeight: 900, color: payment.remainingAmount > 0 ? '#dc2626' : '#15803d' }}>{formatPrice(payment.remainingAmount)}</td>
                     <td style={{ padding: 14 }}><span style={{ background: info.bg, color: info.color, border: `1px solid ${info.border}`, borderRadius: 8, padding: '4px 10px', fontWeight: 900 }}>{info.label}</span></td>
@@ -264,7 +245,6 @@ function AdminSupplierPaymentPage() {
             <div style={{ display: 'grid', gap: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 13 }}>
               <div>Nhà cung cấp: <strong>{selected.supplierName || `NCC${selected.supplierId}`}</strong></div>
               <div>Phiếu nhập: <strong>PN{selected.importNoteId}</strong></div>
-              <div>Loại đơn: <strong>Nội bộ</strong></div>
               <div>Tổng tiền: <strong>{formatPrice(selected.totalAmount)}</strong></div>
               <div>Đã trả: <strong>{formatPrice(selected.paidAmount)}</strong></div>
               <div>Còn nợ: <strong style={{ color: '#dc2626' }}>{formatPrice(selected.remainingAmount)}</strong></div>

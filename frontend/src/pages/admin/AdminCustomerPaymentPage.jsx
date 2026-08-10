@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useOutletContext, useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   cancelAdminCustomerPayment,
   deleteAdminCustomerPayment,
@@ -45,17 +45,6 @@ function methodBadge(method) {
   if (code === 'COD') return { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
   return { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' };
 }
-
-const tabStyle = ({ isActive }) => ({
-  padding: '9px 14px',
-  borderRadius: 999,
-  border: isActive ? '1px solid #ea580c' : '1px solid #e2e8f0',
-  background: isActive ? '#fff7ed' : '#ffffff',
-  color: isActive ? '#c2410c' : '#475569',
-  fontSize: 13,
-  fontWeight: 900,
-  textDecoration: 'none',
-});
 
 function AdminCustomerPaymentPage() {
   const context = useOutletContext() || {};
@@ -161,20 +150,15 @@ function AdminCustomerPaymentPage() {
       <div style={{ background: 'linear-gradient(135deg, #fff8f3 0%, #fff1f2 100%)', border: '1px solid #ffedd5', padding: '16px 24px', borderRadius: 16, marginBottom: 20, boxShadow: '0 4px 12px rgba(234,88,12,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 900, color: '#9a3412', margin: 0, textTransform: 'uppercase', letterSpacing: .5 }}>
-            Thanh toán đơn hàng kinh doanh
+            Thanh toán Khách hàng
           </h1>
           <div style={{ fontSize: 13, color: '#15803d', fontWeight: 800, marginTop: 4 }}>
-            Đồng bộ với dữ liệu đơn bán hàng và giao dịch khách hàng
+            Hiển thị toàn bộ giao dịch thanh toán của khách hàng
           </div>
         </div>
         <div style={{ color: '#475569', fontSize: 13, fontWeight: 800 }}>
           {displayPayments.length} giao dịch
         </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <NavLink to="/admin/payments" style={tabStyle}>Đơn hàng kinh doanh</NavLink>
-        <NavLink to="/admin/supplier-payments" style={tabStyle}>Đơn hàng nội bộ</NavLink>
       </div>
 
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13, fontWeight: 700 }}>{error}</div>}
@@ -215,7 +199,6 @@ function AdminCustomerPaymentPage() {
                 <th style={{ padding: '14px 16px' }}>Mã GD</th>
                 <th style={{ padding: '14px 16px' }}>Mã đơn</th>
                 <th style={{ padding: '14px 16px' }}>Mã KH</th>
-                <th style={{ padding: '14px 16px' }}>Loại đơn</th>
                 <th style={{ padding: '14px 16px' }}>Phương thức</th>
                 <th style={{ padding: '14px 16px' }}>Trạng thái</th>
                 <th style={{ padding: '14px 16px', textAlign: 'right' }}>Số tiền</th>
@@ -225,9 +208,9 @@ function AdminCustomerPaymentPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="9" style={{ padding: 36, textAlign: 'center', color: '#64748b' }}>Đang tải danh sách giao dịch...</td></tr>
+                <tr><td colSpan="8" style={{ padding: 36, textAlign: 'center', color: '#64748b' }}>Đang tải danh sách giao dịch...</td></tr>
               ) : displayPayments.length === 0 ? (
-                <tr><td colSpan="9" style={{ padding: 36, textAlign: 'center', color: '#94a3b8' }}>Không có giao dịch thanh toán phù hợp.</td></tr>
+                <tr><td colSpan="8" style={{ padding: 36, textAlign: 'center', color: '#94a3b8' }}>Không có giao dịch thanh toán phù hợp.</td></tr>
               ) : (
                 displayPayments.map((payment, index) => {
                   const status = paymentStatusInfo(payment.status);
@@ -237,7 +220,6 @@ function AdminCustomerPaymentPage() {
                       <td style={{ padding: '14px 16px', fontWeight: 700, color: '#334155' }}>#{payment.id}</td>
                       <td style={{ padding: '14px 16px', fontWeight: 800, color: '#ea580c' }}>DH{payment.orderId}</td>
                       <td style={{ padding: '14px 16px', color: '#475569' }}>KH{payment.userId}</td>
-                      <td style={{ padding: '14px 16px', color: '#475569', fontWeight: 800 }}>Kinh doanh</td>
                       <td style={{ padding: '14px 16px' }}>
                         <span style={{ background: method.bg, color: method.color, border: `1px solid ${method.border}`, padding: '3px 8px', borderRadius: 6, fontSize: 12, fontWeight: 800 }}>
                           {formatPaymentMethodText(payment.method)}
@@ -281,7 +263,6 @@ function AdminCustomerPaymentPage() {
             <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0', display: 'grid', gap: 10, fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Mã đơn:</span><strong>DH{selected.orderId}</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Mã khách:</span><strong>KH{selected.userId}</strong></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Loại đơn:</span><strong>Kinh doanh</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Trạng thái:</span><strong style={{ color: paymentStatusInfo(selected.status).color }}>{paymentStatusInfo(selected.status).label}</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Phương thức:</span><strong>{formatPaymentMethodText(selected.method)}</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>Số tiền:</span><strong style={{ color: '#dc2626' }}>{formatPrice(selected.amount)}</strong></div>
