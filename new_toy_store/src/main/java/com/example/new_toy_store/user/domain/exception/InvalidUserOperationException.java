@@ -64,6 +64,33 @@ public class InvalidUserOperationException extends UserDomainException {
         );
     }
 
+    public static InvalidUserOperationException permanentDeleteRequiresDeletedAccount(Integer userId) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Không thể xóa vĩnh viễn tài khoản",
+                "Chỉ tài khoản đã xóa mềm mới có thể bị xóa vĩnh viễn",
+                Map.of("userId", userId == null ? "" : userId)
+        );
+    }
+
+    public static InvalidUserOperationException permanentDeleteBlockedByRelatedData(Integer userId) {
+        return new InvalidUserOperationException(
+                HttpStatus.CONFLICT,
+                "Không thể xóa vĩnh viễn tài khoản",
+                "Tài khoản đang có dữ liệu liên quan nên không thể xóa vĩnh viễn",
+                Map.of("userId", userId == null ? "" : userId)
+        );
+    }
+
+    public static InvalidUserOperationException emailDeliveryFailed(String email) {
+        return new InvalidUserOperationException(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Không thể gửi email",
+                "Không thể gửi email xác thực. Vui lòng kiểm tra cấu hình Gmail trong file .env rồi thử lại",
+                Map.of("email", safe(email))
+        );
+    }
+
     public static InvalidUserOperationException invalidCredentials() {
         return new InvalidUserOperationException(
                 HttpStatus.UNAUTHORIZED,

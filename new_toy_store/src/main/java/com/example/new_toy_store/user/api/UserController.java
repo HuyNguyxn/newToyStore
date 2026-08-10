@@ -163,7 +163,7 @@ public class UserController {
         return facade.getDeletedUsers();
     }
 
-    @PatchMapping("/{id}/restore")
+    @PatchMapping("/{id:\\d+}/restore")
     @PreAuthorize("hasRole('ADMIN')")
     public void restoreDeletedUser(
             @PathVariable @Positive(message = "ID nguoi dung phai lon hon 0") Integer id
@@ -171,13 +171,21 @@ public class UserController {
         facade.restoreDeletedAccount(id);
     }
 
-    @GetMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}/permanent")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void permanentlyDeleteDeletedUser(
+            @PathVariable @Positive(message = "ID nguoi dung phai lon hon 0") Integer id
+    ) {
+        facade.permanentlyDeleteDeletedAccount(id);
+    }
+
+    @GetMapping("/{id:\\d+}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserAdminResponse getUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         return facade.getUserForAdmin(id);
     }
 
-    @PatchMapping("/{id}/role")
+    @PatchMapping("/{id:\\d+}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public UserAdminResponse updateRole(
             @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
@@ -186,7 +194,7 @@ public class UserController {
         return facade.updateUserRole(id, request);
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{id:\\d+}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public UserAdminResponse updateStatus(
             @PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id,
@@ -195,19 +203,19 @@ public class UserController {
         return facade.updateUserStatus(id, request);
     }
 
-    @PatchMapping("/{id}/lock")
+    @PatchMapping("/{id:\\d+}/lock")
     @PreAuthorize("hasRole('ADMIN')")
     public void lockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         facade.lockAccount(id);
     }
 
-    @PatchMapping("/{id}/unlock")
+    @PatchMapping("/{id:\\d+}/unlock")
     @PreAuthorize("hasRole('ADMIN')")
     public void unlockAccount(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         facade.unlockAccount(id);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(@PathVariable @Positive(message = "ID người dùng phải lớn hơn 0") Integer id) {
         facade.deleteAccount(id);

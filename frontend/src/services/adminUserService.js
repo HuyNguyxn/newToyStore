@@ -18,3 +18,4 @@ export const unlockAdminUser = (id) => apiClient(`/users/${id}/unlock`, { method
 export const deleteAdminUser = (id) => apiClient(`/users/${id}`, { method: 'DELETE' });
 export const getAdminDeletedUsers = () => apiClient('/users/deleted');
 export const restoreAdminUser = (id) => apiClient(`/users/${id}/restore`, { method: 'PATCH' });
+export const permanentlyDeleteAdminUser = (id) => apiClient(`/users/${id}/permanent`, { method: 'DELETE' });

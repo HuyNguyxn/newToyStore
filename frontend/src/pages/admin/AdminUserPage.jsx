@@ -6,6 +6,7 @@ import {
   getAdminUserDetails,
   getAdminUsers,
   lockAdminUser,
+  permanentlyDeleteAdminUser,
   restoreAdminUser,
   unlockAdminUser,
   updateAdminUserRole,
@@ -266,6 +267,23 @@ function AdminUserPage() {
       await Promise.all([loadUsers(), loadUserSummary()]);
     } catch (err) {
       setError(err?.message || 'Khôi phục tài khoản thất bại.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handlePermanentDeleteUser(user) {
+    setActiveMenuId(null);
+    if (!window.confirm(`Xóa vĩnh viễn tài khoản "${user.email}"? Thao tác này không thể khôi phục.`)) return;
+    setError('');
+    setMessage('');
+    setActionLoading(true);
+    try {
+      await permanentlyDeleteAdminUser(user.id);
+      setMessage(`Đã xóa vĩnh viễn tài khoản ${user.email}.`);
+      await Promise.all([loadUsers(), loadUserSummary()]);
+    } catch (err) {
+      setError(err?.message || 'Xóa vĩnh viễn tài khoản thất bại.');
     } finally {
       setActionLoading(false);
     }
@@ -614,14 +632,25 @@ function AdminUserPage() {
                           }}
                         >
                           {showDeleted && (
-                            <div
-                              onClick={() => handleRestoreUser(user)}
-                              style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', color: '#16a34a', cursor: 'pointer' }}
-                              onMouseEnter={(e) => (e.currentTarget.style.background = '#f0fdf4')}
-                              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                            >
-                              Khôi phục tài khoản
-                            </div>
+                            <>
+                              <div
+                                onClick={() => handleRestoreUser(user)}
+                                style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', color: '#16a34a', cursor: 'pointer' }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#f0fdf4')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                Khôi phục tài khoản
+                              </div>
+                              <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }} />
+                              <div
+                                onClick={() => handlePermanentDeleteUser(user)}
+                                style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', color: '#dc2626', cursor: 'pointer' }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#fef2f2')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                Xóa vĩnh viễn
+                              </div>
+                            </>
                           )}
 
                           {!showDeleted && <div

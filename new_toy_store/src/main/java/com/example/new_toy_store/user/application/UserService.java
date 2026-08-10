@@ -38,6 +38,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -367,6 +369,26 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void permanentlyDeleteDeletedAccount(Integer userId) {
+        boolean exists = repository.findAllSoftDeletedUsers().stream()
+                .anyMatch(user -> userId.equals(user.getId()));
+        if (!exists) {
+            throw InvalidUserOperationException.permanentDeleteRequiresDeletedAccount(userId);
+        }
+
+        try {
+            tokenRepository.deleteAllByUserIdNative(userId);
+            repository.deleteAddressesByUserId(userId);
+            int deleted = repository.deleteSoftDeletedUserPermanently(userId);
+            if (deleted == 0) {
+                throw new UserNotFoundException(userId);
+            }
+        } catch (DataIntegrityViolationException ex) {
+            throw InvalidUserOperationException.permanentDeleteBlockedByRelatedData(userId);
+        }
+    }
+
     public User getAuthenticatedUser(String email) {
         return repository.findByEmail(email)
                 .orElseThrow(() -> InvalidUserOperationException.authenticatedUserMissing(email));
@@ -427,7 +449,11 @@ public class UserService {
                 verificationLink,
                 token.getExpiryDate()
         );
-        mailService.sendEmail(user.getEmail(), "[NewToyStore] Xác thực tài khoản", body);
+        try {
+            mailService.sendEmail(user.getEmail(), "[NewToyStore] Xác thực tài khoản", body);
+        } catch (MailException ex) {
+            throw InvalidUserOperationException.emailDeliveryFailed(user.getEmail());
+        }
     }
 
     private void sendPasswordResetEmail(User user, VerificationToken token) {
@@ -443,7 +469,11 @@ public class UserService {
                 Liên kết hết hạn lúc: %s
                 Nếu bạn không gửi yêu cầu này, hãy bỏ qua email.
                 """.formatted(user.getFullName(), resetLink, token.getExpiryDate());
-        mailService.sendEmail(user.getEmail(), "[NewToyStore] Đặt lại mật khẩu", body);
+        try {
+            mailService.sendEmail(user.getEmail(), "[NewToyStore] Đặt lại mật khẩu", body);
+        } catch (MailException ex) {
+            throw InvalidUserOperationException.emailDeliveryFailed(user.getEmail());
+        }
     }
 
     private DeletedUserAdminResponse toDeletedUserResponse(DeletedUserProjection user) {

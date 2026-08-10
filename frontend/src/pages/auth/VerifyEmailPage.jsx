@@ -1,28 +1,37 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { verifyEmail } from '../../services/authService.js';
 
 function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('loading');
-  const [message, setMessage] = useState('Dang xac thuc email...');
+  const [message, setMessage] = useState('Đang xác thực email...');
+  const verifiedTokenRef = useRef('');
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const token = searchParams.get('token')?.trim();
     if (!token) {
       setStatus('error');
-      setMessage('Link xac thuc khong hop le hoac thieu token.');
+      setMessage('Link xác thực không hợp lệ hoặc thiếu token.');
       return;
     }
+
+    if (verifiedTokenRef.current === token) {
+      return;
+    }
+
+    verifiedTokenRef.current = token;
+    setStatus('loading');
+    setMessage('Đang xác thực email...');
 
     verifyEmail(token)
       .then(() => {
         setStatus('success');
-        setMessage('Xac thuc email thanh cong. Ban co the dang nhap ngay bay gio.');
+        setMessage('Xác thực email thành công. Bạn có thể đăng nhập ngay bây giờ.');
       })
       .catch((error) => {
         setStatus('error');
-        setMessage(error?.message || 'Khong the xac thuc email. Token co the da het han.');
+        setMessage(error?.message || 'Không thể xác thực email. Token có thể đã hết hạn.');
       });
   }, [searchParams]);
 

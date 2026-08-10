@@ -1100,6 +1100,33 @@ h3 {
   letter-spacing: 0.2px;
 }
 
+.auth-resend {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  margin-top: 14px;
+  color: #8b817a;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.auth-resend button {
+  border: 1px solid rgba(231, 141, 50, 0.32);
+  border-radius: var(--radius-pill);
+  padding: 9px 18px;
+  background: #fff7ed;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.auth-resend button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .auth-forgot-link {
   justify-self: center;
   color: #8dbfca;

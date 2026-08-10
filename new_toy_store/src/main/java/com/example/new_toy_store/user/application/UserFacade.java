@@ -147,4 +147,8 @@ public class UserFacade {
     public void restoreDeletedAccount(Integer id) {
         userService.restoreDeletedAccount(id);
     }
+
+    public void permanentlyDeleteDeletedAccount(Integer id) {
+        userService.permanentlyDeleteDeletedAccount(id);
+    }
 }

@@ -101,4 +101,12 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
             @Param("userId") Integer userId,
             @Param("deletedAt") LocalDateTime deletedAt
     );
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM addresses WHERE user_id = :userId", nativeQuery = true)
+    void deleteAddressesByUserId(@Param("userId") Integer userId);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM users WHERE id = :userId AND deleted_at IS NOT NULL", nativeQuery = true)
+    int deleteSoftDeletedUserPermanently(@Param("userId") Integer userId);
 }

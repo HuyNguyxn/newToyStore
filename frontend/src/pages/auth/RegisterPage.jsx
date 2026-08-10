@@ -41,9 +41,12 @@ function RegisterPage() {
         phoneNumber: form.phoneNumber.trim() || null,
       });
       setRegisteredEmail(normalizedEmail);
-      setSuccess('Đăng ký thành công. Vui lòng kiểm tra Gmail để xác thực tài khoản trước khi đăng nhập.');
+      setSuccess('Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.');
     } catch (err) {
-      setError(err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
+      const message = err?.status === 503
+        ? 'Hệ thống chưa gửi được email xác thực. Vui lòng thử lại sau hoặc liên hệ quản trị viên.'
+        : err.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.';
+      setError(message);
     }
   }
 
@@ -51,11 +54,21 @@ function RegisterPage() {
     if (!registeredEmail) return;
     setResending(true);
     setError('');
+    setSuccess('');
     try {
       await resendVerificationEmail({ email: registeredEmail });
       setSuccess('Đã gửi lại email xác thực. Vui lòng kiểm tra cả hộp thư rác nếu chưa thấy email.');
     } catch (err) {
-      setError(err.message || 'Không thể gửi lại email xác thực.');
+      if (err?.status === 409) {
+        setRegisteredEmail('');
+        setSuccess('Tài khoản đã được xác thực. Bạn có thể đăng nhập ngay bây giờ.');
+        return;
+      }
+
+      const message = err?.status === 503
+        ? 'Hệ thống chưa gửi lại được email xác thực. Vui lòng thử lại sau.'
+        : err.message || 'Không thể gửi lại email xác thực.';
+      setError(message);
     } finally {
       setResending(false);
     }
@@ -81,11 +94,6 @@ function RegisterPage() {
 
         {error && <div className="form-alert">{error}</div>}
         {success && <div className="form-alert form-alert--success">{success}</div>}
-        {registeredEmail && (
-          <button type="button" onClick={handleResendVerification} disabled={resending || loading}>
-            {resending ? 'ĐANG GỬI LẠI...' : 'GỬI LẠI EMAIL XÁC THỰC'}
-          </button>
-        )}
 
         <form className="auth-form auth-form--compact" onSubmit={handleSubmit}>
           <label>
@@ -117,6 +125,15 @@ function RegisterPage() {
             {loading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ NGAY♣'}
           </button>
         </form>
+
+        {registeredEmail && (
+          <div className="auth-resend">
+            <span>Chưa nhận được email xác thực?</span>
+            <button type="button" onClick={handleResendVerification} disabled={resending || loading}>
+              {resending ? 'Đang gửi lại...' : 'Gửi lại email'}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
