@@ -30,6 +30,15 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     Optional<CustomerPaymentTransaction> findByOrderIdAndMethod(Integer orderId, CustomerPaymentMethod method);
 
+    @Query("""
+            SELECT p
+              FROM CustomerPaymentTransaction p JOIN Order o ON p.orderId = o.id
+             WHERE p.method = com.example.new_toy_store.customer_payment.domain.CustomerPaymentMethod.COD
+               AND p.status = com.example.new_toy_store.customer_payment.domain.CustomerPaymentStatus.PENDING
+               AND o.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
+            """)
+    List<CustomerPaymentTransaction> findPendingCodPaymentsForCompletedOrders();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM CustomerPaymentTransaction p WHERE p.id = :id")
     Optional<CustomerPaymentTransaction> findByIdForUpdate(@Param("id") Integer id);

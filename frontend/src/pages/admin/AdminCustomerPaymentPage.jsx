@@ -46,6 +46,16 @@ function methodBadge(method) {
   return { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' };
 }
 
+function isInternalTestPayment(payment) {
+  if (!payment) return false;
+  const userRole = String(payment.user?.role || payment.userRole || '').toUpperCase();
+  if (userRole === 'CUSTOMER') return false;
+  if (['ADMIN', 'STAFF', 'MANAGER'].includes(userRole)) return true;
+
+  const userId = Number(payment.userId || payment.user?.id || 0);
+  return userId > 0 && userId <= 3;
+}
+
 function AdminCustomerPaymentPage() {
   const context = useOutletContext() || {};
   const userRole = context.userRole || 'STAFF';
@@ -53,6 +63,7 @@ function AdminCustomerPaymentPage() {
   const initialStatus = searchParams.get('status') || '';
   const canDelete = userRole === 'ADMIN';
 
+  const [dataMode, setDataMode] = useState('REAL');
   const [payments, setPayments] = useState([]);
   const [selected, setSelected] = useState(null);
   const [refunds, setRefunds] = useState([]);
@@ -66,7 +77,12 @@ function AdminCustomerPaymentPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 20;
 
-  const displayPayments = useMemo(() => payments, [payments]);
+  const displayPayments = useMemo(
+    () => payments.filter((payment) => dataMode === 'TEST'
+      ? isInternalTestPayment(payment)
+      : !isInternalTestPayment(payment)),
+    [payments, dataMode],
+  );
 
   useEffect(() => {
     loadPayments(initialStatus);
@@ -155,6 +171,22 @@ function AdminCustomerPaymentPage() {
           <div style={{ fontSize: 13, color: '#15803d', fontWeight: 800, marginTop: 4 }}>
             Hiển thị toàn bộ giao dịch thanh toán của khách hàng
           </div>
+        </div>
+        <div style={{ display: 'inline-flex', background: '#ffffff', padding: 4, borderRadius: 12, border: '2px solid #fed7aa', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <button
+            type="button"
+            onClick={() => { setDataMode('REAL'); setSelected(null); }}
+            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 900, cursor: 'pointer', background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent', color: dataMode === 'REAL' ? '#ffffff' : '#64748b', boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none' }}
+          >
+            🟢 Đơn Kinh doanh ({payments.filter((payment) => !isInternalTestPayment(payment)).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setDataMode('TEST'); setSelected(null); }}
+            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 900, cursor: 'pointer', background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent', color: dataMode === 'TEST' ? '#ffffff' : '#64748b', boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none' }}
+          >
+            🧪 Đơn Thử nghiệm ({payments.filter(isInternalTestPayment).length})
+          </button>
         </div>
         <div style={{ color: '#475569', fontSize: 13, fontWeight: 800 }}>
           {displayPayments.length} giao dịch

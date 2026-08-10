@@ -5,6 +5,7 @@ import com.example.new_toy_store.global.event.PaymentCompletedEvent;
 import com.example.new_toy_store.global.event.PaymentFailedEvent;
 import com.example.new_toy_store.global.event.PaymentRefundedEvent;
 import com.example.new_toy_store.global.event.ShipmentDeliveredEvent;
+import com.example.new_toy_store.global.event.OrderStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.PaymentSpecification;
 import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
@@ -307,8 +308,22 @@ public class PaymentService {
             return;
         }
 
-        CustomerPaymentTransaction payment = repository.findByOrderIdAndMethod(event.orderId(), CustomerPaymentMethod.COD)
+        recordCodCollected(event.orderId(), "COD-" + event.trackingCode());
+    }
+
+    @Transactional
+    public void recordCodCollected(OrderStatusChangedEvent event) {
+        if (event.currentStatus() != OrderStatus.COMPLETED) {
+            return;
+        }
+
+        recordCodCollected(event.orderId(), "COD-ORDER-" + event.orderId());
+    }
+
+    private void recordCodCollected(Integer orderId, String collectionReference) {
+        CustomerPaymentTransaction payment = repository.findByOrderIdAndMethod(orderId, CustomerPaymentMethod.COD)
                 .orElse(null);
+
         if (payment == null || payment.getStatus() == CustomerPaymentStatus.SUCCEEDED) {
             return;
         }
@@ -319,9 +334,20 @@ public class PaymentService {
             );
         }
 
-        payment.collectCod("COD-" + event.trackingCode());
+        payment.collectCod(collectionReference);
         repository.save(payment);
         publishPaymentCompleted(payment);
+    }
+
+    @Transactional
+    public int reconcileCompletedCodPayments() {
+        List<CustomerPaymentTransaction> payments = repository.findPendingCodPaymentsForCompletedOrders();
+        payments.forEach(payment -> {
+            payment.collectCod("COD-ORDER-" + payment.getOrderId());
+            repository.save(payment);
+            publishPaymentCompleted(payment);
+        });
+        return payments.size();
     }
 
     @Transactional
