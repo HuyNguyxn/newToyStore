@@ -2,8 +2,9 @@ package com.example.new_toy_store.order.application;
 
 import com.example.new_toy_store.global.event.PaymentCompletedEvent;
 import com.example.new_toy_store.order.domain.exception.InvalidOrderOperationException;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class OrderPaymentEventListener {
@@ -14,8 +15,12 @@ public class OrderPaymentEventListener {
         this.orderService = orderService;
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        if (!"PENDING".equals(orderService.getOrderStatus(event.orderId()))) {
+            return;
+        }
+
         try {
             orderService.confirm(event.orderId(), "Order confirmed after payment #" + event.paymentId());
         } catch (InvalidOrderOperationException ignored) {
