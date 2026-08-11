@@ -37,6 +37,25 @@ flowchart LR
 - Administrative catalog, inventory, suppliers, imports and logistics workflows.
 - Administrative payments, refunds, promotions, moderation, users and statistics.
 
+## Live demo
+
+- Frontend: [https://toy-store-wine.vercel.app](https://toy-store-wine.vercel.app)
+- Swagger UI: [https://toy-store-api-03ma.onrender.com/swagger-ui.html](https://toy-store-api-03ma.onrender.com/swagger-ui.html)
+- Backend API: [https://toy-store-api-03ma.onrender.com](https://toy-store-api-03ma.onrender.com)
+
+The backend uses a Render Free instance, so the first request after a period of inactivity can take approximately 30–60 seconds.
+
+## Demo accounts
+
+| Role | Email | Password | Suggested use |
+|---|---|---|---|
+| Customer | `customer@gmail.com` | `123456` | Browse products, manage the cart, place orders and review customer features. |
+| Staff | `staff@gmail.com` | `123456` | Review operational product, inventory, order and logistics workflows. |
+| Manager | `manager@gmail.com` | `123456` | Review management workflows and role-restricted operations. |
+| Admin | `admin@gmail.com` | `123456` | Review the complete administration interface and API access. |
+
+These accounts share the deployed demo environment. Data created, updated or deleted during evaluation is visible to other visitors. Do not enter personal, confidential or real payment information. VNPay runs in its sandbox environment.
+
 ## Quick start
 
 ### Backend
