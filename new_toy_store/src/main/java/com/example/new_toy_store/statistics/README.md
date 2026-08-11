@@ -60,14 +60,10 @@ Date bucketing and comparison-period calculation are the main algorithms. Heavy 
 
 This is an application/read-model composition module, not an aggregate-owning domain. Its broad dependencies are intentional for reporting but would be a service-extraction boundary concern.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: timezone boundaries, period comparisons, AUTO grouping, empty datasets and aggregate correctness.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Reporting uses current operational tables rather than a separate warehouse/read database.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Strong read-time coupling to many modules and untyped `Object[]` repository projections make refactoring/query changes fragile; no tests were found.
+Strong read-time coupling to many modules and untyped `Object[]` repository projections make refactoring and query changes fragile.

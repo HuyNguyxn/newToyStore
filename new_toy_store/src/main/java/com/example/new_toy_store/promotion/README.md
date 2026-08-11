@@ -60,14 +60,10 @@ Discount calculation uses enum strategy methods; batched product promotion looku
 
 Type and scope behavior lives in enums, and ID targeting avoids Product entity coupling. The facade is the cross-module application boundary.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: percentage caps, fixed discounts, time windows, scope setup, usage concurrency and authorization.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 One model supports product, whole-order and shipping discounts; nullable setup fields are validated according to scope/type.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Management endpoints lack explicit role restrictions and no automated calculation/concurrency tests were found.
+Management endpoints lack explicit role restrictions.

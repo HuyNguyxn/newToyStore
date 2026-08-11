@@ -63,15 +63,11 @@ Create-if-missing makes the import event handler retry-tolerant at the applicati
 
 The invoice is the aggregate boundary; external records are IDs/facade lookups, while its transaction children are tightly owned.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: duplicate event delivery, partial/full payment, overpayment, cancellation and concurrent recording.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 The payable is derived from the completed inbound note rather than independently entered.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
 - Missing Flyway DDL for mapped tables.
-- No explicit locking or automated concurrency tests.
+- No explicit locking was found for concurrent payment recording.

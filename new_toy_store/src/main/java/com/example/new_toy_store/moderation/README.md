@@ -60,14 +60,10 @@ The normalized in-memory cache enables repeated review text matching without N d
 
 Moderation exposes a facade and events; Review does not access its repository/entity directly.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: normalization, category action, cache coherence, deleted-word behavior and concurrent version updates.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Soft delete supports reversible policy changes; hard delete is explicitly separate.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Cache is process-local and no automated cache-coherence tests were found.
+The cache is process-local and is not shared between application instances.

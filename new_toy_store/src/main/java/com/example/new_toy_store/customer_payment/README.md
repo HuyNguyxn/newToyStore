@@ -78,14 +78,10 @@ Idempotency lookup avoids duplicate retries. Pessimistic locking serializes stat
 
 ID references isolate persistence, while a facade and events form the module API. VNPay details are kept in infrastructure rather than the entity model.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended tests: idempotent checkout, signed VNPay callback validation, callback replay, refund caps, locks and every transition.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 COD and VNPay share one payment model; refund method distinguishes manual COD handling from VNPay provider refund.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-No automated gateway/locking tests or durable outbox were found; external calls and local state therefore need careful failure/retry handling.
+No durable outbox was found; external calls and local state therefore need careful failure/retry handling.

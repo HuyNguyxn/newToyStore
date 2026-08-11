@@ -121,16 +121,11 @@ Sync uses bounded collections and product lookup/enrichment. Bulk repository upd
 
 Cart is an aggregate with owned items; product references remain IDs. A facade exposes application operations and events decouple checkout/status reactions, providing pragmatic DDD Lite boundaries.
 
-## 16. Testing Strategy
-
-No cart-specific tests were found. Recommended tests: item limits, ownership, checkout event success/failure, concurrent checkout, expiry cleanup and variant-price updates.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 `addedPrice` snapshots the price when an item is added, while product events can refresh it. Checkout is event-driven but currently runs inside the same application process.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
 - Security matcher path differs from the controller path.
-- No automated tests were found.
 - `findForUpdate...` method names imply locking, but their declarations do not include `@Lock`.

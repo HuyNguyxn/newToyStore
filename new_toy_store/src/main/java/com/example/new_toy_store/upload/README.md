@@ -60,14 +60,10 @@ No special algorithm. Upload latency/size is dominated by the external provider;
 
 The controller depends on an application service and Cloudinary remains in infrastructure, separating provider details from callers.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: file validation, provider failure translation, authentication and image/video result mapping.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Business modules store returned URLs rather than Cloudinary SDK objects.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-No provider abstraction interface, cleanup workflow or automated upload tests were found.
+No provider abstraction interface or cleanup workflow was found.

@@ -70,14 +70,10 @@ BCrypt is deliberately CPU-costly for password storage. Batch recipient lookup s
 
 User owns credentials and exposes a facade rather than its repository to most modules. Security implementation remains in infrastructure.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: verification/reset expiry and reuse, role/status transition matrix, JWT login, address default invariant and authorization.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Token types define expiration minutes (`VERIFICATION`, `RESET_PASSWORD`, `ACCESS_TOKEN`); JWT signing configuration comes from environment, not persisted tokens.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Duplicate current-user profile/password endpoints increase API surface. `JwtProvider` contains a fallback signing value when `jwt.secret` is not configured; production deployments should require external configuration. No authentication/security tests were found.
+Duplicate current-user profile/password endpoints increase API surface. `JwtProvider` contains a fallback signing value when `jwt.secret` is not configured; production deployments should require external configuration.

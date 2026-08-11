@@ -61,14 +61,10 @@ Completion emits a compact list of item payloads for batch stock processing. Rep
 
 The note is an aggregate and uses snapshots/IDs. Completion events decouple inventory and payable side effects.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: totals, status transitions, duplicate prevention and listener atomicity/idempotency.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Product name and import price are captured on the line so receipt history does not depend on future catalog changes.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-No tests or durable event/outbox mechanism were found.
+No durable event/outbox mechanism was found.

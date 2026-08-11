@@ -60,14 +60,6 @@ No special algorithm beyond specifications and batch lookup.
 
 Supplier has a clean ID-based boundary and a facade used by dependent modules.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: duplicate identity, state capabilities, restore/version conflict and dependent-module validation.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Availability rules live in `SupplierStatus`, keeping them near the domain model.
-
-## 18. Known Limitations / Technical Debt
-
-No automated tests were found.

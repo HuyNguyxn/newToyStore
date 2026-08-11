@@ -65,14 +65,10 @@ No special algorithm; it delegates to existing pageable/fetch logic.
 
 Warehouse is an application composition module rather than a data-owning domain. It reuses public services/facades, though direct `ImportService` dependency is tighter than facade-only communication.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: authorization and correct delegation/transaction behavior.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Warehouse terminology presents import notes as batches without duplicating the underlying model.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-The service depends directly on another module's application service and reuses its DTOs; no tests were found.
+The service depends directly on another module's application service and reuses its DTOs.

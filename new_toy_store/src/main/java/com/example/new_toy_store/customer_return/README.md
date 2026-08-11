@@ -65,14 +65,10 @@ Risk classification and returned-quantity aggregation use order snapshots/maps. 
 
 The aggregate owns its evidence/history while external identities remain IDs. Events separate physical logistics, payment refund and inventory restoration.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: full transition matrix, quantity/refund validation, duplicate detection, shipment event ordering, dispute resolution and expiry automation.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 `expectedRefundAmount` is stored per item, and history records actor/status changes. Sellable return reasons drive stock restoration rather than directly changing inventory inside this module.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-No locking/retry or automated event-order tests were found.
+No locking or retry policy was found for concurrent lifecycle operations.

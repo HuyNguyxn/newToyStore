@@ -62,14 +62,10 @@ Snapshot creation avoids later source-data drift. Pessimistic locks serialize sh
 
 One typed aggregate handles three shipment directions. IDs and source snapshots limit persistent coupling, while facades/events handle integration.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: action matrix, concurrent actions, duplicate source shipments, ownership and all three source directions.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 `SELF_SHIPPING` is implemented; `GHN` is described in the enum as reserved for a later phase.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-No external carrier gateway implementation or automated lifecycle tests were found.
+No external carrier gateway implementation was found.

@@ -128,15 +128,10 @@ Creation batches product lookups and uses map-based variant resolution to avoid 
 
 Order is a clear aggregate boundary with snapshots and ID-based external references. Facades/events provide most module communication, although the application service directly imports external facade and DTO types.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended tests: every state transition, stock rollback, promotion consume/release, duplicate checkout, snapshot stability, ownership and timeout cancellation.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Snapshots deliberately prevent later product name, variant, price or cost changes from rewriting order history.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-- No automated transition/concurrency tests.
 - Cross-module synchronous calls share one monolithic transaction and would require redesign before service extraction.

@@ -65,14 +65,10 @@ Simple aggregation; response latency is the sum/maximum of several sequential in
 
 This is an application-layer read composition, not a DDD domain. It uses public facades instead of cross-domain repositories.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: authorization, empty counts and source failure behavior.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Keeping dashboard composition outside source domains avoids assigning dashboard ownership to one transactional aggregate.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Sequential cross-module queries can make the endpoint sensitive to slow aggregates; no tests were found.
+Sequential cross-module queries can make the endpoint sensitive to slow aggregates.

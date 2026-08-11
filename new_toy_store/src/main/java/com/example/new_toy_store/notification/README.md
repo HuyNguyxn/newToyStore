@@ -61,14 +61,10 @@ Deduplication avoids duplicate event fan-out; bulk database updates handle read-
 
 Event listeners make Notification a downstream module; reference IDs and URLs avoid importing source entities.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: event deduplication, preference matrix, effective broadcast authorization, expiry cleanup and email failure behavior.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Notification type carries category and default email behavior; user preferences can disable channels/categories.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Method and URL broadcast role policies disagree (effective ADMIN-only), and email/event delivery has no durable queue/outbox or detected tests.
+Method and URL broadcast role policies disagree (effective ADMIN-only), and email/event delivery has no durable queue or outbox.

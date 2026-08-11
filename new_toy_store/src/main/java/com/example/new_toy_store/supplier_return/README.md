@@ -65,14 +65,10 @@ Totals and accepted quantities are aggregate calculations. SLA scheduler/classif
 
 The return aggregate owns evidence/history and references other domains by ID. Events separate logistics and inventory reactions.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: transition matrix, role authorization, stock deduction/rollback, inspection bounds and SLA selection.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Batch number and expiry are snapshotted per return line so the exact inbound lot can be identified.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Only generic authentication protects the controller; explicit role policy is absent. No automated tests were found.
+Only generic authentication protects the controller; an explicit role policy is absent.

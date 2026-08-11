@@ -61,14 +61,10 @@ Moderation scans cached blacklist data; rating summary uses repository aggregati
 
 External records are IDs/snapshots. Facades and events avoid cross-domain repositories, though the service imports other application/domain DTOs.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended: purchase eligibility, duplicate reviews, media bounds, moderation decisions, rating aggregation and ownership.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Variant attributes are snapshotted so a review continues to describe the purchased variant after catalog edits.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
-Review product reads are not public in security configuration, and no automated tests were found.
+Review product reads are not public in the security configuration.

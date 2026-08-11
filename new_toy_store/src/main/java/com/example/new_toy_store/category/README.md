@@ -107,14 +107,10 @@ Tree construction and cycle detection are the significant algorithms. Materializ
 
 The hierarchy is kept inside one aggregate model and repository abstraction. Events expose changes without importing Product entities.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended tests: cycle rejection, subtree path/level updates, optimistic version conflict, visibility filtering and cascade behavior.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Both adjacency (`parent_id`) and materialized hierarchy data (`path`, `level`) are stored, trading more complex moves for efficient navigation.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
 No automated verification of deep-tree moves or concurrent edits was found.

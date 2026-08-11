@@ -11,6 +11,7 @@ This area provides the operational interface for staff, managers and administrat
 | `AdminDashboardPage.jsx` | Administrative landing page |
 | `AdminProductPage.jsx` | Product, variant and media management |
 | `AdminCategoryPage.jsx` | Category tree management |
+| `AdminPromotionPage.jsx` | Promotion configuration and product selection |
 | `AdminOrderPage.jsx` | Order search and lifecycle operations |
 | `AdminCustomerPaymentPage.jsx` | Customer payment monitoring |
 | `AdminCustomerRefundPage.jsx` | Refund processing |

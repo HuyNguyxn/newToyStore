@@ -10,6 +10,7 @@ The application is a modular monolith: business capabilities live in separate to
 
 - Java 21, Spring Boot 3.3.5 and Maven Wrapper.
 - Spring Web, Spring Data JPA, Spring Security and Bean Validation.
+- Springdoc OpenAPI with Swagger UI.
 - Stateless JWT authentication and BCrypt password hashing.
 - MySQL, Hibernate and Flyway migrations.
 - Spring Mail, Cloudinary and VNPay integrations.
@@ -131,6 +132,7 @@ Supported configuration names include:
 
 ```text
 DB_URL, DB_USERNAME, DB_PASSWORD, PORT
+FRONTEND_BASE_URL, BACKEND_BASE_URL
 MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
 JWT_SECRET, DEFAULT_AVATAR_URL
 VNPAY_ENABLED, VNPAY_PAY_URL, VNPAY_REFUND_URL
@@ -139,7 +141,7 @@ CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_FOL
 SEED_ADMIN_*, SEED_STAFF_*, SEED_MANAGER_*, SEED_CUSTOMER_*
 ```
 
-Do not commit real credentials. The default database URL targets `jdbc:mysql://localhost:3306/new_toy_store`.
+Do not commit real credentials. `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` must identify the MySQL instance used by the application.
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -152,6 +154,10 @@ Run verification with:
 ```
 
 No backend test source files were detected when this documentation was prepared. API routes and domain-specific limitations are documented in the linked domain READMEs.
+
+## API documentation
+
+When the backend is running, the generated OpenAPI document is available at `/v3/api-docs` and Swagger UI is available at `/swagger-ui.html`. Availability still follows the active security configuration.
 
 ## Current technical debt
 

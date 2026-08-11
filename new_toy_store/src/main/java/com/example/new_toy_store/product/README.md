@@ -121,16 +121,11 @@ Batch ID loading and map lookup support order/cart enrichment. Inventory batches
 
 Product presents an application facade and owns its variant/inventory lifecycle. Scalar supplier IDs and events reduce coupling; the direct N-N Category entity relation is an exception to domain isolation.
 
-## 16. Testing Strategy
-
-No tests were found. Recommended tests: concurrent stock deduction, batch expiry/order, variant rules, cascade/orphan behavior, product status transitions and cross-module validation failures.
-
-## 17. Notes / Design Decisions
+## 16. Notes / Design Decisions
 
 Dynamic variant attributes are represented by `ProductAttributeValue` rows rather than fixed columns. Rating is denormalized on Product and refreshed from review events.
 
-## 18. Known Limitations / Technical Debt
+## 17. Known Limitations / Technical Debt
 
 - Category is directly mapped as a cross-domain JPA entity.
 - Inventory has optimistic locking but no detected retry policy for conflicts.
-- No automated tests were found.
