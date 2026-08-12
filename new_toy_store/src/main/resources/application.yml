@@ -120,8 +120,8 @@ app:
       refund-url: "${VNPAY_REFUND_URL}"
       tmn-code: "${VNPAY_TMN_CODE}"
       hash-secret: "${VNPAY_HASH_SECRET}"
-      return-url: "${VNPAY_RETURN_URL}"
-      ipn-url: "${VNPAY_IPN_URL}"
+      return-url: "${FRONTEND_BASE_URL}/payments/vnpay-return"
+      ipn-url: "${BACKEND_BASE_URL}/payments/vnpay-ipn"
 
   notification:
     zone: "Asia/Ho_Chi_Minh"

@@ -1640,7 +1640,7 @@ function AdminStatisticsPage() {
                         <th style={{ padding: '10px 8px', width: '60px' }}>ID</th>
                         <th style={{ padding: '10px 8px' }}>TÊN KHÁCH HÀNG</th>
                         <th style={{ padding: '10px 8px', textAlign: 'right' }}>CHI TIÊU (VND)</th>
-                        <th style={{ padding: '10px 8px', textAlign: 'center', width: '110px' }}>ĐƠN / SP MUA</th>
+                        <th style={{ padding: '10px 8px', textAlign: 'center', width: '150px' }}>SẢN PHẨM / ĐƠN</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1648,7 +1648,12 @@ function AdminStatisticsPage() {
                         const isTop3 = idx < 3;
                         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1;
                         const name = cust.label || cust.customerName || cust.fullName || `Khách hàng #${cust.id || idx + 1}`;
-                        const count = cust.count || cust.orderCount || cust.productCount || 1;
+                        const orderCount = Number(cust.orderCount ?? 0);
+                        const purchasedQuantity = Number(cust.purchasedQuantity ?? 0);
+                        const averageProductsPerOrder = Number(
+                          cust.averageProductsPerOrder
+                          ?? (orderCount > 0 ? purchasedQuantity / orderCount : 0),
+                        );
                         const spent = cust.amount || cust.totalSpent || 0;
                         return (
                           <tr
@@ -1696,7 +1701,7 @@ function AdminStatisticsPage() {
                             {/* SỐ LƯỢNG MUA */}
                             <td style={{ padding: '12px 8px', textAlign: 'center' }}>
                               <span style={{ padding: '4px 10px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', fontSize: '12px', fontWeight: '800' }}>
-                                {count} món / đơn
+                                {formatNumber(averageProductsPerOrder)} sản phẩm / đơn
                               </span>
                             </td>
                           </tr>

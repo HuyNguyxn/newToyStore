@@ -8,6 +8,7 @@ import com.example.new_toy_store.statistics.application.dto.response.PaymentMeth
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
+import com.example.new_toy_store.statistics.application.dto.response.TopSpendingCustomerResponse;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
@@ -80,7 +81,7 @@ public class StatisticsController {
     }
 
     @GetMapping("/customers/top-spending")
-    public List<BreakdownStatisticResponse> getTopSpendingCustomers(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+    public List<TopSpendingCustomerResponse> getTopSpendingCustomers(@Valid @ModelAttribute StatisticsOverviewRequest request) {
         return facade.getTopSpendingCustomers(toPeriod(request), request.getTopLimit());
     }
 

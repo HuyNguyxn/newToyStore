@@ -6,6 +6,7 @@ import com.example.new_toy_store.statistics.application.dto.response.PaymentMeth
 import com.example.new_toy_store.statistics.application.dto.response.RevenueTrendPointResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
+import com.example.new_toy_store.statistics.application.dto.response.TopSpendingCustomerResponse;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.domain.StatisticDateField;
@@ -51,7 +52,7 @@ public class StatisticsFacade {
         return service.getRevenueByCategory(period, limit);
     }
 
-    public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
+    public List<TopSpendingCustomerResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
         return service.getTopSpendingCustomers(period, limit);
     }
 

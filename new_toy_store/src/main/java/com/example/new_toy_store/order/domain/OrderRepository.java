@@ -234,17 +234,31 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             Pageable pageable
     );
 
-    @Query("""
-            SELECT o.userId, u.fullName, COUNT(o), COALESCE(SUM(o.totalAmount), 0)
-              FROM Order o JOIN User u ON o.userId = u.id
-             WHERE o.status IN :statuses
-               AND o.createdAt >= :from
-               AND o.createdAt < :to
-               AND (u.id > 3 AND (u.role IS NULL OR u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER))
-             GROUP BY o.userId, u.fullName
-             ORDER BY COALESCE(SUM(o.totalAmount), 0) DESC
-            """)
-    List<Object[]> findTopSpendingCustomers(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
+    @Query(value = """
+            SELECT o.user_id,
+                   u.full_name,
+                   COUNT(o.id) AS order_count,
+                   COALESCE(SUM(item_totals.purchased_quantity), 0) AS purchased_quantity,
+                   COALESCE(SUM(o.total_amount), 0) AS total_spent
+              FROM orders o
+              JOIN users u ON u.id = o.user_id
+              LEFT JOIN (
+                    SELECT oi.order_id, SUM(oi.quantity) AS purchased_quantity
+                      FROM order_items oi
+                     WHERE oi.deleted_at IS NULL
+                     GROUP BY oi.order_id
+              ) item_totals ON item_totals.order_id = o.id
+             WHERE o.status IN (:statuses)
+               AND o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+               AND u.deleted_at IS NULL
+               AND u.id > 3
+               AND (u.role IS NULL OR u.role = 'CUSTOMER')
+             GROUP BY o.user_id, u.full_name
+             ORDER BY total_spent DESC
+            """, nativeQuery = true)
+    List<Object[]> findTopSpendingCustomers(@Param("statuses") List<String> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to, Pageable pageable);
 
     @Query("""
             SELECT FUNCTION('date', u.createdAt), CONCAT(FUNCTION('date', u.createdAt)), COUNT(u), 0

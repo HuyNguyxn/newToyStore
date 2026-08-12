@@ -25,6 +25,7 @@ import com.example.new_toy_store.statistics.application.dto.response.StatisticPe
 import com.example.new_toy_store.statistics.application.dto.response.StatisticsOverviewResponse;
 import com.example.new_toy_store.statistics.application.dto.response.StatusCountResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
+import com.example.new_toy_store.statistics.application.dto.response.TopSpendingCustomerResponse;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
 import com.example.new_toy_store.statistics.domain.StatisticDateField;
 import com.example.new_toy_store.user.domain.UserRepository;
@@ -171,16 +172,23 @@ public class StatisticsService {
 
 
     @Transactional(readOnly = true)
-    public List<BreakdownStatisticResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
+    public List<TopSpendingCustomerResponse> getTopSpendingCustomers(StatisticPeriod period, int limit) {
         double totalAmount = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, period.startDateTime(), period.endExclusiveDateTime());
         return orderRepository.findTopSpendingCustomers(
-                        REVENUE_ORDER_STATUSES,
+                        REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
                         period.startDateTime(),
                         period.endExclusiveDateTime(),
                         PageRequest.of(0, safeLimit(limit, 50))
                 )
                 .stream()
-                .map(row -> breakdown(row, totalAmount))
+                .map(row -> new TopSpendingCustomerResponse(
+                        ((Number) row[0]).intValue(),
+                        String.valueOf(row[1]),
+                        ((Number) row[2]).longValue(),
+                        ((Number) row[3]).longValue(),
+                        ((Number) row[4]).doubleValue(),
+                        totalAmount
+                ))
                 .toList();
     }
 
