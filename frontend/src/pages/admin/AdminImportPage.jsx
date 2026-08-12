@@ -365,6 +365,8 @@ function AdminImportPage() {
   const [newVariantForm, setNewVariantForm] = useState({ title: '', price: '' });
 
   const [loading, setLoading] = useState(true);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const [supplierLoadError, setSupplierLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -400,18 +402,15 @@ function AdminImportPage() {
   }, [filters]);
 
   async function loadInitialData() {
+    loadSupplierOptions();
+
     try {
-      const [supRes, prodRes, treeRes, catRes] = await Promise.allSettled([
-        getSuppliers({ page: 0, size: 1000 }),
+      const [prodRes, treeRes, catRes] = await Promise.allSettled([
         getAdminProducts({ page: 0, size: 1000 }),
         getAdminCategoryTree(),
         getAdminCategories(),
       ]);
 
-      if (supRes.status === 'fulfilled') {
-        const list = supRes.value?.content || supRes.value || [];
-        setSuppliers(list);
-      }
       if (prodRes.status === 'fulfilled') {
         const list = prodRes.value?.content || prodRes.value || [];
         setAllProducts(list);
@@ -427,6 +426,37 @@ function AdminImportPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function loadSupplierOptions() {
+    setLoadingSuppliers(true);
+    setSupplierLoadError('');
+
+    try {
+      const firstPage = await getSuppliers({ page: 0, size: 200, sort: 'name,asc' });
+      const firstItems = Array.isArray(firstPage) ? firstPage : firstPage?.content || [];
+      const totalPages = Number(firstPage?.totalPages || 1);
+
+      let allSuppliers = [...firstItems];
+      if (totalPages > 1) {
+        const remainingPages = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) => (
+            getSuppliers({ page: index + 1, size: 200, sort: 'name,asc' })
+          )),
+        );
+        allSuppliers = allSuppliers.concat(
+          remainingPages.flatMap((page) => (Array.isArray(page) ? page : page?.content || [])),
+        );
+      }
+
+      setSuppliers(allSuppliers);
+    } catch (err) {
+      console.error('Không thể tải danh sách nhà cung cấp:', err);
+      setSuppliers([]);
+      setSupplierLoadError(err?.message || 'Không thể tải danh sách nhà cung cấp.');
+    } finally {
+      setLoadingSuppliers(false);
     }
   }
 
@@ -939,11 +969,25 @@ function AdminImportPage() {
                 required
                 style={{ width: '100%', padding: '12px 16px', border: '1px solid #3b82f6', borderRadius: '12px', fontSize: '14px', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: '700' }}
               >
-                <option value="">-- Chọn nhà cung cấp --</option>
+                <option value="">
+                  {loadingSuppliers ? '-- Đang tải nhà cung cấp... --' : '-- Chọn nhà cung cấp --'}
+                </option>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>{s.name} ({s.phoneNumber || 'NCC'})</option>
                 ))}
               </select>
+              {supplierLoadError && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', color: '#dc2626', fontSize: '12px', fontWeight: '700' }}>
+                  <span>{supplierLoadError}</span>
+                  <button
+                    type="button"
+                    onClick={loadSupplierOptions}
+                    style={{ border: '1px solid #fecaca', borderRadius: '8px', background: '#fff', color: '#dc2626', padding: '4px 9px', cursor: 'pointer', fontWeight: '800' }}
+                  >
+                    Tải lại
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
