@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getAdminProducts } from '../../services/adminProductService.js';
+import { getAllAdminProducts } from '../../services/adminProductService.js';
 import {
   changeSupplierStatus,
   createSupplier,
@@ -68,6 +68,7 @@ function AdminSupplierPage() {
   const [viewSupplier, setViewSupplier] = useState(null);
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [supplierProductsError, setSupplierProductsError] = useState('');
 
   const [editSupplier, setEditSupplier] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -94,18 +95,23 @@ function AdminSupplierPage() {
   useEffect(() => {
     if (viewSupplier?.id) {
       setLoadingProducts(true);
-      getAdminProducts({ page: 0, size: 1000 })
-        .then((res) => {
-          const list = res?.content || res || [];
+      setSupplierProductsError('');
+      getAllAdminProducts({ sort: 'name,asc' })
+        .then((list) => {
           const matched = list.filter(
             (p) => String(p.supplierId) === String(viewSupplier.id) || p.supplierName === viewSupplier.name
           );
           setSupplierProducts(matched);
         })
-        .catch(() => setSupplierProducts([]))
+        .catch((err) => {
+          console.error('Không thể tải sản phẩm của nhà cung cấp:', err);
+          setSupplierProducts([]);
+          setSupplierProductsError(err?.message || 'Không thể tải sản phẩm của nhà cung cấp.');
+        })
         .finally(() => setLoadingProducts(false));
     } else {
       setSupplierProducts([]);
+      setSupplierProductsError('');
     }
   }, [viewSupplier]);
 
@@ -562,6 +568,12 @@ function AdminSupplierPage() {
                       {loadingProducts ? (
                         <tr>
                           <td colSpan="2" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Đang tải danh sách sản phẩm...</td>
+                        </tr>
+                      ) : supplierProductsError ? (
+                        <tr>
+                          <td colSpan="2" style={{ padding: '24px', textAlign: 'center', color: '#dc2626', fontWeight: '700' }}>
+                            {supplierProductsError}
+                          </td>
                         </tr>
                       ) : supplierProducts.length === 0 ? (
                         <tr>

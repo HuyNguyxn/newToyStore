@@ -29,6 +29,23 @@ export function updateAdminProduct(productId, payload) {
   });
 }
 
+export async function getAllAdminProducts(params = {}) {
+  const pageSize = 200;
+  const firstPage = await getAdminProducts({ ...params, page: 0, size: pageSize });
+  if (Array.isArray(firstPage)) return firstPage;
+
+  const items = [...(firstPage?.content || [])];
+  const totalPages = Number(firstPage?.totalPages || 1);
+  if (totalPages <= 1) return items;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) => (
+      getAdminProducts({ ...params, page: index + 1, size: pageSize })
+    )),
+  );
+  return items.concat(remainingPages.flatMap((page) => page?.content || []));
+}
+
 export function updateProductStatus(productId, status) {
   return apiClient(`/products/${productId}/status`, {
     method: 'PATCH',

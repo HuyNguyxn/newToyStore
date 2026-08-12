@@ -8,8 +8,8 @@ import {
   getImportDetails,
   getImports,
 } from '../../services/adminImportService.js';
-import { addProductVariant, createAdminProduct, getAdminProducts } from '../../services/adminProductService.js';
-import { getSuppliers } from '../../services/adminSupplierService.js';
+import { addProductVariant, createAdminProduct, getAllAdminProducts } from '../../services/adminProductService.js';
+import { getAllSuppliers } from '../../services/adminSupplierService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 const emptyItem = {
@@ -19,6 +19,44 @@ const emptyItem = {
   quantity: 1,
   importPrice: 0,
 };
+
+function buildCategoryTree(flatCategories = []) {
+  const nodes = new Map();
+  flatCategories.forEach((category) => {
+    if (category?.id == null) return;
+    nodes.set(String(category.id), { ...category, subCategories: [], children: [] });
+  });
+
+  const roots = [];
+  nodes.forEach((node) => {
+    const parent = node.parentId == null ? null : nodes.get(String(node.parentId));
+    if (parent) {
+      parent.subCategories.push(node);
+      parent.children = parent.subCategories;
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+}
+
+async function loadAllCategories() {
+  const pageSize = 200;
+  const firstPage = await getAdminCategories({ page: 0, size: pageSize, sort: 'level,asc' });
+  if (Array.isArray(firstPage)) return firstPage;
+
+  const categories = [...(firstPage?.content || [])];
+  const totalPages = Number(firstPage?.totalPages || 1);
+  if (totalPages > 1) {
+    const remaining = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, index) => (
+        getAdminCategories({ page: index + 1, size: pageSize, sort: 'level,asc' })
+      )),
+    );
+    categories.push(...remaining.flatMap((page) => page?.content || []));
+  }
+  return categories;
+}
 
 /* Helper for Import Note Status Badge */
 function getImportStatusBadge(status) {
@@ -367,6 +405,7 @@ function AdminImportPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [supplierLoadError, setSupplierLoadError] = useState('');
+  const [categoryLoadError, setCategoryLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [modalSubmitting, setModalSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -404,28 +443,50 @@ function AdminImportPage() {
   async function loadInitialData() {
     loadSupplierOptions();
 
-    try {
-      const [prodRes, treeRes, catRes] = await Promise.allSettled([
-        getAdminProducts({ page: 0, size: 1000 }),
-        getAdminCategoryTree(),
-        getAdminCategories(),
-      ]);
+    const [productResult, categoryResult] = await Promise.allSettled([
+      getAllAdminProducts({ sort: 'name,asc' }),
+      loadCategoryOptions(),
+    ]);
 
-      if (prodRes.status === 'fulfilled') {
-        const list = prodRes.value?.content || prodRes.value || [];
-        setAllProducts(list);
+    if (productResult.status === 'fulfilled') {
+      setAllProducts(productResult.value);
+    } else {
+      console.error('Không thể tải sản phẩm cho phiếu nhập:', productResult.reason);
+      setError(productResult.reason?.message || 'Không thể tải danh sách sản phẩm.');
+    }
+
+    if (categoryResult.status === 'rejected') {
+      console.error('Không thể tải danh mục cho phiếu nhập:', categoryResult.reason);
+    }
+  }
+
+  async function loadCategoryOptions() {
+    setCategoryLoadError('');
+    try {
+      const flatCategories = await loadAllCategories();
+      let tree = [];
+      try {
+        const treeResponse = await getAdminCategoryTree();
+        tree = Array.isArray(treeResponse) ? treeResponse : treeResponse?.content || [];
+      } catch (treeError) {
+        console.warn('Không tải được cây danh mục, sử dụng danh sách phẳng:', treeError);
       }
-      if (treeRes.status === 'fulfilled') {
-        setCategoryTree(treeRes.value || []);
+
+      if (tree.length === 0) tree = buildCategoryTree(flatCategories);
+      const nameMap = {};
+      flatCategories.forEach((category) => { nameMap[category.id] = category.name; });
+      setCategoryNameMap(nameMap);
+      setCategoryTree(tree);
+
+      if (tree.length === 0) {
+        setCategoryLoadError('Chưa có danh mục nào trong hệ thống.');
       }
-      if (catRes.status === 'fulfilled') {
-        const cats = Array.isArray(catRes.value) ? catRes.value : catRes.value?.content || [];
-        const map = {};
-        cats.forEach((c) => { map[c.id] = c.name; });
-        setCategoryNameMap(map);
-      }
-    } catch (e) {
-      console.error(e);
+      return tree;
+    } catch (err) {
+      setCategoryTree([]);
+      setCategoryNameMap({});
+      setCategoryLoadError(err?.message || 'Không thể tải cây danh mục.');
+      throw err;
     }
   }
 
@@ -434,23 +495,7 @@ function AdminImportPage() {
     setSupplierLoadError('');
 
     try {
-      const firstPage = await getSuppliers({ page: 0, size: 200, sort: 'name,asc' });
-      const firstItems = Array.isArray(firstPage) ? firstPage : firstPage?.content || [];
-      const totalPages = Number(firstPage?.totalPages || 1);
-
-      let allSuppliers = [...firstItems];
-      if (totalPages > 1) {
-        const remainingPages = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, index) => (
-            getSuppliers({ page: index + 1, size: 200, sort: 'name,asc' })
-          )),
-        );
-        allSuppliers = allSuppliers.concat(
-          remainingPages.flatMap((page) => (Array.isArray(page) ? page : page?.content || [])),
-        );
-      }
-
-      setSuppliers(allSuppliers);
+      setSuppliers(await getAllSuppliers({ sort: 'name,asc' }));
     } catch (err) {
       console.error('Không thể tải danh sách nhà cung cấp:', err);
       setSuppliers([]);
@@ -462,8 +507,7 @@ function AdminImportPage() {
 
   async function reloadProducts() {
     try {
-      const prodRes = await getAdminProducts({ page: 0, size: 1000 });
-      const list = prodRes?.content || prodRes || [];
+      const list = await getAllAdminProducts({ sort: 'name,asc' });
       setAllProducts(list);
       return list;
     } catch (e) {
@@ -995,11 +1039,21 @@ function AdminImportPage() {
                 Lọc theo Cây Danh Mục {!form.supplierId && '(Chọn NCC trước)'}
               </label>
               {form.supplierId ? (
-                <CategoryTreeSelect
-                  categoryTree={supplierCategoryTree}
-                  selectedId={form.categoryId}
-                  onSelect={(catId) => setForm((c) => ({ ...c, categoryId: catId }))}
-                />
+                <>
+                  <CategoryTreeSelect
+                    categoryTree={supplierCategoryTree}
+                    selectedId={form.categoryId}
+                    onSelect={(catId) => setForm((c) => ({ ...c, categoryId: catId }))}
+                  />
+                  {categoryLoadError && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', color: '#dc2626', fontSize: '12px', fontWeight: '700' }}>
+                      <span>{categoryLoadError}</span>
+                      <button type="button" onClick={loadCategoryOptions} style={{ border: '1px solid #fecaca', borderRadius: '8px', background: '#fff', color: '#dc2626', padding: '4px 9px', cursor: 'pointer', fontWeight: '800' }}>
+                        Tải lại
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div style={{ width: '100%', padding: '12px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>
                   -- Vui lòng chọn Nhà Cung Cấp trước --
