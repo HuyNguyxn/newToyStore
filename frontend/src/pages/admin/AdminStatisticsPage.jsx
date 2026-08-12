@@ -95,6 +95,13 @@ function formatVndText(amount) {
   return formatPrice(amount || 0).replace(/đ$/i, '').trim() + ' VND';
 }
 
+function formatStatisticNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(number)
+    : '0';
+}
+
 function generateDateSeries(fromStr, toStr) {
   const list = [];
   const start = new Date(fromStr || '2026-07-25');
@@ -1701,7 +1708,7 @@ function AdminStatisticsPage() {
                             {/* SỐ LƯỢNG MUA */}
                             <td style={{ padding: '12px 8px', textAlign: 'center' }}>
                               <span style={{ padding: '4px 10px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', fontSize: '12px', fontWeight: '800' }}>
-                                {formatNumber(averageProductsPerOrder)} sản phẩm / đơn
+                                {formatStatisticNumber(averageProductsPerOrder)} sản phẩm / đơn
                               </span>
                             </td>
                           </tr>
