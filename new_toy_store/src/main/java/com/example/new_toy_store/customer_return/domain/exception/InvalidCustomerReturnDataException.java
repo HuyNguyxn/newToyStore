@@ -93,4 +93,22 @@ public class InvalidCustomerReturnDataException extends RuntimeException {
                 context
         );
     }
+
+    public static InvalidCustomerReturnDataException invalidOrderItem(
+            Integer orderId,
+            Integer orderItemId,
+            String reason
+    ) {
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("orderId", orderId);
+        context.put("orderItemId", orderItemId);
+        context.put("reason", reason);
+        context.put("sourceModule", "order");
+        context.put("targetModule", "customer_return");
+        return new InvalidCustomerReturnDataException(
+                "Sản phẩm đơn hàng #" + orderItemId + " không hợp lệ để tạo yêu cầu trả hàng: " + reason + ".",
+                "CUSTOMER_RETURN_INVALID_ORDER_ITEM",
+                context
+        );
+    }
 }

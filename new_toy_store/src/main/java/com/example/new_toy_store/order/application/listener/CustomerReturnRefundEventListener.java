@@ -1,6 +1,6 @@
 package com.example.new_toy_store.order.application.listener;
 
-import com.example.new_toy_store.global.event.CustomerReturnRefundFinalizedEvent;
+import com.example.new_toy_store.global.event.CustomerReturnRefundSucceededEvent;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -16,7 +16,7 @@ public class CustomerReturnRefundEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void updateOrderRefundState(CustomerReturnRefundFinalizedEvent event) {
+    public void updateOrderRefundState(CustomerReturnRefundSucceededEvent event) {
         orderFacade.updateOrderRefundStatus(event.orderId(), event.returnedOrderItemQuantities());
     }
 }

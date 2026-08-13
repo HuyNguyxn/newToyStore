@@ -51,7 +51,7 @@ public enum CustomerReturnStatus {
     INSPECTED_OK("INSPECTED_OK", "Kiểm định đạt - Chờ xử lý hoàn tiền/đổi trả") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(REFUNDED, REPLACED, REJECTED, CANCELLED);
+            return Arrays.asList(REFUND_PENDING, REPLACED, REJECTED, CANCELLED);
         }
     },
     INSPECTED_FAILED("INSPECTED_FAILED", "Kiểm định thất bại - Hàng không đúng mô tả") {
@@ -69,7 +69,13 @@ public enum CustomerReturnStatus {
     DISPUTED("DISPUTED", "Đang tranh chấp / Khiếu nại") {
         @Override
         protected List<CustomerReturnStatus> nextStates() {
-            return Arrays.asList(REFUNDED, REPLACED, REJECTED);
+            return Arrays.asList(REFUND_PENDING, REPLACED, REJECTED);
+        }
+    },
+    REFUND_PENDING("REFUND_PENDING", "Đang chờ hoàn tiền") {
+        @Override
+        protected List<CustomerReturnStatus> nextStates() {
+            return Arrays.asList(REFUNDED, DISPUTED);
         }
     },
     CANCELLED("CANCELLED", "Đã hủy") {

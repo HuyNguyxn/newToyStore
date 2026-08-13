@@ -89,7 +89,7 @@ public class CustomerReturn extends BaseRootEntity {
 
     public double calculateRawTotalRefund() {
         double itemsTotal = items.stream().mapToDouble(CustomerReturnItem::getExpectedRefundAmount).sum();
-        return Math.max(0, itemsTotal - returnShippingFee);
+        return Math.max(0.0, Math.round((itemsTotal - returnShippingFee) * 100.0) / 100.0);
     }
 
     public void approveReturn(String actionBy, String note) {
@@ -162,6 +162,10 @@ public class CustomerReturn extends BaseRootEntity {
     }
 
     public void finalizeRefund(String actionBy, String note) {
+        changeStatus(CustomerReturnStatus.REFUND_PENDING, actionBy, note);
+    }
+
+    public void confirmRefundSucceeded(String actionBy, String note) {
         changeStatus(CustomerReturnStatus.REFUNDED, actionBy, note);
     }
 

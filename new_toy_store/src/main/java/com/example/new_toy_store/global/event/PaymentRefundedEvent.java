@@ -12,6 +12,7 @@ public record PaymentRefundedEvent(
         RefundMethod method,
         double amount,
         String refundCode,
+        Integer customerReturnId,
         Instant occurredAt
 ) {
     public static PaymentRefundedEvent now(
@@ -21,8 +22,11 @@ public record PaymentRefundedEvent(
             Integer userId,
             RefundMethod method,
             double amount,
-            String refundCode
+            String refundCode,
+            Integer customerReturnId
     ) {
-        return new PaymentRefundedEvent(refundId, paymentId, orderId, userId, method, amount, refundCode, Instant.now());
+        return new PaymentRefundedEvent(
+                refundId, paymentId, orderId, userId, method, amount, refundCode, customerReturnId, Instant.now()
+        );
     }
 }

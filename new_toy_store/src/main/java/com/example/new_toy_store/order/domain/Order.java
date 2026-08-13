@@ -84,7 +84,11 @@ public class Order extends BaseRootEntity {
 
     public void applyPromoCode(String promoCode, double discountAmount) {
         this.promoCode = promoCode;
-        this.discountAmount = Math.max(0.0, Math.round(discountAmount * 100.0) / 100.0);
+        double rawTotal = items.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        this.discountAmount = Math.min(
+                rawTotal,
+                Math.max(0.0, Math.round(discountAmount * 100.0) / 100.0)
+        );
         calculateTotal();
     }
 

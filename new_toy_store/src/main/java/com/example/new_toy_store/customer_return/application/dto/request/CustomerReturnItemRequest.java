@@ -3,7 +3,6 @@ package com.example.new_toy_store.customer_return.application.dto.request;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 
 public class CustomerReturnItemRequest {
 
@@ -23,8 +22,7 @@ public class CustomerReturnItemRequest {
     @NotBlank(message = "Mã lý do trả hàng không được để trống")
     private String reasonCode;
 
-    @NotNull(message = "Số tiền hoàn dự kiến không được để trống")
-    @PositiveOrZero(message = "Số tiền hoàn dự kiến không được là số âm")
+    // Backend tự tính từ giá chụp bất biến của sản phẩm trong đơn hàng.
     private Double expectedRefundAmount;
 
     public CustomerReturnItemRequest() {}

@@ -133,7 +133,19 @@ public class CustomerPaymentTransaction extends BaseRootEntity {
     }
 
     public void completeRefund() {
-        changeStatus(CustomerPaymentStatus.REFUNDED);
+        completeRefund(true);
+    }
+
+    public void completeRefund(boolean fullyRefunded) {
+        changeStatus(fullyRefunded
+                ? CustomerPaymentStatus.REFUNDED
+                : CustomerPaymentStatus.PARTIALLY_REFUNDED);
+    }
+
+    public void cancelRefund(boolean hasPreviousSuccessfulRefund) {
+        changeStatus(hasPreviousSuccessfulRefund
+                ? CustomerPaymentStatus.PARTIALLY_REFUNDED
+                : CustomerPaymentStatus.SUCCEEDED);
     }
 
     public void failRefund() {

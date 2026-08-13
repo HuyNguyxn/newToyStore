@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CustomerReturnRepository extends JpaRepository<CustomerReturn, Integer>, JpaSpecificationExecutor<CustomerReturn> {
 
@@ -27,4 +28,15 @@ public interface CustomerReturnRepository extends JpaRepository<CustomerReturn, 
 
     @Query("SELECT c FROM CustomerReturn c WHERE c.status = 'NEEDS_MORE_INFO' AND c.deadlineForExtraInfo < :now")
     List<CustomerReturn> findExpiredRequests(@Param("now") LocalDateTime now);
+
+    @Query("""
+            SELECT i.orderItemId, SUM(i.quantity)
+            FROM CustomerReturn c JOIN c.items i
+            WHERE c.orderId = :orderId AND c.status IN :statuses
+            GROUP BY i.orderItemId
+            """)
+    List<Object[]> aggregateReturnedQuantities(
+            @Param("orderId") Integer orderId,
+            @Param("statuses") Set<CustomerReturnStatus> statuses
+    );
 }

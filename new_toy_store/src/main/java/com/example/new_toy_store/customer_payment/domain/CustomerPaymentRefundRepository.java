@@ -42,28 +42,29 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
             SELECT COALESCE(SUM(r.amount), 0)
               FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status
-               AND r.createdAt >= :from
-               AND r.createdAt < :to
+               AND r.completedAt >= :from
+               AND r.completedAt < :to
                AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
             """)
     double sumAmountByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
-            SELECT FUNCTION('date', r.createdAt), COALESCE(SUM(r.amount), 0)
+            SELECT FUNCTION('date', r.completedAt), COALESCE(SUM(r.amount), 0)
               FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status
-               AND r.createdAt >= :from
-               AND r.createdAt < :to
+               AND r.completedAt >= :from
+               AND r.completedAt < :to
                AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
-             GROUP BY FUNCTION('date', r.createdAt)
+             GROUP BY FUNCTION('date', r.completedAt)
             """)
     java.util.List<Object[]> aggregateDailyRefundAmount(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
             SELECT COALESCE(r.reason, 'UNKNOWN'), COALESCE(r.reason, 'Unknown'), COUNT(r), COALESCE(SUM(r.amount), 0)
               FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
-             WHERE r.createdAt >= :from
-               AND r.createdAt < :to
+             WHERE r.status = com.example.new_toy_store.customer_payment.domain.RefundStatus.SUCCEEDED
+               AND r.completedAt >= :from
+               AND r.completedAt < :to
                AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
              GROUP BY r.reason
              ORDER BY COALESCE(SUM(r.amount), 0) DESC
@@ -75,22 +76,28 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
                    i.product_name,
                    COALESCE(SUM(i.quantity), 0),
                    COALESCE(SUM(CASE
-                       WHEN o.total_amount > 0 THEN ((i.quantity * i.price) / o.total_amount) * r.amount
+                       WHEN line_totals.gross_amount > 0 THEN ((i.quantity * i.price) / line_totals.gross_amount) * r.amount
                        ELSE 0
                    END), 0)
               FROM payment_refunds r
               JOIN orders o ON o.id = r.order_id
               JOIN users u ON u.id = o.user_id AND u.role = 'CUSTOMER' AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
+              JOIN (
+                    SELECT order_id, SUM(quantity * price) AS gross_amount
+                      FROM order_items
+                     WHERE deleted_at IS NULL
+                     GROUP BY order_id
+              ) line_totals ON line_totals.order_id = o.id
              WHERE r.status = 'SUCCEEDED'
-               AND r.created_at >= :from
-               AND r.created_at < :to
+               AND r.completed_at >= :from
+               AND r.completed_at < :to
                AND r.deleted_at IS NULL
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
              GROUP BY i.product_id, i.product_name
              ORDER BY COALESCE(SUM(CASE
-                       WHEN o.total_amount > 0 THEN ((i.quantity * i.price) / o.total_amount) * r.amount
+                       WHEN line_totals.gross_amount > 0 THEN ((i.quantity * i.price) / line_totals.gross_amount) * r.amount
                        ELSE 0
                    END), 0) DESC
             """, nativeQuery = true)

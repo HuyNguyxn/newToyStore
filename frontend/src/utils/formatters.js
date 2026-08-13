@@ -103,6 +103,7 @@ export function getPaymentStatusLabel(status) {
     CANCELLED: 'Đã hủy',
     EXPIRED: 'Hết hạn',
     REFUND_PENDING: 'Chờ hoàn tiền',
+    PARTIALLY_REFUNDED: 'Đã hoàn một phần',
     REFUNDED: 'Đã hoàn tiền',
     REFUND_FAILED: 'Hoàn tiền thất bại',
   };

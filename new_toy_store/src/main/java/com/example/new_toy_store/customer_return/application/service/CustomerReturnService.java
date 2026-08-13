@@ -12,10 +12,13 @@ import com.example.new_toy_store.customer_return.domain.exception.DuplicateRetur
 import com.example.new_toy_store.customer_return.domain.exception.InvalidCustomerReturnDataException;
 import com.example.new_toy_store.customer_return.mapper.CustomerReturnMapper;
 import com.example.new_toy_store.global.event.CustomerReturnRefundFinalizedEvent;
+import com.example.new_toy_store.global.event.CustomerReturnRefundSucceededEvent;
 import com.example.new_toy_store.global.event.CustomerReturnStockRestorationRequestedEvent;
 import com.example.new_toy_store.global.event.CustomerReturnStatusChangedEvent;
 import com.example.new_toy_store.infrastructure.specification.CustomerReturnSpecification;
 import com.example.new_toy_store.order.application.facade.OrderFacade;
+import com.example.new_toy_store.order.application.dto.response.OrderItemResponse;
+import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -26,7 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,6 +78,8 @@ public class CustomerReturnService {
             throw new DuplicateReturnRequestException(request.getOrderId());
         }
 
+        deriveAndValidateRefundAmounts(request);
+
         boolean hasDefectiveItem = request.getItems().stream()
                 .anyMatch(item -> ReturnReasonCode.from(item.getReasonCode()) == ReturnReasonCode.DEFECTIVE
                         || ReturnReasonCode.from(item.getReasonCode()) == ReturnReasonCode.WRONG_ITEM);
@@ -87,6 +95,64 @@ public class CustomerReturnService {
         }
 
         return CustomerReturnMapper.toResponse(repository.save(rma));
+    }
+
+    private void deriveAndValidateRefundAmounts(CustomerReturnRequest request) {
+        OrderResponse order = orderFacade.getOrderDetailsSnapshot(request.getOrderId());
+        Map<Integer, OrderItemResponse> orderItems = order.getItems().stream()
+                .collect(Collectors.toMap(OrderItemResponse::getId, Function.identity()));
+        Set<Integer> requestedItemIds = new HashSet<>();
+        Map<Integer, Integer> previouslyReturned = loadReturnedQuantities(request.getOrderId());
+        double grossOrderAmount = order.getItems().stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
+        double payableRatio = grossOrderAmount <= 0
+                ? 0.0
+                : Math.min(1.0, Math.max(0.0, order.getTotalAmount() / grossOrderAmount));
+
+        request.getItems().forEach(itemRequest -> {
+            if (!requestedItemIds.add(itemRequest.getOrderItemId())) {
+                throw InvalidCustomerReturnDataException.invalidOrderItem(
+                        request.getOrderId(), itemRequest.getOrderItemId(), "sản phẩm bị khai báo trùng"
+                );
+            }
+
+            OrderItemResponse orderItem = orderItems.get(itemRequest.getOrderItemId());
+            if (orderItem == null) {
+                throw InvalidCustomerReturnDataException.invalidOrderItem(
+                        request.getOrderId(), itemRequest.getOrderItemId(), "không thuộc đơn hàng"
+                );
+            }
+            if (!orderItem.getProductId().equals(itemRequest.getProductId())
+                    || !orderItem.getVariantId().equals(itemRequest.getVariantId())) {
+                throw InvalidCustomerReturnDataException.invalidOrderItem(
+                        request.getOrderId(), itemRequest.getOrderItemId(), "sai sản phẩm hoặc biến thể"
+                );
+            }
+            int returnedBefore = previouslyReturned.getOrDefault(itemRequest.getOrderItemId(), 0);
+            if (returnedBefore + itemRequest.getQuantity() > orderItem.getQuantity()) {
+                throw InvalidCustomerReturnDataException.invalidOrderItem(
+                        request.getOrderId(), itemRequest.getOrderItemId(),
+                        "tổng số lượng trả vượt số lượng đã mua"
+                );
+            }
+
+            double serverRefundAmount = Math.round(
+                    orderItem.getPrice() * itemRequest.getQuantity() * payableRatio * 100.0
+            ) / 100.0;
+            itemRequest.setExpectedRefundAmount(Math.max(0.0, serverRefundAmount));
+        });
+    }
+
+    private Map<Integer, Integer> loadReturnedQuantities(Integer orderId) {
+        return repository.aggregateReturnedQuantities(
+                        orderId,
+                        Set.of(CustomerReturnStatus.REFUNDED, CustomerReturnStatus.REPLACED)
+                ).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).intValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
     }
 
     @Transactional
@@ -215,6 +281,20 @@ public class CustomerReturnService {
         return CustomerReturnMapper.toResponse(saved);
     }
 
+    @Transactional
+    public void confirmRefundSucceeded(Integer id, String actionBy, String note) {
+        CustomerReturn rma = getEntity(id);
+        CustomerReturnStatus previousStatus = rma.getStatus();
+        rma.confirmRefundSucceeded(actionBy, note);
+        CustomerReturn saved = repository.save(rma);
+        publishStatusChanged(saved, previousStatus, actionBy);
+        eventPublisher.publishEvent(CustomerReturnRefundSucceededEvent.now(
+                saved.getId(),
+                saved.getOrderId(),
+                loadReturnedQuantities(saved.getOrderId())
+        ));
+    }
+
     @Scheduled(cron = "${app.customer-return.auto-reject.cron:0 0 0 * * ?}", zone = "${app.customer-return.auto-reject.zone:Asia/Ho_Chi_Minh}")
     @Transactional
     public void autoRejectExpiredRequests() {
@@ -228,12 +308,7 @@ public class CustomerReturnService {
     }
 
     private void publishRefundFinalized(CustomerReturn rma, double refundAmount) {
-        Map<Integer, Integer> returnedItemsQty = rma.getItems().stream()
-                .collect(Collectors.toMap(
-                        CustomerReturnItem::getOrderItemId,
-                        CustomerReturnItem::getQuantity,
-                        Integer::sum
-                ));
+        Map<Integer, Integer> returnedItemsQty = loadReturnedQuantities(rma.getOrderId());
         eventPublisher.publishEvent(CustomerReturnRefundFinalizedEvent.now(
                 rma.getId(),
                 rma.getOrderId(),
@@ -248,7 +323,8 @@ public class CustomerReturnService {
             eventPublisher.publishEvent(CustomerReturnStockRestorationRequestedEvent.now(
                     rma.getId(),
                     rma.getOrderId(),
-                    sellableItems
+                    sellableItems,
+                    orderFacade.calculateReturnedStockCost(rma.getOrderId(), sellableItems)
             ));
         }
     }

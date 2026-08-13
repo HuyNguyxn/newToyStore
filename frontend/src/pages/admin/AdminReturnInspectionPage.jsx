@@ -44,6 +44,8 @@ function getReturnStatusInfo(status) {
       return { label: 'QC Không đạt', bg: '#fef2f2', color: '#dc2626', border: '#fecaca' };
     case 'DISPUTED':
       return { label: 'Đang tranh chấp CSKH', bg: '#f3e8ff', color: '#7c3aed', border: '#ddd6fe' };
+    case 'REFUND_PENDING':
+      return { label: 'Đang chờ hoàn tiền', bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' };
     case 'REFUNDED':
       return { label: 'Đã hoàn tiền', bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
     case 'REPLACED':
@@ -307,6 +309,7 @@ function AdminReturnInspectionPage() {
                   <option value="INSPECTED_OK">Kiểm định QC Đạt</option>
                   <option value="INSPECTED_FAILED">Kiểm định QC Không đạt</option>
                   <option value="DISPUTED">Đang tranh chấp CSKH</option>
+                  <option value="REFUND_PENDING">Đang chờ hoàn tiền</option>
                   <option value="REFUNDED">Đã hoàn tiền thành công</option>
                   <option value="REJECTED">Từ chối yêu cầu</option>
                 </select>
@@ -705,10 +708,10 @@ function AdminReturnInspectionPage() {
 
                   <button
                     type="button"
-                    onClick={() => runAction(() => finalizeCustomerReturnRefund(selectedCustomerReturn.id, { refundNote: customerForm.refundNote }), 'Đã xác nhận hoàn tiền thành công!')}
+                    onClick={() => runAction(() => finalizeCustomerReturnRefund(selectedCustomerReturn.id, { refundNote: customerForm.refundNote }), 'Đã tạo yêu cầu hoàn tiền. Trạng thái sẽ hoàn tất khi giao dịch thành công.')}
                     style={{ width: '100%', padding: '10px', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
                   >
-                    XÁC NHẬN HOÀN TIỀN
+                    TẠO YÊU CẦU HOÀN TIỀN
                   </button>
                 </div>
 

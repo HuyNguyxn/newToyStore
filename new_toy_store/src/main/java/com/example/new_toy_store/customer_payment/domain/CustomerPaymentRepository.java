@@ -77,6 +77,20 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
     double sumAmountByStatusBetween(@Param("status") CustomerPaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
+            SELECT COALESCE(SUM(p.amount), 0)
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
+             WHERE p.status IN :statuses
+               AND p.paidAt >= :from
+               AND p.paidAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
+    double sumPaidAmountByStatusesBetween(
+            @Param("statuses") Collection<CustomerPaymentStatus> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    @Query("""
             SELECT p.method, COUNT(p), COALESCE(SUM(p.amount), 0)
               FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
              WHERE p.status = :status
@@ -86,6 +100,21 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
              GROUP BY p.method
             """)
     java.util.List<Object[]> aggregateAmountByMethod(@Param("status") CustomerPaymentStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            SELECT p.method, COUNT(p), COALESCE(SUM(p.amount), 0)
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
+             WHERE p.status IN :statuses
+               AND p.paidAt >= :from
+               AND p.paidAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+             GROUP BY p.method
+            """)
+    java.util.List<Object[]> aggregatePaidAmountByMethod(
+            @Param("statuses") Collection<CustomerPaymentStatus> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
 
     @Query("""
             SELECT COALESCE(p.failureReason, 'UNKNOWN'), COALESCE(p.failureReason, 'Unknown'), COUNT(p), 0

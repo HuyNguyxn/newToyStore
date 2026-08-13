@@ -51,7 +51,7 @@ public class CustomerReturnItem extends BaseSoftDeleteEntity {
         this.variantId = variantId;
         this.quantity = quantity;
         this.reasonCode = reasonCode;
-        this.expectedRefundAmount = expectedRefundAmount;
+        this.expectedRefundAmount = Math.max(0.0, Math.round(expectedRefundAmount * 100.0) / 100.0);
     }
 
     void assignToReturn(CustomerReturn customerReturn) {

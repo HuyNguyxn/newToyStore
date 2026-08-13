@@ -24,6 +24,7 @@ function paymentStatusInfo(status) {
   if (code === 'CANCELLED') return { label: 'Đã hủy', bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' };
   if (code === 'EXPIRED') return { label: 'Hết hạn', bg: '#f8fafc', color: '#475569', border: '#cbd5e1' };
   if (code === 'REFUND_PENDING') return { label: 'Chờ hoàn tiền', bg: '#fffbeb', color: '#b45309', border: '#fed7aa' };
+  if (code === 'PARTIALLY_REFUNDED') return { label: 'Đã hoàn một phần', bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe' };
   if (code === 'REFUNDED') return { label: 'Đã hoàn tiền', bg: '#e0f2fe', color: '#0369a1', border: '#bae6fd' };
   if (code === 'REFUND_FAILED') return { label: 'Hoàn tiền lỗi', bg: '#fee2e2', color: '#b91c1c', border: '#fecaca' };
   return { label: code || 'Chưa xác định', bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
@@ -212,6 +213,7 @@ function AdminCustomerPaymentPage() {
           <option value="CANCELLED">Đã hủy</option>
           <option value="EXPIRED">Hết hạn</option>
           <option value="REFUND_PENDING">Chờ hoàn tiền</option>
+          <option value="PARTIALLY_REFUNDED">Đã hoàn một phần</option>
           <option value="REFUNDED">Đã hoàn tiền</option>
           <option value="REFUND_FAILED">Hoàn tiền lỗi</option>
         </select>

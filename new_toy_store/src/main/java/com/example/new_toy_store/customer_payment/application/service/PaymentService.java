@@ -150,7 +150,11 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public boolean hasSucceededPaymentForOrder(Integer orderId) {
-        return repository.existsByOrderIdAndStatusIn(orderId, List.of(CustomerPaymentStatus.SUCCEEDED));
+        return repository.existsByOrderIdAndStatusIn(orderId, List.of(
+                CustomerPaymentStatus.SUCCEEDED,
+                CustomerPaymentStatus.PARTIALLY_REFUNDED,
+                CustomerPaymentStatus.REFUNDED
+        ));
     }
 
     @Transactional
@@ -186,7 +190,7 @@ public class PaymentService {
 
         CustomerPaymentTransaction payment = repository.findFirstByOrderIdAndStatusInOrderByCreatedAtDesc(
                         orderId,
-                        List.of(CustomerPaymentStatus.SUCCEEDED)
+                      List.of(CustomerPaymentStatus.SUCCEEDED, CustomerPaymentStatus.PARTIALLY_REFUNDED)
                 )
                 .orElseThrow(() -> CustomerCustomerPaymentCrossModuleException.invalidOrder(orderId, "order has no succeeded payment to refund"));
 
@@ -215,6 +219,48 @@ public class PaymentService {
         return CustomerPaymentMapper.toRefundResponse(refund);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void requestRefundForCancelledOrder(Integer orderId, String reason) {
+        CustomerPaymentTransaction payment = repository.findFirstByOrderIdAndStatusInOrderByCreatedAtDesc(
+                orderId,
+                List.of(CustomerPaymentStatus.SUCCEEDED, CustomerPaymentStatus.PARTIALLY_REFUNDED)
+        ).orElse(null);
+        if (payment == null) {
+            return;
+        }
+
+        String refundCodePrefix = "REF-CANCELLED-ORDER-" + orderId;
+        if (refundRepository.findFirstByRefundCodeStartingWithOrderByCreatedAtDesc(refundCodePrefix).isPresent()) {
+            return;
+        }
+
+        double alreadyRefunded = refundRepository.sumAmountByPaymentIdAndStatuses(
+                payment.getId(), List.of(RefundStatus.SUCCEEDED));
+        double refundableAmount = Math.max(0.0,
+                Math.round((payment.getAmount() - alreadyRefunded) * 100.0) / 100.0);
+        if (refundableAmount <= 0) {
+            return;
+        }
+
+        RefundMethod refundMethod = payment.getMethod() == CustomerPaymentMethod.VNPAY
+                ? RefundMethod.VNPAY
+                : RefundMethod.COD_MANUAL;
+        CustomerPaymentRefund refund = new CustomerPaymentRefund(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getUserId(),
+                refundCodePrefix + "-PAY-" + payment.getId(),
+                refundMethod,
+                refundableAmount,
+                reason == null || reason.isBlank()
+                        ? "Hoàn tiền do đơn hàng #" + orderId + " đã hủy"
+                        : reason
+        );
+        payment.requestRefund();
+        refundRepository.save(refund);
+        repository.save(payment);
+    }
+
     @Transactional
     public CustomerPaymentRefundResponse processRefund(Integer refundId, String adminEmail, String clientIp) {
         CustomerPaymentRefund refund = getRefundForUpdate(refundId);
@@ -228,7 +274,7 @@ public class PaymentService {
             VnpayRefundResponse gatewayResponse = vnpayService.requestRefund(payment, refund, adminEmail, clientIp);
             if (gatewayResponse.isSuccess()) {
                 refund.succeed(gatewayResponse.getProviderRefundId());
-                payment.completeRefund();
+                completeSuccessfulRefund(payment, refund);
                 publishPaymentRefunded(refund);
             } else {
                 refund.fail(gatewayResponse.getMessage());
@@ -236,7 +282,7 @@ public class PaymentService {
             }
         } else {
             refund.succeed(refund.getRefundCode());
-            payment.completeRefund();
+            completeSuccessfulRefund(payment, refund);
             publishPaymentRefunded(refund);
         }
 
@@ -250,8 +296,8 @@ public class PaymentService {
         CustomerPaymentRefund refund = getRefundForUpdate(refundId);
         CustomerPaymentTransaction payment = getPaymentForUpdate(refund.getPaymentId());
         refund.reject(request.getReason());
-        payment.failRefund();
-        refundRepository.save(refund);
+        refundRepository.saveAndFlush(refund);
+        payment.cancelRefund(hasPreviousSuccessfulRefund(payment.getId()));
         repository.save(payment);
         return CustomerPaymentMapper.toRefundResponse(refund);
     }
@@ -498,9 +544,30 @@ public class PaymentService {
     }
 
     private void validateRefundablePayment(CustomerPaymentTransaction payment) {
-        if (payment.getStatus() != CustomerPaymentStatus.SUCCEEDED) {
-            throw new InvalidCustomerCustomerPaymentOperationException("requestRefund", "Only succeeded payments can be refunded.");
+        if (payment.getStatus() != CustomerPaymentStatus.SUCCEEDED
+                && payment.getStatus() != CustomerPaymentStatus.PARTIALLY_REFUNDED) {
+            throw new InvalidCustomerCustomerPaymentOperationException(
+                    "requestRefund",
+                    "Only succeeded or partially refunded payments can be refunded."
+            );
         }
+    }
+
+    private void completeSuccessfulRefund(CustomerPaymentTransaction payment, CustomerPaymentRefund refund) {
+        refundRepository.saveAndFlush(refund);
+        double succeededAmount = refundRepository.sumAmountByPaymentIdAndStatuses(
+                payment.getId(),
+                List.of(RefundStatus.SUCCEEDED)
+        );
+        boolean fullyRefunded = succeededAmount + 0.005 >= payment.getAmount();
+        payment.completeRefund(fullyRefunded);
+    }
+
+    private boolean hasPreviousSuccessfulRefund(Integer paymentId) {
+        return refundRepository.sumAmountByPaymentIdAndStatuses(
+                paymentId,
+                List.of(RefundStatus.SUCCEEDED)
+        ) > 0;
     }
 
     private void validateRefundMethod(CustomerPaymentTransaction payment, RefundMethod refundMethod) {
@@ -573,8 +640,21 @@ public class PaymentService {
                 refund.getUserId(),
                 refund.getMethod(),
                 refund.getAmount(),
-                refund.getRefundCode()
+                refund.getRefundCode(),
+                extractCustomerReturnId(refund.getRefundCode())
         ));
+    }
+
+    private Integer extractCustomerReturnId(String refundCode) {
+        if (refundCode == null || !refundCode.startsWith("REF-RETURN-")) return null;
+        String remainder = refundCode.substring("REF-RETURN-".length());
+        int separator = remainder.indexOf("-PAY-");
+        if (separator <= 0) return null;
+        try {
+            return Integer.valueOf(remainder.substring(0, separator));
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private String generateRefundCode(Integer paymentId) {

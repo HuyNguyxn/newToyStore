@@ -52,7 +52,14 @@ public enum CustomerPaymentStatus {
     REFUND_PENDING("Refund pending", "Refund request is waiting for processing") {
         @Override
         public List<CustomerPaymentStatus> getNextValidStates() {
-            return List.of(REFUNDED, REFUND_FAILED);
+            return List.of(SUCCEEDED, PARTIALLY_REFUNDED, REFUNDED, REFUND_FAILED);
+        }
+    },
+
+    PARTIALLY_REFUNDED("Partially refunded", "Part of the payment has been refunded") {
+        @Override
+        public List<CustomerPaymentStatus> getNextValidStates() {
+            return List.of(REFUND_PENDING);
         }
     },
 
