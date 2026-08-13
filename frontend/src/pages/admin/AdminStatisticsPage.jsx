@@ -188,7 +188,7 @@ function buildMacSeries(imports = [], orders = [], from, to) {
       ? receipt.status?.code || receipt.status?.name || receipt.status?.status
       : receipt.status;
     if (String(receiptStatus || '').toUpperCase() !== 'COMPLETED') return;
-    const date = dateInfo(receipt.updatedAt || receipt.completedAt || receipt.createdAt || receipt.importDate);
+    const date = dateInfo(receipt.completedAt || receipt.updatedAt || receipt.createdAt || receipt.importDate);
     if (!date || date.iso > to) return;
     (receipt.items || []).forEach((item) => {
       const quantity = Number(item.quantity || 0);
@@ -199,8 +199,8 @@ function buildMacSeries(imports = [], orders = [], from, to) {
 
   orders.forEach((order) => {
     const status = typeof order.status === 'object' ? order.status?.code || order.status?.name : order.status;
-    const date = dateInfo(order.createdAt || order.orderDate);
-    if (!date || date.iso > to || !['CONFIRMED', 'SHIPPED', 'COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'].includes(String(status || '').toUpperCase())) return;
+    const date = dateInfo(getOrderRevenueDate(order));
+    if (!date || date.iso > to || !['COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'].includes(String(status || '').toUpperCase())) return;
     (order.items || []).forEach((item) => {
       const quantity = Number(item.quantity || 0);
       const unitPrice = Number(item.price || item.unitPrice || 0);
@@ -271,6 +271,19 @@ function buildMacSeries(imports = [], orders = [], from, to) {
       : null;
     return point;
   });
+}
+
+function getOrderRevenueDate(order = {}) {
+  const completedHistory = (order.histories || []).find((history) => {
+    const status = history.newStatus || history.currentStatus || history.toStatus || history.status;
+    return getStatusCode(status) === 'COMPLETED';
+  });
+  return completedHistory?.createdAt
+    || completedHistory?.occurredAt
+    || order.completedAt
+    || order.updatedAt
+    || order.createdAt
+    || order.orderDate;
 }
 
 const MacTooltip = ({ active, payload, label }) => {
@@ -705,8 +718,8 @@ function AdminStatisticsPage() {
         return iso >= dates.from && iso <= dates.to;
       };
 
-      const rangeOrdersList = modeOrdersList.filter((o) => isDateInRange(o.createdAt || o.orderDate));
-      const rangeImportsList = allImportsList.filter((imp) => isDateInRange(imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate));
+      const rangeOrdersList = modeOrdersList.filter((o) => isDateInRange(getOrderRevenueDate(o)));
+      const rangeImportsList = allImportsList.filter((imp) => isDateInRange(imp.completedAt || imp.updatedAt || imp.createdAt || imp.importDate));
 
       const getKpiVal = (code) => {
         if (!Array.isArray(overviewData.kpis)) return 0;
@@ -715,7 +728,7 @@ function AdminStatisticsPage() {
       };
 
       // Calculate strictly from real orders and imports without artificial dummy estimates
-      const revenueStatusCodes = ['CONFIRMED', 'SHIPPED', 'COMPLETED', 'DELIVERED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
+      const revenueStatusCodes = ['COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
       const validOrders = rangeOrdersList.filter((o) => revenueStatusCodes.includes(getStatusCode(o.status)));
 
       const fallbackRevenue = validOrders.reduce((sum, o) => sum + Number(o.totalAmount || o.grandTotal || 0), 0);
@@ -807,7 +820,7 @@ function AdminStatisticsPage() {
 
       const prevOrdersList = modeOrdersList.filter((o) => {
         if (!revenueStatusCodes.includes(getStatusCode(o.status))) return false;
-        const dVal = o.createdAt || o.orderDate;
+        const dVal = getOrderRevenueDate(o);
         if (!dVal) return false;
         const d = new Date(dVal);
         if (isNaN(d.getTime())) return false;
@@ -816,7 +829,7 @@ function AdminStatisticsPage() {
       });
 
       const prevImportsList = allImportsList.filter((imp) => {
-        const dVal = imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate;
+        const dVal = imp.completedAt || imp.updatedAt || imp.createdAt || imp.importDate;
         if (!dVal) return false;
         const d = new Date(dVal);
         if (isNaN(d.getTime())) return false;
@@ -919,13 +932,13 @@ function AdminStatisticsPage() {
       } else {
         series = datesArray.map((dStr) => {
           const matchedOrders = modeOrdersList.filter((o) => {
-            if (getStatusCode(o.status) === 'CANCELLED') return false;
-            const oDateStr = toDayMonth(o.createdAt || o.orderDate);
+            if (!revenueStatusCodes.includes(getStatusCode(o.status))) return false;
+            const oDateStr = toDayMonth(getOrderRevenueDate(o));
             return oDateStr === dStr;
           });
 
           const matchedImports = allImportsList.filter((imp) => {
-            const impDateStr = toDayMonth(imp.updatedAt || imp.completedAt || imp.createdAt || imp.importDate);
+            const impDateStr = toDayMonth(imp.completedAt || imp.updatedAt || imp.createdAt || imp.importDate);
             return impDateStr === dStr;
           });
 

@@ -5,7 +5,6 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import useAuth from './hooks/useAuth.js';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 import AdminCategoryPage from './pages/admin/AdminCategoryPage.jsx';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import AdminImportPage from './pages/admin/AdminImportPage.jsx';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage.jsx';
 import AdminLogisticsPage from './pages/admin/AdminLogisticsPage.jsx';
@@ -199,7 +198,7 @@ function App() {
         )}
       >
         <Route index element={<AdminDefaultRedirect />} />
-        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="dashboard" element={<AdminDefaultRedirect />} />
         <Route path="products" element={<AdminProductPage />} />
         <Route path="categories" element={<AdminCategoryPage />} />
         <Route path="orders" element={<AdminOrderPage />} />

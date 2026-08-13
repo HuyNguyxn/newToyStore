@@ -48,11 +48,14 @@ public class StatisticsService {
 
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
     private static final List<OrderStatus> REVENUE_ORDER_STATUSES = List.of(
-            OrderStatus.CONFIRMED,
-            OrderStatus.SHIPPED,
             OrderStatus.COMPLETED,
             OrderStatus.PARTIALLY_REFUNDED,
             OrderStatus.FULLY_REFUNDED
+    );
+    private static final List<CustomerPaymentStatus> COLLECTED_PAYMENT_STATUSES = List.of(
+            CustomerPaymentStatus.SUCCEEDED,
+            CustomerPaymentStatus.PARTIALLY_REFUNDED,
+            CustomerPaymentStatus.REFUNDED
     );
 
     private final OrderRepository orderRepository;
@@ -580,13 +583,13 @@ public class StatisticsService {
     }
 
     private List<PaymentMethodStatisticResponse> buildPaymentMethods(StatisticPeriod period) {
-        double totalAmount = customerPaymentRepository.sumAmountByStatusBetween(
-                CustomerPaymentStatus.SUCCEEDED,
+        double totalAmount = customerPaymentRepository.sumPaidAmountByStatusesBetween(
+                COLLECTED_PAYMENT_STATUSES,
                 period.startDateTime(),
                 period.endExclusiveDateTime()
         );
-        return customerPaymentRepository.aggregateAmountByMethod(
-                        CustomerPaymentStatus.SUCCEEDED,
+        return customerPaymentRepository.aggregatePaidAmountByMethod(
+                        COLLECTED_PAYMENT_STATUSES,
                         period.startDateTime(),
                         period.endExclusiveDateTime()
                 )
