@@ -23,6 +23,7 @@ import AdminSupplierPaymentPage from './pages/admin/AdminSupplierPaymentPage.jsx
 import AdminSupplierReturnPage from './pages/admin/AdminSupplierReturnPage.jsx';
 import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
 import AdminUserPage from './pages/admin/AdminUserPage.jsx';
+import AdminAccountingPage from './pages/admin/AdminAccountingPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
@@ -225,6 +226,14 @@ function App() {
         <Route path="suppliers" element={<AdminSupplierPage />} />
         <Route path="imports" element={<AdminImportPage />} />
         <Route path="supplier-payments" element={<AdminSupplierPaymentPage />} />
+        <Route
+          path="accounting"
+          element={(
+            <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
+              <AdminAccountingPage />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="supplier-returns" element={<AdminSupplierReturnPage />} />
         <Route path="logistics" element={<AdminLogisticsPage />} />
         <Route path="returns" element={<AdminReturnInspectionPage />} />

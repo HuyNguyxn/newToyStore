@@ -225,7 +225,10 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderPaymentSnapshot getPaymentSnapshot(Integer orderId) {
         Order order = getOrder(orderId);
-        return new OrderPaymentSnapshot(order.getId(), order.getUserId(), order.getStatus(), order.getTotalAmount());
+        double costAmount = order.getItems().stream()
+                .mapToDouble(item -> item.getQuantity() * (item.getCostPriceSnapshot() == null ? 0.0 : item.getCostPriceSnapshot()))
+                .sum();
+        return new OrderPaymentSnapshot(order.getId(), order.getUserId(), order.getStatus(), order.getTotalAmount(), costAmount);
     }
 
     @Transactional(readOnly = true)

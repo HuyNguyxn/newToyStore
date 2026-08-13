@@ -4,12 +4,15 @@ import com.example.new_toy_store.imports.application.dto.response.ImportNoteResp
 import com.example.new_toy_store.imports.application.facade.ImportFacade;
 import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.infrastructure.specification.SupplierPaymentSpecification;
+import com.example.new_toy_store.global.event.SupplierPaymentRecordedEvent;
+import com.example.new_toy_store.accounting.application.InternalFundQuery;
 import com.example.new_toy_store.supplier.application.dto.response.SupplierResponse;
 import com.example.new_toy_store.supplier.application.facade.SupplierFacade;
 import com.example.new_toy_store.supplier_payment.application.dto.request.SupplierPaymentCancelRequest;
 import com.example.new_toy_store.supplier_payment.application.dto.request.SupplierPaymentFilterRequest;
 import com.example.new_toy_store.supplier_payment.application.dto.request.SupplierPaymentRecordRequest;
 import com.example.new_toy_store.supplier_payment.application.dto.response.SupplierPaymentResponse;
+import com.example.new_toy_store.supplier_payment.application.dto.response.SupplierPayableSummary;
 import com.example.new_toy_store.supplier_payment.domain.SupplierPaymentInvoice;
 import com.example.new_toy_store.supplier_payment.domain.SupplierPaymentRepository;
 import com.example.new_toy_store.supplier_payment.domain.SupplierPaymentStatus;
@@ -21,6 +24,7 @@ import com.example.new_toy_store.supplier_payment.mapper.SupplierPaymentMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -36,11 +40,36 @@ public class SupplierPaymentService {
     private final SupplierPaymentRepository repository;
     private final SupplierFacade supplierFacade;
     private final ImportFacade importFacade;
+    private final ApplicationEventPublisher eventPublisher;
+    private final InternalFundQuery internalFundQuery;
 
-    public SupplierPaymentService(SupplierPaymentRepository repository, SupplierFacade supplierFacade, ImportFacade importFacade) {
+    public SupplierPaymentService(SupplierPaymentRepository repository, SupplierFacade supplierFacade, ImportFacade importFacade,
+                                  ApplicationEventPublisher eventPublisher, InternalFundQuery internalFundQuery) {
         this.repository = repository;
         this.supplierFacade = supplierFacade;
         this.importFacade = importFacade;
+        this.eventPublisher = eventPublisher;
+        this.internalFundQuery = internalFundQuery;
+    }
+
+    @Transactional(readOnly = true)
+    public SupplierPayableSummary getPayableSummary() {
+        var openStatuses = java.util.List.of(
+                SupplierPaymentStatus.PENDING,
+                SupplierPaymentStatus.PARTIALLY_PAID,
+                SupplierPaymentStatus.OVERDUE
+        );
+        LocalDate today = LocalDate.now();
+        return new SupplierPayableSummary(
+                roundMoney(repository.sumOutstandingByStatuses(openStatuses)),
+                roundMoney(repository.sumOverdueOutstanding(openStatuses, today)),
+                repository.countByStatusIn(openStatuses),
+                repository.countByStatusInAndDueDateBefore(openStatuses, today)
+        );
+    }
+
+    private double roundMoney(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     @Transactional(readOnly = true)
@@ -106,6 +135,12 @@ public class SupplierPaymentService {
         SupplierPaymentInvoice invoice = repository.findByIdWithTransactions(invoiceId)
                 .orElseThrow(() -> new SupplierPaymentNotFoundException(invoiceId));
         invoice.markOverdue(LocalDate.now());
+        double availableFunds = internalFundQuery.getAvailableFunds(request.getPaidDate());
+        if (request.getAmount() > availableFunds) {
+            throw InvalidSupplierPaymentOperationException.insufficientInternalFunds(
+                    invoiceId, request.getAmount(), availableFunds
+            );
+        }
         invoice.recordPayment(
                 request.getAmount(),
                 request.getMethod(),
@@ -113,7 +148,12 @@ public class SupplierPaymentService {
                 request.getPaidDate(),
                 request.getNote()
         );
-        repository.save(invoice);
+        repository.saveAndFlush(invoice);
+        var transaction = invoice.getTransactions().get(invoice.getTransactions().size() - 1);
+        eventPublisher.publishEvent(SupplierPaymentRecordedEvent.now(
+                transaction.getId(), invoice.getId(), invoice.getSupplierId(), invoice.getImportNoteId(),
+                transaction.getAmount(), transaction.getMethod(), transaction.getReferenceCode(), transaction.getPaidDate()
+        ));
         SupplierResponse supplier = supplierFacade.getSupplierDetails(invoice.getSupplierId());
         return SupplierPaymentMapper.toDetailResponse(invoice, supplier);
     }

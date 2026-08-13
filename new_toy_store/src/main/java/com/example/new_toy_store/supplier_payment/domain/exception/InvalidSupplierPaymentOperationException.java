@@ -37,6 +37,16 @@ public class InvalidSupplierPaymentOperationException extends SupplierPaymentDom
         );
     }
 
+    public static InvalidSupplierPaymentOperationException insufficientInternalFunds(
+            Integer invoiceId, double requestedAmount, double availableFunds
+    ) {
+        return new InvalidSupplierPaymentOperationException(
+                "Số dư quỹ nội bộ không đủ để thanh toán nhà cung cấp.",
+                "SUPPLIER_PAYMENT_INSUFFICIENT_FUNDS",
+                Map.of("invoiceId", invoiceId, "requestedAmount", requestedAmount, "availableFunds", availableFunds)
+        );
+    }
+
     public static InvalidSupplierPaymentOperationException closedInvoice(Integer invoiceId, SupplierPaymentStatus status) {
         return new InvalidSupplierPaymentOperationException(
                 "Khoản thanh toán đã đóng, không thể ghi nhận thêm chi trả.",

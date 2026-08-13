@@ -2,7 +2,7 @@
 
 ## Overview
 
-The backend is a Java 21 and Spring Boot 3.3.5 REST API for the NewToyStore platform. It implements catalog, inventory, carts, orders, payments, logistics, returns, suppliers, promotions, reviews, notifications, authentication and administrative reporting.
+The backend is a Java 21 and Spring Boot 3.3.5 REST API for the NewToyStore platform. It implements catalog, inventory, carts, orders, payments, logistics, returns, suppliers, promotions, reviews, notifications, internal double-entry accounting, authentication and administrative reporting.
 
 The application is a modular monolith: business capabilities live in separate top-level packages but run in one Spring Boot process and use one MySQL schema. Cross-domain references commonly use scalar IDs, application facades and Spring application events.
 
@@ -38,6 +38,7 @@ The code follows a pragmatic DDD Lite structure. Domain packages own their entit
 ```text
 src/main/java/com/example/new_toy_store/
 |- admin/                 Administrative badge aggregation
+|- accounting/            Internal double-entry ledger and cash-flow reporting
 |- cart/                  Cart and checkout initiation
 |- category/              Hierarchical categories
 |- customer_payment/      Customer payments and refunds
@@ -65,6 +66,7 @@ src/main/java/com/example/new_toy_store/
 
 | Domain | Documentation |
 |---|---|
+| Accounting | [accounting](src/main/java/com/example/new_toy_store/accounting/README.md) |
 | Admin | [admin](src/main/java/com/example/new_toy_store/admin/README.md) |
 | Cart | [cart](src/main/java/com/example/new_toy_store/cart/README.md) |
 | Category | [category](src/main/java/com/example/new_toy_store/category/README.md) |
@@ -98,21 +100,24 @@ flowchart LR
     Order --> Return["Customer return"]
     Supplier --> Import["Import note"] --> Product
     Import --> Payable["Supplier payment"]
+    Payment --> Accounting["Accounting ledger"]
+    Import --> Accounting
+    Payable --> Accounting
     Product --> Review --> Moderation
     Events["Application events"] --> Notification
 ```
 
-Purchase fulfillment starts with cart validation, creates order snapshots, reserves inventory, initializes COD or VNPay payment, creates a shipment and records tracking until completion. Completed imports update inventory and create supplier payables. Customer and supplier returns coordinate inspection, logistics and stock changes.
+Purchase fulfillment starts with cart validation, creates order snapshots, reserves inventory, initializes COD or VNPay payment, creates a shipment and records tracking until completion. Completed imports update inventory and create supplier payables. Customer and supplier returns coordinate inspection, logistics and stock changes. Committed payment, refund, import and supplier-payment events are posted to the internal accounting ledger with source-level idempotency.
 
 ## Persistence and transactions
 
-- MySQL is the primary database; checked-in Flyway migrations currently run from `V1` through `V7`.
+- MySQL is the primary database; checked-in Flyway migrations currently run from `V1` through `V8`.
 - JPA uses disabled Open Session in View, batch fetching and JDBC batching.
 - Root records generally support timestamps, soft deletion and optimistic versions.
 - Payment, refund and shipment write paths use row locking where concurrent updates matter.
 - Orders and related records preserve product, price and attribute snapshots to keep historical data stable.
 
-Known persistence debt: supplier-payment tables are mapped in code but are not represented by the checked-in migrations. The project also combines Flyway with Hibernate schema update, so schema ownership should be unified.
+The V8 migration creates the internal chart of accounts, journal entries and journal lines. The project still combines Flyway with Hibernate schema update, so schema ownership should eventually be unified.
 
 ## Security
 
@@ -167,3 +172,4 @@ When the backend is running, the generated OpenAPI document is available at `/v3
 - Require externally supplied JWT signing configuration.
 - Standardize API path prefixes and versioning.
 - Continue reducing direct cross-domain imports where asynchronous events or explicit ports are suitable.
+- Add accounting tests for balancing, event idempotency, reversal entries and period reporting.

@@ -297,6 +297,7 @@ public class PaymentService {
                 payment.getUserId(),
                 payment.getMethod(),
                 payment.getAmount(),
+                orderFacade.getPaymentSnapshot(payment.getOrderId()).getCostAmount(),
                 payment.getProviderTransactionId()
         ));
         return CustomerPaymentMapper.toResponse(payment);
@@ -541,12 +542,14 @@ public class PaymentService {
     }
 
     private void publishPaymentCompleted(CustomerPaymentTransaction payment) {
+        OrderPaymentSnapshot order = orderFacade.getPaymentSnapshot(payment.getOrderId());
         eventPublisher.publishEvent(PaymentCompletedEvent.now(
                 payment.getId(),
                 payment.getOrderId(),
                 payment.getUserId(),
                 payment.getMethod(),
                 payment.getAmount(),
+                order.getCostAmount(),
                 payment.getProviderTransactionId()
         ));
     }

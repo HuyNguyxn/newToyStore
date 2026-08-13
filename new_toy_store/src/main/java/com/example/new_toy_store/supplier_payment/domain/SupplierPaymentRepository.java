@@ -11,8 +11,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.time.LocalDate;
+import java.util.List;
 
 public interface SupplierPaymentRepository extends JpaRepository<SupplierPaymentInvoice, Integer>, JpaSpecificationExecutor<SupplierPaymentInvoice> {
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount - i.paidAmount), 0) FROM SupplierPaymentInvoice i WHERE i.status IN :statuses")
+    double sumOutstandingByStatuses(@Param("statuses") List<SupplierPaymentStatus> statuses);
+
+    long countByStatusIn(List<SupplierPaymentStatus> statuses);
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount - i.paidAmount), 0) FROM SupplierPaymentInvoice i WHERE i.status IN :statuses AND i.dueDate < :today")
+    double sumOverdueOutstanding(@Param("statuses") List<SupplierPaymentStatus> statuses, @Param("today") LocalDate today);
+
+    long countByStatusInAndDueDateBefore(List<SupplierPaymentStatus> statuses, LocalDate today);
 
     boolean existsByImportNoteId(Integer importNoteId);
 

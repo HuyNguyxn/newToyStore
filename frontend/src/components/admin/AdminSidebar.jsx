@@ -9,6 +9,7 @@ const navGroups = [
     title: 'TRUNG TÂM VẬN HÀNH',
     items: [
       { to: '/admin/statistics', label: 'Báo cáo & Thống kê', requiredRoles: ['ADMIN'] },
+      { to: '/admin/accounting', label: 'Kế toán & Dòng tiền', requiredRoles: ['MANAGER', 'ADMIN'] },
       { to: '/admin/notifications', label: 'Thông báo từ hệ thống', requiredRoles: ['ADMIN'] },
       { to: '/admin/users', label: 'Người dùng & Phân quyền', requiredRoles: ['ADMIN'] },
       { to: '/admin/return-inspection', label: 'Kiểm định QC hàng trả', requiredRoles: ['STAFF', 'MANAGER', 'ADMIN'] },

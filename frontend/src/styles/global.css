@@ -4257,3 +4257,78 @@ h3 {
     justify-content: flex-start;
   }
 }
+
+/* Internal accounting workspace */
+.accounting-page { min-height: 100%; padding: 24px; background: #f4f7fb; color: #172033; }
+.accounting-header, .accounting-panel, .accounting-tabs, .accounting-period-filter { background: #fff; border: 1px solid #dde5ef; border-radius: 14px; box-shadow: 0 8px 24px rgba(30, 41, 59, .06); }
+.accounting-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px 24px; }
+.accounting-header p { margin: 0 0 6px; color: #ea580c; font-size: 12px; font-weight: 900; letter-spacing: .08em; }
+.accounting-header h1 { margin: 0; font-size: 28px; }
+.accounting-header span { display: block; margin-top: 7px; color: #64748b; }
+.accounting-date-filter, .accounting-period-filter { display: flex; align-items: end; gap: 8px; }
+.accounting-date-filter label, .accounting-period-filter label, .accounting-form-grid label, .reserve-field { display: grid; gap: 5px; color: #475569; font-size: 12px; font-weight: 800; }
+.accounting-date-filter input, .accounting-period-filter input, .accounting-form-grid input, .accounting-form-grid select, .reserve-field input, .accounting-panel-heading select, .accounting-line input, .accounting-line select { min-height: 40px; padding: 8px 11px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #172033; }
+.accounting-date-filter button, .accounting-period-filter button, .accounting-manual-footer button { min-height: 40px; padding: 0 17px; border: 0; border-radius: 9px; background: #ea580c; color: #fff; font-weight: 900; cursor: pointer; }
+.accounting-tabs { display: flex; gap: 5px; margin: 14px 0; padding: 7px; overflow-x: auto; }
+.accounting-tabs button { border: 0; border-radius: 9px; padding: 10px 15px; background: transparent; color: #64748b; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.accounting-tabs button.is-active { background: #fff1e8; color: #c2410c; }
+.accounting-alert, .accounting-loading { margin: 12px 0; padding: 12px 15px; border-radius: 10px; font-weight: 800; }
+.accounting-alert.is-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.accounting-alert.is-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.accounting-loading { background: #eff6ff; color: #1d4ed8; }
+.accounting-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.accounting-metric { position: relative; overflow: hidden; min-height: 115px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(30, 41, 59, .06); }
+.accounting-metric::after { content: ''; position: absolute; right: -25px; bottom: -40px; width: 125px; height: 125px; border-radius: 50%; opacity: .14; background: currentColor; }
+.accounting-metric span { color: #64748b; font-size: 13px; font-weight: 800; }
+.accounting-metric strong { display: block; margin-top: 14px; font-size: 24px; }
+.tone-green { color: #15803d; } .tone-orange { color: #d97706; } .tone-blue { color: #2563eb; } .tone-violet { color: #7c3aed; } .tone-red { color: #dc2626; }
+.accounting-grid-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.accounting-panel { padding: 20px; }
+.accounting-panel h2 { margin: 0 0 16px; font-size: 18px; }
+.accounting-summary-list { display: grid; gap: 0; margin: 0; }
+.accounting-summary-list > div { display: flex; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid #eef2f7; }
+.accounting-summary-list > div:last-child { border-bottom: 0; }
+.accounting-summary-list dt { color: #64748b; } .accounting-summary-list dd { margin: 0; font-weight: 900; }
+.accounting-summary-list dd.danger { color: #dc2626; } .accounting-summary-list dd.success { color: #15803d; }
+.accounting-summary-list .total { margin-top: 6px; padding: 13px; border: 0; border-radius: 10px; background: #fff7ed; color: #c2410c; }
+.reserve-field { margin-top: 15px; }
+.accounting-table-panel { overflow: hidden; padding: 0; }
+.accounting-table-panel > h2, .accounting-panel-heading { margin: 0; padding: 18px 20px; border-bottom: 1px solid #e2e8f0; }
+.accounting-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.accounting-panel-heading h2 { margin: 0; }
+.accounting-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.accounting-table th { padding: 12px 14px; background: #f1f5f9; color: #475569; text-align: left; font-size: 11px; text-transform: uppercase; }
+.accounting-table td { padding: 13px 14px; border-top: 1px solid #edf1f5; vertical-align: top; }
+.accounting-table tbody tr:hover { background: #fffaf5; }
+.accounting-status { display: inline-flex; border-radius: 999px; padding: 4px 9px; font-weight: 850; }
+.accounting-status.posted { background: #dcfce7; color: #15803d; } .accounting-status.reversed { background: #f1f5f9; color: #64748b; }
+.accounting-link-danger { border: 1px solid #fecaca; border-radius: 7px; padding: 6px 9px; background: #fff; color: #dc2626; font-weight: 800; cursor: pointer; }
+.accounting-pager { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 14px; border-top: 1px solid #e2e8f0; }
+.accounting-pager button { border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 12px; background: #fff; cursor: pointer; }
+.accounting-pager button:disabled { opacity: .45; cursor: not-allowed; }
+.accounting-period-filter { margin-bottom: 14px; padding: 12px 15px; }
+.accounting-table-panel .accounting-period-filter { margin: 12px; }
+.trial-balance-state { margin-bottom: 12px; padding: 14px; border-radius: 10px; font-weight: 900; }
+.trial-balance-state.balanced { background: #ecfdf5; color: #047857; } .trial-balance-state.unbalanced { background: #fff1f2; color: #be123c; }
+.accounting-manual-form { max-width: 1100px; margin: 0 auto; }
+.accounting-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.accounting-form-grid .wide { grid-column: span 3; }
+.accounting-lines { margin-top: 18px; border: 1px solid #dbe3ed; border-radius: 12px; overflow: hidden; }
+.accounting-line { display: grid; grid-template-columns: 1.35fr 1.7fr .7fr .7fr 40px; gap: 8px; padding: 9px; border-top: 1px solid #e7edf4; }
+.accounting-line:first-child { border-top: 0; } .accounting-line.header { background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 900; }
+.accounting-line > button { border: 1px solid #fecaca; border-radius: 8px; background: #fff; color: #dc2626; font-size: 18px; cursor: pointer; }
+.accounting-manual-footer { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 14px; }
+.accounting-manual-footer .secondary { margin-right: auto; border: 1px solid #fdba74; background: #fff; color: #c2410c; }
+.accounting-manual-footer button:disabled { opacity: .45; cursor: not-allowed; }
+
+@media (max-width: 1050px) {
+  .accounting-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .accounting-grid-two { grid-template-columns: 1fr; }
+  .accounting-header { flex-direction: column; }
+}
+@media (max-width: 720px) {
+  .accounting-page { padding: 12px; } .accounting-metrics { grid-template-columns: 1fr; }
+  .accounting-form-grid { grid-template-columns: 1fr; } .accounting-form-grid .wide { grid-column: auto; }
+  .accounting-line { grid-template-columns: 1fr; } .accounting-line.header { display: none; }
+  .accounting-table-panel { overflow-x: auto; } .accounting-table { min-width: 760px; }
+}

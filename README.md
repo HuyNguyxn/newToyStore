@@ -36,6 +36,7 @@ flowchart LR
 - Customer profiles, notifications, reviews and return requests.
 - Administrative catalog, inventory, suppliers, imports and logistics workflows.
 - Administrative payments, refunds, promotions, moderation, users and statistics.
+- Internal double-entry accounting, supplier payables, cash visibility, general ledger and management reports.
 
 ## Live demo
 
@@ -87,6 +88,7 @@ Set `VITE_API_URL` when the backend is not available at `http://localhost:8080`.
 - [Frontend pages and feature documentation](frontend/README.md#feature-documentation)
 - [Backend architecture and development guide](new_toy_store/README.md)
 - [Backend domain documentation](new_toy_store/README.md#domain-documentation)
+- [Accounting and internal cash-flow domain](new_toy_store/src/main/java/com/example/new_toy_store/accounting/README.md)
 
 ## Verification
 

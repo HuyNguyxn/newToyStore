@@ -10,6 +10,7 @@ public record PaymentCompletedEvent(
         Integer userId,
         CustomerPaymentMethod method,
         double amount,
+        double costAmount,
         String providerTransactionId,
         Instant occurredAt
 ) {
@@ -19,6 +20,7 @@ public record PaymentCompletedEvent(
             Integer userId,
             CustomerPaymentMethod method,
             double amount,
+            double costAmount,
             String providerTransactionId
     ) {
         return new PaymentCompletedEvent(
@@ -27,6 +29,7 @@ public record PaymentCompletedEvent(
                 userId,
                 method,
                 amount,
+                costAmount,
                 providerTransactionId,
                 Instant.now()
         );
