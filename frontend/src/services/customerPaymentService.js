@@ -16,6 +16,10 @@ export function getCustomerPaymentDetails(paymentId) {
   return apiClient(`/payments/${paymentId}`);
 }
 
+export function getLatestCustomerPaymentForOrder(orderId) {
+  return apiClient(`/payments/orders/${orderId}/latest`);
+}
+
 export function cancelCustomerPayment(paymentId, reason) {
   return apiClient(`/payments/${paymentId}/cancel`, {
     method: 'PATCH',

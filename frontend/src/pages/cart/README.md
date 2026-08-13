@@ -16,6 +16,7 @@ This area lets authenticated customers manage selected product variants and turn
 - `cartService.js` for cart reads, item mutations and checkout.
 - `orderService.js` to reconcile the order created by checkout.
 - `customerPaymentService.js` for COD or VNPay initialization and idempotency keys.
+- `promotionService.js` for selectable order-level promotions that are active, within their time window, have remaining quota and meet the current cart minimum.
 - Authentication context through the protected route wrapper.
 
 ## Main flow
@@ -24,6 +25,8 @@ This area lets authenticated customers manage selected product variants and turn
 Load cart -> select valid items -> review totals -> submit checkout
 -> locate created order -> initialize payment -> show result or redirect to VNPay
 ```
+
+The checkout promotion field is a server-backed select rather than free text. Choosing no promotion recalculates the cart without a code.
 
 Cart totals shown by the UI are advisory. Product availability, price, promotion eligibility, stock and payable totals must be recalculated by the backend during checkout.
 

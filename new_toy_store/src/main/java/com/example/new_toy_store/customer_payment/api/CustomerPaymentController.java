@@ -76,6 +76,15 @@ public class CustomerPaymentController {
         return service.getMyPayments(user.getId(), pageable);
     }
 
+    @GetMapping("/orders/{orderId}/latest")
+    public CustomerPaymentResponse getLatestPaymentForOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Integer orderId
+    ) {
+        UserProfileResponse user = getAuthenticatedUser(userDetails);
+        return service.getLatestPaymentForOrder(orderId, user.getId(), isAdmin(user));
+    }
+
     @GetMapping("/{id}")
     public CustomerPaymentResponse getDetails(
             @AuthenticationPrincipal UserDetails userDetails,

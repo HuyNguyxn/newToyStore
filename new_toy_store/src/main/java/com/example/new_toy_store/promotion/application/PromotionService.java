@@ -185,6 +185,17 @@ public class PromotionService {
     }
 
     @Transactional(readOnly = true)
+    public List<PromotionResponse> getAvailableOrderPromotions(double cartTotal) {
+        if (cartTotal < 0) {
+            throw new IllegalArgumentException("Tổng tiền giỏ hàng không được âm");
+        }
+        return repository.findAvailableOrderPromotions(LocalDateTime.now()).stream()
+                .filter(promotion -> promotion.isApplicableForOrder(cartTotal))
+                .map(PromotionMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public double calculateProductDiscount(Integer productId, double originalPrice) {
         if (originalPrice <= 0 || productId == null) {
             return 0.0;

@@ -5,6 +5,7 @@ import useAuth from '../../hooks/useAuth.js';
 import { checkoutCart, getCart } from '../../services/cartService.js';
 import { getMyOrders } from '../../services/orderService.js';
 import { checkoutCustomerPayment, createCustomerPaymentIdempotencyKey } from '../../services/customerPaymentService.js';
+import { getAvailableOrderPromotions } from '../../services/promotionService.js';
 import { formatPrice } from '../../utils/formatters.js';
 
 import { isUserProfileComplete, isValidVietnamesePhoneNumber } from '../../utils/userValidation.js';
@@ -23,6 +24,8 @@ function CheckoutPage() {
   const [promoCode, setPromoCode] = useState(location.state?.promoCode || '');
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
+  const [availablePromotions, setAvailablePromotions] = useState([]);
+  const [loadingPromotions, setLoadingPromotions] = useState(false);
   
   const [paymentMethod, setPaymentMethod] = useState('COD'); // COD or VNPAY
   const [loading, setLoading] = useState(true);
@@ -77,6 +80,7 @@ function CheckoutPage() {
     try {
       const result = await getCart(user.id, code);
       setCart(result);
+      await loadAvailablePromotions(result?.cartTotal ?? result?.subtotal ?? 0);
       if (code) {
         setPromoSuccess('Áp dụng mã giảm giá thành công!');
         setPromoError('');
@@ -92,6 +96,18 @@ function CheckoutPage() {
     }
   }
 
+  async function loadAvailablePromotions(cartTotal) {
+    setLoadingPromotions(true);
+    try {
+      const promotions = await getAvailableOrderPromotions(cartTotal);
+      setAvailablePromotions(Array.isArray(promotions) ? promotions : []);
+    } catch (_err) {
+      setAvailablePromotions([]);
+    } finally {
+      setLoadingPromotions(false);
+    }
+  }
+
   const selectedItems = useMemo(() => {
     const items = cart?.items || [];
     const selected = items.filter((item) => Boolean(item.isSelected ?? item.selected));
@@ -102,8 +118,9 @@ function CheckoutPage() {
   function handleApplyPromo(e) {
     e.preventDefault();
     if (!promoCode.trim()) {
-      setPromoError('Vui lòng nhập mã giảm giá.');
+      setPromoError('');
       setPromoSuccess('');
+      loadCartData('');
       return;
     }
     loadCartData(promoCode.trim());
@@ -486,11 +503,10 @@ function CheckoutPage() {
 
               {/* PROMO CODE BOX */}
               <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginBottom: '16px' }}>
-                <input
-                  type="text"
-                  placeholder="Mã giảm giá..."
+                <select
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
+                  disabled={loadingPromotions}
                   style={{
                     flex: '1',
                     padding: '8px 10px',
@@ -498,8 +514,16 @@ function CheckoutPage() {
                     borderRadius: '6px',
                     fontSize: '12.5px',
                     outline: 'none',
+                    background: '#ffffff',
                   }}
-                />
+                >
+                  <option value="">{loadingPromotions ? 'Đang tải mã giảm giá...' : 'Không sử dụng mã giảm giá'}</option>
+                  {availablePromotions.map((promotion) => (
+                    <option key={promotion.id || promotion.code} value={promotion.code}>
+                      {promotion.code} - {promotion.name}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={handleApplyPromo}

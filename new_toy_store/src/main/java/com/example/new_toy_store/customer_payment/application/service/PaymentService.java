@@ -143,6 +143,14 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public CustomerPaymentResponse getLatestPaymentForOrder(Integer orderId, Integer currentUserId, boolean isAdmin) {
+        CustomerPaymentTransaction payment = repository.findFirstByOrderIdOrderByCreatedAtDesc(orderId)
+                .orElseThrow(() -> new CustomerPaymentNotFoundException(orderId));
+        validateOwnership(payment.getId(), payment.getUserId(), currentUserId, isAdmin, "view order payment");
+        return CustomerPaymentMapper.toResponse(payment);
+    }
+
+    @Transactional(readOnly = true)
     public Page<CustomerPaymentResponse> filter(CustomerPaymentFilterRequest request, Pageable pageable) {
         Specification<CustomerPaymentTransaction> spec = PaymentSpecification.filter(request);
         return repository.findAll(spec, pageable).map(CustomerPaymentMapper::toResponse);

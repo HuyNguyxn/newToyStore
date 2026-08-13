@@ -23,6 +23,8 @@ Order line data is historical snapshot data. The UI should display names, prices
 
 `GET /orders/my-orders` returns a paged list whose `items` collection is intentionally populated for customers. The list uses these items to render product names, images when available and total quantity. Status histories remain detail-only and are obtained from `GET /orders/{id}`.
 
+After cancellation, the detail page reloads `GET /orders/{id}` so the cancelled order, its items and latest history remain viewable. It also reads `GET /payments/orders/{orderId}/latest`; only a pending order whose selected payment method is VNPay can request a fresh VNPay URL. COD orders never show the VNPay retry action.
+
 ## Maintenance notes
 
 - Refresh details after every lifecycle mutation.

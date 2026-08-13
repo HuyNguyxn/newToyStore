@@ -210,6 +210,20 @@ npm run dev
 
 Frontend đọc `VITE_API_URL`; khi không cấu hình sẽ dùng `http://localhost:8080`.
 
+### Thẻ VNPay sandbox để kiểm thử
+
+Các thông tin dưới đây chỉ dùng trên môi trường VNPay sandbox, không phải thông tin ngân hàng thật:
+
+| Trường | Giá trị |
+|---|---|
+| Ngân hàng | NCB |
+| Số thẻ | `9704198526191432198` |
+| Tên chủ thẻ | `NGUYEN VAN A` |
+| Ngày phát hành | `07/15` |
+| Mật khẩu OTP | `123456` |
+
+Tại checkout, chọn `VNPay`, mở trang thanh toán và nhập bộ dữ liệu trên. Nếu đóng hoặc chưa hoàn tất cổng thanh toán, vào **Lịch sử đơn hàng -> Xem chi tiết -> Thanh toán ngay qua VNPAY** để hệ thống tạo lại URL thanh toán còn hiệu lực.
+
 ## 12. Tài liệu API
 
 Khi backend đang chạy:

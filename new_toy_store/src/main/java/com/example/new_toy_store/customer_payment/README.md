@@ -38,6 +38,8 @@ Payment -> Order uses `OrderFacade` snapshots/ownership; Payment -> User resolve
 
 `CustomerPaymentCheckoutRequest -> validate order ownership/amount -> reuse idempotency key or reject duplicate active payment -> create COD/VNPay transaction -> save -> optional VNPay URL -> response`.
 
+If an order still has a `PENDING` VNPay transaction, checkout reuses that transaction and generates a fresh 15-minute payment URL. A failed, cancelled or expired attempt does not prevent a new attempt while the order itself remains `PENDING`.
+
 ### Refund
 
 `Refund request -> validate succeeded payment and refundable amount -> create refund -> lock/process or reject -> call VNPay/manual path -> update payment/refund -> publish refund event`. Hủy một đơn đã thu tiền cũng tự tạo yêu cầu hoàn phần tiền còn lại; hệ thống không âm thầm coi khoản thu đó là doanh thu.
@@ -60,7 +62,7 @@ Direct DTO responses, paging and Bean Validation are used. VNPay callbacks are G
 
 ## 11. APIs
 
-`CustomerPaymentController`, base `/payments`: `POST /checkout`; public `GET /vnpay-return` and `/vnpay-ipn`; `GET /my-payments`, `/{id}`, `/admin/filter`; `POST /{id}/refunds`; `GET /{id}/refunds`, `/refunds`; `PATCH /refunds/{refundId}/process|reject`; `DELETE /refunds/{refundId}`; `PATCH /{id}/succeed|fail|cancel`; `DELETE /{id}`.
+`CustomerPaymentController`, base `/payments`: `POST /checkout`; public `GET /vnpay-return` and `/vnpay-ipn`; `GET /my-payments`, `/orders/{orderId}/latest`, `/{id}`, `/admin/filter`; `POST /{id}/refunds`; `GET /{id}/refunds`, `/refunds`; `PATCH /refunds/{refundId}/process|reject`; `DELETE /refunds/{refundId}`; `PATCH /{id}/succeed|fail|cancel`; `DELETE /{id}`.
 
 ## 12. Error Handling
 

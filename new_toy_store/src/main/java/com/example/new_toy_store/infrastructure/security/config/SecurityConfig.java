@@ -167,6 +167,7 @@ public class SecurityConfig {
                         .hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         .requestMatchers("/api/supplier-returns/**")
                         .hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/promotions/available-order").authenticated()
                         .requestMatchers("/api/supplier-payments/**", "/api/accounting/**", "/api/v1/promotions/**")
                         .hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/statistics/**").hasAnyRole("MANAGER", "ADMIN")

@@ -68,6 +68,13 @@ public class PromotionController {
         return ResponseEntity.ok(promotionService.getPromotions(scope, active, keyword, pageable));
     }
 
+    @GetMapping("/available-order")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<PromotionResponse>> getAvailableOrderPromotions(
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Tổng tiền giỏ hàng không được âm") double cartTotal) {
+        return ResponseEntity.ok(promotionService.getAvailableOrderPromotions(cartTotal));
+    }
+
     @PatchMapping("/{id}/activate")
     public ResponseEntity<Void> activatePromotion(
             @PathVariable @Min(value = 1, message = "ID khuyến mãi không hợp lệ") Integer id) {

@@ -30,6 +30,8 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
 
     Optional<CustomerPaymentTransaction> findByOrderIdAndMethod(Integer orderId, CustomerPaymentMethod method);
 
+    Optional<CustomerPaymentTransaction> findFirstByOrderIdOrderByCreatedAtDesc(Integer orderId);
+
     @Query("""
             SELECT p
               FROM CustomerPaymentTransaction p JOIN Order o ON p.orderId = o.id

@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import { cancelOrder, getOrderDetails } from '../../services/orderService.js';
-import { checkoutCustomerPayment, createCustomerPaymentIdempotencyKey } from '../../services/customerPaymentService.js';
+import { checkoutCustomerPayment, createCustomerPaymentIdempotencyKey, getLatestCustomerPaymentForOrder } from '../../services/customerPaymentService.js';
 import { formatDateTime, formatPrice, getOrderStatusLabel, getPaymentStatusLabel } from '../../utils/formatters.js';
 
 function OrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [latestPayment, setLatestPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -20,10 +20,14 @@ function OrderDetailPage() {
     setLoading(true);
     setError('');
 
-    getOrderDetails(id)
-      .then((result) => {
+    Promise.all([
+      getOrderDetails(id),
+      getLatestCustomerPaymentForOrder(id).catch(() => null),
+    ])
+      .then(([result, payment]) => {
         if (active) {
           setOrder(result);
+          setLatestPayment(payment);
         }
       })
       .catch((err) => {
@@ -41,7 +45,7 @@ function OrderDetailPage() {
     };
   }, [id]);
 
-  async function handlePaymentCheckout() {
+  async function handlePaymentCheckout(method = 'VNPAY') {
     setSubmitting(true);
     setMessage('');
     setError('');
@@ -49,8 +53,8 @@ function OrderDetailPage() {
     try {
       const payment = await checkoutCustomerPayment({
         orderId: order.id,
-        method: paymentMethod,
-        idempotencyKey: createCustomerPaymentIdempotencyKey(order.id, paymentMethod),
+        method,
+        idempotencyKey: createCustomerPaymentIdempotencyKey(order.id, method),
       });
 
       if (payment.paymentUrl) {
@@ -73,8 +77,9 @@ function OrderDetailPage() {
     setError('');
 
     try {
-      const result = await cancelOrder(order.id, 'Khách hàng hủy trên website');
-      setOrder(result);
+      await cancelOrder(order.id, 'Khách hàng hủy trên website');
+      const refreshedOrder = await getOrderDetails(order.id);
+      setOrder(refreshedOrder);
       setMessage('Đã hủy đơn hàng thành công.');
     } catch (err) {
       setError(err.message || 'Không thể hủy đơn hàng.');
@@ -103,7 +108,11 @@ function OrderDetailPage() {
   }
 
   const orderStatusCode = (typeof order.status === 'object' && order.status !== null) ? (order.status.name || order.status.code || '') : String(order.status || '');
-  const canCancel = order.availableActions?.includes('CANCEL') || orderStatusCode === 'PENDING';
+  const paymentMethodCode = typeof latestPayment?.method === 'object'
+    ? (latestPayment.method.code || latestPayment.method.name || '')
+    : String(latestPayment?.method || '');
+  const canRetryVnpay = orderStatusCode === 'PENDING' && paymentMethodCode.toUpperCase() === 'VNPAY';
+  const canCancel = order.availableActions?.includes('CANCELLED') || orderStatusCode === 'PENDING';
   const statusColor = (
     orderStatusCode === 'COMPLETED' ? { bg: '#d1fae5', text: '#059669', border: '#a7f3d0' } :
     orderStatusCode === 'CANCELLED' ? { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' } :
@@ -284,12 +293,11 @@ function OrderDetailPage() {
 
               {/* ACTION BUTTONS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {orderStatusCode === 'PENDING' && (
+                {canRetryVnpay && (
                   <button
                     type="button"
                     onClick={() => {
-                      setPaymentMethod('VNPAY');
-                      handlePaymentCheckout();
+                      handlePaymentCheckout('VNPAY');
                     }}
                     disabled={submitting}
                     style={{
