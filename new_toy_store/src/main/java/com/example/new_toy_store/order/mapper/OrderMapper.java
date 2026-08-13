@@ -49,6 +49,22 @@ public final class OrderMapper {
         return response;
     }
 
+    /**
+     * Customer order history needs line items for review and return flows, but
+     * does not need the status-history collection of every order.
+     */
+    public static OrderResponse toCustomerHistoryResponse(Order order) {
+        if (order == null) return null;
+
+        OrderResponse response = new OrderResponse();
+        mapOrderFields(order, response);
+        response.setItems(toItemResponses(order));
+        response.setHistories(List.of());
+        response.setAvailableActions(toAvailableActionCodes(order.getStatus()));
+        response.setAllowedNextActions(toAllowedNextActions(order.getStatus()));
+        return response;
+    }
+
     private static void mapOrderFields(Order order, OrderResponse response) {
         response.setId(order.getId());
         response.setUserId(order.getUserId());

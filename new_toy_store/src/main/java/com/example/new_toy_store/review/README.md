@@ -23,7 +23,7 @@ Review uses Order to prove the completed order item, Product for product data/ra
 
 ## 6. Main Flows / Use Cases
 
-`ReviewCreateRequest -> resolve user/completed order item -> reject duplicate -> moderate text -> snapshot variant -> attach bounded media -> save -> recalculate/publish product rating`. Update/delete/status/reply publish corresponding events.
+`GET /orders/my-orders -> customer selects an order-item snapshot -> ReviewCreateRequest -> resolve user/completed order item -> reject duplicate -> moderate text -> snapshot variant -> attach bounded media -> save -> recalculate/publish product rating`. The order-history response supplies selection context only; Review verifies the completed item and ownership again. Update/delete/status/reply publish corresponding events.
 
 ## 7. Business Rules
 

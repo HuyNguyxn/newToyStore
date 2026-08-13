@@ -77,7 +77,7 @@ function ReviewCreatePage() {
         setOrderItemId(String(items[0].id));
       }
     } catch (err) {
-      // Fallback
+      setError(err.message || 'Không thể tải danh sách sản phẩm đã mua để đánh giá.');
     } finally {
       setLoadingOrders(false);
     }

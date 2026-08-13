@@ -109,6 +109,8 @@ flowchart LR
 
 Purchase fulfillment starts with cart validation, creates order snapshots, reserves inventory, initializes COD or VNPay payment, creates a shipment and records tracking until completion. Completed imports update inventory and create supplier payables. Customer and supplier returns coordinate inspection, logistics and stock changes. Committed payment, refund, import and supplier-payment events are posted to the internal accounting ledger with source-level idempotency.
 
+Customer order history is an item-aware read model: `/orders/my-orders` returns order-line snapshots needed by purchase history, verified reviews and customer returns, while omitting per-order status histories. `/orders/{id}` remains the full detail query. Administrative order pages use lightweight summary responses unless they request one order explicitly.
+
 ## 7. Persistence and Transactions
 
 - MySQL is the primary database; checked-in Flyway migrations currently run from `V1` through `V11`.

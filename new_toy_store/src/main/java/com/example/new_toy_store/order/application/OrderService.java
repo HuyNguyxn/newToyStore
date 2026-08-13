@@ -70,7 +70,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getUserOrders(Integer userId, Pageable pageable) {
-        return repository.findByUserId(userId, pageable).map(OrderMapper::toSummaryResponse);
+        return repository.findByUserId(userId, pageable).map(OrderMapper::toCustomerHistoryResponse);
     }
 
     @Transactional(readOnly = true)

@@ -100,11 +100,18 @@ Create, lifecycle changes, deletion, address updates and refund-status updates a
 
 DTO-separated, paginated REST/action endpoints with Bean Validation and domain advice. No version prefix, response wrapper or idempotency mechanism is exposed for direct order creation.
 
+Order exposes three mapping depths instead of one response shape being populated identically everywhere:
+
+- Customer history maps order fields and item snapshots, but leaves `histories` empty. Review and return screens therefore receive stable `orderItemId`, product, variant, quantity and purchase-price context without fetching every status history.
+- Administrative paged filters use a lightweight summary without items or histories.
+- Order detail maps both items and histories.
+
 ## 11. APIs
 
 `OrderController`, base `/orders`:
 
-- `GET /my-orders`, `GET /{id}` — customer-scoped list/detail.
+- `GET /my-orders` — customer-scoped paged history with item snapshots and without status histories.
+- `GET /{id}` — full customer/staff detail with items and status histories.
 - `POST /` — create from `OrderRequest`.
 - `PATCH /{id}/confirm`, `/ship`, `/complete` — staff lifecycle actions.
 - `PATCH /{id}/cancel` — customer or staff cancellation.
@@ -122,7 +129,7 @@ Authenticated CUSTOMER/STAFF/MANAGER/ADMIN may read/create. Staff roles control 
 
 ## 14. Algorithms & Performance Considerations
 
-Creation batches product lookups and uses map-based variant resolution to avoid one query per item. Repository-level aggregate queries power statistics. Timeout cancellation is scheduled by `OrderTimeoutScheduler`.
+Creation batches product lookups and uses map-based variant resolution to avoid one query per item. Customer history loads `items` through an entity graph and maps them inside the read-only transaction, while deliberately skipping `histories`; this supports review/return selection without an N+1 history query. Repository-level aggregate queries power statistics. Timeout cancellation is scheduled by `OrderTimeoutScheduler`.
 
 ## 15. Architecture & Design Principles
 
@@ -130,7 +137,7 @@ Order is a clear aggregate boundary with snapshots and ID-based external referen
 
 ## 16. Notes / Design Decisions
 
-Snapshots deliberately prevent later product name, variant, price or cost changes from rewriting order history.
+Snapshots deliberately prevent later product name, variant, price or cost changes from rewriting order history. `OrderMapper.toCustomerHistoryResponse` is the shared contract for purchase history, review selection and return selection; `toSummaryResponse` remains reserved for tables that do not need line items.
 
 ## 17. Known Limitations / Technical Debt
 

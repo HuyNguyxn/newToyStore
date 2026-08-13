@@ -136,7 +136,9 @@ Payment / Refund / Import / Supplier Payment
 
 ### Hậu mãi
 
-Đơn hàng đã mua cung cấp ngữ cảnh cho review và customer return. Return phối hợp logistics, kiểm định, hoàn tiền và điều chỉnh tồn kho thông qua facade/event hiện có.
+`GET /orders/my-orders` trả danh sách đơn của khách kèm snapshot từng dòng sản phẩm. Cùng một nguồn dữ liệu này phục vụ lịch sử mua hàng, chọn sản phẩm đã mua để đánh giá và chọn dòng hàng đủ điều kiện để yêu cầu trả hàng. Danh sách không tải lịch sử trạng thái của từng đơn; lịch sử đầy đủ chỉ được trả ở API chi tiết để tránh truy vấn dư thừa.
+
+Review tiếp tục xác minh quyền đánh giá ở backend bằng `orderItemId`. Customer Return cũng kiểm tra lại quyền sở hữu, trạng thái đơn và số lượng được trả; dữ liệu trên giao diện chỉ có vai trò hướng dẫn. Return phối hợp logistics, kiểm định, hoàn tiền và điều chỉnh tồn kho thông qua facade/event hiện có.
 
 ## 8. Dữ liệu và persistence
 

@@ -1607,7 +1607,7 @@ function AdminStatisticsPage() {
                                 {prod.productName || prod.name || 'Sản phẩm đồ chơi'}
                               </div>
                               <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
-                                Doanh thu: {formatVndText(prod.totalRevenue || prod.revenue)}
+                                Doanh thu: {formatVndText(prod.grossRevenue ?? prod.totalRevenue ?? prod.revenue ?? 0)}
                               </div>
                             </td>
 

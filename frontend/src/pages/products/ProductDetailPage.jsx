@@ -177,7 +177,7 @@ function ProductDetailPage() {
       <BackLink fallback="/products" label="Quay lại sản phẩm" />
 
       <div className="breadcrumb">
-        <Link to="/products">San pham</Link>
+        <Link to="/products">Sản phẩm</Link>
         <span>/</span>
         <span>{product.name}</span>
       </div>
@@ -213,7 +213,7 @@ function ProductDetailPage() {
           <span className="product-info__status">{getProductStatusLabel(product)}</span>
           <h1>{product.name}</h1>
           <p className="product-info__rating">
-            {(product.averageRating || 0).toFixed(1)} sao | {product.reviewCount || 0} danh gia
+            {(product.averageRating || 0).toFixed(1)} sao | {product.reviewCount || 0} đánh giá
           </p>
 
           <div className="product-info__price">
@@ -222,7 +222,7 @@ function ProductDetailPage() {
           </div>
 
           <div className="variant-picker">
-            <p>Chon phan loai</p>
+            <p>Chọn phân loại</p>
             <div className="variant-picker__options">
               {(product.variants || []).map((variant) => (
                 <button
@@ -241,12 +241,12 @@ function ProductDetailPage() {
           </div>
 
           <div className="stock-line">
-            Ton kho: <strong>{stockQuantity}</strong>
+            Tồn kho: <strong>{stockQuantity}</strong>
           </div>
 
           <div className="quantity-stepper">
             <button type="button" onClick={decreaseQuantity}>-</button>
-            <input value={quantity} readOnly aria-label="So luong" />
+            <input value={quantity} readOnly aria-label="Số lượng" />
             <button type="button" onClick={increaseQuantity}>+</button>
           </div>
 
@@ -277,7 +277,7 @@ function ProductDetailPage() {
             {reviews.map((review) => (
               <article className="review-card" key={review.id}>
                 <div className="review-card__user">
-                  <img src={review.userAvatar || 'https://placehold.co/48x48?text=U'} alt={review.userFullName || 'User'} />
+                  <img src={review.userAvatar || 'https://placehold.co/48x48?text=U'} alt={review.userFullName || 'Khách hàng'} />
                   <div>
                     <strong>{review.userFullName || 'Khách hàng'}</strong>
                     <span>{'★'.repeat(review.rating)}{'☆'.repeat(Math.max(5 - review.rating, 0))}</span>
@@ -292,13 +292,13 @@ function ProductDetailPage() {
                       media.mediaType === 'VIDEO' ? (
                         <video key={media.id || media.url} src={media.url} controls />
                       ) : (
-                        <img key={media.id || media.url} src={media.url} alt="Review media" />
+                        <img key={media.id || media.url} src={media.url} alt="Hình ảnh đánh giá" />
                       )
                     ))}
                   </div>
                 )}
 
-                {review.adminReply && <div className="review-card__reply">Shop: {review.adminReply}</div>}
+                {review.adminReply && <div className="review-card__reply">Phản hồi từ cửa hàng: {review.adminReply}</div>}
               </article>
             ))}
           </div>

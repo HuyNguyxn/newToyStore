@@ -24,6 +24,14 @@ const emptyPasswordForm = {
   confirmPassword: '',
 };
 
+function getRoleLabel(role) {
+  const code = String(role || '').toUpperCase();
+  if (code === 'ADMIN') return 'Quản trị viên';
+  if (code === 'MANAGER') return 'Quản lý';
+  if (code === 'STAFF') return 'Nhân viên';
+  return 'Khách hàng';
+}
+
 function ProfilePage() {
   const location = useLocation();
   const { user, logout, updateProfile, setUserProfile } = useAuth();
@@ -80,7 +88,7 @@ function ProfilePage() {
       updateProfileField('avatarUrl', result.secureUrl || result.url);
       setProfileMessage('Đã upload avatar. Bấm cập nhật để lưu vào hồ sơ.');
     } catch (err) {
-      setProfileError(err.message || 'Upload avatar thất bại.');
+      setProfileError(err.message || 'Tải ảnh đại diện thất bại.');
     } finally {
       setUploading(false);
     }
@@ -227,12 +235,12 @@ function ProfilePage() {
       )}
 
       <div className="profile-card profile-card--hero">
-        <img src={profileForm.avatarUrl || user?.avatarUrl || '/toystore-assets/logo.png'} alt={user?.fullName || 'User avatar'} />
+        <img src={profileForm.avatarUrl || user?.avatarUrl || '/toystore-assets/logo.png'} alt={user?.fullName || 'Ảnh đại diện'} />
         <div>
           <p>Tài khoản của tôi</p>
           <h1>{user?.fullName}</h1>
           <span>{user?.email}</span>
-          <strong>{user?.role}</strong>
+          <strong>{getRoleLabel(user?.role)}</strong>
         </div>
         <button type="button" onClick={logout}>Đăng xuất</button>
       </div>
@@ -260,17 +268,17 @@ function ProfilePage() {
           </label>
 
           <label>
-            Avatar URL
-            <input value={profileForm.avatarUrl} onChange={(event) => updateProfileField('avatarUrl', event.target.value)} placeholder="Cloudinary URL" maxLength="1000" />
+            Đường dẫn ảnh đại diện
+            <input value={profileForm.avatarUrl} onChange={(event) => updateProfileField('avatarUrl', event.target.value)} placeholder="Dán đường dẫn ảnh từ Cloudinary" maxLength="1000" />
           </label>
 
           <label>
-            Upload avatar
+            Tải ảnh đại diện
             <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
           </label>
 
           <button type="submit" disabled={savingProfile || uploading}>
-            {savingProfile ? 'Đang lưu...' : uploading ? 'Đang upload...' : 'Cập nhật thông tin'}
+            {savingProfile ? 'Đang lưu...' : uploading ? 'Đang tải ảnh...' : 'Cập nhật thông tin'}
           </button>
         </form>
 

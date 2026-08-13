@@ -13,6 +13,12 @@ const returnReasons = [
   { code: 'DAMAGED_IN_TRANSIT', label: 'Bưu kiện hư hỏng do quá trình vận chuyển 🚚' },
 ];
 
+function getOrderStatusCode(status) {
+  if (!status) return '';
+  if (typeof status === 'string') return status.toUpperCase();
+  return String(status.code || status.name || status.value || '').toUpperCase();
+}
+
 function ReturnCreatePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -45,7 +51,7 @@ function ReturnCreatePage() {
       const list = res.content || (Array.isArray(res) ? res : []);
       // Filter for delivered / completed orders
       const eligible = list.filter((o) => {
-        const s = String(o.status || '').toUpperCase();
+        const s = getOrderStatusCode(o.status);
         return s.includes('COMPLETED') || s.includes('DELIVERED') || s.includes('PAID') || s.includes('SHIPPED');
       });
       setMyOrders(eligible.length > 0 ? eligible : list);
@@ -57,9 +63,11 @@ function ReturnCreatePage() {
         }
       } else if (eligible.length > 0) {
         selectOrderObj(eligible[0]);
+      } else if (list.length > 0) {
+        selectOrderObj(list[0]);
       }
     } catch (err) {
-      // Fallback
+      setError(err.message || 'Không thể tải danh sách đơn hàng để hoàn trả.');
     } finally {
       setLoadingOrders(false);
     }

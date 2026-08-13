@@ -27,7 +27,7 @@ OrderFacade validates ownership/order items and computes risk; LogisticsFacade c
 
 ## 6. Main Flows / Use Cases
 
-`Request -> validate customer/order/items and duplicate active return -> create items/evidence/history -> arrange return shipment -> receive -> inspect -> dispute/resolve if needed -> finalize refund -> publish stock/refund events`.
+`GET /orders/my-orders -> customer selects eligible item snapshots -> Request -> validate customer/order/items and duplicate active return -> create items/evidence/history -> arrange return shipment -> receive -> inspect -> dispute/resolve if needed -> finalize refund -> publish stock/refund events`. The server remains authoritative for ownership, status, returned quantity and refund calculation.
 
 ## 7. Business Rules
 

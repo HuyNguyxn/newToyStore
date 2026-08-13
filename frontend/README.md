@@ -77,6 +77,8 @@ The token is stored in `localStorage` under `newToyStoreToken`. `apiClient.js` a
 
 Client-side route protection improves navigation but is not a security boundary. The backend must continue to validate every protected operation.
 
+Customer purchase history, review creation and return creation share the item snapshots returned by `/orders/my-orders`. Pages must use `items[].id` as `orderItemId` and must not reconstruct purchased lines from the current product catalog. Product and profile screens present customer-facing labels in Vietnamese, including account-role labels and media controls.
+
 ## Setup and run
 
 Requirements: Node.js and npm.
