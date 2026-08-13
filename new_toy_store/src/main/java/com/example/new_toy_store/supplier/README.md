@@ -63,3 +63,7 @@ Supplier has a clean ID-based boundary and a facade used by dependent modules.
 ## 16. Notes / Design Decisions
 
 Availability rules live in `SupplierStatus`, keeping them near the domain model.
+
+## 17. Known Limitations / Technical Debt
+
+Không phát hiện event listener phía Supplier cho việc đồng bộ dữ liệu bên ngoài; các module phụ thuộc chủ yếu đọc qua `SupplierFacade` và lưu `supplierId`.

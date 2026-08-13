@@ -1,24 +1,24 @@
-# Domain Kế toán và Dòng tiền
+# Module: Accounting
 
-## 1. Mục đích
+## 1. Purpose
 
-Domain `accounting` cung cấp sổ kế toán kép nội bộ cho NewToyStore. Module ghi nhận các biến động phát sinh từ bán hàng, hoàn tiền, nhập hàng và thanh toán nhà cung cấp; đồng thời cung cấp số dư tài khoản, nhật ký chung, sổ cái và báo cáo quản trị.
+Accounting cung cấp sổ kế toán kép và góc nhìn dòng tiền nội bộ cho NewToyStore. Module sở hữu hệ thống tài khoản, nhật ký chung và các dòng bút toán; đồng thời tổng hợp số dư, sổ cái, bảng cân đối thử và kết quả kinh doanh.
 
-Phạm vi hiện tại **không bao gồm** kết nối ngân hàng thật, đồng bộ sao kê hoặc đối soát ngân hàng. Tài khoản `112` chỉ là số dư nội bộ đại diện cho tiền gửi hoặc ví thanh toán.
+### Responsibilities
 
-## 2. Nguyên tắc cốt lõi
+- Ghi nhận bút toán cân bằng Nợ/Có.
+- Tự động hạch toán thanh toán khách hàng, hoàn tiền, nhập hàng và thanh toán nhà cung cấp từ application event.
+- Quản lý số dư tài khoản nội bộ và cung cấp hạn mức tiền khả dụng cho module `supplier_payment`.
+- Cho phép ADMIN tạo bút toán thủ công và đảo bút toán.
+- Cung cấp báo cáo quản trị và dashboard dòng tiền.
 
-Mỗi nghiệp vụ được ghi thành một `JournalEntry` có từ hai `JournalEntryLine` trở lên và phải thỏa mãn:
+### Out of Scope
 
-```text
-Tổng phát sinh Nợ = Tổng phát sinh Có
-```
+- Không kết nối tài khoản ngân hàng thật.
+- Không đồng bộ hoặc đối soát sao kê ngân hàng.
+- Không xử lý thuế, khóa sổ theo kỳ hoặc lập báo cáo tài chính theo chuẩn pháp lý.
 
-Mỗi dòng chỉ được ghi một phía: hoặc Nợ, hoặc Có. Bút toán không cân bằng hoặc dòng có giá trị ở cả hai phía sẽ bị từ chối.
-
-Bút toán đã ghi không bị sửa hoặc xóa để che mất lịch sử. Khi cần sửa sai, ADMIN tạo bút toán đảo với Nợ/Có ngược lại bút toán gốc.
-
-## 3. Cấu trúc module
+## 2. Package Structure
 
 ```text
 accounting/
@@ -31,179 +31,228 @@ accounting/
 |  |- InternalFundQuery.java
 |  |- dto/
 |  `- listener/AccountingEventListener.java
-`- domain/
-   |- LedgerAccount.java
-   |- JournalEntry.java
-   |- JournalEntryLine.java
-   |- repository abstractions
-   |- enums
-   `- exception/
+|- domain/
+|  |- LedgerAccount.java
+|  |- JournalEntry.java
+|  |- JournalEntryLine.java
+|  |- repository interfaces
+|  |- enums
+|  `- exception/
+`- README.md
 ```
 
-- `LedgerAccount`: định nghĩa tài khoản và quy tắc tính số dư.
-- `JournalEntry`: đầu bút toán, nguồn nghiệp vụ, trạng thái và người ghi.
-- `JournalEntryLine`: dòng phát sinh Nợ hoặc Có của một tài khoản.
-- `AccountingService`: kiểm tra cân đối, ghi sổ, đảo bút toán và lập báo cáo.
-- `AccountingEventListener`: chuyển domain event từ module khác thành bút toán tự động.
-- `InternalFundQuery`: cung cấp số tiền thanh khoản cho nghiệp vụ thanh toán NCC.
+- `api`: REST controller và exception handler của accounting.
+- `application`: điều phối use case, mapping response hiện tại, báo cáo và event listener.
+- `domain`: entity, quy tắc cân bằng, enum và repository abstraction.
 
-## 4. Hệ thống tài khoản mặc định
+Không có package `mapper` hoặc `infrastructure` riêng trong module hiện tại. Các hàm chuyển đổi entity sang response đang nằm trong `AccountingService`.
 
-Migration `V8__create_internal_accounting.sql` tạo ba bảng kế toán và khởi tạo các tài khoản:
+## 3. Entities & Aggregates
 
-| Mã | Tên | Loại | Số dư thông thường | Ý nghĩa |
-|---|---|---|---|---|
-| `111` | Tiền mặt tại cửa hàng | Tài sản | Nợ | Tiền COD và tiền mặt nội bộ |
-| `112` | Tiền gửi và ví thanh toán | Tài sản | Nợ | Tiền thanh toán điện tử theo dõi nội bộ |
-| `156` | Hàng hóa trong kho | Tài sản | Nợ | Giá vốn hàng còn trong kho |
-| `331` | Phải trả nhà cung cấp | Nợ phải trả | Có | Công nợ với nhà cung cấp |
-| `411` | Vốn chủ sở hữu | Vốn chủ | Có | Vốn ban đầu và vốn bổ sung |
-| `511` | Doanh thu bán hàng | Doanh thu | Có | Doanh thu từ thanh toán thành công |
-| `521` | Giảm trừ và hoàn tiền | Doanh thu đối ứng | Nợ | Khoản hoàn tiền làm giảm doanh thu |
-| `632` | Giá vốn hàng bán | Chi phí | Nợ | Giá vốn của sản phẩm đã bán |
-| `642` | Chi phí vận hành | Chi phí | Nợ | Chi phí quản trị ghi nhận thủ công |
+### LedgerAccount — Aggregate Root
 
-## 5. Luồng ghi sổ tự động
+**File:** `accounting/domain/LedgerAccount.java`
 
-```mermaid
-flowchart LR
-    Payment["Thanh toán thành công"] --> PaymentEvent["PaymentCompletedEvent"]
-    Refund["Hoàn tiền"] --> RefundEvent["PaymentRefundedEvent"]
-    Import["Hoàn thành phiếu nhập"] --> ImportEvent["ImportNoteCompletedEvent"]
-    SupplierPay["Thanh toán NCC"] --> SupplierEvent["SupplierPaymentRecordedEvent"]
-    PaymentEvent --> Listener["AccountingEventListener"]
-    RefundEvent --> Listener
-    ImportEvent --> Listener
-    SupplierEvent --> Listener
-    Listener --> Journal["JournalEntry + JournalEntryLine"]
-    Journal --> Reports["Sổ cái và báo cáo"]
-```
+**Table:** `ledger_accounts`
 
-Listener chạy ở pha `AFTER_COMMIT`, vì vậy domain kế toán chỉ ghi nhận nghiệp vụ nguồn sau khi transaction nghiệp vụ đó hoàn tất.
+Đại diện một tài khoản kế toán. Dữ liệu chính gồm mã, tên, loại tài khoản, phía số dư thông thường, cờ tài khoản thanh khoản, cờ hệ thống và trạng thái hoạt động. Entity có phương thức tính số dư dựa trên tổng Nợ/Có.
 
-### Thanh toán khách hàng
+### JournalEntry — Aggregate Root
+
+**File:** `accounting/domain/JournalEntry.java`
+
+**Table:** `journal_entries`
+
+Đại diện đầu bút toán, gồm số bút toán, ngày ghi sổ, mô tả, nguồn nghiệp vụ, mã tham chiếu, trạng thái, người ghi, bút toán gốc bị đảo và danh sách dòng bút toán.
+
+### JournalEntryLine — Entity
+
+**File:** `accounting/domain/JournalEntryLine.java`
+
+**Table:** `journal_entry_lines`
+
+Đại diện một phát sinh Nợ hoặc Có trên `LedgerAccount`. Mỗi dòng chứa tài khoản, mô tả, số tiền Nợ và số tiền Có.
+
+## 4. Relationships
+
+### JournalEntry 1-N JournalEntryLine
+
+- JPA: `@OneToMany` từ bút toán đến các dòng và `@ManyToOne` từ dòng về bút toán.
+- `JournalEntry` sở hữu lifecycle của các dòng; thêm dòng thông qua aggregate root.
+- Các dòng được tải LAZY theo mapping hiện tại.
+
+### JournalEntry N-1 LedgerAccount
+
+`JournalEntryLine` tham chiếu `LedgerAccount` bằng `@ManyToOne`. Tài khoản tồn tại độc lập và không bị cascade khi bút toán thay đổi.
+
+### JournalEntry self-reference
+
+Bút toán đảo giữ tham chiếu tới bút toán gốc qua `reversed_entry_id`. Lịch sử được bảo toàn thay vì sửa hoặc xóa bút toán đã ghi.
+
+## 5. Domain Dependencies & Communication
+
+### Accounting <- Customer Payment
+
+`AccountingEventListener` nhận `PaymentCompletedEvent`, `PaymentRefundedEvent` và `OrderStatusChangedEvent`. Tiền khách thanh toán được ghi vào tài khoản `3388` (tiền khách trả trước); chỉ khi đơn chuyển `COMPLETED` hệ thống mới kết chuyển sang doanh thu `511` và ghi nhận giá vốn `632/156`. Hoàn tiền đơn đã hủy giảm `3388`, còn hoàn tiền sau bán giảm doanh thu qua `521`.
+
+### Accounting <- Imports
+
+Listener nhận `ImportNoteCompletedEvent`, tính tổng `quantity * importPrice`, sau đó ghi tăng hàng hóa và công nợ nhà cung cấp.
+
+### Accounting <- Supplier Payment
+
+Listener nhận `SupplierPaymentRecordedEvent` để giảm công nợ và giảm tiền. Ở chiều ngược lại, `supplier_payment` gọi abstraction `InternalFundQuery` để kiểm tra tiền thanh khoản trước khi ghi nhận thanh toán.
+
+Accounting còn gọi `SupplierPaymentFacade` khi dựng dashboard để lấy tổng công nợ mở và quá hạn. Đây là dependency application-level trong cùng modular monolith.
+
+## 6. Main Flows / Use Cases
+
+### Automatic Posting
 
 ```text
-Nợ 111 (COD) hoặc 112 (điện tử)
-    Có 511 - Doanh thu
-
-Nợ 632 - Giá vốn
-    Có 156 - Hàng hóa trong kho
+Nghiệp vụ nguồn commit
+        -> AFTER_COMMIT event
+        -> kiểm tra sourceType + sourceReference
+        -> dựng các dòng Nợ/Có
+        -> kiểm tra cân bằng
+        -> lưu JournalEntry
 ```
 
-Phần giá vốn chỉ được ghi khi event có `costAmount > 0`.
+Các bút toán tự động chính:
 
-### Hoàn tiền khách hàng
+| Nghiệp vụ | Nợ | Có |
+|---|---|---|
+| Thu tiền COD trước khi hoàn tất đơn | `111` | `3388` |
+| Thu tiền điện tử trước khi hoàn tất đơn | `112` | `3388` |
+| Hoàn tất đơn, ghi nhận doanh thu | `3388` | `511` |
+| Hoàn tất đơn, ghi nhận giá vốn | `632` | `156` |
+| Hoàn tiền đơn đã hủy | `3388` | `111` hoặc `112` |
+| Hoàn tiền hàng bán | `521` | `111` hoặc `112` |
+| Hoàn thành phiếu nhập | `156` | `331` |
+| Thanh toán NCC | `331` | `111` hoặc `112` |
+| Xuất kho trả NCC | `331`/`642` | `156` |
+| Hàng trả NCC quay lại kho | `156` | `331`/`642` |
+
+### Manual Posting
+
+ADMIN gửi ngày, mô tả, nguồn, mã tham chiếu và các dòng Nợ/Có. Service chỉ chấp nhận các nguồn thủ công được cho phép, kiểm tra mã tham chiếu chưa tồn tại và kiểm tra tổng Nợ bằng tổng Có trước khi lưu.
+
+### Reversal
+
+Service tải bút toán gốc, từ chối nếu đã đảo, tạo các dòng có Nợ/Có ngược lại, liên kết bút toán đảo với bút toán gốc và đánh dấu bút toán gốc `REVERSED`.
+
+### Reporting
+
+Repository tổng hợp phát sinh theo tài khoản và thời gian. Service chuyển kết quả thành số dư tài khoản, sổ cái, bảng cân đối thử, kết quả kinh doanh và dashboard.
+
+## 7. Business Rules
+
+### 7.1 Validation Rules
+
+- `description` và `sourceReference` của bút toán thủ công không được trống.
+- Danh sách dòng không được rỗng.
+- `accountCode` không được trống.
+- Số tiền Nợ/Có không được âm.
+- `from` không được sau `to`.
+
+### 7.2 Invariants
+
+- Tổng Nợ phải bằng tổng Có với sai số nhỏ hơn `0.01`.
+- Một dòng chỉ được có số tiền ở đúng một phía.
+- Tài khoản phải tồn tại và đang hoạt động.
+- Cặp `sourceType + sourceReference` là duy nhất.
+- Nguồn tự động không được giả lập qua API bút toán thủ công.
+- Bút toán đã đảo không được đảo lần thứ hai.
+
+### 7.3 State Transitions
 
 ```text
-Nợ 521 - Giảm trừ doanh thu
-    Có 111 hoặc 112
+POSTED -> REVERSED
 ```
 
-### Hoàn thành phiếu nhập
+Việc đảo tạo một bút toán `REVERSAL` mới; không cập nhật trực tiếp số tiền trên bút toán cũ.
 
-```text
-Nợ 156 - Hàng hóa trong kho
-    Có 331 - Phải trả nhà cung cấp
-```
+## 8. Persistence & Data Strategy
 
-### Thanh toán nhà cung cấp
+- Flyway V8 tạo `ledger_accounts`, `journal_entries`, `journal_entry_lines` và seed 9 tài khoản hệ thống.
+- Unique constraint `uk_journal_source` bảo vệ idempotency tại database.
+- Check constraint `chk_journal_line_one_side` bảo vệ một dòng chỉ ghi Nợ hoặc Có.
+- Index được đặt trên mã tài khoản, ngày bút toán, nguồn, trạng thái và khóa ngoại dòng bút toán.
+- Query số dư dùng aggregate projection `Object[]`; sổ cái dùng `Pageable`.
+- Entity kế thừa các base entity dùng timestamp/version theo mapping hiện tại.
+- Số tiền dùng `DOUBLE` để đồng bộ với phần còn lại của dự án và được làm tròn hai chữ số bằng `Math.round`.
 
-```text
-Nợ 331 - Phải trả nhà cung cấp
-    Có 111 hoặc 112
-```
+## 9. Transaction Strategy
 
-Trước khi trả NCC, `SupplierPaymentService` dùng `InternalFundQuery` để kiểm tra tổng tiền thanh khoản. Nghiệp vụ bị từ chối nếu số tiền trả lớn hơn số tiền nội bộ đang có.
+- Query báo cáo dùng `@Transactional(readOnly = true)`.
+- Tạo và đảo bút toán dùng transaction ghi thông thường.
+- `postAutomatic` dùng `REQUIRES_NEW` sau khi transaction nghiệp vụ nguồn đã commit.
+- Event listener dùng `@TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)`.
 
-## 6. Idempotency và tính nhất quán
+Không có distributed transaction hoặc transactional outbox trong luồng accounting hiện tại.
 
-Mỗi bút toán tự động có cặp khóa duy nhất:
+## 10. API Design
 
-```text
-source_type + source_reference
-```
+API tách request/response khỏi entity, dùng Bean Validation, `Pageable` cho danh sách và tham số ngày ISO cho báo cáo. Endpoint đọc là resource/query-oriented; endpoint ghi thủ công và đảo bút toán là command rõ ràng.
 
-Ví dụ: `CUSTOMER_PAYMENT + PAYMENT-25`. Nếu cùng một event được gửi lại, service trả về bút toán đã có thay vì cộng số liệu lần thứ hai. Database tiếp tục bảo vệ bằng unique constraint `uk_journal_source`.
+Không có API sửa hoặc xóa trực tiếp bút toán.
 
-Số tiền được lưu bằng `DOUBLE` để đồng bộ với phần còn lại của dự án. Mọi tổng hợp nghiệp vụ được làm tròn hai chữ số bằng `Math.round` trước khi ghi hoặc trả kết quả.
+## 11. APIs
 
-## 7. Số dư và báo cáo
+### AccountingController
 
-- **Danh mục tài khoản:** tổng Nợ, tổng Có và số dư của từng tài khoản.
-- **Nhật ký chung:** danh sách bút toán theo nguồn phát sinh.
-- **Sổ cái:** các dòng phát sinh của một tài khoản trong khoảng ngày.
-- **Bảng cân đối thử:** kiểm tra tổng Nợ và tổng Có toàn hệ thống.
-- **Kết quả kinh doanh:** doanh thu gộp, hoàn tiền, doanh thu thuần, giá vốn, chi phí vận hành và lợi nhuận.
-- **Dashboard dòng tiền:** tiền mặt, tiền điện tử, thanh khoản, tồn kho, công nợ NCC, nợ quá hạn và khả năng thanh toán.
+**File:** `accounting/api/AccountingController.java`
 
-Công thức chính:
+**Base path:** `/api/accounting`
 
-```text
-Doanh thu thuần = Doanh thu 511 - Giảm trừ 521
-Tổng chi phí = Giá vốn 632 + các tài khoản chi phí khác
-Lợi nhuận = Doanh thu thuần - Tổng chi phí
-Tiền còn lại sau công nợ = Tổng tiền thanh khoản - Công nợ NCC
-Khả năng chi an toàn = max(0, Tổng tiền thanh khoản - Mức dự phòng)
-```
-
-`ledgerAccountsPayable` lấy từ tài khoản `331`, còn `supplierOutstanding` lấy từ các hóa đơn của module `supplier_payment`. Hai số liệu nên được theo dõi cùng nhau để phát hiện nghiệp vụ nguồn chưa được ghi sổ hoặc dữ liệu lịch sử chưa được chuyển đổi.
-
-## 8. API và phân quyền
-
-Base path: `/api/accounting`.
-
-| Method | Endpoint | Chức năng | Quyền |
+| Method | Endpoint | Chức năng | Authorization |
 |---|---|---|---|
-| GET | `/dashboard` | Tổng quan quỹ, công nợ và lợi nhuận | MANAGER, ADMIN |
+| GET | `/dashboard` | Tổng quan quỹ, tồn kho, công nợ và lợi nhuận | MANAGER, ADMIN |
 | GET | `/accounts` | Số dư hệ thống tài khoản | MANAGER, ADMIN |
-| GET | `/journal-entries` | Danh sách nhật ký chung | MANAGER, ADMIN |
+| GET | `/journal-entries` | Nhật ký chung có phân trang | MANAGER, ADMIN |
 | GET | `/journal-entries/{id}` | Chi tiết bút toán | MANAGER, ADMIN |
-| GET | `/general-ledger/{accountCode}` | Sổ cái theo tài khoản | MANAGER, ADMIN |
-| GET | `/reports/trial-balance` | Bảng cân đối thử | MANAGER, ADMIN |
-| GET | `/reports/income-statement` | Báo cáo kết quả kinh doanh | MANAGER, ADMIN |
+| GET | `/general-ledger/{accountCode}` | Sổ cái theo tài khoản và khoảng ngày | MANAGER, ADMIN |
+| GET | `/reports/trial-balance` | Bảng cân đối thử tại một ngày | MANAGER, ADMIN |
+| GET | `/reports/income-statement` | Kết quả kinh doanh theo khoảng ngày | MANAGER, ADMIN |
 | POST | `/journal-entries` | Tạo bút toán thủ công | ADMIN |
 | POST | `/journal-entries/{id}/reverse` | Đảo bút toán | ADMIN |
 
-Các API danh sách hỗ trợ `Pageable`; báo cáo hỗ trợ `asOf` hoặc `from`/`to` theo định dạng ISO `yyyy-MM-dd`.
+## 12. Error Handling
 
-## 9. Bút toán số dư đầu kỳ
+- `LedgerAccountNotFoundException`: mã tài khoản không tồn tại hoặc không hoạt động.
+- `JournalEntryNotFoundException`: không tìm thấy bút toán.
+- `InvalidJournalEntryException`: bút toán không cân bằng, sai nguồn, trùng tham chiếu, sai khoảng ngày hoặc thao tác đảo không hợp lệ.
+- `AccountingExceptionHandler` chuyển domain exception thành HTTP error response theo cơ chế advice của module.
 
-Hệ thống không tự suy đoán tiền vốn ban đầu. ADMIN cần tạo bút toán `OPENING_BALANCE` trước khi sử dụng chức năng thanh toán NCC.
+## 13. Security & Authorization
 
-Ví dụ cửa hàng có 20 triệu tiền mặt và 30 triệu tiền trong tài khoản:
+Controller yêu cầu `MANAGER` hoặc `ADMIN` ở cấp class. Hai command nhạy cảm là tạo bút toán thủ công và đảo bút toán yêu cầu riêng vai trò `ADMIN`.
 
-```json
-{
-  "entryDate": "2026-08-13",
-  "description": "Ghi nhận số dư đầu kỳ",
-  "sourceType": "OPENING_BALANCE",
-  "sourceReference": "OPENING-2026-01",
-  "lines": [
-    { "accountCode": "111", "description": "Tiền mặt đầu kỳ", "debitAmount": 20000000, "creditAmount": 0 },
-    { "accountCode": "112", "description": "Tiền gửi đầu kỳ", "debitAmount": 30000000, "creditAmount": 0 },
-    { "accountCode": "411", "description": "Vốn chủ sở hữu đầu kỳ", "debitAmount": 0, "creditAmount": 50000000 }
-  ]
-}
-```
+## 14. Algorithms & Performance Considerations
 
-Các loại nguồn được phép nhập thủ công gồm `OPENING_BALANCE`, `OWNER_CAPITAL`, `OPERATING_EXPENSE`, `FUND_TRANSFER` và `MANUAL_ADJUSTMENT`. Nguồn nghiệp vụ tự động không được giả lập qua API thủ công.
+- Query tổng hợp phát sinh được đẩy xuống database thay vì tải toàn bộ dòng bút toán.
+- Số dư được ghép theo `Map<accountId, totals>` để tra cứu O(1) khi dựng danh sách tài khoản.
+- `sourceType + sourceReference` kết hợp kiểm tra ứng dụng và unique constraint để chống ghi trùng.
+- Danh sách nhật ký gọi mapper nội bộ trong service; do không fetch collection theo trang, việc đọc `lines` có nguy cơ phát sinh thêm query cho từng bút toán.
 
-## 10. Giao diện quản trị
+## 15. Architecture & Design Principles
 
-Frontend cung cấp trang `/admin/accounting` với các nhóm:
+Module áp dụng DDD Lite với aggregate, repository abstraction, application facade và domain exception. Giao tiếp ghi từ module khác đi qua event; giao tiếp đọc tiền khả dụng đi qua `InternalFundQuery`. DTO được tách khỏi entity.
 
-- Tổng quan quỹ.
-- Nhật ký chung.
-- Sổ cái.
-- Báo cáo.
-- Ghi nhận thủ công và đảo bút toán dành cho ADMIN.
+Accounting là sổ phụ quản trị trong modular monolith, không phải một microservice độc lập và không phải hệ thống kế toán pháp lý.
 
-## 11. Giới hạn và hướng phát triển
+## 16. Notes / Design Decisions
 
-- Chưa kết nối tài khoản ngân hàng thật và chưa đối soát sao kê.
-- Chưa có khóa kỳ kế toán; hiện vẫn có thể ghi bút toán vào ngày quá khứ.
-- Chưa tự động chuyển các giao dịch tồn tại trước migration V8 thành bút toán lịch sử.
-- Chưa có thuế GTGT, công nợ phải thu B2B, phân bổ chi phí hoặc báo cáo dòng tiền theo chuẩn kế toán.
-- Số tiền dùng `DOUBLE` theo thiết kế chung của dự án; hệ thống tài chính thực tế nên cân nhắc `DECIMAL`/`BigDecimal`.
-- Cần bổ sung test cho cân đối Nợ/Có, idempotency, đảo bút toán và ghi nhận event đồng thời.
+- Tài khoản `111` và `112` được đánh dấu là tài khoản thanh khoản.
+- `ledgerAccountsPayable` lấy từ tài khoản `331`; `supplierOutstanding` lấy từ invoice của `supplier_payment`. Sự chênh lệch giúp phát hiện dữ liệu lịch sử chưa được hạch toán.
+- Hệ thống không tự suy đoán vốn ban đầu. ADMIN phải tạo bút toán `OPENING_BALANCE` trước khi thanh toán NCC nếu sổ chưa có tiền.
+- Bút toán lịch sử được bảo toàn bằng reversal thay vì update/delete.
+
+## 17. Known Limitations / Technical Debt
+
+- Chưa có package `mapper`; logic `JournalEntry -> JournalEntryResponse`, `LedgerAccount -> AccountBalanceResponse` và request-to-posting nằm trong `AccountingService`.
+- Chưa có specification/filter động cho nhật ký chung ngoài `Pageable` và các tham số ngày của báo cáo.
+- Chưa có khóa kỳ kế toán và chưa backfill giao dịch phát sinh trước Flyway V8.
+- Chưa có transactional outbox; event nội bộ sau commit vẫn chạy trong cùng process.
+- Số tiền dùng `DOUBLE`; hệ thống tài chính thực tế nên dùng `DECIMAL`/`BigDecimal`.
+- Chưa tích hợp hoặc đối soát ngân hàng thật theo phạm vi chủ động của dự án.

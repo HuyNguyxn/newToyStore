@@ -18,7 +18,7 @@ N/A at JPA level. All data is read through other module facades/repositories.
 
 ## 5. Domain Dependencies & Communication
 
-Statistics reads Customer Payment, Imports, Logistics, Order, Product, Promotion and User aggregates through their exposed services/facades. It does not write those domains.
+Statistics is a read-model composition module. It reads aggregate projections from Customer Payment, Imports, Logistics, Order, Product, Promotion and User repositories and never writes those domains.
 
 ## 6. Main Flows / Use Cases
 
@@ -50,7 +50,7 @@ Invalid period, grouping and request exceptions are mapped by `StatisticsExcepti
 
 ## 13. Security & Authorization
 
-The controller has class-level `@PreAuthorize("hasRole('ADMIN')")`; SecurityConfig also restricts `/statistics/**` to ADMIN.
+The controller and `SecurityConfig` allow `MANAGER` and `ADMIN` to read `/statistics/**`.
 
 ## 14. Algorithms & Performance Considerations
 
@@ -62,7 +62,7 @@ This is an application/read-model composition module, not an aggregate-owning do
 
 ## 16. Notes / Design Decisions
 
-Reporting uses current operational tables rather than a separate warehouse/read database.
+Reporting uses current operational tables rather than a separate warehouse/read database. Revenue and sold quantity use the order's `COMPLETED` history time; payment collection uses `paidAt`; refunds use successful `completedAt`; imports use completion time. Refunded order totals are discounted proportionally across lines before category/product profit aggregation.
 
 ## 17. Known Limitations / Technical Debt
 

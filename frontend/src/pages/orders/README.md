@@ -26,4 +26,3 @@ Order line data is historical snapshot data. The UI should display names, prices
 - Refresh details after every lifecycle mutation.
 - Handle stale status conflicts as normal concurrency outcomes.
 - Link shipment, return, review and payment actions only when the order response indicates eligibility.
-- Add automated coverage for cancellation and payment retry states.

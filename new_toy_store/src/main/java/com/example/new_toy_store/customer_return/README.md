@@ -31,7 +31,7 @@ OrderFacade validates ownership/order items and computes risk; LogisticsFacade c
 
 ## 7. Business Rules
 
-Requests require an order and non-empty items; item quantity is at least 1, expected refund non-negative, evidence is limited to five URLs and notes to 500 characters. Only one active return per order is permitted. `CustomerReturnStatus` encodes transitions across `REQUESTED`, `NEEDS_MORE_INFO`, `APPROVED`, `RETURNING`, `SHIPPING_FAILED`, `RECEIVED`, inspection outcomes, `DISPUTED`, terminal rejection/cancellation/refund/replacement. Reason codes determine sellability.
+Requests require a completed order and non-empty items; item quantity is at least 1, evidence is limited to five URLs and notes to 500 characters. Refund value is derived by the backend from immutable order-line snapshots and allocated order discount; the client cannot decide the refund amount. Only one active return per order is permitted. `CustomerReturnStatus` encodes transitions across `REQUESTED`, `NEEDS_MORE_INFO`, `APPROVED`, `RETURNING`, `SHIPPING_FAILED`, `RECEIVED`, inspection outcomes, `DISPUTED`, `REFUND_PENDING` and terminal rejection/cancellation/refund/replacement. Reason codes determine sellability.
 
 ## 8. Persistence & Data Strategy
 
@@ -67,7 +67,7 @@ The aggregate owns its evidence/history while external identities remain IDs. Ev
 
 ## 16. Notes / Design Decisions
 
-`expectedRefundAmount` is stored per item, and history records actor/status changes. Sellable return reasons drive stock restoration rather than directly changing inventory inside this module.
+Refund amount is stored per item after server-side derivation, and history records actor/status changes. Finalization first moves the return to `REFUND_PENDING`; only a successful payment-refund event moves it to `REFUNDED` and updates the order. Sellable return reasons drive stock restoration rather than directly changing inventory inside this module.
 
 ## 17. Known Limitations / Technical Debt
 

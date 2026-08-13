@@ -114,8 +114,6 @@ npm run preview
 - Reuse formatters and validation helpers instead of duplicating formatting rules.
 - Update the nearest README when routes, roles, endpoints or major workflows change.
 
-## Testing and known limitations
-
-No automated frontend test script or test files were detected. `npm run build` is currently the available static integration check. Important additions should cover authentication restoration, route guards, checkout/payment callbacks and administrative mutations.
+## Known limitations
 
 The current UI uses page-local state for most workflows, has no centralized caching layer and contains some text that appears to have been saved with inconsistent character encoding. These areas should be addressed as the client grows.

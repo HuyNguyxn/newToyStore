@@ -40,11 +40,11 @@ Payment -> Order uses `OrderFacade` snapshots/ownership; Payment -> User resolve
 
 ### Refund
 
-`Refund request -> validate succeeded payment and refundable amount -> create refund -> lock/process or reject -> call VNPay/manual path -> update payment/refund -> publish refund event`.
+`Refund request -> validate succeeded payment and refundable amount -> create refund -> lock/process or reject -> call VNPay/manual path -> update payment/refund -> publish refund event`. Hủy một đơn đã thu tiền cũng tự tạo yêu cầu hoàn phần tiền còn lại; hệ thống không âm thầm coi khoản thu đó là doanh thu.
 
 ## 7. Business Rules
 
-Bean Validation requires order/method, positive refund amount, bounded reasons/provider IDs and an idempotency key of at most 80 characters. Payment states: `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `EXPIRED`, `REFUND_PENDING`, `REFUNDED`, `REFUND_FAILED`. Refund states: `PENDING`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `REJECTED`, `CANCELLED`. Enum transition maps reject invalid changes; refund totals cannot exceed eligible payment value.
+Bean Validation requires order/method, positive refund amount, bounded reasons/provider IDs and an idempotency key of at most 80 characters. Payment states: `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `EXPIRED`, `REFUND_PENDING`, `PARTIALLY_REFUNDED`, `REFUNDED`, `REFUND_FAILED`. Refund states: `PENDING`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `REJECTED`, `CANCELLED`. Enum transition maps reject invalid changes; refund totals cannot exceed eligible payment value.
 
 ## 8. Persistence & Data Strategy
 
