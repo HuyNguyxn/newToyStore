@@ -6,6 +6,7 @@ import { getUnreadNotificationCount } from '../../services/notificationService.j
 import { searchProducts } from '../../services/productService.js';
 import { formatPrice, getProductPrice } from '../../utils/formatters.js';
 import { isUserProfileComplete } from '../../utils/userValidation.js';
+import NotificationPopover from './NotificationPopover.jsx';
 
 function Header() {
   const navigate = useNavigate();
@@ -239,10 +240,10 @@ function Header() {
             )}
           </Link>
           {isAuthenticated && (
-            <Link to="/notifications" className="cart-link" aria-label="Thông báo">
-              🔔
-              {unreadCount > 0 && <span className="cart-link__badge">{unreadCount}</span>}
-            </Link>
+            <NotificationPopover
+              unreadCount={unreadCount}
+              onNotificationsChanged={refreshNotificationCount}
+            />
           )}
           {isAuthenticated ? (
             <div className="user-menu" ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>

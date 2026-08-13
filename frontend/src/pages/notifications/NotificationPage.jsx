@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   archiveNotification,
   getNotifications,
@@ -6,6 +7,7 @@ import {
   markNotificationAsRead,
 } from '../../services/notificationService.js';
 import { formatDateTime } from '../../utils/formatters.js';
+import { resolveNotificationTarget } from '../../utils/notificationUtils.js';
 
 const pageSize = 10;
 
@@ -61,6 +63,7 @@ function formatMessage(msg) {
 }
 
 function NotificationPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
   const [loading, setLoading] = useState(true);
@@ -115,6 +118,19 @@ function NotificationPage() {
     } finally {
       setUpdatingId(null);
     }
+  }
+
+  async function handleOpen(notification) {
+    if (!notification.readAt) {
+      try {
+        const updated = await markNotificationAsRead(notification.id);
+        setNotifications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+        window.dispatchEvent(new Event('notifications_updated'));
+      } catch (err) {
+        setError(err?.message || 'Không thể cập nhật trạng thái thông báo.');
+      }
+    }
+    navigate(resolveNotificationTarget(notification));
   }
 
   async function handleArchive(notification) {
@@ -263,9 +279,10 @@ function NotificationPage() {
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                    {item.actionUrl && (
-                      <a
-                        href={item.actionUrl}
+                    {(item.actionUrl || item.referenceId) && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpen(item)}
                         style={{
                           padding: '6px 12px',
                           background: '#eff6ff',
@@ -277,8 +294,8 @@ function NotificationPage() {
                           border: '1px solid #bfdbfe',
                         }}
                       >
-                        Mở liên kết
-                      </a>
+                        Xem nội dung
+                      </button>
                     )}
                     {isUnread && (
                       <button

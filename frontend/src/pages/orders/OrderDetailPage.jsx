@@ -111,7 +111,12 @@ function OrderDetailPage() {
   const paymentMethodCode = typeof latestPayment?.method === 'object'
     ? (latestPayment.method.code || latestPayment.method.name || '')
     : String(latestPayment?.method || '');
-  const canRetryVnpay = orderStatusCode === 'PENDING' && paymentMethodCode.toUpperCase() === 'VNPAY';
+  const paymentStatusCode = typeof latestPayment?.status === 'object'
+    ? (latestPayment.status.code || latestPayment.status.name || '')
+    : String(latestPayment?.status || '');
+  const canRetryVnpay = orderStatusCode === 'PENDING'
+    && paymentMethodCode.toUpperCase() === 'VNPAY'
+    && paymentStatusCode.toUpperCase() === 'PENDING';
   const canCancel = order.availableActions?.includes('CANCELLED') || orderStatusCode === 'PENDING';
   const statusColor = (
     orderStatusCode === 'COMPLETED' ? { bg: '#d1fae5', text: '#059669', border: '#a7f3d0' } :
