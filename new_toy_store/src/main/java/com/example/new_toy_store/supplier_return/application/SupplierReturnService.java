@@ -2,6 +2,7 @@ package com.example.new_toy_store.supplier_return.application;
 
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
 import com.example.new_toy_store.global.event.SupplierReturnStatusChangedEvent;
+import com.example.new_toy_store.global.event.SupplierReturnStockRestorationRequestedEvent;
 import com.example.new_toy_store.imports.application.facade.ImportFacade;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteItemResponse;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
@@ -181,6 +182,9 @@ public class SupplierReturnService {
     @Transactional
     public SupplierReturnResponse shipAndDeductStock(Integer id, String warehouseUsername) {
         SupplierReturn returnNote = getEntity(id);
+        if (returnNote.getStatus() == SupplierReturnStatus.SHIPPED) {
+            return SupplierReturnMapper.mapEntityToResponse(returnNote);
+        }
         SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.ship(warehouseUsername, "Xuất kho trả nhà cung cấp");
 
@@ -194,7 +198,17 @@ public class SupplierReturnService {
 
         SupplierReturn saved = repository.save(returnNote);
         publishStatusChanged(saved, previousStatus, warehouseUsername);
-        eventPublisher.publishEvent(new SupplierReturnCompletedEvent(saved.getId(), eventItems));
+        double inventoryAmount = Math.round(saved.getItems().stream()
+                .mapToDouble(item -> Math.max(0.0,
+                        item.getQuantity() * item.getReturnPrice() - item.getDiscountAmount()))
+                .sum() * 100.0) / 100.0;
+        eventPublisher.publishEvent(new SupplierReturnCompletedEvent(
+                saved.getId(),
+                saved.getSupplierId(),
+                eventItems,
+                inventoryAmount,
+                saved.getTotalRefundAmount()
+        ));
 
         return SupplierReturnMapper.mapEntityToResponse(saved);
     }
@@ -202,10 +216,28 @@ public class SupplierReturnService {
     @Transactional
     public SupplierReturnResponse markShippingFailed(Integer id, String reason) {
         SupplierReturn returnNote = getEntity(id);
+        if (returnNote.getStatus() == SupplierReturnStatus.SHIPPING_FAILED) {
+            return SupplierReturnMapper.mapEntityToResponse(returnNote);
+        }
+        if (returnNote.getStatus() != SupplierReturnStatus.SHIPPED) {
+            return SupplierReturnMapper.mapEntityToResponse(returnNote);
+        }
         SupplierReturnStatus previousStatus = returnNote.getStatus();
         returnNote.markShippingFailed("SYSTEM_CARRIER", reason);
         SupplierReturn saved = repository.save(returnNote);
         publishStatusChanged(saved, previousStatus, "SYSTEM_CARRIER");
+        List<SupplierReturnStockRestorationRequestedEvent.ReturnItemDetail> eventItems = saved.getItems().stream()
+                .map(item -> new SupplierReturnStockRestorationRequestedEvent.ReturnItemDetail(
+                        item.getVariantId(), item.getBatchNumber(), item.getQuantity()))
+                .toList();
+        double inventoryAmount = Math.round(saved.getItems().stream()
+                .mapToDouble(item -> Math.max(0.0,
+                        item.getQuantity() * item.getReturnPrice() - item.getDiscountAmount()))
+                .sum() * 100.0) / 100.0;
+        eventPublisher.publishEvent(SupplierReturnStockRestorationRequestedEvent.now(
+                saved.getId(), saved.getSupplierId(), eventItems,
+                inventoryAmount, saved.getTotalRefundAmount()
+        ));
         return SupplierReturnMapper.mapEntityToResponse(saved);
     }
 

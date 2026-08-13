@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -110,10 +111,24 @@ public class ImportService {
             throw ImportCrossModuleException.missingProducts(productIds, productMap.keySet());
         }
 
+        Set<Integer> variantIds = request.getItems().stream()
+                .map(ImportNoteItemRequest::getVariantId)
+                .collect(Collectors.toSet());
+        if (variantIds.size() != request.getItems().size()) {
+            throw InvalidImportOperationException.duplicateVariant();
+        }
+
         ImportNote note = new ImportNote(request.getSupplierId(), request.getNote());
 
         for (ImportNoteItemRequest itemReq : request.getItems()) {
             Product product = productMap.get(itemReq.getProductId());
+            if (!Objects.equals(product.getSupplierId(), request.getSupplierId())) {
+                throw ImportCrossModuleException.invalidProduct(
+                        itemReq.getProductId(),
+                        itemReq.getVariantId(),
+                        "PRODUCT_NOT_ASSIGNED_TO_SELECTED_SUPPLIER"
+                );
+            }
             boolean isValidVariant = product.getVariants().stream()
                     .anyMatch(v -> v.getId().equals(itemReq.getVariantId()));
 
@@ -127,7 +142,7 @@ public class ImportService {
             note.addItem(
                     itemReq.getProductId(),
                     itemReq.getVariantId(),
-                    itemReq.getProductName(),
+                    product.getName(),
                     itemReq.getQuantity(),
                     itemReq.getImportPrice()
             );

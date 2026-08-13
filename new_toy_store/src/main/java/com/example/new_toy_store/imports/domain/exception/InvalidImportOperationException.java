@@ -27,6 +27,15 @@ public class InvalidImportOperationException extends ImportDomainException {
         );
     }
 
+    public static InvalidImportOperationException duplicateVariant() {
+        return new InvalidImportOperationException(
+                HttpStatus.BAD_REQUEST,
+                "IMPORT_DUPLICATE_VARIANT",
+                "Mỗi biến thể chỉ được xuất hiện một lần trong phiếu nhập; hãy gộp số lượng trước khi gửi.",
+                Map.of("field", "items")
+        );
+    }
+
     public static InvalidImportOperationException invalidProducts() {
         return new InvalidImportOperationException(
                 HttpStatus.BAD_REQUEST,

@@ -65,12 +65,17 @@ public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>
     List<Object[]> aggregateDailyInboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query(value = """
-            SELECT 'OUTBOUND_SALE', 'Outbound from successful orders', COALESCE(SUM(i.quantity), 0), COALESCE(SUM(i.quantity * i.price), 0)
+            SELECT 'OUTBOUND_SALE', 'Outbound from completed orders', COALESCE(SUM(i.quantity), 0),
+                   COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
               FROM orders o
               JOIN order_items i ON i.order_id = o.id
+              LEFT JOIN product_variants pv ON pv.id = i.variant_id
+              JOIN order_histories h ON h.order_id = o.id
+                                    AND h.status = 'COMPLETED'
+                                    AND h.deleted_at IS NULL
              WHERE o.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')
-               AND o.created_at >= :from
-               AND o.created_at < :to
+               AND h.created_at >= :from
+               AND h.created_at < :to
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
             """, nativeQuery = true)

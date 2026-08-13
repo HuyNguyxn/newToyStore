@@ -1,6 +1,6 @@
 package com.example.new_toy_store.warehouse.application;
 
-import com.example.new_toy_store.imports.application.ImportService;
+import com.example.new_toy_store.imports.application.facade.ImportFacade;
 import com.example.new_toy_store.imports.application.dto.response.ImportNoteResponse;
 import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.imports.domain.exception.ImportCrossModuleException;
@@ -16,22 +16,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class WarehouseService {
 
-    private final ImportService importService;
+    private final ImportFacade importFacade;
     private final ProductFacade productFacade;
 
-    public WarehouseService(ImportService importService, ProductFacade productFacade) {
-        this.importService = importService;
+    public WarehouseService(ImportFacade importFacade, ProductFacade productFacade) {
+        this.importFacade = importFacade;
         this.productFacade = productFacade;
     }
 
     @Transactional(readOnly = true)
     public Page<ImportNoteResponse> getBatches(Integer supplierId, String status, String keyword, Pageable pageable) {
-        return importService.searchImportNotes(supplierId, status, keyword, pageable);
+        return importFacade.searchImportNotes(supplierId, status, keyword, pageable);
     }
 
     @Transactional(readOnly = true)
     public ImportNoteResponse getBatchDetails(Integer batchId) {
-        return importService.getImportNoteDetails(batchId);
+        return importFacade.getImportNoteDetails(batchId);
     }
 
     /**
@@ -41,7 +41,7 @@ public class WarehouseService {
      */
     @Transactional
     public ImportNoteResponse completeBatch(Integer batchId) {
-        return importService.completeImportNote(batchId);
+        return importFacade.completeImportNote(batchId);
     }
 
     /**
@@ -50,12 +50,12 @@ public class WarehouseService {
      */
     @Transactional
     public ImportNoteResponse cancelBatch(Integer batchId) {
-        return importService.cancelImportNote(batchId);
+        return importFacade.cancelImportNote(batchId);
     }
 
     @Transactional
     public ProductResponse publishProduct(Integer batchId, Integer productId) {
-        ImportNoteResponse batch = importService.getImportNoteDetails(batchId);
+        ImportNoteResponse batch = importFacade.getImportNoteDetails(batchId);
         ImportStatus status = batch.getStatus();
         if (status != ImportStatus.COMPLETED) {
             throw InvalidImportOperationException.invalidStatusTransition("đưa sản phẩm lên cửa hàng");

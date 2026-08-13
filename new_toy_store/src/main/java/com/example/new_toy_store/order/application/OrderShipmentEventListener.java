@@ -18,6 +18,7 @@ public class OrderShipmentEventListener {
 
     @EventListener
     public void handleShipmentInTransit(ShipmentInTransitEvent event) {
+        if (event.orderId() == null) return;
         try {
             orderService.ship(event.orderId(), "Shipment " + event.trackingCode() + " is in transit");
         } catch (InvalidOrderOperationException ignored) {
@@ -26,6 +27,7 @@ public class OrderShipmentEventListener {
 
     @EventListener
     public void handleShipmentDelivered(ShipmentDeliveredEvent event) {
+        if (event.orderId() == null) return;
         try {
             orderService.complete(event.orderId(), "Shipment " + event.trackingCode() + " delivered");
         } catch (InvalidOrderOperationException ignored) {
@@ -34,6 +36,7 @@ public class OrderShipmentEventListener {
 
     @EventListener
     public void handleShipmentCancelled(ShipmentCancelledEvent event) {
+        if (event.orderId() == null) return;
         try {
             orderService.cancel(event.orderId(), event.reason());
         } catch (InvalidOrderOperationException ignored) {

@@ -44,7 +44,10 @@ public class SupplierReturnLogisticsListener {
     public void onShipmentReturned(ShipmentReturnedEvent event) {
         ShipmentResponse shipment = logisticsFacade.getShipmentDetails(event.shipmentId());
         if (shipment != null && shipment.getSupplierReturnId() != null) {
-            supplierReturnService.complete(shipment.getSupplierReturnId(), "SYSTEM_WAREHOUSE");
+            supplierReturnService.markShippingFailed(
+                    shipment.getSupplierReturnId(),
+                    "Hàng trả nhà cung cấp đã quay lại kho"
+            );
         }
     }
 

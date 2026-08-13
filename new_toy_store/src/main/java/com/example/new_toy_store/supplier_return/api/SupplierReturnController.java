@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/supplier-returns")
+@PreAuthorize("hasAnyRole('STAFF', 'MANAGER', 'ADMIN')")
 public class SupplierReturnController {
 
     private final SupplierReturnService service;

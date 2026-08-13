@@ -1,15 +1,30 @@
 package com.example.new_toy_store.global.event;
 
+import java.time.Instant;
 import java.util.List;
 
 public class SupplierReturnCompletedEvent {
 
     private final Integer returnId;
+    private final Integer supplierId;
     private final List<ReturnItemDetail> items;
+    private final double inventoryAmount;
+    private final double refundAmount;
+    private final Instant occurredAt;
 
-    public SupplierReturnCompletedEvent(Integer returnId, List<ReturnItemDetail> items) {
+    public SupplierReturnCompletedEvent(
+            Integer returnId,
+            Integer supplierId,
+            List<ReturnItemDetail> items,
+            double inventoryAmount,
+            double refundAmount
+    ) {
         this.returnId = returnId;
+        this.supplierId = supplierId;
         this.items = items;
+        this.inventoryAmount = inventoryAmount;
+        this.refundAmount = refundAmount;
+        this.occurredAt = Instant.now();
     }
 
     public Integer getReturnId() {
@@ -18,6 +33,22 @@ public class SupplierReturnCompletedEvent {
 
     public List<ReturnItemDetail> getItems() {
         return items;
+    }
+
+    public Integer getSupplierId() {
+        return supplierId;
+    }
+
+    public double getInventoryAmount() {
+        return inventoryAmount;
+    }
+
+    public double getRefundAmount() {
+        return refundAmount;
+    }
+
+    public Instant getOccurredAt() {
+        return occurredAt;
     }
 
     public static class ReturnItemDetail {

@@ -2,6 +2,7 @@ package com.example.new_toy_store.product.application.listener;
 
 import com.example.new_toy_store.global.event.ImportNoteCompletedEvent;
 import com.example.new_toy_store.global.event.SupplierReturnCompletedEvent;
+import com.example.new_toy_store.global.event.SupplierReturnStockRestorationRequestedEvent;
 import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.application.service.ProductService;
 import com.example.new_toy_store.product.domain.Inventory;
@@ -54,6 +55,21 @@ public class InventoryEventListener {
 
             inventory.reduceStockFromBatch(item.getQuantity(), item.getBatchNumber());
 
+            variantRepository.save(variant);
+        });
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void onSupplierReturnStockRestorationRequested(SupplierReturnStockRestorationRequestedEvent event) {
+        event.items().forEach(item -> {
+            ProductVariant variant = variantRepository.findById(item.variantId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm ID: " + item.variantId()));
+            if (variant.getInventory() == null) {
+                throw new RuntimeException("Biến thể ID " + item.variantId() + " chưa được khởi tạo kho.");
+            }
+            variant.getInventory().addStock(
+                    item.quantity(), item.batchNumber(), java.time.LocalDate.now().plusYears(5)
+            );
             variantRepository.save(variant);
         });
     }
