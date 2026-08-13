@@ -16,6 +16,10 @@ export const getJournalEntry = (id) => apiClient(`/api/accounting/journal-entrie
 export const getGeneralLedger = (accountCode, params) => apiClient(`/api/accounting/general-ledger/${accountCode}${query(params)}`);
 export const getTrialBalance = (params) => apiClient(`/api/accounting/reports/trial-balance${query(params)}`);
 export const getIncomeStatement = (params) => apiClient(`/api/accounting/reports/income-statement${query(params)}`);
+export const getAccountingReconciliationPreview = () => apiClient('/api/accounting/reconciliation/preview');
+export const executeAccountingReconciliation = () => apiClient('/api/accounting/reconciliation/execute', {
+  method: 'POST',
+});
 
 export const createManualJournalEntry = (payload) => apiClient('/api/accounting/journal-entries', {
   method: 'POST',

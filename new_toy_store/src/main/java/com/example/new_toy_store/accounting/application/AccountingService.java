@@ -200,6 +200,22 @@ public class AccountingService {
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean postAutomaticIfMissing(
+            AccountingSourceType sourceType,
+            String sourceReference,
+            LocalDate entryDate,
+            String description,
+            List<PostingLine> lines
+    ) {
+        if (entryRepository.existsBySourceTypeAndSourceReference(sourceType, sourceReference)) {
+            return false;
+        }
+        post(sourceType, sourceReference, entryDate, description, "SYSTEM-RECONCILIATION", lines);
+        entryRepository.flush();
+        return true;
+    }
+
     @Transactional
     public JournalEntryResponse reverse(Integer id, String postedBy) {
         JournalEntry original = getEntry(id);

@@ -11,6 +11,7 @@ Accounting cung cấp sổ kế toán kép và góc nhìn dòng tiền nội b�
 - Quản lý số dư tài khoản nội bộ và cung cấp hạn mức tiền khả dụng cho module `supplier_payment`.
 - Cho phép ADMIN tạo bút toán thủ công và đảo bút toán.
 - Cung cấp báo cáo quản trị và dashboard dòng tiền.
+- Đối soát và ghi bổ sung các nghiệp vụ lịch sử chưa có bút toán bằng khóa chống trùng.
 
 ### Out of Scope
 
@@ -30,7 +31,8 @@ accounting/
 |  |- AccountingService.java
 |  |- InternalFundQuery.java
 |  |- dto/
-|  `- listener/AccountingEventListener.java
+|  |- listener/AccountingEventListener.java
+|  `- reconciliation/
 |- domain/
 |  |- LedgerAccount.java
 |  |- JournalEntry.java
@@ -145,6 +147,19 @@ Service tải bút toán gốc, từ chối nếu đã đảo, tạo các dòng 
 
 Repository tổng hợp phát sinh theo tài khoản và thời gian. Service chuyển kết quả thành số dư tài khoản, sổ cái, bảng cân đối thử, kết quả kinh doanh và dashboard.
 
+### Reconciliation dữ liệu lịch sử
+
+```text
+Đọc dữ liệu nghiệp vụ theo lô
+        -> loại các sourceType + sourceReference đã tồn tại
+        -> xem trước số nghiệp vụ còn thiếu
+        -> ADMIN xác nhận
+        -> tạo từng bút toán trong transaction độc lập
+        -> unique constraint chống ghi trùng
+```
+
+Dashboard không tự ghi dữ liệu khi được mở. `AccountingReconciliationSourceReader` dùng truy vấn tập hợp và `NOT EXISTS`, tránh tải từng entity và tránh N+1. Luồng này xử lý các thanh toán khách hàng, đơn đã hoàn tất, hoàn tiền, phiếu nhập và thanh toán nhà cung cấp phát sinh trước khi accounting được triển khai.
+
 ## 7. Business Rules
 
 ### 7.1 Validation Rules
@@ -214,8 +229,10 @@ Không có API sửa hoặc xóa trực tiếp bút toán.
 | GET | `/general-ledger/{accountCode}` | Sổ cái theo tài khoản và khoảng ngày | MANAGER, ADMIN |
 | GET | `/reports/trial-balance` | Bảng cân đối thử tại một ngày | MANAGER, ADMIN |
 | GET | `/reports/income-statement` | Kết quả kinh doanh theo khoảng ngày | MANAGER, ADMIN |
+| GET | `/reconciliation/preview` | Xem các nghiệp vụ lịch sử chưa có bút toán | MANAGER, ADMIN |
 | POST | `/journal-entries` | Tạo bút toán thủ công | ADMIN |
 | POST | `/journal-entries/{id}/reverse` | Đảo bút toán | ADMIN |
+| POST | `/reconciliation/execute` | Ghi bổ sung bút toán lịch sử còn thiếu | ADMIN |
 
 ## 12. Error Handling
 
@@ -226,13 +243,14 @@ Không có API sửa hoặc xóa trực tiếp bút toán.
 
 ## 13. Security & Authorization
 
-Controller yêu cầu `MANAGER` hoặc `ADMIN` ở cấp class. Hai command nhạy cảm là tạo bút toán thủ công và đảo bút toán yêu cầu riêng vai trò `ADMIN`.
+Controller yêu cầu `MANAGER` hoặc `ADMIN` ở cấp class. Các command nhạy cảm gồm tạo bút toán thủ công, đảo bút toán và thực thi đối soát lịch sử yêu cầu riêng vai trò `ADMIN`.
 
 ## 14. Algorithms & Performance Considerations
 
 - Query tổng hợp phát sinh được đẩy xuống database thay vì tải toàn bộ dòng bút toán.
 - Số dư được ghép theo `Map<accountId, totals>` để tra cứu O(1) khi dựng danh sách tài khoản.
 - `sourceType + sourceReference` kết hợp kiểm tra ứng dụng và unique constraint để chống ghi trùng.
+- Đối soát lịch sử dùng truy vấn theo lô, không gọi repository một lần cho từng đơn hàng hay thanh toán.
 - Danh sách nhật ký gọi mapper nội bộ trong service; do không fetch collection theo trang, việc đọc `lines` có nguy cơ phát sinh thêm query cho từng bút toán.
 
 ## 15. Architecture & Design Principles
@@ -252,7 +270,7 @@ Accounting là sổ phụ quản trị trong modular monolith, không phải m�
 
 - Chưa có package `mapper`; logic `JournalEntry -> JournalEntryResponse`, `LedgerAccount -> AccountBalanceResponse` và request-to-posting nằm trong `AccountingService`.
 - Chưa có specification/filter động cho nhật ký chung ngoài `Pageable` và các tham số ngày của báo cáo.
-- Chưa có khóa kỳ kế toán và chưa backfill giao dịch phát sinh trước Flyway V8.
+- Chưa có khóa kỳ kế toán; backfill được thực hiện chủ động qua API reconciliation thay vì tự động trong migration hoặc khi đọc dashboard.
 - Chưa có transactional outbox; event nội bộ sau commit vẫn chạy trong cùng process.
 - Số tiền dùng `DOUBLE`; hệ thống tài chính thực tế nên dùng `DECIMAL`/`BigDecimal`.
 - Chưa tích hợp hoặc đối soát ngân hàng thật theo phạm vi chủ động của dự án.

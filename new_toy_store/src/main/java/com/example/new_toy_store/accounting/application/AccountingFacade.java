@@ -7,6 +7,8 @@ import com.example.new_toy_store.accounting.application.dto.response.GeneralLedg
 import com.example.new_toy_store.accounting.application.dto.response.IncomeStatementResponse;
 import com.example.new_toy_store.accounting.application.dto.response.JournalEntryResponse;
 import com.example.new_toy_store.accounting.application.dto.response.TrialBalanceResponse;
+import com.example.new_toy_store.accounting.application.dto.response.AccountingReconciliationResponse;
+import com.example.new_toy_store.accounting.application.reconciliation.AccountingReconciliationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -17,8 +19,12 @@ import java.util.List;
 @Component
 public class AccountingFacade {
     private final AccountingService service;
+    private final AccountingReconciliationService reconciliationService;
 
-    public AccountingFacade(AccountingService service) { this.service = service; }
+    public AccountingFacade(AccountingService service, AccountingReconciliationService reconciliationService) {
+        this.service = service;
+        this.reconciliationService = reconciliationService;
+    }
 
     public AccountingDashboardResponse getDashboard(LocalDate asOf, double minimumReserve) {
         return service.getDashboard(asOf, minimumReserve);
@@ -35,4 +41,6 @@ public class AccountingFacade {
         return service.createManualEntry(request, postedBy);
     }
     public JournalEntryResponse reverse(Integer id, String postedBy) { return service.reverse(id, postedBy); }
+    public AccountingReconciliationResponse previewReconciliation() { return reconciliationService.preview(); }
+    public AccountingReconciliationResponse executeReconciliation() { return reconciliationService.execute(); }
 }

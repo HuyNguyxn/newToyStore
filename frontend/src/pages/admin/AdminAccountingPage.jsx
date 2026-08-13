@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   createManualJournalEntry,
+  executeAccountingReconciliation,
   getAccountingDashboard,
+  getAccountingReconciliationPreview,
   getGeneralLedger,
   getIncomeStatement,
   getJournalEntries,
@@ -35,6 +37,14 @@ const ACCOUNT_TYPE_LABELS = {
   EXPENSE: 'Chi phí',
 };
 
+const RECONCILIATION_LABELS = {
+  CUSTOMER_PAYMENT: 'Thanh toán khách hàng',
+  ORDER_COMPLETION: 'Đơn hàng hoàn tất',
+  CUSTOMER_REFUND: 'Hoàn tiền khách hàng',
+  IMPORT_RECEIPT: 'Phiếu nhập hoàn tất',
+  SUPPLIER_PAYMENT: 'Thanh toán nhà cung cấp',
+};
+
 function money(value) {
   return formatPrice(Number(value || 0));
 }
@@ -49,6 +59,7 @@ function AdminAccountingPage() {
   const [accounts, setAccounts] = useState([]);
   const [trialBalance, setTrialBalance] = useState(null);
   const [income, setIncome] = useState(null);
+  const [reconciliation, setReconciliation] = useState(null);
   const [journalPage, setJournalPage] = useState({ content: [], number: 0, totalPages: 1 });
   const [selectedAccount, setSelectedAccount] = useState('111');
   const [ledgerPage, setLedgerPage] = useState({ content: [], number: 0, totalPages: 1 });
@@ -80,6 +91,11 @@ function AdminAccountingPage() {
       setAccounts(accountData || []);
       setTrialBalance(trialData);
       setIncome(incomeData);
+      try {
+        setReconciliation(await getAccountingReconciliationPreview());
+      } catch {
+        setReconciliation(null);
+      }
     } catch (err) {
       setError(err.message || 'Không thể tải dữ liệu kế toán nội bộ.');
     } finally {
@@ -161,6 +177,22 @@ function AdminAccountingPage() {
     }
   }
 
+  async function synchronizeAccounting() {
+    if (!window.confirm(`Hệ thống tìm thấy ${reconciliation?.detectedCount || 0} nghiệp vụ chưa có trong sổ kế toán. Bạn xác nhận đồng bộ?`)) return;
+    setLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      const result = await executeAccountingReconciliation();
+      setMessage(`Đã tạo ${result.createdCount} bút toán; bỏ qua ${result.skippedCount} nghiệp vụ đã được ghi nhận.`);
+      await loadOverview();
+    } catch (err) {
+      setError(err.message || 'Không thể đồng bộ dữ liệu nghiệp vụ vào sổ kế toán.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const metricCards = dashboard ? [
     { label: 'Tổng tiền khả dụng', value: money(dashboard.totalLiquidFunds), tone: 'green' },
     { label: 'Công nợ nhà cung cấp', value: money(dashboard.supplierOutstanding), tone: 'orange' },
@@ -221,6 +253,28 @@ function AdminAccountingPage() {
               <label className="reserve-field">Quỹ dự phòng tối thiểu<input type="number" min="0" value={minimumReserve} onChange={(event) => setMinimumReserve(Number(event.target.value || 0))} /></label>
             </article>
           </div>
+          <article className={`accounting-panel accounting-reconciliation ${reconciliation?.detectedCount > 0 ? 'has-missing' : 'is-synced'}`}>
+            <div>
+              <h2>Đối soát dữ liệu nghiệp vụ</h2>
+              <p>
+                {reconciliation?.detectedCount > 0
+                  ? `Có ${reconciliation.detectedCount} nghiệp vụ lịch sử chưa được ghi vào sổ kế toán.`
+                  : 'Sổ kế toán đã đồng bộ với dữ liệu nghiệp vụ.'}
+              </p>
+              {reconciliation?.groups?.length > 0 && (
+                <div className="accounting-reconciliation-groups">
+                  {reconciliation.groups.map((group) => (
+                    <span key={group.sourceType}>
+                      {RECONCILIATION_LABELS[group.sourceType] || SOURCE_LABELS[group.sourceType] || group.sourceType}: <strong>{group.missingCount}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button type="button" disabled={!reconciliation?.detectedCount || loading} onClick={synchronizeAccounting}>
+              Đồng bộ sổ kế toán
+            </button>
+          </article>
         </>
       )}
 

@@ -4320,6 +4320,15 @@ h3 {
 .accounting-manual-footer { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 14px; }
 .accounting-manual-footer .secondary { margin-right: auto; border: 1px solid #fdba74; background: #fff; color: #c2410c; }
 .accounting-manual-footer button:disabled { opacity: .45; cursor: not-allowed; }
+.accounting-reconciliation { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 14px; }
+.accounting-reconciliation.has-missing { border-color: #fdba74; background: #fffaf5; }
+.accounting-reconciliation.is-synced { border-color: #86efac; background: #f0fdf4; }
+.accounting-reconciliation h2 { margin-bottom: 6px; }
+.accounting-reconciliation p { margin: 0; color: #64748b; }
+.accounting-reconciliation-groups { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.accounting-reconciliation-groups span { border-radius: 999px; padding: 5px 10px; background: #fff; color: #475569; font-size: 12px; }
+.accounting-reconciliation > button { flex: 0 0 auto; min-height: 42px; border: 0; border-radius: 10px; padding: 0 18px; background: #ea580c; color: #fff; font-weight: 900; cursor: pointer; }
+.accounting-reconciliation > button:disabled { background: #cbd5e1; cursor: not-allowed; }
 
 @media (max-width: 1050px) {
   .accounting-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -4331,4 +4340,5 @@ h3 {
   .accounting-form-grid { grid-template-columns: 1fr; } .accounting-form-grid .wide { grid-column: auto; }
   .accounting-line { grid-template-columns: 1fr; } .accounting-line.header { display: none; }
   .accounting-table-panel { overflow-x: auto; } .accounting-table { min-width: 760px; }
+  .accounting-reconciliation { align-items: stretch; flex-direction: column; }
 }

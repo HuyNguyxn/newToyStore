@@ -8,6 +8,7 @@ import com.example.new_toy_store.accounting.application.dto.response.GeneralLedg
 import com.example.new_toy_store.accounting.application.dto.response.IncomeStatementResponse;
 import com.example.new_toy_store.accounting.application.dto.response.JournalEntryResponse;
 import com.example.new_toy_store.accounting.application.dto.response.TrialBalanceResponse;
+import com.example.new_toy_store.accounting.application.dto.response.AccountingReconciliationResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -78,6 +79,17 @@ public class AccountingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         return facade.getIncomeStatement(from, to);
+    }
+
+    @GetMapping("/reconciliation/preview")
+    public AccountingReconciliationResponse previewReconciliation() {
+        return facade.previewReconciliation();
+    }
+
+    @PostMapping("/reconciliation/execute")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AccountingReconciliationResponse executeReconciliation() {
+        return facade.executeReconciliation();
     }
 
     @PostMapping("/journal-entries")
