@@ -221,6 +221,16 @@ public class PaymentService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void requestRefundForCancelledOrder(Integer orderId, String reason) {
+        List<CustomerPaymentTransaction> pendingPayments = repository.findAllByOrderId(orderId).stream()
+                .filter(payment -> payment.getStatus() == CustomerPaymentStatus.PENDING)
+                .toList();
+        if (!pendingPayments.isEmpty()) {
+            String cancellationReason = resolveOrderCancellationReason(orderId, reason);
+            pendingPayments.forEach(payment -> payment.cancel(cancellationReason));
+            repository.saveAll(pendingPayments);
+            return;
+        }
+
         CustomerPaymentTransaction payment = repository.findFirstByOrderIdAndStatusInOrderByCreatedAtDesc(
                 orderId,
                 List.of(CustomerPaymentStatus.SUCCEEDED, CustomerPaymentStatus.PARTIALLY_REFUNDED)
@@ -395,6 +405,22 @@ public class PaymentService {
             publishPaymentCompleted(payment);
         });
         return payments.size();
+    }
+
+    @Transactional
+    public int reconcileCancelledOrderPayments() {
+        List<CustomerPaymentTransaction> payments = repository.findPendingPaymentsForCancelledOrders();
+        payments.forEach(payment -> {
+            payment.cancel(resolveOrderCancellationReason(payment.getOrderId(), null));
+            repository.save(payment);
+        });
+        return payments.size();
+    }
+
+    private String resolveOrderCancellationReason(Integer orderId, String reason) {
+        return reason == null || reason.isBlank()
+                ? "Hủy giao dịch vì đơn hàng #" + orderId + " đã bị hủy"
+                : reason.trim();
     }
 
     @Transactional

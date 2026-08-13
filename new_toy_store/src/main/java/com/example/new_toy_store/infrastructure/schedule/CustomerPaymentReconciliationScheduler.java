@@ -31,12 +31,16 @@ public class CustomerPaymentReconciliationScheduler {
 
     private void reconcileSafely(String trigger) {
         try {
-            int reconciledPayments = paymentService.reconcileCompletedCodPayments();
-            if (reconciledPayments > 0) {
-                log.info("Reconciled {} completed COD payment(s) during {}", reconciledPayments, trigger);
+            int completedCodPayments = paymentService.reconcileCompletedCodPayments();
+            int cancelledOrderPayments = paymentService.reconcileCancelledOrderPayments();
+            if (completedCodPayments > 0 || cancelledOrderPayments > 0) {
+                log.info(
+                        "Reconciled {} completed COD payment(s) and {} cancelled-order payment(s) during {}",
+                        completedCodPayments, cancelledOrderPayments, trigger
+                );
             }
         } catch (RuntimeException exception) {
-            log.error("Unable to reconcile completed COD payments during {}", trigger, exception);
+            log.error("Unable to reconcile customer payment statuses during {}", trigger, exception);
         }
     }
 }

@@ -82,6 +82,8 @@ ID references isolate persistence, while a facade and events form the module API
 
 COD and VNPay share one payment model; refund method distinguishes manual COD handling from VNPay provider refund.
 
+Khi đơn hàng bị hủy, mọi giao dịch `PENDING` của đơn được chuyển sang `CANCELLED`; giao dịch đã thành công được chuyển vào luồng hoàn tiền. Tác vụ reconciliation chạy khi ứng dụng khởi động và theo lịch để sửa các giao dịch chờ cũ còn gắn với đơn đã hủy.
+
 ## 17. Known Limitations / Technical Debt
 
 No durable outbox was found; external calls and local state therefore need careful failure/retry handling.
