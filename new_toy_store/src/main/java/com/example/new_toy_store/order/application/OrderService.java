@@ -26,12 +26,12 @@ import com.example.new_toy_store.order.domain.exception.OrderAccessDeniedExcepti
 import com.example.new_toy_store.order.domain.exception.OrderCrossModuleException;
 import com.example.new_toy_store.order.domain.exception.OrderNotFoundException;
 import com.example.new_toy_store.order.mapper.OrderMapper;
-import com.example.new_toy_store.product.application.service.ProductService;
+import com.example.new_toy_store.product.application.facade.ProductFacade;
 import com.example.new_toy_store.product.domain.Product;
 import com.example.new_toy_store.product.domain.ProductVariant;
 import com.example.new_toy_store.promotion.application.facade.PromotionFacade;
 import com.example.new_toy_store.user.domain.User;
-import com.example.new_toy_store.user.domain.UserRepository;
+import com.example.new_toy_store.user.application.UserFacade;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,21 +49,21 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository repository;
-    private final ProductService productService;
-    private final UserRepository userRepository;
+    private final ProductFacade productFacade;
+    private final UserFacade userFacade;
     private final PromotionFacade promotionFacade;
     private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(
             OrderRepository repository,
-            ProductService productService,
-            UserRepository userRepository,
+                        ProductFacade productFacade,
+            UserFacade userFacade,
             PromotionFacade promotionFacade,
             ApplicationEventPublisher eventPublisher
     ) {
         this.repository = repository;
-        this.productService = productService;
-        this.userRepository = userRepository;
+        this.productFacade = productFacade;
+        this.userFacade = userFacade;
         this.promotionFacade = promotionFacade;
         this.eventPublisher = eventPublisher;
     }
@@ -87,8 +87,12 @@ public class OrderService {
 
     @Transactional
     public OrderResponse create(OrderRequest request, Integer cartId) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> OrderCrossModuleException.missingCustomer(request.getUserId()));
+        User user;
+        try {
+            user = userFacade.getRequiredUser(request.getUserId());
+        } catch (RuntimeException exception) {
+            throw OrderCrossModuleException.missingCustomer(request.getUserId());
+        }
 
         if (!user.getStatus().canPlaceOrder()) {
             throw new InvalidOrderOperationException(user.getStatus().getDisplayName(), "Tạo đơn hàng");
@@ -254,6 +258,24 @@ public class OrderService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public double calculateReturnedStockCost(Integer orderId, Map<Integer, Integer> variantQuantities) {
+        if (variantQuantities == null || variantQuantities.isEmpty()) return 0.0;
+        Order order = repository.findByIdWithItemsAndHistories(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        double amount = order.getItems().stream()
+                .filter(item -> variantQuantities.containsKey(item.getVariantId()))
+                .mapToDouble(item -> {
+                    int returnedQuantity = Math.min(
+                            item.getQuantity(),
+                            Math.max(0, variantQuantities.getOrDefault(item.getVariantId(), 0))
+                    );
+                    return returnedQuantity * (item.getCostPriceSnapshot() == null ? 0.0 : item.getCostPriceSnapshot());
+                })
+                .sum();
+        return Math.max(0.0, Math.round(amount * 100.0) / 100.0);
+    }
+
     @Transactional
     public void updateOrderRefundStatus(Integer orderId, Map<Integer, Integer> returnedItemsQty) {
         Order order = getOrder(orderId);
@@ -314,12 +336,22 @@ public class OrderService {
                 .map(OrderItemRequest::getProductId)
                 .collect(Collectors.toSet());
 
-        return productService.getProductsByIdsWithDetails(productIds)
+        return productFacade.getProductsByIdsWithDetails(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, product -> product));
     }
 
     private void validateOrderItems(OrderRequest request, Map<Integer, Product> productMap) {
+        Set<Integer> uniqueVariantIds = request.getItems().stream()
+                .map(OrderItemRequest::getVariantId)
+                .collect(Collectors.toSet());
+        if (uniqueVariantIds.size() != request.getItems().size()) {
+            throw new InvalidOrderDataException(
+                    "items",
+                    "Mỗi biến thể chỉ được xuất hiện một lần trong đơn hàng; hãy gộp số lượng trước khi gửi."
+            );
+        }
+
         for (OrderItemRequest itemRequest : request.getItems()) {
             Product product = productMap.get(itemRequest.getProductId());
             if (product == null || !product.isAvailableForPurchase()) {
@@ -379,7 +411,7 @@ public class OrderService {
                 .map(OrderItem::getProductId)
                 .collect(Collectors.toSet());
 
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
+        Map<Integer, Product> productMap = productFacade.getProductsByIdsWithDetails(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, product -> product));
 
@@ -401,7 +433,7 @@ public class OrderService {
                 .map(OrderItem::getProductId)
                 .collect(Collectors.toSet());
 
-        Map<Integer, Product> productMap = productService.getProductsByIdsWithDetails(productIds)
+        Map<Integer, Product> productMap = productFacade.getProductsByIdsWithDetails(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, product -> product));
 

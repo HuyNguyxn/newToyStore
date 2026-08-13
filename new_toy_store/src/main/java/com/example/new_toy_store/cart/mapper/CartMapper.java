@@ -239,7 +239,7 @@ public final class CartMapper {
             return new ItemAvailability(false, "Sản phẩm đang tạm ngừng kinh doanh");
         }
 
-        int stock = variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0;
+        int stock = variant.getInventory() != null ? variant.getInventory().getAvailableQuantity() : 0;
         if (stock < requestedQuantity) {
             return new ItemAvailability(false, "Rất tiếc, kho chỉ còn lại " + stock + " sản phẩm");
         }

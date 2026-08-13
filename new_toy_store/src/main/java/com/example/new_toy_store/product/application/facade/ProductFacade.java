@@ -80,6 +80,10 @@ public class ProductFacade {
         return productService.getProductsByIdsWithDetails(ids);
     }
 
+    public Product getProductEntity(Integer id) {
+        return productService.getProductEntity(id);
+    }
+
     public ProductResponse create(CreateProductRequest request) {
         return productService.create(request);
     }

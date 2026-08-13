@@ -1,6 +1,8 @@
 package com.example.new_toy_store.order.application.facade;
 
 import com.example.new_toy_store.order.application.OrderService;
+import com.example.new_toy_store.order.application.dto.request.OrderRequest;
+import com.example.new_toy_store.order.application.dto.response.OrderResponse;
 import com.example.new_toy_store.order.application.dto.response.OrderLogisticsSnapshot;
 import com.example.new_toy_store.order.application.dto.response.OrderPaymentSnapshot;
 import com.example.new_toy_store.order.domain.OrderItem;
@@ -47,5 +49,17 @@ public class OrderFacade {
 
     public void updateOrderRefundStatus(Integer orderId, Map<Integer, Integer> returnedItemsQty) {
         orderService.updateOrderRefundStatus(orderId, returnedItemsQty);
+    }
+
+    public OrderResponse createFromCart(OrderRequest request, Integer cartId) {
+        return orderService.create(request, cartId);
+    }
+
+    public OrderResponse getOrderDetailsSnapshot(Integer orderId) {
+        return orderService.getOrderDetails(orderId);
+    }
+
+    public double calculateReturnedStockCost(Integer orderId, Map<Integer, Integer> variantQuantities) {
+        return orderService.calculateReturnedStockCost(orderId, variantQuantities);
     }
 }

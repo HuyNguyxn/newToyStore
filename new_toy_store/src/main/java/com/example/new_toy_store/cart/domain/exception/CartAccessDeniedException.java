@@ -17,4 +17,15 @@ public class CartAccessDeniedException extends CartDomainException {
                 action
         );
     }
+
+    public static CartAccessDeniedException forUserCart(Integer currentUserId, Integer targetUserId, String action) {
+        CartAccessDeniedException exception = new CartAccessDeniedException(
+                "Bạn không có quyền " + action + " giỏ hàng của người dùng khác.",
+                currentUserId,
+                null,
+                action
+        );
+        exception.addContext("targetUserId", targetUserId);
+        return exception;
+    }
 }

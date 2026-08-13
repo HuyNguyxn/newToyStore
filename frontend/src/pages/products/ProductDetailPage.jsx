@@ -112,7 +112,11 @@ function ProductDetailPage() {
 
   const price = selectedVariant?.discountedPrice || selectedVariant?.price || getProductPrice(product);
   const originalPrice = selectedVariant?.price || getProductOriginalPrice(product);
-  const stockQuantity = selectedVariant?.stockQuantity ?? selectedVariant?.inventory?.stockQuantity ?? 10;
+  const stockQuantity = selectedVariant?.inventory?.availableQuantity
+    ?? selectedVariant?.availableQuantity
+    ?? selectedVariant?.inventory?.stockQuantity
+    ?? selectedVariant?.stockQuantity
+    ?? 0;
   const canAddToCart = Boolean(
     (product?.purchasable !== undefined ? product.purchasable : isStatusActive) &&
     selectedVariant
