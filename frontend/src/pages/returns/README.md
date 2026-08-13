@@ -21,9 +21,12 @@ This area lets authenticated customers request a return, review existing returns
 
 Return eligibility, allowed quantities and valid transitions are server-owned rules. The UI should guide the customer using returned state but must handle rejection when data becomes stale.
 
+The create page reads item snapshots from `GET /orders/my-orders`, normalizes both string and object-shaped status enums, and initializes return selections by `orderItemId`. It submits product/variant IDs as context, but the backend recalculates eligible quantity and expected refund from the stored order line.
+
 ## Maintenance notes
 
 - Keep evidence upload failures separate from return submission failures.
+- Show order-loading failures explicitly; an empty product selector must not silently hide an API contract problem.
 - Refresh the return after update, cancellation or dispute.
 - Display status history and rejection or inspection reasons when available.
 - Do not assume a received return automatically produces a refund; inspection and payment processing are separate stages.

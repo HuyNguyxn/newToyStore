@@ -21,6 +21,9 @@ Public product-review display is part of `ProductDetailPage.jsx`; administrative
 
 ## Maintenance notes
 
+- Build the product selector from `GET /orders/my-orders` and use each line's `id` as `orderItemId`; do not use `productId` as a substitute.
+- Accept only eligible order states in the selector, while treating backend verification as authoritative.
+- Show order-loading errors instead of silently presenting an empty selector.
 - Let the backend determine verified-purchase eligibility and moderation state.
 - Separate media upload progress from review submission state.
 - Refresh the review list after update or deletion.

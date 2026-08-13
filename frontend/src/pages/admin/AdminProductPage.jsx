@@ -707,8 +707,12 @@ function AdminProductPage() {
                   <tr key={item.productId} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '10px', fontWeight: '800', color: '#475569' }}>PT{item.productId}</td>
                     <td style={{ padding: '10px', fontWeight: '700', color: '#0f172a' }}>{item.productName}</td>
-                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#16a34a' }}>{item.unitsSold} món</td>
-                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: '800', color: '#dc2626' }}>{formatPrice(item.totalRevenue)}</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#16a34a' }}>
+                      {Number(item.soldQuantity ?? item.unitsSold ?? 0)} món
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: '800', color: '#dc2626' }}>
+                      {formatPrice(item.grossRevenue ?? item.totalRevenue ?? 0)}
+                    </td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       <button
                         type="button"
@@ -765,7 +769,9 @@ function AdminProductPage() {
                   <tr key={item.productId} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '10px', fontWeight: '800', color: '#475569' }}>PT{item.productId}</td>
                     <td style={{ padding: '10px', fontWeight: '700', color: '#0f172a' }}>{item.productName}</td>
-                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#d97706' }}>{item.unitsSold} món</td>
+                    <td style={{ padding: '10px', textAlign: 'center', fontWeight: '900', color: '#d97706' }}>
+                      {Number(item.soldQuantity ?? item.unitsSold ?? 0)} món
+                    </td>
                     <td style={{ padding: '10px', textAlign: 'right' }}>
                       <button
                         type="button"
