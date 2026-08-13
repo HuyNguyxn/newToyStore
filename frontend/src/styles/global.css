@@ -4342,3 +4342,70 @@ h3 {
   .accounting-table-panel { overflow-x: auto; } .accounting-table { min-width: 760px; }
   .accounting-reconciliation { align-items: stretch; flex-direction: column; }
 }
+
+/* Global route and Render cold-start feedback */
+.global-loading-bar {
+  position: fixed;
+  z-index: 10000;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.global-loading-bar.is-visible { opacity: 1; }
+.global-loading-bar span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #facc15, #38bdf8);
+  animation: global-loading-slide 1.05s ease-in-out infinite;
+}
+.global-loading-notice {
+  position: fixed;
+  z-index: 9999;
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 28px));
+  padding: 14px 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .97);
+  color: #475569;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, .16);
+  backdrop-filter: blur(10px);
+  animation: global-loading-enter .2s ease-out;
+}
+.global-loading-notice strong { display: block; margin-bottom: 3px; color: #c2410c; }
+.global-loading-notice p { margin: 0; font-size: 13px; line-height: 1.45; }
+.global-loading-spinner {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #ffedd5;
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: global-loading-spin .75s linear infinite;
+}
+@keyframes global-loading-slide {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(365%); }
+}
+@keyframes global-loading-spin { to { transform: rotate(360deg); } }
+@keyframes global-loading-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+  .global-loading-notice { right: 14px; bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .global-loading-bar span, .global-loading-spinner, .global-loading-notice { animation: none; }
+}
