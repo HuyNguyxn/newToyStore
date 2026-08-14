@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { sampleProducts } from '../../data/sampleData.js';
 import { getProducts } from '../../services/productService.js';
 import ProductCard from './components/ProductCard.jsx';
 
@@ -64,7 +63,8 @@ function HomePage() {
       })
       .catch(() => {
         if (active) {
-          setFeaturedProducts(sampleProducts.slice(0, 5));
+          setFeaturedProducts([]);
+          setNotice('Chưa thể tải sản phẩm nổi bật. Vui lòng thử lại khi máy chủ sẵn sàng.');
         }
       });
 

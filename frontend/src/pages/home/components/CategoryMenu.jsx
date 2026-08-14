@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sampleCategories } from '../../../data/sampleData.js';
 import { getCategoryTree } from '../../../services/categoryService.js';
 
 function CategoryMenu() {
   const navigate = useNavigate();
   const [categoryTree, setCategoryTree] = useState([]);
+  const [loadError, setLoadError] = useState(false);
   const [stack, setStack] = useState([]);
   const currentParent = stack[stack.length - 1];
   const currentCategories = stack.length === 0 ? categoryTree : getChildren(currentParent);
@@ -17,12 +17,14 @@ function CategoryMenu() {
     getCategoryTree()
       .then((result) => {
         if (active) {
-          setCategoryTree(Array.isArray(result) && result.length > 0 ? result : sampleCategories);
+          setCategoryTree(Array.isArray(result) ? result : []);
+          setLoadError(false);
         }
       })
       .catch(() => {
         if (active) {
-          setCategoryTree(sampleCategories);
+          setCategoryTree([]);
+          setLoadError(true);
         }
       });
 
@@ -64,7 +66,15 @@ function CategoryMenu() {
           </button>
         </li>
 
-        {currentCategories.length === 0 && (
+        {loadError && (
+          <li>
+            <button type="button" disabled>
+              <span>Chưa thể tải danh mục</span>
+            </button>
+          </li>
+        )}
+
+        {!loadError && currentCategories.length === 0 && (
           <li>
             <button type="button" disabled>
               <span>Chưa có danh mục con</span>

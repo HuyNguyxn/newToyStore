@@ -4,51 +4,54 @@ import AdminLayout from './components/admin/AdminLayout.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import useAuth from './hooks/useAuth.js';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
-import AdminCategoryPage from './pages/admin/AdminCategoryPage.jsx';
-import AdminImportPage from './pages/admin/AdminImportPage.jsx';
-import AdminInventoryPage from './pages/admin/AdminInventoryPage.jsx';
-import AdminLogisticsPage from './pages/admin/AdminLogisticsPage.jsx';
-import AdminModerationPage from './pages/admin/AdminModerationPage.jsx';
-import AdminNotificationPage from './pages/admin/AdminNotificationPage.jsx';
-import AdminOrderPage from './pages/admin/AdminOrderPage.jsx';
-import AdminCustomerPaymentPage from './pages/admin/AdminCustomerPaymentPage.jsx';
-import AdminProductPage from './pages/admin/AdminProductPage.jsx';
-import AdminPromotionPage from './pages/admin/AdminPromotionPage.jsx';
-import AdminCustomerRefundPage from './pages/admin/AdminCustomerRefundPage.jsx';
-import AdminReturnInspectionPage from './pages/admin/AdminReturnInspectionPage.jsx';
-import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage.jsx';
-import AdminSupplierPage from './pages/admin/AdminSupplierPage.jsx';
-import AdminSupplierPaymentPage from './pages/admin/AdminSupplierPaymentPage.jsx';
-import AdminSupplierReturnPage from './pages/admin/AdminSupplierReturnPage.jsx';
-import AdminUploadPage from './pages/admin/AdminUploadPage.jsx';
-import AdminUserPage from './pages/admin/AdminUserPage.jsx';
-import AdminAccountingPage from './pages/admin/AdminAccountingPage.jsx';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
-import LoginPage from './pages/auth/LoginPage.jsx';
-import RegisterPage from './pages/auth/RegisterPage.jsx';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
-import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
-import CartPage from './pages/cart/CartPage.jsx';
-import CheckoutPage from './pages/cart/CheckoutPage.jsx';
-import NotFoundPage from './pages/common/NotFoundPage.jsx';
-import HomePage from './pages/home/HomePage.jsx';
-import NotificationPage from './pages/notifications/NotificationPage.jsx';
-import OrderDetailPage from './pages/orders/OrderDetailPage.jsx';
-import OrderListPage from './pages/orders/OrderListPage.jsx';
-import CustomerPaymentListPage from './pages/customer-payments/CustomerPaymentListPage.jsx';
-import CustomerVnpayReturnPage from './pages/customer-payments/CustomerVnpayReturnPage.jsx';
-import ProductDetailPage from './pages/products/ProductDetailPage.jsx';
-import ProductListPage from './pages/products/ProductListPage.jsx';
-import ProfilePage from './pages/profile/ProfilePage.jsx';
-import ReturnCreatePage from './pages/returns/ReturnCreatePage.jsx';
-import ReturnListPage from './pages/returns/ReturnListPage.jsx';
-import ReviewCreatePage from './pages/reviews/ReviewCreatePage.jsx';
-import ReviewListPage from './pages/reviews/ReviewListPage.jsx';
-import ShipmentListPage from './pages/shipments/ShipmentListPage.jsx';
-import ReturnPolicyPage from './pages/policy/ReturnPolicyPage.jsx';
-import PrivacyPolicyPage from './pages/policy/PrivacyPolicyPage.jsx';
-
+const AdminCategoryPage = lazy(() => import('./pages/admin/AdminCategoryPage.jsx'));
+const AdminImportPage = lazy(() => import('./pages/admin/AdminImportPage.jsx'));
+const AdminInventoryPage = lazy(() => import('./pages/admin/AdminInventoryPage.jsx'));
+const AdminLogisticsPage = lazy(() => import('./pages/admin/AdminLogisticsPage.jsx'));
+const AdminModerationPage = lazy(() => import('./pages/admin/AdminModerationPage.jsx'));
+const AdminNotificationPage = lazy(() => import('./pages/admin/AdminNotificationPage.jsx'));
+const AdminOrderPage = lazy(() => import('./pages/admin/AdminOrderPage.jsx'));
+const AdminCustomerPaymentPage = lazy(() => import('./pages/admin/AdminCustomerPaymentPage.jsx'));
+const AdminProductPage = lazy(() => import('./pages/admin/AdminProductPage.jsx'));
+const AdminPromotionPage = lazy(() => import('./pages/admin/AdminPromotionPage.jsx'));
+const AdminCustomerRefundPage = lazy(() => import('./pages/admin/AdminCustomerRefundPage.jsx'));
+const AdminReturnInspectionPage = lazy(() => import('./pages/admin/AdminReturnInspectionPage.jsx'));
+const AdminReviewModerationPage = lazy(() => import('./pages/admin/AdminReviewModerationPage.jsx'));
+const AdminSupplierPage = lazy(() => import('./pages/admin/AdminSupplierPage.jsx'));
+const AdminSupplierPaymentPage = lazy(() => import('./pages/admin/AdminSupplierPaymentPage.jsx'));
+const AdminSupplierReturnPage = lazy(() => import('./pages/admin/AdminSupplierReturnPage.jsx'));
+const AdminUploadPage = lazy(() => import('./pages/admin/AdminUploadPage.jsx'));
+const AdminUserPage = lazy(() => import('./pages/admin/AdminUserPage.jsx'));
+const AdminAccountingPage = lazy(() => import('./pages/admin/AdminAccountingPage.jsx'));
 const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage.jsx'));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage.jsx'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage.jsx'));
+const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage.jsx'));
+const CartPage = lazy(() => import('./pages/cart/CartPage.jsx'));
+const CheckoutPage = lazy(() => import('./pages/cart/CheckoutPage.jsx'));
+const NotFoundPage = lazy(() => import('./pages/common/NotFoundPage.jsx'));
+const HomePage = lazy(() => import('./pages/home/HomePage.jsx'));
+const NotificationPage = lazy(() => import('./pages/notifications/NotificationPage.jsx'));
+const OrderDetailPage = lazy(() => import('./pages/orders/OrderDetailPage.jsx'));
+const OrderListPage = lazy(() => import('./pages/orders/OrderListPage.jsx'));
+const CustomerPaymentListPage = lazy(() => import('./pages/customer-payments/CustomerPaymentListPage.jsx'));
+const CustomerVnpayReturnPage = lazy(() => import('./pages/customer-payments/CustomerVnpayReturnPage.jsx'));
+const ProductDetailPage = lazy(() => import('./pages/products/ProductDetailPage.jsx'));
+const ProductListPage = lazy(() => import('./pages/products/ProductListPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/profile/ProfilePage.jsx'));
+const ReturnCreatePage = lazy(() => import('./pages/returns/ReturnCreatePage.jsx'));
+const ReturnListPage = lazy(() => import('./pages/returns/ReturnListPage.jsx'));
+const ReviewCreatePage = lazy(() => import('./pages/reviews/ReviewCreatePage.jsx'));
+const ReviewListPage = lazy(() => import('./pages/reviews/ReviewListPage.jsx'));
+const ShipmentListPage = lazy(() => import('./pages/shipments/ShipmentListPage.jsx'));
+const ReturnPolicyPage = lazy(() => import('./pages/policy/ReturnPolicyPage.jsx'));
+const PrivacyPolicyPage = lazy(() => import('./pages/policy/PrivacyPolicyPage.jsx'));
+
+function RouteLoadingFallback() {
+  return <div className="route-loading-fallback" role="status">Đang tải trang...</div>;
+}
 
 // Role-based default redirect for admin panel
 function AdminDefaultRedirect() {
@@ -63,7 +66,8 @@ function AdminDefaultRedirect() {
 
 function App() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes>
       <Route element={<CustomerLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductListPage />} />
@@ -252,16 +256,15 @@ function App() {
           path="statistics"
           element={(
             <ProtectedRoute allowedRoles={['MANAGER', 'ADMIN']}>
-              <Suspense fallback={<div className="admin-empty-mini">Đang tải trang thống kê...</div>}>
-                <AdminStatisticsPage />
-              </Suspense>
+              <AdminStatisticsPage />
             </ProtectedRoute>
           )}
         />
         <Route path="uploads" element={<AdminUploadPage />} />
         <Route path="*" element={<AdminDefaultRedirect />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
 import useAuth from '../../hooks/useAuth.js';
-import { sampleProducts } from '../../data/sampleData.js';
 import { addCartItem } from '../../services/cartService.js';
 import { getProductDetails } from '../../services/productService.js';
 import { getProductReviews } from '../../services/reviewService.js';
@@ -41,14 +40,15 @@ function ProductDetailPage() {
           applyProduct(result);
         }
       })
-      .catch(() => {
+      .catch((requestError) => {
         if (!active) {
           return;
         }
 
-        const fallback = sampleProducts.find((item) => String(item.id) === String(id)) || sampleProducts[0];
-        applyProduct(fallback);
-        setError('Backend chưa sẵn sàng, đang hiển thị dữ liệu mẫu.');
+        setProduct(null);
+        setSelectedVariantId('');
+        setSelectedImageUrl('');
+        setError(requestError?.message || 'Không thể tải chi tiết sản phẩm. Vui lòng thử lại khi máy chủ sẵn sàng.');
       })
       .finally(() => {
         if (active) {
@@ -167,7 +167,9 @@ function ProductDetailPage() {
   if (!product) {
     return (
       <div className="empty-state container">
-        Không tìm thấy sản phẩm.
+        <BackLink fallback="/products" label="Quay lại sản phẩm" />
+        <p>{error || 'Không tìm thấy sản phẩm.'}</p>
+        <button type="button" onClick={() => window.location.reload()}>Thử tải lại</button>
       </div>
     );
   }

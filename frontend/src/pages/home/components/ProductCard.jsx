@@ -21,7 +21,6 @@ function ProductCard({ product }) {
   const showOriginalPrice = originalPrice > price;
   const statusLabel = getProductStatusLabel(product);
   const rating = Number(product.averageRating || product.rating || 0);
-  const firstLetter = product.name?.charAt(0) || 'P';
   const thumbnailUrl = normalizeThumbnailUrl(product.thumbnailUrl);
   const defaultVariantId = product.defaultVariantId || product.variants?.[0]?.id;
   const canQuickAdd = Boolean((product.quickAddAvailable || defaultVariantId) && defaultVariantId);
@@ -73,7 +72,6 @@ function ProductCard({ product }) {
         ) : (
           <div className="product-card__placeholder" aria-hidden="true">
             <img src="/toystore-assets/logo.png" alt="" />
-            <span>{firstLetter}</span>
           </div>
         )}
         <strong>{statusLabel}</strong>

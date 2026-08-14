@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import BackLink from '../../components/common/BackLink.jsx';
-import { sampleProducts } from '../../data/sampleData.js';
 import {
   filterProducts,
   getProducts,
@@ -99,36 +98,14 @@ function ProductListPage() {
           totalElements: result.totalElements || result.content?.length || 0,
         });
       })
-      .catch(() => {
+      .catch((requestError) => {
         if (!active) {
           return;
         }
 
-        const filteredSample = sampleProducts.filter((product) => {
-          if (categoryId && String(product.categoryId || product.category?.id) !== String(categoryId)) {
-            return false;
-          }
-          if (activeFilters.keyword && activeFilters.keyword.trim()) {
-            const kw = activeFilters.keyword.trim().toLowerCase();
-            const name = String(product.name || product.productName || '').toLowerCase();
-            const desc = String(product.description || '').toLowerCase();
-            if (!name.includes(kw) && !desc.includes(kw)) {
-              return false;
-            }
-          }
-          const price = Number(product.basePrice || product.price || product.salePrice || 0);
-          if (activeFilters.minPrice !== '' && activeFilters.minPrice !== null && activeFilters.minPrice !== undefined) {
-            if (price < Number(activeFilters.minPrice)) return false;
-          }
-          if (activeFilters.maxPrice !== '' && activeFilters.maxPrice !== null && activeFilters.maxPrice !== undefined) {
-            if (price > Number(activeFilters.maxPrice)) return false;
-          }
-          return true;
-        });
-
-        setProducts(filteredSample);
-        setPageInfo({ number: 0, totalPages: 1, totalElements: filteredSample.length });
-        setError('Không lấy được dữ liệu từ backend, đang hiển thị dữ liệu mẫu.');
+        setProducts([]);
+        setPageInfo({ number: 0, totalPages: 1, totalElements: 0 });
+        setError(requestError?.message || 'Không thể tải danh sách sản phẩm. Vui lòng thử lại khi máy chủ sẵn sàng.');
       })
       .finally(() => {
         if (active) {
