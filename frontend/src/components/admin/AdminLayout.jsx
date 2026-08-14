@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 import AdminSidebar from './AdminSidebar.jsx';
+import BackLink from '../common/BackLink.jsx';
 
 // Display name & rich badge styling for each role
 const roleInfo = {
@@ -12,6 +13,7 @@ const roleInfo = {
 };
 
 function AdminLayout() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [storeBtnHover, setStoreBtnHover] = useState(false);
@@ -19,6 +21,7 @@ function AdminLayout() {
 
   const userRole = user?.role || 'STAFF';
   const roleConfig = roleInfo[userRole] || roleInfo.STAFF;
+  const showBackButton = !['/admin', '/admin/statistics', '/admin/dashboard'].includes(location.pathname);
 
   function handleLogout() {
     const confirmed = window.confirm('Bạn chắc chắn muốn đăng xuất khỏi trang quản trị?');
@@ -60,6 +63,9 @@ function AdminLayout() {
         >
           {/* LEFT TITLE SECTION */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            {showBackButton && (
+              <BackLink fallback="/admin" label="Quay lại" className="admin-topbar-back" />
+            )}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                 <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ea580c', display: 'inline-block' }}></span>

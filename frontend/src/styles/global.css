@@ -1058,6 +1058,30 @@ h3 {
   transform: translateX(-2px);
 }
 
+.route-back-row {
+  padding-top: 18px;
+}
+
+.route-back-row .back-link {
+  margin-bottom: 0;
+}
+
+.admin-topbar .admin-topbar-back {
+  flex: 0 0 auto;
+  margin: 0;
+  border-color: #fed7aa;
+  padding: 8px 12px;
+  background: #fff7ed;
+  color: #c2410c;
+  box-shadow: none;
+}
+
+.admin-topbar .admin-topbar-back:hover {
+  border-color: #fb923c;
+  background: #ffedd5;
+  color: #9a3412;
+}
+
 .auth-page {
   min-height: calc(100vh - 210px);
   display: grid;

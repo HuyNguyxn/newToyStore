@@ -1,12 +1,13 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-function BackLink({ fallback = '/', label = 'Quay lại' }) {
+function BackLink({ fallback = '/', label = 'Quay lại', className = '' }) {
+  const location = useLocation();
   const navigate = useNavigate();
 
   function handleBack(event) {
     event.preventDefault();
 
-    if (window.history.length > 1) {
+    if (location.key !== 'default' && window.history.length > 1) {
       navigate(-1);
       return;
     }
@@ -15,7 +16,7 @@ function BackLink({ fallback = '/', label = 'Quay lại' }) {
   }
 
   return (
-    <Link to={fallback} className="back-link" onClick={handleBack}>
+    <Link to={fallback} className={`back-link ${className}`.trim()} onClick={handleBack}>
       <span aria-hidden="true">←</span>
       {label}
     </Link>
