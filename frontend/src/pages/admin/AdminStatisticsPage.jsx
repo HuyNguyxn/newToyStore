@@ -22,10 +22,12 @@ import {
 import { getAdminOrders } from '../../services/adminOrderService.js';
 import { getImports } from '../../services/adminImportService.js';
 import { getAdminReviews } from '../../services/adminReviewService.js';
-import { getAdminProducts } from '../../services/adminProductService.js';
+import { getAllAdminProducts } from '../../services/adminProductService.js';
 import { getCustomerReturns } from '../../services/adminReturnService.js';
+import { getAdminMenuBadges } from '../../services/adminBadgeService.js';
 import {
   getInventorySnapshot,
+  getInventoryCostSummary,
   getRevenueByCategory,
   getRevenueByPaymentMethod,
   getRevenueTrend,
@@ -300,27 +302,30 @@ const MacTooltip = ({ active, payload, label }) => {
   );
 };
 
-function MacChartCard({ data, dates, products, selectedVariant, setSelectedVariant, visibility, setVisibility }) {
-  const toggles = [
-    ['selling', 'Giá bán', '#2563eb'], ['mac', 'MAC', '#16a34a'], ['margin', 'Lợi nhuận gộp', '#22c55e'],
-    ['importPrice', 'Điểm giá nhập', '#dc2626'], ['imported', 'Nhập kho', '#94a3b8'], ['sold', 'Bán ra', '#f97316'], ['stock', 'Tồn kho', '#7c3aed'],
-  ];
+function InventoryValueChartCard({ data, dates, products, selectedVariant, setSelectedVariant }) {
   return (
     <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', padding: '24px', border: '1px solid #dbeafe', marginBottom: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-        <div><h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Biểu đồ MAC</h2><span style={{ fontSize: '12px', color: '#64748b' }}>Giá bán, MAC, giá nhập từng lô và dòng chảy tồn kho từ {dates.from} đến {dates.to}</span></div>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Dòng giá trị hàng hóa theo kỳ</h2>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>Giá vốn hàng đã bán và giá trị nhập kho đã hoàn tất từ {dates.from} đến {dates.to}. Biểu đồ này luôn phản ánh toàn cửa hàng.</span>
+        </div>
         <select value={selectedVariant} onChange={(e) => setSelectedVariant(e.target.value)} style={{ minWidth: 210, padding: '7px 10px', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e3a8a', fontWeight: 700, background: '#eff6ff' }}>
-          <option value="ALL">Tất cả sản phẩm / biến thể</option>
+          <option value="ALL">Thẻ hiện tại: toàn bộ biến thể</option>
           {products.flatMap((product) => (product.variants || []).map((variant) => <option key={variant.id} value={variant.id}>{product.name || `Sản phẩm #${product.id}`} · {variant.type || `Variant #${variant.id}`}</option>))}
         </select>
       </div>
-      <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', margin: '12px 0' }}>
-        {toggles.map(([key, label, color]) => <button key={key} type="button" onClick={() => setVisibility((prev) => ({ ...prev, [key]: !prev[key] }))} style={{ border: `1px solid ${visibility[key] ? color : '#cbd5e1'}`, background: visibility[key] ? `${color}18` : '#fff', color: visibility[key] ? color : '#64748b', borderRadius: 999, padding: '5px 10px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>{visibility[key] ? '✓' : '□'} {label}</button>)}
-      </div>
-      <div style={{ width: '100%', height: '330px' }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
-        <defs><linearGradient id="macMarginGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22c55e" stopOpacity={0.28} /><stop offset="95%" stopColor="#22c55e" stopOpacity={0.04} /></linearGradient></defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} /><XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} /><YAxis yAxisId="price" stroke="#334155" fontSize={10} tickFormatter={formatYMoneyTick} /><YAxis yAxisId="quantity" orientation="right" stroke="#94a3b8" fontSize={10} allowDecimals={false} /><Tooltip content={<MacTooltip />} /><Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} />
-        {visibility.imported && <Bar yAxisId="quantity" dataKey="importedQuantity" name="Nhập kho" fill="#cbd5e1" barSize={8} />}{visibility.sold && <Bar yAxisId="quantity" dataKey="soldQuantity" name="Bán ra" fill="#f97316" barSize={8} />}{visibility.stock && <Line yAxisId="quantity" dataKey="stockQuantity" name="Tồn kho" stroke="#7c3aed" strokeDasharray="5 5" strokeWidth={2} dot={false} />}{visibility.margin && <Area yAxisId="price" dataKey="grossMarginGap" name="Lợi nhuận gộp" stroke="#22c55e" fill="url(#macMarginGradient)" connectNulls />}{visibility.selling && <Line yAxisId="price" type="stepAfter" dataKey="sellingPrice" name="Giá bán" stroke="#2563eb" strokeWidth={3} dot={false} connectNulls />}{visibility.mac && <Line yAxisId="price" dataKey="mac" name="MAC" stroke="#16a34a" strokeWidth={3} dot={false} connectNulls />}{visibility.importPrice && <Line yAxisId="price" dataKey="importPrice" name="Giá nhập từng lô" stroke="#dc2626" strokeWidth={0} dot={{ r: 4, fill: '#dc2626', stroke: '#fff', strokeWidth: 1.5 }} connectNulls />}
+      <div style={{ width: '100%', height: '330px', marginTop: 16 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} />
+        <XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} />
+        <YAxis yAxisId="money" stroke="#334155" fontSize={10} tickFormatter={formatYMoneyTick} />
+        <YAxis yAxisId="quantity" orientation="right" stroke="#94a3b8" fontSize={10} allowDecimals={false} />
+        <Tooltip />
+        <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} />
+        <Bar yAxisId="quantity" dataKey="Tổng SP nhập vào" name="Sản phẩm nhập vào" fill="#a78bfa" barSize={9} />
+        <Bar yAxisId="quantity" dataKey="Tổng SP bán ra" name="Sản phẩm bán ra" fill="#fb923c" barSize={9} />
+        <Line yAxisId="money" type="monotone" dataKey="Chi phí nhập hàng" name="Giá trị nhập kho" stroke="#dc2626" strokeWidth={2.5} dot={false} connectNulls />
+        <Line yAxisId="money" type="monotone" dataKey="Giá vốn hàng bán" name="Giá vốn hàng bán" stroke="#16a34a" strokeWidth={2.5} dot={false} connectNulls />
       </ComposedChart></ResponsiveContainer></div>
     </div>
   );
@@ -538,13 +543,22 @@ function AdminStatisticsPage() {
     },
   });
 
-  const [dataMode, setDataMode] = useState('REAL'); // 'REAL' (Kinh doanh Thực tế) vs 'TEST' (Đơn Thử nghiệm Nội bộ)
+  const dataMode = 'REAL'; // Backend statistics deliberately include CUSTOMER orders only.
   const [mainChartData, setMainChartData] = useState([]);
-  const [macChartData, setMacChartData] = useState([]);
-  const [previousMacChartData, setPreviousMacChartData] = useState([]);
+  const [inventoryCostSummary, setInventoryCostSummary] = useState({
+    currentSellingPrice: 0,
+    currentMac: 0,
+    latestImportPrice: 0,
+    stockQuantity: 0,
+    grossMarginPercent: 0,
+    available: false,
+    hasStock: false,
+    hasCompletedImport: false,
+    variantCount: 0,
+  });
   const [macProducts, setMacProducts] = useState([]);
   const [selectedMacVariant, setSelectedMacVariant] = useState('ALL');
-  const [macVisibility, setMacVisibility] = useState({ selling: true, mac: true, margin: true, importPrice: false, imported: false, sold: true, stock: false });
+  const [reportMeta, setReportMeta] = useState({ generatedAt: null, period: null, available: false });
   const [orderComparisonData, setOrderComparisonData] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowRatingReviews, setLowRatingReviews] = useState([]);
@@ -563,38 +577,18 @@ function AdminStatisticsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadLowRatingReviews();
-    getAdminProducts({ page: 0, size: 200, sort: 'name,asc' })
-      .then((res) => setMacProducts(res?.content || (Array.isArray(res) ? res : [])))
+    getAllAdminProducts({ sort: 'name,asc' })
+      .then((res) => setMacProducts(Array.isArray(res) ? res : []))
       .catch(() => setMacProducts([]));
   }, []);
 
   useEffect(() => {
     loadDashboardData();
-  }, [dates, dataMode, selectedMacVariant]);
+  }, [dates, selectedMacVariant]);
 
   function handleRangeClick(code) {
     setSelectedRange(code);
     setDates(getInitialDates(code));
-  }
-
-  async function loadRecentOrders() {
-    try {
-      const res = await getAdminOrders({ page: 0, size: 8, sort: 'createdAt,desc' });
-      setRecentOrders(res?.content || []);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function loadLowRatingReviews() {
-    try {
-      const res = await getAdminReviews({ page: 0, size: 50, sort: 'createdAt,desc' });
-      const reviews = res?.content || [];
-      setLowRatingReviews(reviews.filter((r) => Number(r.rating || 5) < 3));
-    } catch (e) {
-      console.error(e);
-    }
   }
 
   async function loadDashboardData() {
@@ -607,12 +601,12 @@ function AdminStatisticsPage() {
       timezone: 'Asia/Ho_Chi_Minh',
       groupBy: 'AUTO',
       topLimit: 10,
+      compareWithPreviousPeriod: true,
     };
 
     try {
       const [
         overviewRes,
-        trendRes,
         allOrdersRes,
         importsRes,
         categoryRes,
@@ -621,33 +615,70 @@ function AdminStatisticsPage() {
         topCustRes,
         slowProdRes,
         inventorySnapshotRes,
+        inventoryCostSummaryRes,
         reviewsRes,
         lowRatingOneRes,
         lowRatingTwoRes,
         customerReturnsRes,
+        operationalBadgesRes,
       ] = await Promise.allSettled([
         getStatisticsOverview(params),
-        getRevenueTrend(params),
-        getAdminOrders({ page: 0, size: 500, sort: 'createdAt,desc' }),
-        getImports({ page: 0, size: 100, sort: 'createdAt,desc' }),
+        getAdminOrders({ page: 0, size: 8, sort: 'createdAt,desc' }),
+        getImports({ page: 0, size: 1, sort: 'createdAt,desc' }),
         getRevenueByCategory(params),
         getRevenueByPaymentMethod(params),
         getTopSellingProducts({ from: dates.from, to: dates.to, limit: 10 }),
         getTopSpendingCustomers(params),
         getSlowSellingProducts({ from: dates.from, to: dates.to, timezone: params.timezone, groupBy: params.groupBy, limit: 50, maxUnits: 5 }),
         getInventorySnapshot({ lowStockThreshold: 10 }),
-        getAdminReviews({ page: 0, size: 500 }),
+        getInventoryCostSummary(selectedMacVariant),
+        getAdminReviews({ page: 0, size: 1 }),
         getAdminReviews({ rating: 1, page: 0, size: 1 }),
         getAdminReviews({ rating: 2, page: 0, size: 1 }),
         getCustomerReturns({ status: 'REQUESTED', page: 0, size: 1, sort: 'createdAt,desc' }),
+        getAdminMenuBadges(),
       ]);
 
       const overviewData = overviewRes.status === 'fulfilled' ? overviewRes.value || {} : {};
-      const trendData = trendRes.status === 'fulfilled' && Array.isArray(trendRes.value) ? trendRes.value : [];
+      const trendData = Array.isArray(overviewData.revenueTrend) ? overviewData.revenueTrend : [];
+      setReportMeta({
+        generatedAt: overviewData.generatedAt || null,
+        period: overviewData.period || null,
+        available: overviewRes.status === 'fulfilled',
+      });
+      if (overviewRes.status !== 'fulfilled') {
+        setError('Không thể tải báo cáo tổng hợp. Các KPI theo kỳ được ẩn để tránh hiển thị số 0 không đúng.');
+      }
       const allOrdersList = allOrdersRes.status === 'fulfilled' ? (allOrdersRes.value?.content || (Array.isArray(allOrdersRes.value) ? allOrdersRes.value : [])) : [];
       const allImportsList = importsRes.status === 'fulfilled' ? (importsRes.value?.content || (Array.isArray(importsRes.value) ? importsRes.value : [])) : [];
       const slowSellingProducts = slowProdRes.status === 'fulfilled' ? (slowProdRes.value?.content || (Array.isArray(slowProdRes.value) ? slowProdRes.value : [])) : [];
       const inventoryList = inventorySnapshotRes.status === 'fulfilled' ? (inventorySnapshotRes.value?.content || (Array.isArray(inventorySnapshotRes.value) ? inventorySnapshotRes.value : [])) : [];
+      if (inventoryCostSummaryRes.status === 'fulfilled') {
+        setInventoryCostSummary({
+          currentSellingPrice: Number(inventoryCostSummaryRes.value?.currentSellingPrice || 0),
+          currentMac: Number(inventoryCostSummaryRes.value?.currentMac || 0),
+          latestImportPrice: Number(inventoryCostSummaryRes.value?.latestImportPrice || 0),
+          stockQuantity: Number(inventoryCostSummaryRes.value?.stockQuantity || 0),
+          grossMarginPercent: Number(inventoryCostSummaryRes.value?.grossMarginPercent || 0),
+          available: true,
+          hasStock: Boolean(inventoryCostSummaryRes.value?.hasStock),
+          hasCompletedImport: Boolean(inventoryCostSummaryRes.value?.hasCompletedImport),
+          variantCount: Number(inventoryCostSummaryRes.value?.variantCount || 0),
+        });
+      } else {
+        setInventoryCostSummary({
+          currentSellingPrice: 0,
+          currentMac: 0,
+          latestImportPrice: 0,
+          stockQuantity: 0,
+          grossMarginPercent: 0,
+          available: false,
+          hasStock: false,
+          hasCompletedImport: false,
+          variantCount: 0,
+        });
+        setError((current) => current || 'Không thể tải dữ liệu giá vốn và tồn kho hiện tại. Vui lòng kiểm tra phiên bản backend đang chạy.');
+      }
       const allReviewsList = reviewsRes.status === 'fulfilled' ? (reviewsRes.value?.content || (Array.isArray(reviewsRes.value) ? reviewsRes.value : [])) : [];
       const lowRatingReviews = allReviewsList.filter((r) => Number(r.rating || r.stars || 5) < 3);
       const lowRatingCountFromBackend =
@@ -656,6 +687,9 @@ function AdminStatisticsPage() {
       const customerReturnsList = customerReturnsRes.status === 'fulfilled'
         ? (customerReturnsRes.value?.content || (Array.isArray(customerReturnsRes.value) ? customerReturnsRes.value : []))
         : [];
+      const operationalBadges = operationalBadgesRes.status === 'fulfilled'
+        ? operationalBadgesRes.value || {}
+        : {};
 
       const getStatusCode = (st) => (typeof st === 'object' ? (st?.code || st?.name || st?.status || '') : String(st || '')).toUpperCase();
 
@@ -727,6 +761,12 @@ function AdminStatisticsPage() {
         return found ? Number(found.value || 0) : 0;
       };
 
+      const getKpiChange = (code) => {
+        if (!Array.isArray(overviewData.kpis)) return null;
+        const found = overviewData.kpis.find((k) => k.code === code);
+        return found && Number.isFinite(Number(found.changePercent)) ? Number(found.changePercent) : null;
+      };
+
       // Calculate strictly from real orders and imports without artificial dummy estimates
       const revenueStatusCodes = ['COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED'];
       const validOrders = rangeOrdersList.filter((o) => revenueStatusCodes.includes(getStatusCode(o.status)));
@@ -735,7 +775,7 @@ function AdminStatisticsPage() {
       const backendRevenue = getKpiVal('NET_REVENUE');
       const revenue = dataMode === 'REAL' && overviewRes.status === 'fulfilled' ? backendRevenue : fallbackRevenue;
       const backendProfit = trendData.reduce((sum, point) => sum + Number(point.grossProfit || 0), 0);
-      const profit = dataMode === 'REAL' && trendRes.status === 'fulfilled' ? backendProfit : 0;
+      const profit = dataMode === 'REAL' && overviewRes.status === 'fulfilled' ? backendProfit : 0;
       const fallbackSoldQuantity = validOrders.reduce(
         (sum, order) => sum + (order.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0),
         0
@@ -752,10 +792,10 @@ function AdminStatisticsPage() {
       const fallbackImportedQuantity = completedRangeImports.reduce(
         (sum, imp) => sum + (imp.items || []).reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0), 0
       );
-      const importCost = dataMode === 'REAL' && trendRes.status === 'fulfilled'
+      const importCost = dataMode === 'REAL' && overviewRes.status === 'fulfilled'
         ? trendData.reduce((sum, point) => sum + Number(point.importCost || 0), 0)
         : fallbackImportCost;
-      const productsImported = dataMode === 'REAL' && trendRes.status === 'fulfilled'
+      const productsImported = dataMode === 'REAL' && overviewRes.status === 'fulfilled'
         ? trendData.reduce((sum, point) => sum + Number(point.importedQuantity || 0), 0)
         : fallbackImportedQuantity;
 
@@ -870,8 +910,12 @@ function AdminStatisticsPage() {
       const computedGrowthPercents = {
         cost: calcGrowthRate(importCost, prevCost),
         profit: calcGrowthRate(profit, prevProfit),
-        revenue: calcGrowthRate(revenue, prevRevenue),
-        sales: calcGrowthRate(productsSold, prevSales),
+        revenue: getKpiChange('NET_REVENUE') == null
+          ? calcGrowthRate(revenue, prevRevenue)
+          : `${getKpiChange('NET_REVENUE') > 0 ? '+' : ''}${getKpiChange('NET_REVENUE')}%`,
+        sales: getKpiChange('SOLD_QUANTITY') == null
+          ? calcGrowthRate(productsSold, prevSales)
+          : `${getKpiChange('SOLD_QUANTITY') > 0 ? '+' : ''}${getKpiChange('SOLD_QUANTITY')}%`,
         imports: calcGrowthRate(productsImported, prevImports),
       };
 
@@ -883,19 +927,31 @@ function AdminStatisticsPage() {
         productsImported,
         growthPercents: computedGrowthPercents,
         alerts: {
-          pendingPayment: dataMode === 'REAL' && overviewRes.status === 'fulfilled'
-            ? pendingCountFromOverview
-            : rangeOrdersList.filter((o) => {
-            const st = getStatusCode(o.status);
-            return st.includes('PENDING') || st.includes('UNPAID') || st.includes('CREATED') || st.includes('AWAITING');
-          }).length,
-          pendingReturn: pendingReturnCount,
-          lowStock: overviewData.inventory?.lowStockVariantCount || 0,
-          cancelledOrder: dataMode === 'REAL' && overviewRes.status === 'fulfilled'
-            ? cancelledCountFromOverview
-            : rangeOrdersList.filter((o) => getStatusCode(o.status) === 'CANCELLED').length,
-          lowRatingCount: lowRatingCountFromBackend || lowRatingReviews.length,
-          slowSelling: slowSellingProducts.length,
+          pendingPayment: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.pendingPayments || 0)
+            : dataMode === 'REAL' && overviewRes.status === 'fulfilled'
+              ? pendingCountFromOverview
+              : rangeOrdersList.filter((o) => {
+                  const st = getStatusCode(o.status);
+                  return st.includes('PENDING') || st.includes('UNPAID') || st.includes('CREATED') || st.includes('AWAITING');
+                }).length,
+          pendingReturn: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.pendingCustomerReturns || 0)
+            : pendingReturnCount,
+          lowStock: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.lowStockVariants || 0)
+            : Number(overviewData.inventory?.lowStockVariantCount || 0),
+          cancelledOrder: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.cancelledOrders || 0)
+            : dataMode === 'REAL' && overviewRes.status === 'fulfilled'
+              ? cancelledCountFromOverview
+              : rangeOrdersList.filter((o) => getStatusCode(o.status) === 'CANCELLED').length,
+          lowRatingCount: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.lowRatingReviews || 0)
+            : lowRatingCountFromBackend || lowRatingReviews.length,
+          slowSelling: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
+            ? Number(operationalBadges.slowSellingProducts || 0)
+            : slowSellingProducts.length,
         },
       });
 
@@ -925,8 +981,11 @@ function AdminStatisticsPage() {
             'Tổng lợi nhuận': prof,
             'Tổng doanh thu': rev,
             'Chi phí nhập hàng': cost,
+            'Giá vốn hàng bán': Number(item.costOfGoodsSold || 0),
             'Tổng SP bán ra': sold,
             'Tổng SP nhập vào': imported,
+            'Tổng đơn hàng tạo': Number(item.createdOrderCount || 0),
+            'Đơn thanh toán thành công': Number(item.orderCount || 0),
           };
         });
       } else {
@@ -954,46 +1013,21 @@ function AdminStatisticsPage() {
             'Tổng lợi nhuận': prof,
             'Tổng doanh thu': rev,
             'Chi phí nhập hàng': cost,
+            'Giá vốn hàng bán': 0,
             'Tổng SP bán ra': sold,
             'Tổng SP nhập vào': imported,
+            'Tổng đơn hàng tạo': matchedOrders.length,
+            'Đơn thanh toán thành công': matchedOrders.length,
           };
         });
       }
       setMainChartData(series);
-      const macImports = selectedMacVariant === 'ALL'
-        ? allImportsList
-        : allImportsList.map((receipt) => ({
-          ...receipt,
-          items: (receipt.items || []).filter((item) => String(item.variantId || item.variant?.id || '') === String(selectedMacVariant)),
-        }));
-      const macOrders = selectedMacVariant === 'ALL'
-        ? modeOrdersList
-        : modeOrdersList.map((order) => ({
-          ...order,
-          items: (order.items || []).filter((item) => String(item.variantId || item.variant?.id || '') === String(selectedMacVariant)),
-        }));
-      setMacChartData(buildMacSeries(macImports, macOrders, dates.from, dates.to));
-      setPreviousMacChartData(buildMacSeries(macImports, macOrders, prevRange.from, prevRange.to));
-
-      // Order Comparison Series
-      const comparisonSeries = datesArray.slice(-8).map((dStr) => {
-        const matchedOrders = modeOrdersList.filter((o) => {
-          if (!o.createdAt) return false;
-          const oDateStr = toDayMonth(o.createdAt);
-          return oDateStr === dStr;
-        });
-
-        const createdCount = matchedOrders.length;
-        const completedCount = matchedOrders.filter((o) =>
-          ['COMPLETED', 'DELIVERED', 'PAID', 'SUCCESS'].includes(String(o.status || '').toUpperCase())
-        ).length;
-
-        return {
-          date: dStr,
-          'Tổng đơn hàng tạo': createdCount,
-          'Đơn thanh toán thành công': completedCount,
-        };
-      });
+      // Both series now come from backend aggregation, so they are not limited by an admin page size.
+      const comparisonSeries = series.slice(-8).map((point) => ({
+        date: point.date,
+        'Tổng đơn hàng tạo': Number(point['Tổng đơn hàng tạo'] || 0),
+        'Đơn thanh toán thành công': Number(point['Đơn thanh toán thành công'] || 0),
+      }));
       setOrderComparisonData(comparisonSeries);
 
       // Compute Payment Methods breakdown combining backend API and modeOrdersList
@@ -1081,40 +1115,13 @@ function AdminStatisticsPage() {
 
   const moneyTicks = useMemo(() => getMoneyTicks(mainChartData), [mainChartData]);
   const productTicks = useMemo(() => getProductTicks(mainChartData), [mainChartData]);
-  const macSummary = useMemo(() => {
-    const latest = [...macChartData].reverse().find((point) => point.mac !== null || point.sellingPrice !== null) || {};
-    const latestImport = [...macChartData].reverse().find((point) => point.importPrice !== null) || {};
-    const marginPercent = latest.sellingPrice > 0 && latest.mac !== null
-      ? ((latest.sellingPrice - latest.mac) / latest.sellingPrice) * 100
-      : 0;
-    return { latest, latestImport, marginPercent };
-  }, [macChartData]);
-  const previousMacSummary = useMemo(() => {
-    const latest = [...previousMacChartData].reverse().find((point) => point.mac !== null || point.sellingPrice !== null) || {};
-    const latestImport = [...previousMacChartData].reverse().find((point) => point.importPrice !== null) || {};
-    const marginPercent = latest.sellingPrice > 0 && latest.mac !== null
-      ? ((latest.sellingPrice - latest.mac) / latest.sellingPrice) * 100
-      : 0;
-    return { latest, latestImport, marginPercent };
-  }, [previousMacChartData]);
-  const macGrowthPercents = useMemo(() => {
-    const compare = (current, previous) => {
-      const currentValue = Number(current || 0);
-      const previousValue = Number(previous || 0);
-      if (currentValue === 0 && previousValue === 0) return '0%';
-      if (previousValue === 0) return '+100%';
-      const percent = Math.round(((currentValue - previousValue) / previousValue) * 100);
-      return `${percent > 0 ? '+' : ''}${percent}%`;
-    };
-    return {
-      selling: compare(macSummary.latest.sellingPrice, previousMacSummary.latest.sellingPrice),
-      mac: compare(macSummary.latest.mac, previousMacSummary.latest.mac),
-      importPrice: compare(macSummary.latestImport.importPrice, previousMacSummary.latestImport.importPrice),
-      stock: compare(macSummary.latest.stockQuantity, previousMacSummary.latest.stockQuantity),
-      margin: compare(macSummary.marginPercent, previousMacSummary.marginPercent),
-    };
-  }, [macSummary, previousMacSummary]);
-
+  const hasPeriodActivity = useMemo(() => (
+    Number(overview.totalRevenue || 0) > 0
+    || Number(overview.totalProfit || 0) !== 0
+    || Number(overview.importCost || 0) > 0
+    || Number(overview.productsSold || 0) > 0
+    || Number(overview.productsImported || 0) > 0
+  ), [overview]);
   return (
     <section className="admin-statistics-page" style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
@@ -1124,65 +1131,37 @@ function AdminStatisticsPage() {
           <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#9a3412', margin: 0, letterSpacing: '-0.3px', textTransform: 'uppercase' }}>
             Thống kê quản trị
           </h1>
-          <div style={{ fontSize: '13px', color: dataMode === 'REAL' ? '#15803d' : '#7e22ce', fontWeight: '800', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{dataMode === 'REAL' ? '🟢' : '🧪'}</span>
-            <span>{dataMode === 'REAL' ? 'Đang xem: Báo cáo Kinh doanh Thực tế (Đã lọc sạch đơn test của Admin/Staff)' : 'Đang xem: Báo cáo Đơn hàng Thử nghiệm Nội bộ (ADMIN/STAFF/MANAGER)'}</span>
+          <div style={{ fontSize: '13px', color: '#15803d', fontWeight: '800', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>Chỉ tổng hợp giao dịch của khách hàng; dữ liệu thử của Admin/Staff không được tính vào KPI.</span>
           </div>
         </div>
 
-        {/* MODE TOGGLE TAB BUTTONS */}
-        <div style={{ display: 'inline-flex', background: '#ffffff', padding: '4px', borderRadius: '12px', border: '2px solid #fed7aa', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
-          <button
-            type="button"
-            onClick={() => setDataMode('REAL')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: '900',
-              cursor: 'pointer',
-              background: dataMode === 'REAL' ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'transparent',
-              color: dataMode === 'REAL' ? '#ffffff' : '#64748b',
-              boxShadow: dataMode === 'REAL' ? '0 2px 8px rgba(22,163,74,0.3)' : 'none',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span>🟢</span> Báo cáo Kinh doanh
-          </button>
-          <button
-            type="button"
-            onClick={() => setDataMode('TEST')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: '900',
-              cursor: 'pointer',
-              background: dataMode === 'TEST' ? 'linear-gradient(135deg, #9333ea, #7e22ce)' : 'transparent',
-              color: dataMode === 'TEST' ? '#ffffff' : '#64748b',
-              boxShadow: dataMode === 'TEST' ? '0 2px 8px rgba(147,51,234,0.3)' : 'none',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span>🧪</span> Đơn Thử nghiệm Nội bộ
-          </button>
-        </div>
+        <span style={{ padding: '8px 12px', borderRadius: 999, background: '#ecfdf5', color: '#15803d', border: '1px solid #bbf7d0', fontSize: 12, fontWeight: 900 }}>Dữ liệu kinh doanh thực</span>
       </div>
 
       {/* TIME RANGE BAR */}
       <TimeRangeBar dates={dates} setDates={setDates} selectedRange={selectedRange} handleRangeClick={handleRangeClick} />
 
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', margin: '-8px 0 16px', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff', color: '#64748b', fontSize: 12 }}>
+        <span>
+          {reportMeta.available
+            ? `Dữ liệu ${reportMeta.period?.from || dates.from} → ${reportMeta.period?.to || dates.to} · Nhóm ${reportMeta.period?.appliedGroupBy || 'AUTO'}${reportMeta.period?.groupByAdjusted ? ' (hệ thống tự điều chỉnh)' : ''} · Cập nhật ${formatDateTime(reportMeta.generatedAt)}`
+            : 'Chưa xác nhận được thời điểm và phạm vi dữ liệu từ backend.'}
+        </span>
+        <button type="button" onClick={loadDashboardData} disabled={loading} style={{ border: '1px solid #fed7aa', background: '#fff7ed', color: '#c2410c', borderRadius: 9, padding: '7px 12px', fontWeight: 800, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.65 : 1 }}>
+          {loading ? 'Đang đồng bộ…' : 'Làm mới dữ liệu'}
+        </button>
+      </div>
+
       {error && (
         <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#dc2626', fontSize: '13px', marginBottom: '16px' }}>
           ⚠️ {error}
+        </div>
+      )}
+
+      {!loading && reportMeta.available && !hasPeriodActivity && (
+        <div style={{ padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', color: '#92400e', fontSize: '13px', marginBottom: '16px', fontWeight: 700 }}>
+          Khoảng thời gian đã chọn chưa phát sinh đơn hoàn tất hoặc phiếu nhập hoàn tất. Các giá trị 0 bên dưới là kết quả hợp lệ, không phải lỗi tải dữ liệu.
         </div>
       )}
 
@@ -1197,6 +1176,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard
               title="Chi phí nhập hàng"
               rawNumber={overview.importCost}
+              formattedValue={reportMeta.available ? undefined : '—'}
               change={growthPercents.cost}
               strokeColor="#dc2626"
               data={mainChartData.map((d) => ({ v: d['Chi phí nhập hàng'] }))}
@@ -1205,6 +1185,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard
               title="Tổng doanh thu"
               rawNumber={overview.totalRevenue}
+              formattedValue={reportMeta.available ? undefined : '—'}
               change={growthPercents.revenue}
               strokeColor="#2563eb"
               data={mainChartData.map((d) => ({ v: d['Tổng doanh thu'] }))}
@@ -1213,6 +1194,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard
               title="Tổng lợi nhuận"
               rawNumber={overview.totalProfit}
+              formattedValue={reportMeta.available ? undefined : '—'}
               change={growthPercents.profit}
               strokeColor="#16a34a"
               data={mainChartData.map((d) => ({ v: d['Tổng lợi nhuận'] }))}
@@ -1221,6 +1203,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard
               title="Tổng sản phẩm bán ra"
               rawNumber={overview.productsSold}
+              formattedValue={reportMeta.available ? undefined : '—'}
               change={growthPercents.sales}
               strokeColor="#ea580c"
               data={mainChartData.map((d) => ({ v: d['Tổng SP bán ra'] }))}
@@ -1229,6 +1212,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard
               title="Tổng sản phẩm nhập vào"
               rawNumber={overview.productsImported}
+              formattedValue={reportMeta.available ? undefined : '—'}
               change={growthPercents.imports}
               strokeColor="#9333ea"
               data={mainChartData.map((d) => ({ v: d['Tổng SP nhập vào'] }))}
@@ -1238,14 +1222,14 @@ function AdminStatisticsPage() {
 
           {/* ROW 1B: MAC DATA CARDS REQUIRED BY MAC DESIGN */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <KpiSparklineCard title="Giá bán lịch sử" rawNumber={macSummary.latest.sellingPrice} change={macGrowthPercents.selling} strokeColor="#2563eb" data={macChartData.map((p) => ({ v: p.sellingPrice }))} unit="VND" />
-            <KpiSparklineCard title="Giá vốn bình quân MAC" rawNumber={macSummary.latest.mac} change={macGrowthPercents.mac} strokeColor="#16a34a" data={macChartData.map((p) => ({ v: p.mac }))} unit="VND" />
-            <KpiSparklineCard title="Giá nhập từng lô" rawNumber={macSummary.latestImport.importPrice} change={macGrowthPercents.importPrice} strokeColor="#dc2626" data={macChartData.map((p) => ({ v: p.importPrice }))} unit="VND" />
-            <KpiSparklineCard title="Sản phẩm tồn kho" rawNumber={macSummary.latest.stockQuantity} change={macGrowthPercents.stock} strokeColor="#7c3aed" data={macChartData.map((p) => ({ v: p.stockQuantity }))} unit="Sản phẩm" />
-            <KpiSparklineCard title="Biên lợi nhuận gộp" rawNumber={macSummary.marginPercent} formattedValue={`${macSummary.marginPercent.toFixed(1)}%`} change={macGrowthPercents.margin} strokeColor="#22c55e" data={macChartData.map((p) => ({ v: p.grossMarginGap }))} unit="%" />
+            <KpiSparklineCard title="Giá bán bình quân hiện tại" rawNumber={inventoryCostSummary.currentSellingPrice} formattedValue={inventoryCostSummary.available ? undefined : '—'} comparisonLabel={inventoryCostSummary.hasStock ? 'Bình quân theo tồn kho' : 'Bình quân các biến thể'} strokeColor="#2563eb" data={[{ v: inventoryCostSummary.currentSellingPrice }]} unit="VND" />
+            <KpiSparklineCard title="Giá vốn bình quân MAC" rawNumber={inventoryCostSummary.currentMac} formattedValue={inventoryCostSummary.available ? undefined : '—'} comparisonLabel={inventoryCostSummary.hasStock ? 'Bình quân theo tồn kho' : 'Bình quân các biến thể'} strokeColor="#16a34a" data={[{ v: inventoryCostSummary.currentMac }]} unit="VND" />
+            <KpiSparklineCard title="Giá nhập lô gần nhất" rawNumber={inventoryCostSummary.latestImportPrice} formattedValue={inventoryCostSummary.available && inventoryCostSummary.hasCompletedImport ? undefined : '—'} comparisonLabel={inventoryCostSummary.hasCompletedImport ? 'Phiếu nhập đã hoàn tất' : 'Chưa có phiếu nhập hoàn tất'} strokeColor="#dc2626" data={[{ v: inventoryCostSummary.latestImportPrice }]} unit="VND" />
+            <KpiSparklineCard title="Tổng tồn kho hiện tại" rawNumber={inventoryCostSummary.stockQuantity} formattedValue={inventoryCostSummary.available ? undefined : '—'} comparisonLabel={`${inventoryCostSummary.variantCount} biến thể được tính`} strokeColor="#7c3aed" data={[{ v: inventoryCostSummary.stockQuantity }]} unit="Sản phẩm" />
+            <KpiSparklineCard title="Biên lợi nhuận gộp hiện tại" rawNumber={inventoryCostSummary.grossMarginPercent} formattedValue={inventoryCostSummary.available ? `${inventoryCostSummary.grossMarginPercent.toFixed(1)}%` : '—'} comparisonLabel="Theo giá bán và MAC hiện tại" strokeColor="#22c55e" data={[{ v: inventoryCostSummary.grossMarginPercent }]} unit="%" />
           </div>
 
-          <MacChartCard data={macChartData} dates={dates} products={macProducts} selectedVariant={selectedMacVariant} setSelectedVariant={setSelectedMacVariant} visibility={macVisibility} setVisibility={setMacVisibility} />
+          <InventoryValueChartCard data={mainChartData} dates={dates} products={macProducts} selectedVariant={selectedMacVariant} setSelectedVariant={setSelectedMacVariant} />
 
           {/* ROW 2: FINANCIAL TREND CHART */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '24px', marginBottom: '24px' }}>
@@ -1406,45 +1390,6 @@ function AdminStatisticsPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </div>
-          </div>
-
-          {/* MAC ANALYSIS LEGACY BLOCK: replaced by the filtered MAC chart above */}
-          <div style={{ display: 'none' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Lịch sử giá bán & MAC</h2>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  MAC được tính theo giá nhập có trọng số; điểm giá nhập phản ánh từng lô hàng trong kỳ.
-                </span>
-              </div>
-              <span style={{ padding: '4px 10px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontSize: '11px', fontWeight: '800', border: '1px solid #bfdbfe' }}>
-                Đơn vị: VND · Sản phẩm
-              </span>
-            </div>
-            <div style={{ width: '100%', height: '330px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={macChartData} margin={{ top: 10, right: 18, left: -8, bottom: 8 }}>
-                  <defs>
-                    <linearGradient id="macMarginGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0.04} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} />
-                  <XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} />
-                  <YAxis yAxisId="price" stroke="#334155" fontSize={11} tickFormatter={formatYMoneyTick} />
-                  <YAxis yAxisId="quantity" orientation="right" stroke="#94a3b8" fontSize={11} allowDecimals={false} />
-                  <Tooltip content={<MacTooltip />} />
-                  <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} />
-                  <Bar yAxisId="quantity" dataKey="importedQuantity" name="Nhập kho" fill="#cbd5e1" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Bar yAxisId="quantity" dataKey="soldQuantity" name="Bán ra" fill="#f97316" barSize={10} radius={[4, 4, 0, 0]} />
-                  <Area yAxisId="price" type="monotone" dataKey="grossMarginGap" name="Khoảng lợi nhuận gộp" stroke="#22c55e" fill="url(#macMarginGradient)" strokeWidth={1.5} connectNulls />
-                  <Line yAxisId="price" type="stepAfter" dataKey="sellingPrice" name="Giá bán lịch sử" stroke="#2563eb" strokeWidth={3} connectNulls dot={false} />
-                  <Line yAxisId="price" type="monotone" dataKey="mac" name="MAC" stroke="#16a34a" strokeWidth={3} connectNulls dot={false} />
-                  <Line yAxisId="price" type="monotone" dataKey="importPrice" name="Giá nhập từng lô" stroke="#dc2626" strokeWidth={0} dot={{ r: 4, fill: '#dc2626', stroke: '#fff', strokeWidth: 1.5 }} connectNulls />
-                </ComposedChart>
-              </ResponsiveContainer>
             </div>
           </div>
 
@@ -1824,7 +1769,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.lowStock}
                   hint="Chuẩn bị phiếu nhập kho trước khi các món đồ chơi hot bị hết hàng."
                   tone="warning"
-                  onClick={() => navigate('/admin/inventory?lowStock=true')}
+                  onClick={() => navigate('/admin/imports?source=LOW_STOCK')}
                 />
                 <OperationalAlertCard
                   category="SẢN PHẨM"
@@ -1832,7 +1777,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.slowSelling}
                   hint="Xem các sản phẩm có lượt bán thấp để điều chỉnh giá hoặc tạo khuyến mãi."
                   tone="warning"
-                  onClick={() => navigate('/admin/products?filter=SLOW_SELLING')}
+                  onClick={() => navigate('/admin/products?view=SLOW_SELLING')}
                 />
                 <OperationalAlertCard
                   category="ĐƠN HÀNG"
@@ -1848,7 +1793,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.lowRatingCount}
                   hint="Xem ngay phản hồi < 3 sao từ khách hàng để hỗ trợ và xử lý dịch vụ."
                   tone="danger"
-                  onClick={() => navigate('/admin/reviews?rating=2')}
+                  onClick={() => navigate('/admin/reviews?maxRating=2&hasAdminReplied=false')}
                 />
               </div>
             </div>
@@ -1932,7 +1877,7 @@ function formatCompactValue(val, unit) {
 }
 
 /* Top KPI Card: Big Value + Title + Neatly Framed Wave Chart (NO DOTS) + Growth Badge */
-function KpiSparklineCard({ title, rawNumber, formattedValue, change, strokeColor = '#f59e0b', data = [], unit }) {
+function KpiSparklineCard({ title, rawNumber, formattedValue, change, comparisonLabel, strokeColor = '#f59e0b', data = [], unit }) {
   const isPositive = change && change !== '0%' && change !== '+0%' && change.startsWith('+');
   const isNegative = change && change !== '0%' && change !== '-0%' && change.startsWith('-');
 
@@ -2022,8 +1967,8 @@ function KpiSparklineCard({ title, rawNumber, formattedValue, change, strokeColo
 
       {/* GROWTH COMPARISON BADGE */}
       <div style={{ fontSize: '11.5px', fontWeight: '800', color: changeColor, display: 'inline-flex', alignItems: 'center', gap: '4px', background: `${changeColor}14`, padding: '3px 10px', borderRadius: '10px', border: `1px solid ${changeColor}25` }}>
-        <span>{displayChange}</span>
-        <span style={{ fontWeight: '600', color: '#64748b' }}>so với khoảng trước</span>
+        {!comparisonLabel && <span>{displayChange}</span>}
+        <span style={{ fontWeight: '600', color: '#64748b' }}>{comparisonLabel || 'so với khoảng trước'}</span>
       </div>
     </div>
   );
@@ -2039,7 +1984,8 @@ function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
   const badgeColor = isDanger ? '#dc2626' : isWarning ? '#d97706' : isCancelled ? '#64748b' : isReturn ? '#2563eb' : '#16a34a';
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
       style={{
         display: 'flex',
@@ -2052,6 +1998,9 @@ function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.15s ease',
         userSelect: 'none',
+        width: '100%',
+        textAlign: 'left',
+        font: 'inherit',
       }}
       onMouseEnter={(e) => {
         if (onClick) {
@@ -2072,7 +2021,7 @@ function OperationalAlertCard({ category, title, count, hint, tone, onClick }) {
         <div style={{ fontSize: '12px', color: '#64748b' }}>{hint}</div>
       </div>
       <div style={{ fontSize: '22px', fontWeight: '900', color: badgeColor }}>{count}</div>
-    </div>
+    </button>
   );
 }
 
