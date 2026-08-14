@@ -3,6 +3,17 @@
 
 NewToyStore is a full-stack toy-store management and e-commerce system. The repository contains a React/Vite client and a Spring Boot backend organized as a modular monolith.
 
+## Live deployment
+
+| Resource | URL |
+|---|---|
+| Customer and administration website | [toy-store-wine.vercel.app](https://toy-store-wine.vercel.app) |
+| Backend API | [toy-store-api-03ma.onrender.com](https://toy-store-api-03ma.onrender.com) |
+| Swagger API documentation | [Open Swagger UI](https://toy-store-api-03ma.onrender.com/swagger-ui/index.html) |
+| Source code | [GitHub repository](https://github.com/HuyNguyxn/newToyStore) |
+
+The backend uses Render's free service tier, so the first request after a period of inactivity may take additional time while the service starts.
+
 ## Applications
 
 | Application | Responsibility | Documentation |
