@@ -15,6 +15,21 @@ export function getAdminPromotions(params = {}) {
   return apiClient(`/api/v1/promotions${query ? `?${query}` : ''}`);
 }
 
+export async function getAllAdminPromotions(params = {}) {
+  const pageSize = 100;
+  const firstPage = await getAdminPromotions({ ...params, page: 0, size: pageSize });
+  if (Array.isArray(firstPage)) return firstPage;
+  const items = [...(firstPage?.content || [])];
+  const totalPages = Number(firstPage?.totalPages || 1);
+  if (totalPages <= 1) return items;
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) => (
+      getAdminPromotions({ ...params, page: index + 1, size: pageSize })
+    )),
+  );
+  return items.concat(remainingPages.flatMap((page) => page?.content || []));
+}
+
 export function createPromotion(payload) {
   return apiClient('/api/v1/promotions', {
     method: 'POST',

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminProducts } from '../../services/adminProductService.js';
+import { getAdminProductDetails } from '../../services/adminProductService.js';
 import {
   cancelWarehouseBatch,
   completeWarehouseBatch,
@@ -132,15 +132,10 @@ function AdminInventoryPage() {
     setLoading(true);
     setError('');
     try {
-      const [importResult, productResult] = await Promise.all([
-        getWarehouseBatches({ page, size: 10, sort: 'createdAt,desc', keyword: appliedFilters.keyword, status: appliedFilters.status }),
-        getAdminProducts({ page: 0, size: 300 }),
-      ]);
+      const importResult = await getWarehouseBatches({ page, size: 10, sort: 'createdAt,desc', keyword: appliedFilters.keyword, status: appliedFilters.status });
       const importList = importResult?.content || importResult || [];
-      const productList = productResult?.content || productResult || [];
       setImports(importList);
       setPageInfo({ number: importResult?.number ?? page, totalPages: importResult?.totalPages ?? 1, totalElements: importResult?.totalElements ?? importList.length });
-      setProducts(new Map(productList.map((product) => [Number(product.id), product])));
     } catch (err) {
       setError(err?.message || 'Không thể tải dữ liệu kho.');
     } finally {
@@ -156,7 +151,22 @@ function AdminInventoryPage() {
     setDetailLoading(true);
     setError('');
     try {
-      setSelected(await getWarehouseBatchDetails(id));
+      const detail = await getWarehouseBatchDetails(id);
+      const productIds = [...new Set((detail?.items || []).map((item) => Number(item.productId)).filter(Boolean))];
+      const missingIds = productIds.filter((productId) => !products.has(productId));
+      if (missingIds.length > 0) {
+        const productResults = await Promise.allSettled(missingIds.map(getAdminProductDetails));
+        setProducts((current) => {
+          const next = new Map(current);
+          productResults.forEach((result) => {
+            if (result.status === 'fulfilled' && result.value?.id) {
+              next.set(Number(result.value.id), result.value);
+            }
+          });
+          return next;
+        });
+      }
+      setSelected(detail);
     } catch (err) {
       setError(err?.message || 'Không thể tải chi tiết lô nhập.');
     } finally {

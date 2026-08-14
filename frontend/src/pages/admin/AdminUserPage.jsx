@@ -59,6 +59,7 @@ function getAvatarColor(id) {
 
 function AdminUserPage() {
   const [users, setUsers] = useState([]);
+  const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
   const [userSummary, setUserSummary] = useState({
     totalUsers: 0,
     adminCount: 0,
@@ -88,14 +89,13 @@ function AdminUserPage() {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    loadUsers();
     loadUserSummary();
   }, []);
 
   // Trigger backend fetch automatically when filters change with 300ms debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadUsers();
+      loadUsers(0);
     }, 300);
     return () => clearTimeout(timer);
   }, [filters.keyword, filters.role, filters.status, showDeleted]);
@@ -110,11 +110,11 @@ function AdminUserPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  async function loadUsers() {
+  async function loadUsers(page = 0) {
     setLoading(true);
     setError('');
     try {
-      const params = { page: 0, size: 100, sort: 'createdAt,desc' };
+      const params = { page, size: 20, sort: 'createdAt,desc' };
       if (filters.keyword.trim()) params.keyword = filters.keyword.trim();
       if (filters.role) params.role = filters.role;
       if (filters.status) params.status = filters.status;
@@ -122,6 +122,14 @@ function AdminUserPage() {
       const result = showDeleted ? await getAdminDeletedUsers() : await getAdminUsers(params);
       let list = result?.content || result || [];
       setUsers(showDeleted ? list.map((user) => ({ ...user, originalStatus: user.status, status: 'DELETED' })) : list);
+      setPageInfo(showDeleted
+        ? { number: 0, totalPages: 1, totalElements: list.length }
+        : {
+            number: Number(result?.number || 0),
+            totalPages: Math.max(1, Number(result?.totalPages || 1)),
+            totalElements: Number(result?.totalElements || list.length),
+          });
+      setSelectedIds([]);
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách người dùng.');
       setUsers([]);
@@ -732,6 +740,16 @@ function AdminUserPage() {
           </tbody>
         </table>
       </div>
+
+      {!showDeleted && pageInfo.totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 10, background: '#ffffff', color: '#475569', fontSize: 13 }}>
+          <span>Đang hiển thị trang {pageInfo.number + 1}/{pageInfo.totalPages} · {pageInfo.totalElements} người dùng</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" disabled={loading || pageInfo.number <= 0} onClick={() => loadUsers(pageInfo.number - 1)} style={{ border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', borderRadius: 8, padding: '7px 12px', cursor: pageInfo.number <= 0 ? 'not-allowed' : 'pointer', opacity: pageInfo.number <= 0 ? 0.5 : 1 }}>Trang trước</button>
+            <button type="button" disabled={loading || pageInfo.number + 1 >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.number + 1)} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 8, padding: '7px 12px', cursor: pageInfo.number + 1 >= pageInfo.totalPages ? 'not-allowed' : 'pointer', opacity: pageInfo.number + 1 >= pageInfo.totalPages ? 0.5 : 1 }}>Trang sau</button>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════
          MODAL 1: VIEW USER DETAILS MODAL

@@ -5,10 +5,10 @@ import {
   createPromotion,
   deactivatePromotion,
   deletePromotion,
-  getAdminPromotions,
+  getAllAdminPromotions,
   updatePromotion,
 } from '../../services/adminPromotionService.js';
-import { getProducts } from '../../services/productService.js';
+import { getAllAdminProducts } from '../../services/adminProductService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
 const emptyPromotionForm = {
@@ -72,7 +72,7 @@ function AdminPromotionPage() {
 
   useEffect(() => {
     if (createForProduct) {
-      const decodedName = initialProductName ? decodeURIComponent(initialProductName) : '';
+      const decodedName = initialProductName || '';
       const now = new Date();
       const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       setForm({
@@ -97,12 +97,10 @@ function AdminPromotionPage() {
     setError('');
     try {
       // 1. Fetch promotions
-      const promoResult = await getAdminPromotions({ page: 0, size: 100 });
-      setPromotions(promoResult.content || promoResult || []);
+      setPromotions(await getAllAdminPromotions());
 
       // 2. Fetch products for lookups
-      const productResult = await getProducts({ page: 0, size: 200 });
-      const plist = productResult.content || productResult || [];
+      const plist = await getAllAdminProducts();
       const pmap = {};
       plist.forEach((p) => {
         pmap[p.id] = p;
@@ -246,8 +244,12 @@ function AdminPromotionPage() {
   // ═══════════════════════════════════════════════════════════════════
   if (viewState === 'DETAIL' && selectedPromo) {
     const product = productsMap[selectedPromo.targetProductId];
-    const originalPrice = product?.price || 380000; // Mock default matching Captain America price if not available
-    const productLabel = product ? `${product.name} (MH${product.id})` : `Mô Hình Captain America 30cm (MH${selectedPromo.targetProductId || '05'})`;
+    const originalPrice = Number(product?.basePrice ?? product?.price ?? 0);
+    const productLabel = product
+      ? `${product.name} (PT${product.id})`
+      : selectedPromo.targetProductId
+        ? `Sản phẩm PT${selectedPromo.targetProductId} không còn trong danh mục hiện tại`
+        : 'Khuyến mãi không áp dụng cho một sản phẩm riêng';
     
     // Calculate discounted price
     let discountedPrice = originalPrice;

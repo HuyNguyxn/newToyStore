@@ -29,6 +29,10 @@ export function updateAdminProduct(productId, payload) {
   });
 }
 
+export function getAdminProductDetails(productId) {
+  return apiClient(`/products/${productId}`);
+}
+
 export async function getAllAdminProducts(params = {}) {
   const pageSize = 200;
   const firstPage = await getAdminProducts({ ...params, page: 0, size: pageSize });
