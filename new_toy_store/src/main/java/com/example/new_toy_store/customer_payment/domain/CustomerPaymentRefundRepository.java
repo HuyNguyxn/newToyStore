@@ -49,6 +49,20 @@ public interface CustomerPaymentRefundRepository extends JpaRepository<CustomerP
     double sumAmountByStatusBetween(@Param("status") RefundStatus status, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("""
+            SELECT COUNT(DISTINCT r.orderId)
+              FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
+             WHERE r.status = :status
+               AND r.completedAt >= :from
+               AND r.completedAt < :to
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
+    long countDistinctOrdersByStatusCompletedBetween(
+            @Param("status") RefundStatus status,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    @Query("""
             SELECT FUNCTION('date', r.completedAt), COALESCE(SUM(r.amount), 0)
               FROM CustomerPaymentRefund r JOIN Order o ON r.orderId = o.id JOIN User u ON o.userId = u.id
              WHERE r.status = :status

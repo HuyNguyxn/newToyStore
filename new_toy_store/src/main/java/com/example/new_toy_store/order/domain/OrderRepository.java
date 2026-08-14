@@ -70,12 +70,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("""
             SELECT COALESCE(SUM(o.totalAmount), 0)
-              FROM Order o JOIN o.histories h JOIN User u ON o.userId = u.id
+              FROM Order o JOIN User u ON o.userId = u.id
              WHERE o.status IN :statuses
-               AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
-               AND h.createdAt >= :from
-               AND h.createdAt < :to
                AND (u.role IS NULL OR u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER)
+               AND EXISTS (
+                   SELECT h.id FROM OrderHistory h
+                    WHERE h.order = o
+                      AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
+                      AND h.createdAt >= :from
+                      AND h.createdAt < :to
+               )
             """)
     double sumTotalAmountByStatusesBetween(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
@@ -120,29 +124,55 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("""
             SELECT COALESCE(SUM(i.quantity), 0)
-              FROM Order o JOIN o.items i JOIN o.histories h JOIN User u ON o.userId = u.id
+              FROM Order o JOIN o.items i JOIN User u ON o.userId = u.id
              WHERE o.status IN :statuses
-               AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
-               AND h.createdAt >= :from
-               AND h.createdAt < :to
                AND (u.role IS NULL OR u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER)
+               AND EXISTS (
+                   SELECT h.id FROM OrderHistory h
+                    WHERE h.order = o
+                      AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
+                      AND h.createdAt >= :from
+                      AND h.createdAt < :to
+               )
             """)
     long sumSoldQuantityBetween(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    @Query("""
-            SELECT FUNCTION('date', h.createdAt), COUNT(o), COALESCE(SUM(o.totalAmount), 0)
-              FROM Order o JOIN o.histories h JOIN User u ON o.userId = u.id
-             WHERE o.status IN :statuses
-               AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
-               AND h.createdAt >= :from
-               AND h.createdAt < :to
-               AND (u.role IS NULL OR u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER)
-             GROUP BY FUNCTION('date', h.createdAt)
-            """)
-    List<Object[]> aggregateDailyRevenue(@Param("statuses") List<OrderStatus> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+    @Query(value = """
+            SELECT DATE(completed.completed_at), COUNT(o.id), COALESCE(SUM(o.total_amount), 0)
+              FROM orders o
+              JOIN users u ON u.id = o.user_id
+                          AND (u.role IS NULL OR u.role = 'CUSTOMER')
+                          AND u.deleted_at IS NULL
+              JOIN (
+                    SELECT order_id, MIN(created_at) AS completed_at
+                      FROM order_histories
+                     WHERE status = 'COMPLETED'
+                       AND deleted_at IS NULL
+                     GROUP BY order_id
+              ) completed ON completed.order_id = o.id
+             WHERE o.status IN (:statuses)
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
+               AND o.deleted_at IS NULL
+             GROUP BY DATE(completed.completed_at)
+            """, nativeQuery = true)
+    List<Object[]> aggregateDailyRevenue(@Param("statuses") List<String> statuses, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query(value = """
-            SELECT DATE(h.created_at),
+            SELECT DATE(o.created_at), COUNT(o.id)
+              FROM orders o
+              JOIN users u ON u.id = o.user_id
+                          AND (u.role IS NULL OR u.role = 'CUSTOMER')
+                          AND u.deleted_at IS NULL
+             WHERE o.created_at >= :from
+               AND o.created_at < :to
+               AND o.deleted_at IS NULL
+             GROUP BY DATE(o.created_at)
+            """, nativeQuery = true)
+    List<Object[]> aggregateDailyCreatedOrders(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query(value = """
+            SELECT DATE(completed.completed_at),
                    COALESCE(SUM(i.quantity), 0),
                    COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
               FROM orders o
@@ -150,15 +180,19 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                          AND (u.role IS NULL OR u.role = 'CUSTOMER')
                          AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id AND i.deleted_at IS NULL
-              JOIN order_histories h ON h.order_id = o.id
-                                    AND h.status = 'COMPLETED'
-                                    AND h.deleted_at IS NULL
+              JOIN (
+                    SELECT order_id, MIN(created_at) AS completed_at
+                      FROM order_histories
+                     WHERE status = 'COMPLETED'
+                       AND deleted_at IS NULL
+                     GROUP BY order_id
+              ) completed ON completed.order_id = o.id
               LEFT JOIN product_variants pv ON pv.id = i.variant_id AND pv.deleted_at IS NULL
              WHERE o.status IN (:statuses)
-               AND h.created_at >= :from
-               AND h.created_at < :to
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
                AND o.deleted_at IS NULL
-             GROUP BY DATE(h.created_at)
+             GROUP BY DATE(completed.completed_at)
             """, nativeQuery = true)
     List<Object[]> aggregateDailyCostAndSoldQuantity(
             @Param("statuses") List<String> statuses,
@@ -168,12 +202,16 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("""
             SELECT i.productId, i.productName, SUM(i.quantity), COUNT(DISTINCT o.id), SUM(i.quantity * i.price)
-              FROM Order o JOIN o.items i JOIN o.histories h JOIN User u ON o.userId = u.id
+              FROM Order o JOIN o.items i JOIN User u ON o.userId = u.id
              WHERE o.status IN :statuses
-               AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
-               AND h.createdAt >= :from
-               AND h.createdAt < :to
                AND (u.role IS NULL OR u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER)
+               AND EXISTS (
+                   SELECT h.id FROM OrderHistory h
+                    WHERE h.order = o
+                      AND h.status = com.example.new_toy_store.order.domain.OrderStatus.COMPLETED
+                      AND h.createdAt >= :from
+                      AND h.createdAt < :to
+               )
              GROUP BY i.productId, i.productName
              ORDER BY SUM(i.quantity) DESC
             """)
@@ -187,21 +225,26 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
     @Query(value = """
             SELECT p.id,
                    p.name,
-                   COALESCE(SUM(CASE WHEN h.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) AS sold_qty,
-                   COUNT(DISTINCT CASE WHEN h.id IS NOT NULL AND u.id IS NOT NULL THEN o.id END) AS order_cnt,
-                   COALESCE(SUM(CASE WHEN h.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity * i.price ELSE 0 END), 0) AS total_rev
+                    COALESCE(SUM(CASE WHEN completed.order_id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) AS sold_qty,
+                    COUNT(DISTINCT CASE WHEN completed.order_id IS NOT NULL AND u.id IS NOT NULL THEN o.id END) AS order_cnt,
+                    COALESCE(SUM(CASE WHEN completed.order_id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity * i.price ELSE 0 END), 0) AS total_rev
               FROM products p
               LEFT JOIN order_items i ON i.product_id = p.id AND i.deleted_at IS NULL
               LEFT JOIN orders o ON o.id = i.order_id AND o.status IN (:statuses) AND o.deleted_at IS NULL
-              LEFT JOIN order_histories h ON h.order_id = o.id
-                                         AND h.status = 'COMPLETED'
-                                         AND h.created_at >= :from
-                                         AND h.created_at < :to
-                                         AND h.deleted_at IS NULL
+               LEFT JOIN (
+                     SELECT order_id, MIN(created_at) AS completed_at
+                       FROM order_histories
+                      WHERE status = 'COMPLETED'
+                        AND created_at >= :from
+                        AND created_at < :to
+                        AND deleted_at IS NULL
+                      GROUP BY order_id
+               ) completed ON completed.order_id = o.id
               LEFT JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
              WHERE p.deleted_at IS NULL
+               AND p.status = 'ACTIVE'
              GROUP BY p.id, p.name
-            HAVING COALESCE(SUM(CASE WHEN h.id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) <= :maxUnits
+             HAVING COALESCE(SUM(CASE WHEN completed.order_id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) <= :maxUnits
              ORDER BY sold_qty ASC, p.id DESC
             """, nativeQuery = true)
     List<Object[]> findSlowSellingProducts(
@@ -210,6 +253,38 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
             @Param("to") LocalDateTime to,
             @Param("maxUnits") int maxUnits,
             Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT COUNT(*)
+              FROM (
+                    SELECT p.id
+                      FROM products p
+                      LEFT JOIN order_items i ON i.product_id = p.id AND i.deleted_at IS NULL
+                      LEFT JOIN orders o ON o.id = i.order_id AND o.status IN (:statuses) AND o.deleted_at IS NULL
+                       LEFT JOIN (
+                             SELECT order_id, MIN(created_at) AS completed_at
+                               FROM order_histories
+                              WHERE status = 'COMPLETED'
+                                AND created_at >= :from
+                                AND created_at < :to
+                                AND deleted_at IS NULL
+                              GROUP BY order_id
+                       ) completed ON completed.order_id = o.id
+                      LEFT JOIN users u ON u.id = o.user_id
+                                       AND (u.role IS NULL OR u.role = 'CUSTOMER')
+                                       AND u.deleted_at IS NULL
+                     WHERE p.deleted_at IS NULL
+                       AND p.status = 'ACTIVE'
+                     GROUP BY p.id
+                     HAVING COALESCE(SUM(CASE WHEN completed.order_id IS NOT NULL AND u.id IS NOT NULL THEN i.quantity ELSE 0 END), 0) <= :maxUnits
+                   ) slow_products
+            """, nativeQuery = true)
+    long countSlowSellingProducts(
+            @Param("statuses") List<String> statuses,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("maxUnits") int maxUnits
     );
 
     @Query(value = """
@@ -224,9 +299,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                        END
                    ), 0)
               FROM orders o
-              JOIN order_histories h ON h.order_id = o.id
-                                    AND h.status = 'COMPLETED'
-                                    AND h.deleted_at IS NULL
+               JOIN (
+                     SELECT order_id, MIN(created_at) AS completed_at
+                       FROM order_histories
+                      WHERE status = 'COMPLETED'
+                        AND deleted_at IS NULL
+                      GROUP BY order_id
+               ) completed ON completed.order_id = o.id
               JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
               JOIN (
@@ -246,8 +325,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                      GROUP BY pc.product_id
               ) prod_root ON prod_root.product_id = i.product_id
              WHERE o.status IN (:statuses)
-               AND h.created_at >= :from
-               AND h.created_at < :to
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
              GROUP BY prod_root.root_id, prod_root.root_name
@@ -273,9 +352,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                    COALESCE(SUM(item_totals.purchased_quantity), 0) AS purchased_quantity,
                    COALESCE(SUM(o.total_amount), 0) AS total_spent
               FROM orders o
-              JOIN order_histories h ON h.order_id = o.id
-                                    AND h.status = 'COMPLETED'
-                                    AND h.deleted_at IS NULL
+               JOIN (
+                     SELECT order_id, MIN(created_at) AS completed_at
+                       FROM order_histories
+                      WHERE status = 'COMPLETED'
+                        AND deleted_at IS NULL
+                      GROUP BY order_id
+               ) completed ON completed.order_id = o.id
               JOIN users u ON u.id = o.user_id
               LEFT JOIN (
                     SELECT oi.order_id, SUM(oi.quantity) AS purchased_quantity
@@ -284,8 +367,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                      GROUP BY oi.order_id
               ) item_totals ON item_totals.order_id = o.id
              WHERE o.status IN (:statuses)
-               AND h.created_at >= :from
-               AND h.created_at < :to
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
                AND o.deleted_at IS NULL
                AND u.deleted_at IS NULL
                AND (u.role IS NULL OR u.role = 'CUSTOMER')
@@ -348,9 +431,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                    MAX(COALESCE(refunds.refund_amount, 0)),
                    COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
               FROM orders o
-              JOIN order_histories h ON h.order_id = o.id
-                                    AND h.status = 'COMPLETED'
-                                    AND h.deleted_at IS NULL
+               JOIN (
+                     SELECT order_id, MIN(created_at) AS completed_at
+                       FROM order_histories
+                      WHERE status = 'COMPLETED'
+                        AND deleted_at IS NULL
+                      GROUP BY order_id
+               ) completed ON completed.order_id = o.id
               JOIN users u ON u.id = o.user_id AND (u.role IS NULL OR u.role = 'CUSTOMER') AND u.deleted_at IS NULL
               JOIN order_items i ON i.order_id = o.id
               JOIN (
@@ -388,8 +475,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
                      GROUP BY ri.product_id
              ) refunds ON refunds.product_id = i.product_id
              WHERE o.status IN (:statuses)
-               AND h.created_at >= :from
-               AND h.created_at < :to
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
              GROUP BY i.product_id, i.product_name

@@ -63,6 +63,14 @@ public interface CustomerPaymentRepository extends JpaRepository<CustomerPayment
     @Query("SELECT COUNT(p) FROM CustomerPaymentTransaction p WHERE p.status = :status")
     long countByStatus(@Param("status") CustomerPaymentStatus status);
 
+    @Query("""
+            SELECT COUNT(p)
+              FROM CustomerPaymentTransaction p JOIN User u ON p.userId = u.id
+             WHERE p.status = :status
+               AND u.role = com.example.new_toy_store.user.domain.UserRole.CUSTOMER
+            """)
+    long countCustomerByStatus(@Param("status") CustomerPaymentStatus status);
+
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM CustomerPaymentTransaction p WHERE p.status = :status")
     double sumAmountByStatus(@Param("status") CustomerPaymentStatus status);
 

@@ -11,6 +11,14 @@ import java.util.Optional;
 
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Integer>, JpaSpecificationExecutor<ProductVariant> {
 
+    @EntityGraph(attributePaths = {"product", "inventory"})
+    @Query("""
+            SELECT v
+              FROM ProductVariant v
+             WHERE (:variantId IS NULL OR v.id = :variantId)
+            """)
+    List<ProductVariant> findForInventoryCostSummary(@Param("variantId") Integer variantId);
+
     @EntityGraph(attributePaths = {"inventory", "attributes"})
     List<ProductVariant> findByProductId(Integer productId);
 

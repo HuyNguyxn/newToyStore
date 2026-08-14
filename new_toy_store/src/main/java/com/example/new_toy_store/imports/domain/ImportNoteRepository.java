@@ -65,17 +65,40 @@ public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>
     List<Object[]> aggregateDailyInboundMovement(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query(value = """
+            SELECT COALESCE(
+                       SUM(ii.quantity * ii.import_price) / NULLIF(SUM(ii.quantity), 0),
+                       0
+                   )
+              FROM import_notes n
+              JOIN import_note_items ii ON ii.import_note_id = n.id
+             WHERE n.status = 'COMPLETED'
+               AND n.deleted_at IS NULL
+               AND (:variantId IS NULL OR ii.variant_id = :variantId)
+             GROUP BY n.id, n.updated_at
+             ORDER BY n.updated_at DESC, n.id DESC
+             LIMIT 1
+            """, nativeQuery = true)
+    List<Double> findLatestCompletedImportAveragePrice(@Param("variantId") Integer variantId);
+
+    @Query(value = """
             SELECT 'OUTBOUND_SALE', 'Outbound from completed orders', COALESCE(SUM(i.quantity), 0),
                    COALESCE(SUM(i.quantity * COALESCE(NULLIF(i.cost_price_snapshot, 0), pv.cost_price, 0)), 0)
               FROM orders o
               JOIN order_items i ON i.order_id = o.id
               LEFT JOIN product_variants pv ON pv.id = i.variant_id
-              JOIN order_histories h ON h.order_id = o.id
-                                    AND h.status = 'COMPLETED'
-                                    AND h.deleted_at IS NULL
+              JOIN (
+                    SELECT order_id, MIN(created_at) AS completed_at
+                      FROM order_histories
+                     WHERE status = 'COMPLETED'
+                       AND deleted_at IS NULL
+                     GROUP BY order_id
+              ) completed ON completed.order_id = o.id
+              JOIN users u ON u.id = o.user_id
+                          AND (u.role IS NULL OR u.role = 'CUSTOMER')
+                          AND u.deleted_at IS NULL
              WHERE o.status IN ('COMPLETED', 'PARTIALLY_REFUNDED', 'FULLY_REFUNDED')
-               AND h.created_at >= :from
-               AND h.created_at < :to
+               AND completed.completed_at >= :from
+               AND completed.completed_at < :to
                AND o.deleted_at IS NULL
                AND i.deleted_at IS NULL
             """, nativeQuery = true)
