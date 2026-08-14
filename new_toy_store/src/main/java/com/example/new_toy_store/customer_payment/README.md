@@ -1,3 +1,4 @@
+
 # Module: Customer Payment
 
 ## 1. Purpose
@@ -38,15 +39,13 @@ Payment -> Order uses `OrderFacade` snapshots/ownership; Payment -> User resolve
 
 `CustomerPaymentCheckoutRequest -> validate order ownership/amount -> reuse idempotency key or reject duplicate active payment -> create COD/VNPay transaction -> save -> optional VNPay URL -> response`.
 
-If an order still has a `PENDING` VNPay transaction, checkout reuses that transaction and generates a fresh 15-minute payment URL. A failed, cancelled or expired attempt does not prevent a new attempt while the order itself remains `PENDING`.
-
 ### Refund
 
-`Refund request -> validate succeeded payment and refundable amount -> create refund -> lock/process or reject -> call VNPay/manual path -> update payment/refund -> publish refund event`. Hủy một đơn đã thu tiền cũng tự tạo yêu cầu hoàn phần tiền còn lại; hệ thống không âm thầm coi khoản thu đó là doanh thu.
+`Refund request -> validate succeeded payment and refundable amount -> create refund -> lock/process or reject -> call VNPay/manual path -> update payment/refund -> publish refund event`.
 
 ## 7. Business Rules
 
-Bean Validation requires order/method, positive refund amount, bounded reasons/provider IDs and an idempotency key of at most 80 characters. Payment states: `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `EXPIRED`, `REFUND_PENDING`, `PARTIALLY_REFUNDED`, `REFUNDED`, `REFUND_FAILED`. Refund states: `PENDING`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `REJECTED`, `CANCELLED`. Enum transition maps reject invalid changes; refund totals cannot exceed eligible payment value.
+Bean Validation requires order/method, positive refund amount, bounded reasons/provider IDs and an idempotency key of at most 80 characters. Payment states: `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED`, `EXPIRED`, `REFUND_PENDING`, `REFUNDED`, `REFUND_FAILED`. Refund states: `PENDING`, `PROCESSING`, `SUCCEEDED`, `FAILED`, `REJECTED`, `CANCELLED`. Enum transition maps reject invalid changes; refund totals cannot exceed eligible payment value.
 
 ## 8. Persistence & Data Strategy
 
@@ -62,7 +61,7 @@ Direct DTO responses, paging and Bean Validation are used. VNPay callbacks are G
 
 ## 11. APIs
 
-`CustomerPaymentController`, base `/payments`: `POST /checkout`; public `GET /vnpay-return` and `/vnpay-ipn`; `GET /my-payments`, `/orders/{orderId}/latest`, `/{id}`, `/admin/filter`; `POST /{id}/refunds`; `GET /{id}/refunds`, `/refunds`; `PATCH /refunds/{refundId}/process|reject`; `DELETE /refunds/{refundId}`; `PATCH /{id}/succeed|fail|cancel`; `DELETE /{id}`.
+`CustomerPaymentController`, base `/payments`: `POST /checkout`; public `GET /vnpay-return` and `/vnpay-ipn`; `GET /my-payments`, `/{id}`, `/admin/filter`; `POST /{id}/refunds`; `GET /{id}/refunds`, `/refunds`; `PATCH /refunds/{refundId}/process|reject`; `DELETE /refunds/{refundId}`; `PATCH /{id}/succeed|fail|cancel`; `DELETE /{id}`.
 
 ## 12. Error Handling
 
@@ -83,8 +82,6 @@ ID references isolate persistence, while a facade and events form the module API
 ## 16. Notes / Design Decisions
 
 COD and VNPay share one payment model; refund method distinguishes manual COD handling from VNPay provider refund.
-
-Khi đơn hàng bị hủy, mọi giao dịch `PENDING` của đơn được chuyển sang `CANCELLED`; giao dịch đã thành công được chuyển vào luồng hoàn tiền. Tác vụ reconciliation chạy khi ứng dụng khởi động và theo lịch để sửa các giao dịch chờ cũ còn gắn với đơn đã hủy.
 
 ## 17. Known Limitations / Technical Debt
 

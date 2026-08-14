@@ -1,3 +1,4 @@
+
 # Module: Promotion
 
 ## 1. Purpose
@@ -42,7 +43,7 @@ Versioned `/api/v1` resource/action API with DTO validation, paging and direct D
 
 ## 11. APIs
 
-`PromotionController`, base `/api/v1/promotions`: create/update/get/by-code/list; authenticated customer lookup `GET /available-order`; activate/deactivate/delete; consume/release; calculate product/order/shipping discounts; batch `POST /active-for-products`.
+`PromotionController`, base `/api/v1/promotions`: create/update/get/by-code/list; activate/deactivate/delete; consume/release; calculate product/order/shipping discounts; batch `POST /active-for-products`.
 
 ## 12. Error Handling
 
@@ -50,7 +51,7 @@ Not found, duplicate active, invalid data/operation, deleted conflict, access an
 
 ## 13. Security & Authorization
 
-Management routes require `MANAGER` or `ADMIN`. Authenticated users may call `GET /available-order` so checkout can display only valid order-level codes; other calculation/management routes retain the stricter controller policy.
+No explicit promotion URL rules or method annotations were found; all routes therefore require authentication through the fallback rule, including management and calculation endpoints.
 
 ## 14. Algorithms & Performance Considerations
 

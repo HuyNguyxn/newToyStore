@@ -1,3 +1,4 @@
+
 # Order Pages
 
 ## Responsibility
@@ -21,13 +22,9 @@ Available UI actions depend on the current server status. Cancellation and payme
 
 Order line data is historical snapshot data. The UI should display names, prices and variant attributes returned with the order rather than replacing them with the current product catalog.
 
-`GET /orders/my-orders` returns a paged list whose `items` collection is intentionally populated for customers. The list uses these items to render product names, images when available and total quantity. Status histories remain detail-only and are obtained from `GET /orders/{id}`.
-
-After cancellation, the detail page reloads `GET /orders/{id}` so the cancelled order, its items and latest history remain viewable. It also reads `GET /payments/orders/{orderId}/latest`; only a pending order whose selected payment method is VNPay can request a fresh VNPay URL. COD orders never show the VNPay retry action.
-
 ## Maintenance notes
 
 - Refresh details after every lifecycle mutation.
 - Handle stale status conflicts as normal concurrency outcomes.
 - Link shipment, return, review and payment actions only when the order response indicates eligibility.
-- Do not replace a missing `items` collection with sample products; display a clear empty/error state because review and return flows depend on the same contract.
+- Add automated coverage for cancellation and payment retry states.

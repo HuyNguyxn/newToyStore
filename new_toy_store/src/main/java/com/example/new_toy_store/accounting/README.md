@@ -2,22 +2,22 @@
 
 ## 1. Purpose
 
-Accounting cung cấp sổ kế toán kép và góc nhìn dòng tiền nội bộ cho NewToyStore. Module sở hữu hệ thống tài khoản, nhật ký chung và các dòng bút toán; đồng thời tổng hợp số dư, sổ cái, bảng cân đối thử và kết quả kinh doanh.
+Accounting provides NewToyStore with an internal double-entry ledger and cash-flow view. It owns the chart of accounts, journal entries and journal lines, and derives account balances, the general ledger, trial balance, income statement and management dashboard.
 
 ### Responsibilities
 
-- Ghi nhận bút toán cân bằng Nợ/Có.
-- Tự động hạch toán thanh toán khách hàng, hoàn tiền, nhập hàng và thanh toán nhà cung cấp từ application event.
-- Quản lý số dư tài khoản nội bộ và cung cấp hạn mức tiền khả dụng cho module `supplier_payment`.
-- Cho phép ADMIN tạo bút toán thủ công và đảo bút toán.
-- Cung cấp báo cáo quản trị và dashboard dòng tiền.
-- Đối soát và ghi bổ sung các nghiệp vụ lịch sử chưa có bút toán bằng khóa chống trùng.
+- Record balanced debit/credit journal entries.
+- Automatically post customer payments, refunds, completed imports and supplier payments from application events.
+- Maintain internal account balances and expose available liquidity to `supplier_payment`.
+- Allow administrators to create manual entries and reverse posted entries.
+- Provide management reports and the internal-fund dashboard.
+- Reconcile historical business transactions that do not yet have journal entries while preserving idempotency.
 
 ### Out of Scope
 
-- Không kết nối tài khoản ngân hàng thật.
-- Không đồng bộ hoặc đối soát sao kê ngân hàng.
-- Không xử lý thuế, khóa sổ theo kỳ hoặc lập báo cáo tài chính theo chuẩn pháp lý.
+- Real bank-account connections.
+- Bank-statement synchronization or reconciliation.
+- Tax processing, accounting-period closing or statutory financial statements.
 
 ## 2. Package Structure
 
@@ -43,234 +43,158 @@ accounting/
 `- README.md
 ```
 
-- `api`: REST controller và exception handler của accounting.
-- `application`: điều phối use case, mapping response hiện tại, báo cáo và event listener.
-- `domain`: entity, quy tắc cân bằng, enum và repository abstraction.
+- `api` contains the REST controller and module exception handler.
+- `application` coordinates use cases, response mapping, reporting, event listeners and reconciliation.
+- `domain` contains entities, balancing rules, enums and repository abstractions.
 
-Không có package `mapper` hoặc `infrastructure` riêng trong module hiện tại. Các hàm chuyển đổi entity sang response đang nằm trong `AccountingService`.
+The current module does not have dedicated `mapper` or `infrastructure` packages. Entity-to-response conversion is currently implemented in `AccountingService`.
 
-## 3. Entities & Aggregates
+## 3. Entities and Aggregates
 
 ### LedgerAccount — Aggregate Root
 
-**File:** `accounting/domain/LedgerAccount.java`
-
-**Table:** `ledger_accounts`
-
-Đại diện một tài khoản kế toán. Dữ liệu chính gồm mã, tên, loại tài khoản, phía số dư thông thường, cờ tài khoản thanh khoản, cờ hệ thống và trạng thái hoạt động. Entity có phương thức tính số dư dựa trên tổng Nợ/Có.
+`LedgerAccount` represents an account in the chart of accounts. It stores the code, name, account type, normal balance side, liquidity flag, system flag and active state. Its domain behavior derives the balance from accumulated debit and credit amounts.
 
 ### JournalEntry — Aggregate Root
 
-**File:** `accounting/domain/JournalEntry.java`
-
-**Table:** `journal_entries`
-
-Đại diện đầu bút toán, gồm số bút toán, ngày ghi sổ, mô tả, nguồn nghiệp vụ, mã tham chiếu, trạng thái, người ghi, bút toán gốc bị đảo và danh sách dòng bút toán.
+`JournalEntry` represents a journal header containing the entry number, posting date, description, business source, source reference, state, posting user, original reversed entry and journal lines.
 
 ### JournalEntryLine — Entity
 
-**File:** `accounting/domain/JournalEntryLine.java`
-
-**Table:** `journal_entry_lines`
-
-Đại diện một phát sinh Nợ hoặc Có trên `LedgerAccount`. Mỗi dòng chứa tài khoản, mô tả, số tiền Nợ và số tiền Có.
+`JournalEntryLine` represents one debit or credit movement against a `LedgerAccount`. Each line contains the account, description, debit amount and credit amount.
 
 ## 4. Relationships
 
-### JournalEntry 1-N JournalEntryLine
+- `JournalEntry` owns a one-to-many relationship with `JournalEntryLine`; lines are added through the aggregate root.
+- Each `JournalEntryLine` references one independently managed `LedgerAccount`.
+- A reversal entry references its original entry through `reversed_entry_id`, preserving history instead of overwriting or deleting a posted record.
 
-- JPA: `@OneToMany` từ bút toán đến các dòng và `@ManyToOne` từ dòng về bút toán.
-- `JournalEntry` sở hữu lifecycle của các dòng; thêm dòng thông qua aggregate root.
-- Các dòng được tải LAZY theo mapping hiện tại.
+## 5. Domain Communication
 
-### JournalEntry N-1 LedgerAccount
+### Customer Payment
 
-`JournalEntryLine` tham chiếu `LedgerAccount` bằng `@ManyToOne`. Tài khoản tồn tại độc lập và không bị cascade khi bút toán thay đổi.
+`AccountingEventListener` handles `PaymentCompletedEvent`, `PaymentRefundedEvent` and `OrderStatusChangedEvent`. Customer receipts are initially posted to account `3388` as customer advances. Revenue (`511`) and cost of goods sold (`632/156`) are recognized only when the order becomes `COMPLETED`. A cancelled-order refund reduces `3388`; an after-sale refund reduces revenue through `521`.
 
-### JournalEntry self-reference
+### Imports
 
-Bút toán đảo giữ tham chiếu tới bút toán gốc qua `reversed_entry_id`. Lịch sử được bảo toàn thay vì sửa hoặc xóa bút toán đã ghi.
+The listener handles `ImportNoteCompletedEvent`, calculates `quantity * importPrice`, increases inventory and recognizes supplier accounts payable.
 
-## 5. Domain Dependencies & Communication
+### Supplier Payment
 
-### Accounting <- Customer Payment
+The listener handles `SupplierPaymentRecordedEvent` to reduce payable and cash. In the opposite query direction, `supplier_payment` calls `InternalFundQuery` to verify available liquidity before recording a payment. The accounting dashboard also calls `SupplierPaymentFacade` for open and overdue supplier debt.
 
-`AccountingEventListener` nhận `PaymentCompletedEvent`, `PaymentRefundedEvent` và `OrderStatusChangedEvent`. Tiền khách thanh toán được ghi vào tài khoản `3388` (tiền khách trả trước); chỉ khi đơn chuyển `COMPLETED` hệ thống mới kết chuyển sang doanh thu `511` và ghi nhận giá vốn `632/156`. Hoàn tiền đơn đã hủy giảm `3388`, còn hoàn tiền sau bán giảm doanh thu qua `521`.
-
-### Accounting <- Imports
-
-Listener nhận `ImportNoteCompletedEvent`, tính tổng `quantity * importPrice`, sau đó ghi tăng hàng hóa và công nợ nhà cung cấp.
-
-### Accounting <- Supplier Payment
-
-Listener nhận `SupplierPaymentRecordedEvent` để giảm công nợ và giảm tiền. Ở chiều ngược lại, `supplier_payment` gọi abstraction `InternalFundQuery` để kiểm tra tiền thanh khoản trước khi ghi nhận thanh toán.
-
-Accounting còn gọi `SupplierPaymentFacade` khi dựng dashboard để lấy tổng công nợ mở và quá hạn. Đây là dependency application-level trong cùng modular monolith.
-
-## 6. Main Flows / Use Cases
+## 6. Main Flows
 
 ### Automatic Posting
 
 ```text
-Nghiệp vụ nguồn commit
+Source transaction commits
         -> AFTER_COMMIT event
-        -> kiểm tra sourceType + sourceReference
-        -> dựng các dòng Nợ/Có
-        -> kiểm tra cân bằng
-        -> lưu JournalEntry
+        -> verify sourceType + sourceReference
+        -> build debit and credit lines
+        -> validate balance
+        -> persist JournalEntry
 ```
 
-Các bút toán tự động chính:
-
-| Nghiệp vụ | Nợ | Có |
+| Business event | Debit | Credit |
 |---|---|---|
-| Thu tiền COD trước khi hoàn tất đơn | `111` | `3388` |
-| Thu tiền điện tử trước khi hoàn tất đơn | `112` | `3388` |
-| Hoàn tất đơn, ghi nhận doanh thu | `3388` | `511` |
-| Hoàn tất đơn, ghi nhận giá vốn | `632` | `156` |
-| Hoàn tiền đơn đã hủy | `3388` | `111` hoặc `112` |
-| Hoàn tiền hàng bán | `521` | `111` hoặc `112` |
-| Hoàn thành phiếu nhập | `156` | `331` |
-| Thanh toán NCC | `331` | `111` hoặc `112` |
-| Xuất kho trả NCC | `331`/`642` | `156` |
-| Hàng trả NCC quay lại kho | `156` | `331`/`642` |
+| COD receipt before order completion | `111` | `3388` |
+| Electronic receipt before completion | `112` | `3388` |
+| Complete order and recognize revenue | `3388` | `511` |
+| Complete order and recognize cost | `632` | `156` |
+| Refund cancelled order | `3388` | `111` or `112` |
+| Refund completed sale | `521` | `111` or `112` |
+| Complete import note | `156` | `331` |
+| Pay supplier | `331` | `111` or `112` |
+| Ship supplier return | `331`/`642` | `156` |
+| Restore supplier-return stock | `156` | `331`/`642` |
 
-### Manual Posting
+### Manual Posting and Reversal
 
-ADMIN gửi ngày, mô tả, nguồn, mã tham chiếu và các dòng Nợ/Có. Service chỉ chấp nhận các nguồn thủ công được cho phép, kiểm tra mã tham chiếu chưa tồn tại và kiểm tra tổng Nợ bằng tổng Có trước khi lưu.
+Administrators submit a posting date, description, source, reference and debit/credit lines. The service only accepts permitted manual sources, rejects duplicate references and requires balanced totals. Reversal loads the original entry, swaps debit and credit values, links the new reversal to the original entry and marks the original as `REVERSED`.
 
-### Reversal
-
-Service tải bút toán gốc, từ chối nếu đã đảo, tạo các dòng có Nợ/Có ngược lại, liên kết bút toán đảo với bút toán gốc và đánh dấu bút toán gốc `REVERSED`.
-
-### Reporting
-
-Repository tổng hợp phát sinh theo tài khoản và thời gian. Service chuyển kết quả thành số dư tài khoản, sổ cái, bảng cân đối thử, kết quả kinh doanh và dashboard.
-
-### Reconciliation dữ liệu lịch sử
+### Historical Reconciliation
 
 ```text
-Đọc dữ liệu nghiệp vụ theo lô
-        -> loại các sourceType + sourceReference đã tồn tại
-        -> xem trước số nghiệp vụ còn thiếu
-        -> ADMIN xác nhận
-        -> tạo từng bút toán trong transaction độc lập
-        -> unique constraint chống ghi trùng
+Read source transactions in batches
+        -> exclude existing source keys
+        -> preview missing entries
+        -> administrator confirms
+        -> post each entry in an independent transaction
+        -> database unique constraint prevents duplicates
 ```
 
-Dashboard không tự ghi dữ liệu khi được mở. `AccountingReconciliationSourceReader` dùng truy vấn tập hợp và `NOT EXISTS`, tránh tải từng entity và tránh N+1. Luồng này xử lý các thanh toán khách hàng, đơn đã hoàn tất, hoàn tiền, phiếu nhập và thanh toán nhà cung cấp phát sinh trước khi accounting được triển khai.
+Opening the dashboard never writes reconciliation data. `AccountingReconciliationSourceReader` uses aggregate and `NOT EXISTS` queries to avoid per-entity loading and N+1 queries.
 
 ## 7. Business Rules
 
-### 7.1 Validation Rules
+- Manual-entry descriptions, references, account codes and line collections are required.
+- Debit and credit values cannot be negative; each line must use exactly one side.
+- Total debit must equal total credit within a tolerance below `0.01`.
+- Accounts must exist and be active.
+- `sourceType + sourceReference` must be unique.
+- Automatic sources cannot be impersonated through the manual-entry API.
+- A reversed entry cannot be reversed again.
+- Report `from` dates cannot be after `to` dates.
 
-- `description` và `sourceReference` của bút toán thủ công không được trống.
-- Danh sách dòng không được rỗng.
-- `accountCode` không được trống.
-- Số tiền Nợ/Có không được âm.
-- `from` không được sau `to`.
+The only posting-state transition is `POSTED -> REVERSED`. Reversal creates a new entry and never changes historical amounts.
 
-### 7.2 Invariants
+## 8. Persistence and Transactions
 
-- Tổng Nợ phải bằng tổng Có với sai số nhỏ hơn `0.01`.
-- Một dòng chỉ được có số tiền ở đúng một phía.
-- Tài khoản phải tồn tại và đang hoạt động.
-- Cặp `sourceType + sourceReference` là duy nhất.
-- Nguồn tự động không được giả lập qua API bút toán thủ công.
-- Bút toán đã đảo không được đảo lần thứ hai.
+- Flyway V8 creates `ledger_accounts`, `journal_entries` and `journal_entry_lines`, and seeds nine system accounts.
+- `uk_journal_source` enforces idempotency; `chk_journal_line_one_side` enforces one-sided lines.
+- Indexes cover account codes, posting dates, sources, statuses and journal-line foreign keys.
+- Balance reports use aggregate projections; general-ledger queries use pagination.
+- Entities inherit the timestamp/version behavior of the shared base entities.
+- Monetary values use `DOUBLE` for project-wide compatibility and are rounded to two decimal places with `Math.round`.
+- Reporting uses read-only transactions. Automatic postings use `REQUIRES_NEW` after the source transaction commits through `@TransactionalEventListener(AFTER_COMMIT)`.
 
-### 7.3 State Transitions
+The current design does not use distributed transactions or a transactional outbox for accounting events.
 
-```text
-POSTED -> REVERSED
-```
+## 9. API
 
-Việc đảo tạo một bút toán `REVERSAL` mới; không cập nhật trực tiếp số tiền trên bút toán cũ.
+Base path: `/api/accounting`
 
-## 8. Persistence & Data Strategy
-
-- Flyway V8 tạo `ledger_accounts`, `journal_entries`, `journal_entry_lines` và seed 9 tài khoản hệ thống.
-- Unique constraint `uk_journal_source` bảo vệ idempotency tại database.
-- Check constraint `chk_journal_line_one_side` bảo vệ một dòng chỉ ghi Nợ hoặc Có.
-- Index được đặt trên mã tài khoản, ngày bút toán, nguồn, trạng thái và khóa ngoại dòng bút toán.
-- Query số dư dùng aggregate projection `Object[]`; sổ cái dùng `Pageable`.
-- Entity kế thừa các base entity dùng timestamp/version theo mapping hiện tại.
-- Số tiền dùng `DOUBLE` để đồng bộ với phần còn lại của dự án và được làm tròn hai chữ số bằng `Math.round`.
-
-## 9. Transaction Strategy
-
-- Query báo cáo dùng `@Transactional(readOnly = true)`.
-- Tạo và đảo bút toán dùng transaction ghi thông thường.
-- `postAutomatic` dùng `REQUIRES_NEW` sau khi transaction nghiệp vụ nguồn đã commit.
-- Event listener dùng `@TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)`.
-
-Không có distributed transaction hoặc transactional outbox trong luồng accounting hiện tại.
-
-## 10. API Design
-
-API tách request/response khỏi entity, dùng Bean Validation, `Pageable` cho danh sách và tham số ngày ISO cho báo cáo. Endpoint đọc là resource/query-oriented; endpoint ghi thủ công và đảo bút toán là command rõ ràng.
-
-Không có API sửa hoặc xóa trực tiếp bút toán.
-
-## 11. APIs
-
-### AccountingController
-
-**File:** `accounting/api/AccountingController.java`
-
-**Base path:** `/api/accounting`
-
-| Method | Endpoint | Chức năng | Authorization |
+| Method | Endpoint | Purpose | Authorization |
 |---|---|---|---|
-| GET | `/dashboard` | Tổng quan quỹ, tồn kho, công nợ và lợi nhuận | MANAGER, ADMIN |
-| GET | `/accounts` | Số dư hệ thống tài khoản | MANAGER, ADMIN |
-| GET | `/journal-entries` | Nhật ký chung có phân trang | MANAGER, ADMIN |
-| GET | `/journal-entries/{id}` | Chi tiết bút toán | MANAGER, ADMIN |
-| GET | `/general-ledger/{accountCode}` | Sổ cái theo tài khoản và khoảng ngày | MANAGER, ADMIN |
-| GET | `/reports/trial-balance` | Bảng cân đối thử tại một ngày | MANAGER, ADMIN |
-| GET | `/reports/income-statement` | Kết quả kinh doanh theo khoảng ngày | MANAGER, ADMIN |
-| GET | `/reconciliation/preview` | Xem các nghiệp vụ lịch sử chưa có bút toán | MANAGER, ADMIN |
-| POST | `/journal-entries` | Tạo bút toán thủ công | ADMIN |
-| POST | `/journal-entries/{id}/reverse` | Đảo bút toán | ADMIN |
-| POST | `/reconciliation/execute` | Ghi bổ sung bút toán lịch sử còn thiếu | ADMIN |
+| GET | `/dashboard` | Fund, inventory, payable and profit overview | MANAGER, ADMIN |
+| GET | `/accounts` | Chart-of-account balances | MANAGER, ADMIN |
+| GET | `/journal-entries` | Paginated general journal | MANAGER, ADMIN |
+| GET | `/journal-entries/{id}` | Journal-entry details | MANAGER, ADMIN |
+| GET | `/general-ledger/{accountCode}` | Account ledger for a date range | MANAGER, ADMIN |
+| GET | `/reports/trial-balance` | Trial balance at a date | MANAGER, ADMIN |
+| GET | `/reports/income-statement` | Income statement for a period | MANAGER, ADMIN |
+| GET | `/reconciliation/preview` | Preview missing historical postings | MANAGER, ADMIN |
+| POST | `/journal-entries` | Create a manual entry | ADMIN |
+| POST | `/journal-entries/{id}/reverse` | Reverse a posted entry | ADMIN |
+| POST | `/reconciliation/execute` | Post missing historical entries | ADMIN |
 
-## 12. Error Handling
+The API uses request/response DTOs, Bean Validation, pagination and ISO date parameters. It intentionally provides no update or delete endpoint for posted entries.
 
-- `LedgerAccountNotFoundException`: mã tài khoản không tồn tại hoặc không hoạt động.
-- `JournalEntryNotFoundException`: không tìm thấy bút toán.
-- `InvalidJournalEntryException`: bút toán không cân bằng, sai nguồn, trùng tham chiếu, sai khoảng ngày hoặc thao tác đảo không hợp lệ.
-- `AccountingExceptionHandler` chuyển domain exception thành HTTP error response theo cơ chế advice của module.
+## 10. Error Handling and Security
 
-## 13. Security & Authorization
+- `LedgerAccountNotFoundException` covers missing or inactive accounts.
+- `JournalEntryNotFoundException` covers missing journal entries.
+- `InvalidJournalEntryException` covers imbalance, invalid sources, duplicate references, invalid date ranges and invalid reversal operations.
+- `AccountingExceptionHandler` maps accounting-domain failures to the shared HTTP error response.
 
-Controller yêu cầu `MANAGER` hoặc `ADMIN` ở cấp class. Các command nhạy cảm gồm tạo bút toán thủ công, đảo bút toán và thực thi đối soát lịch sử yêu cầu riêng vai trò `ADMIN`.
+Controller queries require `MANAGER` or `ADMIN`. Manual posting, reversal and reconciliation execution require `ADMIN`.
 
-## 14. Algorithms & Performance Considerations
+## 11. Performance and Design Notes
 
-- Query tổng hợp phát sinh được đẩy xuống database thay vì tải toàn bộ dòng bút toán.
-- Số dư được ghép theo `Map<accountId, totals>` để tra cứu O(1) khi dựng danh sách tài khoản.
-- `sourceType + sourceReference` kết hợp kiểm tra ứng dụng và unique constraint để chống ghi trùng.
-- Đối soát lịch sử dùng truy vấn theo lô, không gọi repository một lần cho từng đơn hàng hay thanh toán.
-- Danh sách nhật ký gọi mapper nội bộ trong service; do không fetch collection theo trang, việc đọc `lines` có nguy cơ phát sinh thêm query cho từng bút toán.
+- Aggregate calculations are delegated to the database instead of loading every journal line.
+- Account totals are assembled through an account-ID map for constant-time lookup.
+- Idempotency combines application checks with a database unique constraint.
+- Historical reconciliation runs in batches instead of issuing one repository call per business record.
+- The journal list currently maps entries inside the service and may trigger additional queries when lazily reading lines.
 
-## 15. Architecture & Design Principles
+Accounting follows DDD Lite with aggregates, repository abstractions, an application facade and domain exceptions. Cross-module writes arrive through events; available-fund reads use `InternalFundQuery`. It is an internal management subledger in the modular monolith, not a legal accounting system or independent microservice.
 
-Module áp dụng DDD Lite với aggregate, repository abstraction, application facade và domain exception. Giao tiếp ghi từ module khác đi qua event; giao tiếp đọc tiền khả dụng đi qua `InternalFundQuery`. DTO được tách khỏi entity.
+## 12. Known Limitations
 
-Accounting là sổ phụ quản trị trong modular monolith, không phải một microservice độc lập và không phải hệ thống kế toán pháp lý.
-
-## 16. Notes / Design Decisions
-
-- Tài khoản `111` và `112` được đánh dấu là tài khoản thanh khoản.
-- `ledgerAccountsPayable` lấy từ tài khoản `331`; `supplierOutstanding` lấy từ invoice của `supplier_payment`. Sự chênh lệch giúp phát hiện dữ liệu lịch sử chưa được hạch toán.
-- Hệ thống không tự suy đoán vốn ban đầu. ADMIN phải tạo bút toán `OPENING_BALANCE` trước khi thanh toán NCC nếu sổ chưa có tiền.
-- Bút toán lịch sử được bảo toàn bằng reversal thay vì update/delete.
-
-## 17. Known Limitations / Technical Debt
-
-- Chưa có package `mapper`; logic `JournalEntry -> JournalEntryResponse`, `LedgerAccount -> AccountBalanceResponse` và request-to-posting nằm trong `AccountingService`.
-- Chưa có specification/filter động cho nhật ký chung ngoài `Pageable` và các tham số ngày của báo cáo.
-- Chưa có khóa kỳ kế toán; backfill được thực hiện chủ động qua API reconciliation thay vì tự động trong migration hoặc khi đọc dashboard.
-- Chưa có transactional outbox; event nội bộ sau commit vẫn chạy trong cùng process.
-- Số tiền dùng `DOUBLE`; hệ thống tài chính thực tế nên dùng `DECIMAL`/`BigDecimal`.
-- Chưa tích hợp hoặc đối soát ngân hàng thật theo phạm vi chủ động của dự án.
+- Mapping remains inside `AccountingService`; there is no dedicated mapper package yet.
+- Journal filtering currently uses pagination and report-date parameters rather than a dynamic specification.
+- There is no accounting-period lock; historical backfill is explicitly triggered through the reconciliation API.
+- Internal events do not use a transactional outbox.
+- Financial production systems should replace `DOUBLE` with `DECIMAL`/`BigDecimal`.
+- Real bank integration and bank reconciliation remain intentionally outside project scope.

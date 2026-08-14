@@ -1,3 +1,4 @@
+
 # Module: Supplier Return
 
 ## 1. Purpose
@@ -23,11 +24,11 @@ SupplierReturn owns items/images/history with `cascade = ALL`, `orphanRemoval = 
 
 ## 5. Domain Dependencies & Communication
 
-Supplier and Import facades validate sources. Logistics creates/updates the outbound shipment. Product listens to the outbound-return event to deduct the exact inventory batch. If the carrier returns the shipment to the store, a restoration event adds the same batch back and reverses the accounting entry.
+Supplier and Import facades validate sources. Logistics creates/updates the outbound shipment. Product listens to supplier-return completion to adjust inventory batches/stock. The module publishes status/completion events.
 
 ## 6. Main Flows / Use Cases
 
-`Create DRAFT -> submit PENDING_APPROVAL -> approve/reject -> ship and deduct stock -> logistics events -> inspect accepted quantities -> complete`. A shipment returned to the store moves to `SHIPPING_FAILED`, restores stock/accounting and can be approved for another attempt; it is not marked completed. A scheduler queries critical SLA alerts.
+`Create DRAFT -> submit PENDING_APPROVAL -> approve/reject -> ship and deduct stock -> logistics events -> inspect accepted quantities -> complete and publish event`. A scheduler queries critical SLA alerts.
 
 ## 7. Business Rules
 
@@ -55,7 +56,7 @@ Exceptions cover duplicate/missing/deleted return, invalid operation and access 
 
 ## 13. Security & Authorization
 
-The controller and `SecurityConfig` restrict supplier-return operations to `STAFF`, `MANAGER` and `ADMIN`.
+No module-specific `@PreAuthorize` annotations were found on this controller. Because `SecurityConfig` has no explicit supplier-return matcher, endpoints fall through to `authenticated()` rather than documented staff/manager role restrictions.
 
 ## 14. Algorithms & Performance Considerations
 
@@ -71,4 +72,4 @@ Batch number and expiry are snapshotted per return line so the exact inbound lot
 
 ## 17. Known Limitations / Technical Debt
 
-Lifecycle changes rely on optimistic versioning. External events are in-process and do not use a durable outbox.
+Only generic authentication protects the controller; an explicit role policy is absent.

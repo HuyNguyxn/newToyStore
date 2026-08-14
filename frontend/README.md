@@ -1,3 +1,4 @@
+
 # NewToyStore Frontend
 
 ## Overview
@@ -76,8 +77,6 @@ Routes below `/admin` require `STAFF`, `MANAGER` or `ADMIN`. User management is 
 The token is stored in `localStorage` under `newToyStoreToken`. `apiClient.js` attaches it as a bearer token, parses JSON or text responses and clears it after an authenticated `401`. `AuthContext` restores the current user on startup and exposes login, registration, profile update and logout operations.
 
 Client-side route protection improves navigation but is not a security boundary. The backend must continue to validate every protected operation.
-
-Customer purchase history, review creation and return creation share the item snapshots returned by `/orders/my-orders`. Pages must use `items[].id` as `orderItemId` and must not reconstruct purchased lines from the current product catalog. Product and profile screens present customer-facing labels in Vietnamese, including account-role labels and media controls.
 
 ## Setup and run
 

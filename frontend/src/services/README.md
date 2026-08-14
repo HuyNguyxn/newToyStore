@@ -1,3 +1,4 @@
+
 # Frontend Services
 
 ## Responsibility
@@ -38,3 +39,4 @@ The client does not currently provide cancellation, retries, timeout handling, r
 2. Match the backend method, path, parameter names and body exactly.
 3. Update the consuming page and its nearest README.
 4. Verify unauthenticated, unauthorized, validation, empty and successful responses.
+5. Add tests when a frontend test harness is introduced.

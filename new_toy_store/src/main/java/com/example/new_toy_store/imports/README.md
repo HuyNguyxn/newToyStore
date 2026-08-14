@@ -1,3 +1,4 @@
+
 # Module: Imports
 
 ## 1. Purpose
@@ -27,7 +28,7 @@ Imports validates Supplier via `SupplierFacade` and Product variants via `Produc
 
 ## 7. Business Rules
 
-Supplier is required; items are non-empty; product/variant are required; quantity >= 1; import price >= 0. The backend rejects duplicate variants, verifies every selected product belongs to the selected supplier and derives the product-name snapshot from Product instead of trusting client text. `PENDING` permits item modification and transition to `COMPLETED` or `CANCELLED`; terminal states cannot be changed through the normal workflow. Duplicate active-note rules are represented by `DuplicateActiveImportNoteException`.
+Supplier is required; items are non-empty; product/variant/name are required; quantity >= 1; import price >= 0. `PENDING` permits item modification and transition to `COMPLETED` or `CANCELLED`; terminal states cannot be changed through the normal workflow. Duplicate active-note rules are represented by `DuplicateActiveImportNoteException`.
 
 ## 8. Persistence & Data Strategy
 

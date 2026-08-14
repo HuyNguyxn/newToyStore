@@ -1,3 +1,4 @@
+
 # Authentication Pages
 
 ## Responsibility
@@ -26,3 +27,4 @@ Client validation improves feedback but does not replace backend validation. Do 
 
 - Keep redirects compatible with `ProtectedRoute` and the `location.state.from` value.
 - Keep password and profile rules aligned with backend validation.
+- Add automated coverage for session restoration, failed login, verification and reset-token handling.

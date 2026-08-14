@@ -1,3 +1,4 @@
+
 # Profile Page
 
 ## Responsibility
@@ -14,8 +15,6 @@
 ## Data flow
 
 The page loads server-owned profile data, validates editable fields, optionally uploads media, submits the update and synchronizes the returned user into the authentication context.
-
-Backend role codes remain `CUSTOMER`, `STAFF`, `MANAGER` and `ADMIN`, but the page renders their Vietnamese labels. Avatar URL and upload controls also use customer-facing Vietnamese text; the stored value remains the Cloudinary URL returned by the upload API.
 
 ## Maintenance notes
 

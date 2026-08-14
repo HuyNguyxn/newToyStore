@@ -1,3 +1,4 @@
+
 # Product Pages
 
 ## Responsibility
@@ -27,4 +28,3 @@ The home page also consumes product data and reusable `ProductCard` and `Categor
 - Display server-provided pricing and availability; do not derive authoritative totals in the browser.
 - Keep filter parameters shareable through URLs where practical.
 - Plan for loading, empty and unavailable-product states independently.
-- Keep customer-facing detail, review, stock and variant labels in Vietnamese; translate technical fallback text before rendering it.
