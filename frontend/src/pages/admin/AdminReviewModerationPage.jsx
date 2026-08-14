@@ -17,11 +17,12 @@ function getReviewStatusInfo(status) {
 
 function AdminReviewModerationPage() {
   const [searchParams] = useSearchParams();
-  const initialRating = searchParams.get('rating') || '';
+  const initialRating = searchParams.get('maxRating') ? 'LOW' : (searchParams.get('rating') || '');
+  const initialHasAdminReplied = searchParams.get('hasAdminReplied') || '';
 
   const [reviews, setReviews] = useState([]);
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
-  const [filters, setFilters] = useState({ productId: '', rating: initialRating, status: '', hasAdminReplied: '' });
+  const [filters, setFilters] = useState({ productId: '', rating: initialRating, status: '', hasAdminReplied: initialHasAdminReplied });
   const [selectedReview, setSelectedReview] = useState(null);
   const [reply, setReply] = useState('');
   const [status, setStatus] = useState('PUBLISHED');
@@ -49,7 +50,8 @@ function AdminReviewModerationPage() {
 
     getAdminReviews({
       productId: filters.productId || undefined,
-      rating: targetRating ? Number(targetRating) : undefined,
+      rating: targetRating && targetRating !== 'LOW' ? Number(targetRating) : undefined,
+      maxRating: targetRating === 'LOW' ? 2 : undefined,
       status: filters.status || undefined,
       hasAdminReplied: filters.hasAdminReplied === '' ? undefined : (filters.hasAdminReplied === 'true'),
       page,
@@ -154,6 +156,7 @@ function AdminReviewModerationPage() {
             style={{ width: '100%', padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }}
           >
             <option value="">Tất cả số sao</option>
+            <option value="LOW">Đánh giá kém (1–2 sao)</option>
             <option value="5">5 sao</option>
             <option value="4">4 sao</option>
             <option value="3">3 sao</option>

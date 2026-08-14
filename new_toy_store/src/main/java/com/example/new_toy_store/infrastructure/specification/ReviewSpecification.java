@@ -16,6 +16,7 @@ public final class ReviewSpecification {
 
         return Specification.where(hasProductId(request.getProductId()))
                 .and(hasRating(request.getRating()))
+                .and(hasMaximumRating(request.getMaxRating()))
                 .and(hasStatus(request.getStatus()))
                 .and(hasAdminReplied(request.getHasAdminReplied()));
     }
@@ -26,6 +27,12 @@ public final class ReviewSpecification {
 
     public static Specification<Review> hasRating(Integer rating) {
         return BaseSpecification.isEqual("rating", rating);
+    }
+
+    public static Specification<Review> hasMaximumRating(Integer maxRating) {
+        return (root, query, cb) -> maxRating == null
+                ? cb.conjunction()
+                : cb.lessThanOrEqualTo(root.get("rating"), maxRating);
     }
 
     public static Specification<Review> hasStatus(String status) {
@@ -44,7 +51,16 @@ public final class ReviewSpecification {
             if (hasReplied == null) {
                 return cb.conjunction();
             }
-            return hasReplied ? cb.isNotNull(root.get("adminReply")) : cb.isNull(root.get("adminReply"));
+            if (hasReplied) {
+                return cb.and(
+                        cb.isNotNull(root.get("adminReply")),
+                        cb.notEqual(cb.trim(root.get("adminReply")), "")
+                );
+            }
+            return cb.or(
+                    cb.isNull(root.get("adminReply")),
+                    cb.equal(cb.trim(root.get("adminReply")), "")
+            );
         };
     }
 }

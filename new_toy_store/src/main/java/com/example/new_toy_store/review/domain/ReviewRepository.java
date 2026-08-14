@@ -27,6 +27,9 @@ public interface ReviewRepository extends JpaRepository<Review, Integer>, JpaSpe
     @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.productId = :productId AND r.status = 'PUBLISHED' GROUP BY r.rating")
     List<Object[]> countReviewsByRatingGroup(@Param("productId") Integer productId);
 
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.rating < :rating AND (r.adminReply IS NULL OR TRIM(r.adminReply) = '')")
+    long countUnansweredReviewsBelowRating(@Param("rating") int rating);
+
     Optional<Review> findByOrderItemId(Integer orderItemId);
 
     Page<Review> findByUserId(Integer userId, Pageable pageable);

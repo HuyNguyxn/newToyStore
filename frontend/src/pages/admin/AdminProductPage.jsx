@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { getAdminCategories, getAdminCategoryTree } from '../../services/adminCategoryService.js';
 import {
   addProductImage,
@@ -388,6 +388,8 @@ function TableCategoryBadge({ product, categoriesMap }) {
 function AdminProductPage() {
   const { userRole } = useOutletContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const slowSellingPanelRef = useRef(null);
   const canDelete = userRole === 'ADMIN';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -427,6 +429,12 @@ function AdminProductPage() {
     loadCategories();
     loadTopAndSlowSelling();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('view') === 'SLOW_SELLING' && slowSellingPanelRef.current) {
+      slowSellingPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [searchParams, slowSellingList.length]);
 
   async function loadTopAndSlowSelling() {
     try {
@@ -740,13 +748,13 @@ function AdminProductPage() {
         </div>
 
         {/* PANEL 2: ⚠️ SẢN PHẨM BÁN CHẬM (CẢNH BÁO VẬN HÀNH) */}
-        <div style={{ background: '#ffffff', padding: '20px 24px', borderRadius: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9' }}>
+        <div ref={slowSellingPanelRef} style={{ background: '#ffffff', padding: '20px 24px', borderRadius: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', scrollMarginTop: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '900', color: '#9a3412', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
               ⚠️ SẢN PHẨM BÁN CHẬM (Ứ ĐỌNG VỐN)
             </h3>
             <span style={{ fontSize: '11px', background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', padding: '2px 8px', borderRadius: '8px', fontWeight: '800' }}>
-              Tổng: {slowSellingList.length} SP
+              Hiển thị: {slowSellingList.length} SP ưu tiên
             </span>
           </div>
 

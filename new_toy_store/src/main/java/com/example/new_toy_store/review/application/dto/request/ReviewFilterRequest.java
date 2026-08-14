@@ -12,6 +12,10 @@ public class ReviewFilterRequest {
     @Max(value = 5, message = "Điểm đánh giá bộ lọc cao nhất là 5 sao")
     private Integer rating;
 
+    @Min(value = 1, message = "Điểm đánh giá tối đa của bộ lọc thấp nhất là 1 sao")
+    @Max(value = 5, message = "Điểm đánh giá tối đa của bộ lọc cao nhất là 5 sao")
+    private Integer maxRating;
+
     private Boolean hasAdminReplied;
 
     @Pattern(regexp = "^(PUBLISHED|HIDDEN)$", message = "Trạng thái lọc chỉ chấp nhận PUBLISHED hoặc HIDDEN")
@@ -31,6 +35,14 @@ public class ReviewFilterRequest {
 
     public void setRating(Integer rating) {
         this.rating = rating;
+    }
+
+    public Integer getMaxRating() {
+        return maxRating;
+    }
+
+    public void setMaxRating(Integer maxRating) {
+        this.maxRating = maxRating;
     }
 
     public Boolean getHasAdminReplied() {

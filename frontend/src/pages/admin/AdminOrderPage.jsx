@@ -90,7 +90,6 @@ function AdminOrderPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [tempStatus, setTempStatus] = useState('PENDING');
   const [tempAddress, setTempAddress] = useState('');
-  const [tempPhone, setTempPhone] = useState('0398616546');
 
   const displayOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -146,7 +145,6 @@ function AdminOrderPage() {
     setIsEditing(true);
     setTempStatus(typeof order.status === 'object' ? (order.status?.code || order.status?.name || '') : String(order.status || ''));
     setTempAddress(order.shippingAddress || '');
-    setTempPhone('0398616546'); // Default mock phone from mockup
 
     try {
       const result = await getAdminOrderDetails(order.id);
@@ -283,15 +281,14 @@ function AdminOrderPage() {
               />
             </div>
 
-            {/* SĐT GIAO HÀNG */}
+            {/* SĐT giao hàng chỉ hiển thị vì API cập nhật đơn hiện chỉ hỗ trợ địa chỉ. */}
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>SĐT Giao hàng</label>
               <input
                 type="text"
-                value={tempPhone}
-                onChange={(e) => setTempPhone(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none' }}
+                value={selected.shippingPhone || selected.recipientPhone || selected.phone || 'Chưa có dữ liệu'}
+                readOnly
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: '#f8fafc', color: '#64748b' }}
               />
             </div>
 
@@ -446,7 +443,7 @@ function AdminOrderPage() {
                   Khách hàng ND{selected.userId}
                 </div>
                 <div style={{ color: '#475569' }}>
-                  SĐT: 0398616546
+                  SĐT: {selected.shippingPhone || selected.recipientPhone || selected.phone || 'Chưa có dữ liệu'}
                 </div>
                 <div style={{ color: '#475569', lineHeight: 1.4 }}>
                   Địa chỉ: {selected.shippingAddress || 'Chưa cập nhật địa chỉ'}

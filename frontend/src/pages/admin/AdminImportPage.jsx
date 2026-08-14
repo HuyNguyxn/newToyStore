@@ -415,6 +415,7 @@ function AdminImportPage() {
   const restockProductId = searchParams.get('productId');
   const restockProductName = searchParams.get('productName');
   const restockSupplierId = searchParams.get('supplierId');
+  const operationSource = searchParams.get('source');
 
   useEffect(() => {
     loadInitialData();
@@ -429,12 +430,19 @@ function AdminImportPage() {
       setItems([{
         productId: Number(restockProductId),
         variantId: '',
-        productName: restockProductName ? decodeURIComponent(restockProductName) : `SP #${restockProductId}`,
+        productName: restockProductName || `SP #${restockProductId}`,
         quantity: 10,
         importPrice: 100000,
       }]);
     }
   }, [restockProductId, restockProductName, restockSupplierId]);
+
+  useEffect(() => {
+    if (operationSource === 'LOW_STOCK') {
+      setIsCreatingView(true);
+      setMessage('Chọn nhà cung cấp, danh mục và sản phẩm sắp hết hàng để lập phiếu nhập bổ sung.');
+    }
+  }, [operationSource]);
 
   useEffect(() => {
     loadImports(0);

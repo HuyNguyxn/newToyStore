@@ -133,8 +133,12 @@ function AdminSidebar({ userRole = 'ADMIN' }) {
 
   // Load menu badge counters
   const fetchBadges = async () => {
-    const data = await getAdminMenuBadges();
-    if (data) setBadges(data);
+    try {
+      const data = await getAdminMenuBadges();
+      if (data) setBadges(data);
+    } catch {
+      // Keep the last successful counters during a temporary Render cold start.
+    }
   };
 
   useEffect(() => {

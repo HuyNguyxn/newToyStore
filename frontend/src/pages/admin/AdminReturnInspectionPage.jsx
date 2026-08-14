@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   finalizeCustomerReturnRefund,
   getCustomerReturns,
@@ -58,6 +59,8 @@ function getReturnStatusInfo(status) {
 }
 
 function AdminReturnInspectionPage() {
+  const [searchParams] = useSearchParams();
+  const requestedStatus = searchParams.get('status') || 'all';
   const [customerReturns, setCustomerReturns] = useState([]);
   const [customerTotalElements, setCustomerTotalElements] = useState(0);
   const [selectedCustomerReturn, setSelectedCustomerReturn] = useState(null);
@@ -81,18 +84,25 @@ function AdminReturnInspectionPage() {
 
   // Filter states for Customer Returns
   const [customerFilters, setCustomerFilters] = useState({
-    status: 'all',
+    status: requestedStatus,
     orderId: '',
   });
 
   const [activeCustomerFilters, setActiveCustomerFilters] = useState({
-    status: 'all',
+    status: requestedStatus,
     orderId: '',
   });
 
   useEffect(() => {
     loadCustomerData();
   }, [customerPage, activeCustomerFilters]);
+
+  useEffect(() => {
+    const status = searchParams.get('status') || 'all';
+    setCustomerFilters((current) => ({ ...current, status }));
+    setActiveCustomerFilters((current) => ({ ...current, status }));
+    setCustomerPage(0);
+  }, [searchParams]);
 
   async function loadCustomerData() {
     setLoading(true);
