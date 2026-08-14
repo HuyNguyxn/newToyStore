@@ -13,9 +13,12 @@ import com.example.new_toy_store.customer_payment.domain.RefundStatus;
 import com.example.new_toy_store.product.domain.InventoryRepository;
 import com.example.new_toy_store.product.domain.ProductRepository;
 import com.example.new_toy_store.product.domain.ProductStatus;
+import com.example.new_toy_store.product.domain.ProductVariant;
+import com.example.new_toy_store.product.domain.ProductVariantRepository;
 import com.example.new_toy_store.promotion.domain.PromotionRepository;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryCostSummaryResponse;
 import com.example.new_toy_store.statistics.application.dto.response.KpiMetricResponse;
 import com.example.new_toy_store.statistics.application.dto.response.BreakdownStatisticResponse;
 import com.example.new_toy_store.statistics.application.dto.response.PaymentMethodStatisticResponse;
@@ -67,6 +70,7 @@ public class StatisticsService {
     private final InventoryRepository inventoryRepository;
     private final PromotionRepository promotionRepository;
     private final ImportNoteRepository importNoteRepository;
+    private final ProductVariantRepository productVariantRepository;
 
     public StatisticsService(
             OrderRepository orderRepository,
@@ -77,7 +81,8 @@ public class StatisticsService {
             ProductRepository productRepository,
             InventoryRepository inventoryRepository,
             PromotionRepository promotionRepository,
-            ImportNoteRepository importNoteRepository
+            ImportNoteRepository importNoteRepository,
+            ProductVariantRepository productVariantRepository
     ) {
         this.orderRepository = orderRepository;
         this.customerPaymentRepository = customerPaymentRepository;
@@ -88,6 +93,7 @@ public class StatisticsService {
         this.inventoryRepository = inventoryRepository;
         this.promotionRepository = promotionRepository;
         this.importNoteRepository = importNoteRepository;
+        this.productVariantRepository = productVariantRepository;
     }
 
     @Transactional(readOnly = true)
@@ -332,6 +338,63 @@ public class StatisticsService {
     }
 
     @Transactional(readOnly = true)
+    public InventoryCostSummaryResponse getInventoryCostSummary(Integer variantId) {
+        List<ProductVariant> variants = productVariantRepository.findForInventoryCostSummary(variantId);
+
+        long totalStock = variants.stream()
+                .map(ProductVariant::getInventory)
+                .filter(java.util.Objects::nonNull)
+                .mapToLong(inventory -> Math.max(0, inventory.getStockQuantity()))
+                .sum();
+
+        double currentSellingPrice = weightedCurrentValue(variants, totalStock, true);
+        double currentMac = weightedCurrentValue(variants, totalStock, false);
+        List<Double> latestImportPrices = importNoteRepository.findLatestCompletedImportAveragePrice(variantId);
+        boolean hasCompletedImport = !latestImportPrices.isEmpty();
+        double latestImportPrice = hasCompletedImport ? latestImportPrices.get(0) : 0.0;
+        double grossMarginPercent = currentSellingPrice > 0
+                ? ((currentSellingPrice - currentMac) / currentSellingPrice) * 100.0
+                : 0.0;
+
+        return new InventoryCostSummaryResponse(
+                variantId,
+                variants.size(),
+                roundMoney(currentSellingPrice),
+                roundMoney(currentMac),
+                roundMoney(latestImportPrice),
+                totalStock,
+                roundMoney(grossMarginPercent),
+                hasCompletedImport
+        );
+    }
+
+    private double weightedCurrentValue(List<ProductVariant> variants, long totalStock, boolean sellingPrice) {
+        if (variants.isEmpty()) {
+            return 0.0;
+        }
+
+        if (totalStock > 0) {
+            double weightedTotal = variants.stream().mapToDouble(variant -> {
+                int stock = variant.getInventory() == null
+                        ? 0
+                        : Math.max(0, variant.getInventory().getStockQuantity());
+                double value = sellingPrice ? variant.getPrice() : variant.getCostPrice();
+                return value * stock;
+            }).sum();
+            return weightedTotal / totalStock;
+        }
+
+        return variants.stream()
+                .mapToDouble(variant -> sellingPrice ? variant.getPrice() : variant.getCostPrice())
+                .average()
+                .orElse(0.0);
+    }
+
+    private double roundMoney(double value) {
+        return Math.max(0.0, Math.round(value * 100.0) / 100.0);
+    }
+
+    @Transactional(readOnly = true)
     public List<ProfitMarginStatisticResponse> getProfitMargin(StatisticPeriod period, int limit) {
         return orderRepository.aggregateProfitMarginByProduct(
                         REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
@@ -424,15 +487,15 @@ public class StatisticsService {
         double grossRevenue = orderRepository.sumTotalAmountByStatusesBetween(REVENUE_ORDER_STATUSES, from, to);
         double refundAmount = refundRepository.sumAmountByStatusBetween(RefundStatus.SUCCEEDED, from, to);
         long createdOrders = orderRepository.countCreatedBetween(from, to);
-        long successfulOrders = orderRepository.countByStatusesBetween(REVENUE_ORDER_STATUSES, from, to);
-        long cancelledOrders = orderRepository.countByStatusBetween(OrderStatus.CANCELLED, from, to);
+        long successfulOrders = orderRepository.countHistoryByStatusBetween(OrderStatus.COMPLETED, from, to);
+        long cancelledOrders = orderRepository.countHistoryByStatusBetween(OrderStatus.CANCELLED, from, to);
         long soldQuantity = orderRepository.sumSoldQuantityBetween(REVENUE_ORDER_STATUSES, from, to);
         long newCustomers = userRepository.countCreatedBetween(from, to);
         long succeededPayments = customerPaymentRepository.countByStatusBetween(CustomerPaymentStatus.SUCCEEDED, from, to);
         long failedPayments = customerPaymentRepository.countByStatusBetween(CustomerPaymentStatus.FAILED, from, to);
         long deliveredShipments = shipmentRepository.countByStatusBetween(ShipmentStatus.DELIVERED, from, to);
         long failedShipments = shipmentRepository.countByStatusBetween(ShipmentStatus.DELIVERY_FAILED, from, to);
-        long refundedOrders = orderRepository.countByStatusesBetween(List.of(OrderStatus.PARTIALLY_REFUNDED, OrderStatus.FULLY_REFUNDED), from, to);
+        long refundedOrders = refundRepository.countDistinctOrdersByStatusCompletedBetween(RefundStatus.SUCCEEDED, from, to);
 
         return new MetricValues(
                 grossRevenue,
@@ -450,6 +513,7 @@ public class StatisticsService {
 
     private List<RevenueTrendPointResponse> buildRevenueTrend(StatisticPeriod period) {
         Map<String, TrendAccumulator> buckets = createBuckets(period);
+        applyDailyCreatedOrderRows(buckets, period);
         applyDailyRevenueRows(buckets, period);
         applyDailyRefundRows(buckets, period);
         applyDailyCostRows(buckets, period);
@@ -460,6 +524,7 @@ public class StatisticsService {
                         entry.getKey(),
                         entry.getValue().grossRevenue(),
                         entry.getValue().refundAmount(),
+                        entry.getValue().createdOrderCount(),
                         entry.getValue().orderCount(),
                         entry.getValue().soldQuantity(),
                         entry.getValue().importedQuantity(),
@@ -471,7 +536,7 @@ public class StatisticsService {
 
     private void applyDailyRevenueRows(Map<String, TrendAccumulator> buckets, StatisticPeriod period) {
         List<Object[]> rows = orderRepository.aggregateDailyRevenue(
-                REVENUE_ORDER_STATUSES,
+                REVENUE_ORDER_STATUSES.stream().map(Enum::name).toList(),
                 period.startDateTime(),
                 period.endExclusiveDateTime()
         );
@@ -480,6 +545,19 @@ public class StatisticsService {
             TrendAccumulator accumulator = buckets.get(bucketKey);
             if (accumulator != null) {
                 accumulator.addRevenue(((Number) row[2]).doubleValue(), ((Number) row[1]).longValue());
+            }
+        }
+    }
+
+    private void applyDailyCreatedOrderRows(Map<String, TrendAccumulator> buckets, StatisticPeriod period) {
+        List<Object[]> rows = orderRepository.aggregateDailyCreatedOrders(
+                period.startDateTime(),
+                period.endExclusiveDateTime()
+        );
+        for (Object[] row : rows) {
+            TrendAccumulator accumulator = buckets.get(bucketKey(toLocalDate(row[0]), period));
+            if (accumulator != null) {
+                accumulator.addCreatedOrders(((Number) row[1]).longValue());
             }
         }
     }
@@ -685,11 +763,16 @@ public class StatisticsService {
     private static class TrendAccumulator {
         private double grossRevenue;
         private double refundAmount;
+        private long createdOrderCount;
         private long orderCount;
         private long soldQuantity;
         private long importedQuantity;
         private double costOfGoodsSold;
         private double importCost;
+
+        void addCreatedOrders(long value) {
+            createdOrderCount += value;
+        }
 
         void addRevenue(double amount, long count) {
             this.grossRevenue += amount;
@@ -712,6 +795,7 @@ public class StatisticsService {
 
         double grossRevenue() { return grossRevenue; }
         double refundAmount() { return refundAmount; }
+        long createdOrderCount() { return createdOrderCount; }
         long orderCount() { return orderCount; }
         long soldQuantity() { return soldQuantity; }
         long importedQuantity() { return importedQuantity; }

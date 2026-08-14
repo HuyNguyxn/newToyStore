@@ -10,6 +10,7 @@ import com.example.new_toy_store.statistics.application.dto.response.StatisticsO
 import com.example.new_toy_store.statistics.application.dto.response.TopSellingProductResponse;
 import com.example.new_toy_store.statistics.application.dto.response.TopSpendingCustomerResponse;
 import com.example.new_toy_store.statistics.application.dto.response.InventoryMovementStatisticResponse;
+import com.example.new_toy_store.statistics.application.dto.response.InventoryCostSummaryResponse;
 import com.example.new_toy_store.statistics.application.dto.response.ProfitMarginStatisticResponse;
 import com.example.new_toy_store.statistics.domain.StatisticPeriod;
 import jakarta.validation.Valid;
@@ -85,6 +86,46 @@ public class StatisticsController {
         return facade.getTopSpendingCustomers(toPeriod(request), request.getTopLimit());
     }
 
+    @GetMapping("/payments/failure-reasons")
+    public List<BreakdownStatisticResponse> getPaymentFailureReasons(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getPaymentFailureReasons(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/refunds/by-reason")
+    public List<BreakdownStatisticResponse> getRefundReasons(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getRefundReasons(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/refunds/by-product")
+    public List<BreakdownStatisticResponse> getRefundByProduct(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getRefundByProduct(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/shipments/by-provider")
+    public List<BreakdownStatisticResponse> getShipmentsByProvider(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getShipmentsByProvider(toPeriod(request));
+    }
+
+    @GetMapping("/shipments/failure-reasons")
+    public List<BreakdownStatisticResponse> getShipmentFailureReasons(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getShipmentFailureReasons(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/shipments/by-region")
+    public List<BreakdownStatisticResponse> getShipmentsByRegion(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getShipmentsByRegion(toPeriod(request), request.getTopLimit());
+    }
+
+    @GetMapping("/customers/summary")
+    public List<BreakdownStatisticResponse> getCustomerSummary(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getCustomerSummary(toPeriod(request));
+    }
+
+    @GetMapping("/customers/trend")
+    public List<BreakdownStatisticResponse> getCustomerTrend(@Valid @ModelAttribute StatisticsOverviewRequest request) {
+        return facade.getCustomerTrend(toPeriod(request));
+    }
+
     @GetMapping("/inventory/snapshot")
     public List<InventoryMovementStatisticResponse> getInventorySnapshot(
             @RequestParam(defaultValue = "5") int lowStockThreshold
@@ -97,6 +138,13 @@ public class StatisticsController {
             @Valid @ModelAttribute StatisticsOverviewRequest request
     ) {
         return facade.getInventoryMovements(toPeriod(request), request.getLowStockThreshold());
+    }
+
+    @GetMapping("/inventory/cost-summary")
+    public InventoryCostSummaryResponse getInventoryCostSummary(
+            @RequestParam(required = false) Integer variantId
+    ) {
+        return facade.getInventoryCostSummary(variantId);
     }
 
     @GetMapping("/profit-margin")

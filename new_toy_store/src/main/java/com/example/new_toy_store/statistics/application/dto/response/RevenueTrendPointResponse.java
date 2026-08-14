@@ -6,6 +6,7 @@ public class RevenueTrendPointResponse {
     private final double grossRevenue;
     private final double refundAmount;
     private final double netRevenue;
+    private final long createdOrderCount;
     private final long orderCount;
     private final long soldQuantity;
     private final long importedQuantity;
@@ -14,16 +15,24 @@ public class RevenueTrendPointResponse {
     private final double grossProfit;
 
     public RevenueTrendPointResponse(String period, double grossRevenue, double refundAmount, long orderCount) {
-        this(period, grossRevenue, refundAmount, orderCount, 0, 0, 0.0, 0.0);
+        this(period, grossRevenue, refundAmount, 0, orderCount, 0, 0, 0.0, 0.0);
     }
 
     public RevenueTrendPointResponse(String period, double grossRevenue, double refundAmount, long orderCount,
+                                     long soldQuantity, long importedQuantity,
+                                     double costOfGoodsSold, double importCost) {
+        this(period, grossRevenue, refundAmount, 0, orderCount, soldQuantity, importedQuantity, costOfGoodsSold, importCost);
+    }
+
+    public RevenueTrendPointResponse(String period, double grossRevenue, double refundAmount,
+                                     long createdOrderCount, long orderCount,
                                      long soldQuantity, long importedQuantity,
                                      double costOfGoodsSold, double importCost) {
         this.period = period;
         this.grossRevenue = round(grossRevenue);
         this.refundAmount = round(refundAmount);
         this.netRevenue = round(grossRevenue - refundAmount);
+        this.createdOrderCount = createdOrderCount;
         this.orderCount = orderCount;
         this.soldQuantity = soldQuantity;
         this.importedQuantity = importedQuantity;
@@ -36,6 +45,7 @@ public class RevenueTrendPointResponse {
     public double getGrossRevenue() { return grossRevenue; }
     public double getRefundAmount() { return refundAmount; }
     public double getNetRevenue() { return netRevenue; }
+    public long getCreatedOrderCount() { return createdOrderCount; }
     public long getOrderCount() { return orderCount; }
     public long getSoldQuantity() { return soldQuantity; }
     public long getImportedQuantity() { return importedQuantity; }
