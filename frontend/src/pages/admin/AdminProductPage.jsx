@@ -401,6 +401,7 @@ function AdminProductPage() {
   const [topSellingList, setTopSellingList] = useState([]);
   const [slowSellingList, setSlowSellingList] = useState([]);
   const [slowPage, setSlowPage] = useState(0);
+  const [slowSellingError, setSlowSellingError] = useState('');
 
   // Filters state (Keyword, Category, Status)
   const [filters, setFilters] = useState({ keyword: '', categoryId: '', status: '' });
@@ -428,7 +429,7 @@ function AdminProductPage() {
   useEffect(() => {
     loadCategories();
     loadTopAndSlowSelling();
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (searchParams.get('view') === 'SLOW_SELLING' && slowSellingPanelRef.current) {
@@ -437,20 +438,38 @@ function AdminProductPage() {
   }, [searchParams, slowSellingList.length]);
 
   async function loadTopAndSlowSelling() {
-    try {
-      const [topRes, slowRes] = await Promise.allSettled([
-        getTopSellingProducts({ limit: 10 }),
-        getSlowSellingProducts({ limit: 100, maxUnits: 5 }),
-      ]);
-      if (topRes.status === 'fulfilled' && Array.isArray(topRes.value)) {
-        setTopSellingList(topRes.value);
-      }
-      if (slowRes.status === 'fulfilled' && Array.isArray(slowRes.value)) {
-        setSlowSellingList(slowRes.value);
-      }
-    } catch {
+    const reportParams = {
+      from: searchParams.get('from') || undefined,
+      to: searchParams.get('to') || undefined,
+      timezone: 'Asia/Ho_Chi_Minh',
+      groupBy: 'AUTO',
+    };
+    const maxUnits = Number(searchParams.get('maxUnits') || 5);
+    setSlowSellingError('');
+
+    const [topRes, slowRes] = await Promise.allSettled([
+      getTopSellingProducts({ ...reportParams, limit: 10 }),
+      // Backend validates limit with @Max(50). Using 100 returned HTTP 400 and
+      // made this panel look empty while the operational badge still had data.
+      getSlowSellingProducts({ ...reportParams, limit: 50, maxUnits }),
+    ]);
+
+    if (topRes.status === 'fulfilled') {
+      const items = topRes.value?.content || (Array.isArray(topRes.value) ? topRes.value : []);
+      setTopSellingList(items);
+    } else {
       setTopSellingList([]);
+    }
+
+    if (slowRes.status === 'fulfilled') {
+      const items = slowRes.value?.content || (Array.isArray(slowRes.value) ? slowRes.value : []);
+      setSlowSellingList(items);
+      setSlowPage(0);
+    } else {
       setSlowSellingList([]);
+      setSlowSellingError(
+        slowRes.reason?.message || 'Không thể tải danh sách sản phẩm bán chậm. Vui lòng thử lại.',
+      );
     }
   }
 
@@ -768,7 +787,13 @@ function AdminProductPage() {
               </tr>
             </thead>
             <tbody>
-              {slowSellingList.length === 0 ? (
+              {slowSellingError ? (
+                <tr>
+                  <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#dc2626', fontWeight: '700' }}>
+                    {slowSellingError}
+                  </td>
+                </tr>
+              ) : slowSellingList.length === 0 ? (
                 <tr>
                   <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: '#94a3b8' }}>Không có sản phẩm bị ứ đọng vốn.</td>
                 </tr>
