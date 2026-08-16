@@ -349,9 +349,9 @@ public class StatisticsService {
 
         double currentSellingPrice = weightedCurrentValue(variants, totalStock, true);
         double currentMac = weightedCurrentValue(variants, totalStock, false);
-        List<Double> latestImportPrices = importNoteRepository.findLatestCompletedImportAveragePrice(variantId);
+        List<java.math.BigDecimal> latestImportPrices = importNoteRepository.findLatestCompletedImportAveragePrice(variantId);
         boolean hasCompletedImport = !latestImportPrices.isEmpty();
-        double latestImportPrice = hasCompletedImport ? latestImportPrices.get(0) : 0.0;
+        double latestImportPrice = hasCompletedImport ? latestImportPrices.get(0).doubleValue() : 0.0;
         double grossMarginPercent = currentSellingPrice > 0
                 ? ((currentSellingPrice - currentMac) / currentSellingPrice) * 100.0
                 : 0.0;

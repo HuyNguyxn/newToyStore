@@ -302,20 +302,30 @@ const MacTooltip = ({ active, payload, label }) => {
   );
 };
 
-function InventoryValueChartCard({ data, dates, products, selectedVariant, setSelectedVariant }) {
+function InventoryValueChartCard({ data, dates, products, selectedVariant, setSelectedVariant, costSummary }) {
+  const chartData = data.map((point) => {
+    const importedQuantity = Number(point['Tổng SP nhập vào'] || 0);
+    const importValue = Number(point['Chi phí nhập hàng'] || 0);
+    return {
+      ...point,
+      'Giá nhập bình quân ngày': importedQuantity > 0 ? importValue / importedQuantity : null,
+      'MAC hiện tại': costSummary?.currentMac || null,
+      'Giá bán hiện tại': costSummary?.currentSellingPrice || null,
+    };
+  });
   return (
     <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', padding: '24px', border: '1px solid #dbeafe', marginBottom: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Dòng giá trị hàng hóa theo kỳ</h2>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>Giá vốn hàng đã bán và giá trị nhập kho đã hoàn tất từ {dates.from} đến {dates.to}. Biểu đồ này luôn phản ánh toàn cửa hàng.</span>
+          <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a', margin: 0 }}>Biểu đồ MAC và nhập kho</h2>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>Cột thể hiện luồng nhập/bán toàn cửa hàng; các đường giá thể hiện biến thể đang chọn từ {dates.from} đến {dates.to}.</span>
         </div>
         <select value={selectedVariant} onChange={(e) => setSelectedVariant(e.target.value)} style={{ minWidth: 210, padding: '7px 10px', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e3a8a', fontWeight: 700, background: '#eff6ff' }}>
           <option value="ALL">Thẻ hiện tại: toàn bộ biến thể</option>
           {products.flatMap((product) => (product.variants || []).map((variant) => <option key={variant.id} value={variant.id}>{product.name || `Sản phẩm #${product.id}`} · {variant.type || `Variant #${variant.id}`}</option>))}
         </select>
       </div>
-      <div style={{ width: '100%', height: '330px', marginTop: 16 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
+      <div style={{ width: '100%', height: '330px', marginTop: 16 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#eff6ff" vertical={false} />
         <XAxis dataKey="date" stroke="#334155" fontSize={11} minTickGap={24} />
         <YAxis yAxisId="money" stroke="#334155" fontSize={10} tickFormatter={formatYMoneyTick} />
@@ -326,6 +336,9 @@ function InventoryValueChartCard({ data, dates, products, selectedVariant, setSe
         <Bar yAxisId="quantity" dataKey="Tổng SP bán ra" name="Sản phẩm bán ra" fill="#fb923c" barSize={9} />
         <Line yAxisId="money" type="monotone" dataKey="Chi phí nhập hàng" name="Giá trị nhập kho" stroke="#dc2626" strokeWidth={2.5} dot={false} connectNulls />
         <Line yAxisId="money" type="monotone" dataKey="Giá vốn hàng bán" name="Giá vốn hàng bán" stroke="#16a34a" strokeWidth={2.5} dot={false} connectNulls />
+        <Line yAxisId="money" type="monotone" dataKey="Giá nhập bình quân ngày" name="Giá nhập bình quân ngày" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+        <Line yAxisId="money" type="monotone" dataKey="MAC hiện tại" name="MAC hiện tại" stroke="#0f766e" strokeWidth={2.5} strokeDasharray="7 4" dot={false} connectNulls />
+        <Line yAxisId="money" type="monotone" dataKey="Giá bán hiện tại" name="Giá bán hiện tại" stroke="#2563eb" strokeWidth={2.5} strokeDasharray="3 3" dot={false} connectNulls />
       </ComposedChart></ResponsiveContainer></div>
     </div>
   );
@@ -524,6 +537,7 @@ const renderActiveShape = (props) => {
    MAIN MASTER OVERVIEW COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 function AdminStatisticsPage() {
+  const navigate = useNavigate();
   const [selectedRange, setSelectedRange] = useState('LAST_30_DAYS');
   const [dates, setDates] = useState(getInitialDates('LAST_30_DAYS'));
 
@@ -949,9 +963,12 @@ function AdminStatisticsPage() {
           lowRatingCount: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
             ? Number(operationalBadges.lowRatingReviews || 0)
             : lowRatingCountFromBackend || lowRatingReviews.length,
-          slowSelling: dataMode === 'REAL' && operationalBadgesRes.status === 'fulfilled'
-            ? Number(operationalBadges.slowSellingProducts || 0)
-            : slowSellingProducts.length,
+          // Keep the badge and destination panel on the same report source.
+          // The badge query may count more rows than the report API can return
+          // (the report is intentionally capped at 50).
+          slowSelling: slowProdRes.status === 'fulfilled'
+            ? slowSellingProducts.length
+            : Number(operationalBadges.slowSellingProducts || 0),
         },
       });
 
@@ -1229,7 +1246,7 @@ function AdminStatisticsPage() {
             <KpiSparklineCard title="Biên lợi nhuận gộp hiện tại" rawNumber={inventoryCostSummary.grossMarginPercent} formattedValue={inventoryCostSummary.available ? `${inventoryCostSummary.grossMarginPercent.toFixed(1)}%` : '—'} comparisonLabel="Theo giá bán và MAC hiện tại" strokeColor="#22c55e" data={[{ v: inventoryCostSummary.grossMarginPercent }]} unit="%" />
           </div>
 
-          <InventoryValueChartCard data={mainChartData} dates={dates} products={macProducts} selectedVariant={selectedMacVariant} setSelectedVariant={setSelectedMacVariant} />
+          <InventoryValueChartCard data={mainChartData} dates={dates} products={macProducts} selectedVariant={selectedMacVariant} setSelectedVariant={setSelectedMacVariant} costSummary={inventoryCostSummary} />
 
           {/* ROW 2: FINANCIAL TREND CHART */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '24px', marginBottom: '24px' }}>
@@ -1769,7 +1786,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.lowStock}
                   hint="Chuẩn bị phiếu nhập kho trước khi các món đồ chơi hot bị hết hàng."
                   tone="warning"
-                  onClick={() => navigate('/admin/imports?source=LOW_STOCK')}
+                  onClick={() => navigate('/admin/inventory?source=LOW_STOCK')}
                 />
                 <OperationalAlertCard
                   category="SẢN PHẨM"
@@ -1777,7 +1794,7 @@ function AdminStatisticsPage() {
                   count={overview.alerts.slowSelling}
                   hint="Xem các sản phẩm có lượt bán thấp để điều chỉnh giá hoặc tạo khuyến mãi."
                   tone="warning"
-                  onClick={() => navigate('/admin/products?view=SLOW_SELLING')}
+                  onClick={() => navigate(`/admin/products?view=SLOW_SELLING&from=${dates.from}&to=${dates.to}&maxUnits=5`)}
                 />
                 <OperationalAlertCard
                   category="ĐƠN HÀNG"
