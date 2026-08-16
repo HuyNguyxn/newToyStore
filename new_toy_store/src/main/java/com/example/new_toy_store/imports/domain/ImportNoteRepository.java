@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+
 import java.util.Optional;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -78,7 +80,7 @@ public interface ImportNoteRepository extends JpaRepository<ImportNote, Integer>
              ORDER BY n.updated_at DESC, n.id DESC
              LIMIT 1
             """, nativeQuery = true)
-    List<Double> findLatestCompletedImportAveragePrice(@Param("variantId") Integer variantId);
+    List<BigDecimal> findLatestCompletedImportAveragePrice(@Param("variantId") Integer variantId);
 
     @Query(value = """
             SELECT 'OUTBOUND_SALE', 'Outbound from completed orders', COALESCE(SUM(i.quantity), 0),

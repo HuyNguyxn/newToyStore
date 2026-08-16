@@ -144,7 +144,8 @@ public class ImportService {
                     itemReq.getVariantId(),
                     product.getName(),
                     itemReq.getQuantity(),
-                    itemReq.getImportPrice()
+                    itemReq.getImportPrice(),
+                    itemReq.getSellingPrice()
             );
         }
 
@@ -162,9 +163,11 @@ public class ImportService {
 
         List<ImportNoteCompletedItemPayload> completedItems = note.getItems().stream()
                 .map(item -> new ImportNoteCompletedItemPayload(
+                        item.getProductId(),
                         item.getVariantId(),
                         item.getQuantity(),
                         item.getImportPrice(),
+                        item.getSellingPrice(),
                         String.format("PN%06d", note.getId())
                 ))
                 .collect(Collectors.toList());

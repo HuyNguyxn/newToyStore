@@ -110,6 +110,10 @@ public class ProductVariant extends BaseRootEntity {
         }
     }
 
+    public boolean hasImportedBatch(String batchNumber) {
+        return this.inventory != null && this.inventory.hasBatch(batchNumber);
+    }
+
     public void updatePrice(double newPrice) {
         if (newPrice < 0) throw InvalidProductOperationException.negativePrice();
         this.price = newPrice;

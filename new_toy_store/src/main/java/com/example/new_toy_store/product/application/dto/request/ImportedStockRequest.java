@@ -15,16 +15,22 @@ public class ImportedStockRequest {
     private double importPrice;
 
     private String batchNumber;
+    private Integer productId;
+    private Double sellingPrice;
 
-    public ImportedStockRequest(Integer variantId, int quantity, double importPrice, String batchNumber) {
+    public ImportedStockRequest(Integer productId, Integer variantId, int quantity, double importPrice, Double sellingPrice, String batchNumber) {
+        this.productId = productId;
         this.variantId = variantId;
         this.quantity = quantity;
         this.importPrice = importPrice;
+        this.sellingPrice = sellingPrice;
         this.batchNumber = batchNumber;
     }
 
+    public Integer getProductId() { return productId; }
     public Integer getVariantId() { return variantId; }
     public int getQuantity() { return quantity; }
     public double getImportPrice() { return importPrice; }
     public String getBatchNumber() { return batchNumber; }
+    public Double getSellingPrice() { return sellingPrice; }
 }

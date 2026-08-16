@@ -80,6 +80,11 @@ public class Inventory extends BaseSoftDeleteEntity {
         this.stockQuantity += amount;
     }
 
+    public boolean hasBatch(String batchNumber) {
+        if (batchNumber == null || batchNumber.isBlank()) return false;
+        return this.batches.stream().anyMatch(batch -> batchNumber.equals(batch.getBatchNumber()));
+    }
+
     public void addStock(int amount) {
         addStock(amount, "DEFAULT_BATCH", LocalDate.now().plusYears(5));
     }

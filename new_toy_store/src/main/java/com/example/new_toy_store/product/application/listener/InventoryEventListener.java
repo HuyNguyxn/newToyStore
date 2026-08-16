@@ -29,9 +29,11 @@ public class InventoryEventListener {
     public void onImportNoteCompleted(ImportNoteCompletedEvent event) {
         List<ImportedStockRequest> stockUpdates = event.items().stream()
                 .map(item -> new ImportedStockRequest(
+                        item.productId(),
                         item.variantId(),
                         item.quantity(),
                         item.importPrice(),
+                        item.sellingPrice(),
                         item.batchNumber()
                 ))
                 .toList();

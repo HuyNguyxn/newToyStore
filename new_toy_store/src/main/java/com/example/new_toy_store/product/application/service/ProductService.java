@@ -76,7 +76,15 @@ public class ProductService {
             ProductVariant variant = variantRepository.findById(req.getVariantId())
                     .orElseThrow(InvalidProductOperationException::variantNotFound);
 
+            if (variant.hasImportedBatch(req.getBatchNumber())) {
+                continue;
+            }
             variant.importStock(req.getQuantity(), req.getImportPrice(), req.getBatchNumber());
+            if (req.getSellingPrice() != null) {
+                variant.updatePrice(req.getSellingPrice());
+                eventPublisher.publishEvent(new ProductUpdatedEvent(
+                        req.getProductId(), req.getVariantId(), req.getSellingPrice()));
+            }
         }
     }
 

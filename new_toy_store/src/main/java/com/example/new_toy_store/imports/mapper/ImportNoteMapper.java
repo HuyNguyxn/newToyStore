@@ -43,6 +43,7 @@ public class ImportNoteMapper {
                         item.getProductName(),
                         item.getQuantity(),
                         item.getImportPrice(),
+                        item.getSellingPrice(),
                         item.getTotalPrice()
                 ))
                 .collect(Collectors.toList());

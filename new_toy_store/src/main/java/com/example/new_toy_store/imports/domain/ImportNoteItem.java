@@ -37,13 +37,22 @@ public class ImportNoteItem extends BaseTimeEntity {
     @Column(nullable = false)
     private double importPrice;
 
+    @Column(name = "selling_price")
+    private Double sellingPrice;
+
     protected ImportNoteItem() {}
 
-    public ImportNoteItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice) {
+    public ImportNoteItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice, Double sellingPrice) {
         if (productId == null || variantId == null) throw InvalidImportOperationException.missingItemIds();
         if (quantity <= 0) throw InvalidImportOperationException.invalidQuantity();
         if (importPrice < 0) throw InvalidImportOperationException.negativePrice();
-        this.productId = productId; this.variantId = variantId; this.productName = productName; this.quantity = quantity; this.importPrice = importPrice;
+        if (sellingPrice != null && sellingPrice < 0) throw InvalidImportOperationException.negativePrice();
+        this.productId = productId;
+        this.variantId = variantId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.importPrice = importPrice;
+        this.sellingPrice = sellingPrice;
     }
 
     void setImportNote(ImportNote importNote) { this.importNote = importNote; }
@@ -61,6 +70,7 @@ public class ImportNoteItem extends BaseTimeEntity {
     public String getProductName() { return productName; }
     public int getQuantity() { return quantity; }
     public double getImportPrice() { return importPrice; }
+    public Double getSellingPrice() { return sellingPrice; }
 
     @Override public boolean equals(Object o) { return this == o || (o instanceof ImportNoteItem u && id != null && id.equals(u.id)); }
     @Override public int hashCode() { return getClass().hashCode(); }

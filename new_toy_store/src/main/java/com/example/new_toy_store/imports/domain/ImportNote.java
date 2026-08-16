@@ -47,13 +47,13 @@ public class ImportNote extends BaseRootEntity {
         this.note = note;
     }
 
-    public void addItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice) {
+    public void addItem(Integer productId, Integer variantId, String productName, int quantity, double importPrice, Double sellingPrice) {
         if (!this.status.canModifyItems()) throw InvalidImportOperationException.invalidStatusTransition("thêm sản phẩm vào");
         Optional<ImportNoteItem> existingItem = items.stream().filter(item -> item.getVariantId().equals(variantId)).findFirst();
         if (existingItem.isPresent()) {
             existingItem.get().addQuantity(quantity);
         } else {
-            ImportNoteItem item = new ImportNoteItem(productId, variantId, productName, quantity, importPrice);
+            ImportNoteItem item = new ImportNoteItem(productId, variantId, productName, quantity, importPrice, sellingPrice);
             item.setImportNote(this);
             this.items.add(item);
         }
