@@ -3,6 +3,7 @@ package com.example.new_toy_store.supplier_payment.domain;
 import com.example.new_toy_store.supplier_payment.domain.exception.InvalidSupplierPaymentOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -61,6 +62,7 @@ public enum SupplierPaymentStatus {
         return description;
     }
 
+    @JsonIgnore
     public abstract List<SupplierPaymentStatus> getNextValidStates();
 
     public boolean canTransitionTo(SupplierPaymentStatus targetStatus) {
