@@ -7,25 +7,31 @@ const API_REQUEST_FINISHED = 'new-toy-store:api-request-finished';
 function GlobalLoadingIndicator() {
   const location = useLocation();
   const firstRoute = useRef(true);
+  const activeRequestsRef = useRef(new Set());
   const [activeRequests, setActiveRequests] = useState(() => new Set());
   const [routeChanging, setRouteChanging] = useState(false);
   const [waitingPhase, setWaitingPhase] = useState(0);
+  const [cycleHasResponse, setCycleHasResponse] = useState(false);
 
   useEffect(() => {
     function handleStarted(event) {
-      setActiveRequests((current) => {
-        const next = new Set(current);
-        next.add(event.detail?.requestId);
-        return next;
-      });
+      const next = new Set(activeRequestsRef.current);
+      if (next.size === 0) {
+        setCycleHasResponse(false);
+      }
+      next.add(event.detail?.requestId);
+      activeRequestsRef.current = next;
+      setActiveRequests(next);
     }
 
     function handleFinished(event) {
-      setActiveRequests((current) => {
-        const next = new Set(current);
-        next.delete(event.detail?.requestId);
-        return next;
-      });
+      // A completed request proves that the server has responded. Other
+      // background requests must not keep showing the Render cold-start notice.
+      setCycleHasResponse(true);
+      const next = new Set(activeRequestsRef.current);
+      next.delete(event.detail?.requestId);
+      activeRequestsRef.current = next;
+      setActiveRequests(next);
     }
 
     window.addEventListener(API_REQUEST_STARTED, handleStarted);
@@ -47,7 +53,7 @@ function GlobalLoadingIndicator() {
   }, [location.key]);
 
   useEffect(() => {
-    if (activeRequests.size === 0) {
+    if (activeRequests.size === 0 || cycleHasResponse) {
       setWaitingPhase(0);
       return undefined;
     }
@@ -58,14 +64,15 @@ function GlobalLoadingIndicator() {
       window.setTimeout(() => setWaitingPhase(3), 15000),
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [activeRequests.size]);
+  }, [activeRequests.size, cycleHasResponse]);
 
   const isBusy = routeChanging || activeRequests.size > 0;
-  const message = waitingPhase === 1
+  const showWaitingNotice = activeRequests.size > 0 && !cycleHasResponse;
+  const message = showWaitingNotice && waitingPhase === 1
     ? 'Đang tải dữ liệu, vui lòng chờ...'
-    : waitingPhase === 2
+    : showWaitingNotice && waitingPhase === 2
       ? 'Backend Render đang được đánh thức, dữ liệu sẽ xuất hiện ngay khi máy chủ sẵn sàng.'
-      : waitingPhase === 3
+      : showWaitingNotice && waitingPhase === 3
         ? 'Render Free có thể cần 30–60 giây để khởi động. Vui lòng giữ nguyên trang.'
         : '';
 
