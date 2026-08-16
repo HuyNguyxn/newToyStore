@@ -5,7 +5,6 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 import useAuth from './hooks/useAuth.js';
 import CustomerLayout from './components/layout/CustomerLayout.jsx';
 const AdminCategoryPage = lazy(() => import('./pages/admin/AdminCategoryPage.jsx'));
-const AdminImportPage = lazy(() => import('./pages/admin/AdminImportPage.jsx'));
 const AdminInventoryPage = lazy(() => import('./pages/admin/AdminInventoryPage.jsx'));
 const AdminLogisticsPage = lazy(() => import('./pages/admin/AdminLogisticsPage.jsx'));
 const AdminModerationPage = lazy(() => import('./pages/admin/AdminModerationPage.jsx'));
@@ -227,7 +226,7 @@ function App() {
           )}
         />
         <Route path="suppliers" element={<AdminSupplierPage />} />
-        <Route path="imports" element={<AdminImportPage />} />
+        <Route path="imports" element={<Navigate to="/admin/inventory?view=create" replace />} />
         <Route path="supplier-payments" element={<AdminSupplierPaymentPage />} />
         <Route
           path="accounting"

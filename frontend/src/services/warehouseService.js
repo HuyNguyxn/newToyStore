@@ -29,6 +29,12 @@ export function cancelWarehouseBatch(batchId) {
   });
 }
 
+export function reconcileWarehouseBatch(batchId) {
+  return apiClient(`/warehouse/batches/${batchId}/reconcile`, {
+    method: 'PATCH',
+  });
+}
+
 export function publishWarehouseProduct(batchId, productId) {
   return apiClient(`/warehouse/batches/${batchId}/products/${productId}/publish`, {
     method: 'PATCH',

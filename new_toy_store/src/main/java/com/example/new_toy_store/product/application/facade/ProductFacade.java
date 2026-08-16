@@ -5,6 +5,7 @@ import com.example.new_toy_store.product.application.dto.request.CreateProductRe
 import com.example.new_toy_store.product.application.dto.request.ProductVariantRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductRequest;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductStatusRequest;
+import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.domain.Product;
 import org.springframework.data.domain.Page;
@@ -114,6 +115,10 @@ public class ProductFacade {
 
     public void updateStock(Integer productId, Integer variantId, int amount) {
         productService.updateStock(productId, variantId, amount);
+    }
+
+    public void processImportedStock(List<ImportedStockRequest> stockUpdates) {
+        productService.processImportedStock(stockUpdates);
     }
 
     public void restoreStockForCancelledOrder(Map<Integer, Integer> orderItems) {

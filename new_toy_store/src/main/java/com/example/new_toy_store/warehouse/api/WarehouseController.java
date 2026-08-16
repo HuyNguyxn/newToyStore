@@ -51,6 +51,11 @@ public class WarehouseController {
         return warehouseService.cancelBatch(batchId);
     }
 
+    @PatchMapping("/{batchId}/reconcile")
+    public ImportNoteResponse reconcileBatch(@PathVariable Integer batchId) {
+        return warehouseService.reconcileBatch(batchId);
+    }
+
     @PatchMapping("/{batchId}/products/{productId}/publish")
     public ProductResponse publishProduct(
             @PathVariable Integer batchId,

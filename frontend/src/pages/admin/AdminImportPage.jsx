@@ -18,6 +18,7 @@ const emptyItem = {
   productName: '',
   quantity: 1,
   importPrice: 0,
+  sellingPrice: '',
 };
 
 function buildCategoryTree(flatCategories = []) {
@@ -370,7 +371,7 @@ function productMatchesCategory(product, targetCategoryIds, categoryNameMap = {}
   return false;
 }
 
-function AdminImportPage() {
+function AdminImportPage({ initialCreateMode = false, embedded = false, onCreated }) {
   const navigate = useNavigate();
   // Main Data States
   const [imports, setImports] = useState([]);
@@ -381,7 +382,7 @@ function AdminImportPage() {
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
 
   // View States
-  const [isCreatingView, setIsCreatingView] = useState(false);
+  const [isCreatingView, setIsCreatingView] = useState(initialCreateMode);
   const [viewNote, setViewNote] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
@@ -585,7 +586,7 @@ function AdminImportPage() {
   /* Handle Item Field Changes */
   function handleProductSelect(index, productIdStr) {
     if (!productIdStr) {
-      updateItem(index, { productId: '', variantId: '', productName: '', importPrice: 0 });
+      updateItem(index, { productId: '', variantId: '', productName: '', importPrice: 0, sellingPrice: '' });
       return;
     }
 
@@ -601,11 +602,13 @@ function AdminImportPage() {
       defaultVarId = product.defaultVariantId;
     }
 
+    const selectedVariant = variants.find((variant) => Number(variant.id) === Number(defaultVarId));
     updateItem(index, {
       productId: prodId,
       productName: product.name,
       variantId: defaultVarId,
-      importPrice: product.basePrice || 0,
+      importPrice: selectedVariant?.costPrice || 0,
+      sellingPrice: '',
     });
   }
 
@@ -746,6 +749,11 @@ function AdminImportPage() {
         setError(`Giá nhập dòng thứ ${i + 1} ("${item.productName}") không được là số âm!`);
         return false;
       }
+
+      if (item.sellingPrice !== '' && Number(item.sellingPrice) < 0) {
+        setError(`Giá bán mới ở dòng thứ ${i + 1} không được là số âm!`);
+        return false;
+      }
     }
 
     return true;
@@ -770,6 +778,7 @@ function AdminImportPage() {
           productName: item.productName.trim(),
           quantity: Number(item.quantity),
           importPrice: Number(item.importPrice),
+          sellingPrice: item.sellingPrice === '' ? null : Number(item.sellingPrice),
         })),
       };
 
@@ -779,6 +788,7 @@ function AdminImportPage() {
       setForm({ supplierId: '', categoryId: '', note: '' });
       setItems([{ ...emptyItem }]);
       loadImports(0);
+      onCreated?.();
     } catch (err) {
       setError(err?.message || 'Tạo phiếu nhập hàng thất bại. Vui lòng kiểm tra dữ liệu.');
     } finally {
@@ -802,7 +812,7 @@ function AdminImportPage() {
   }
 
   return (
-    <section style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <section style={{ padding: embedded ? 0 : '24px', background: embedded ? 'transparent' : '#f8fafc', minHeight: embedded ? 'auto' : '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* ALERTS */}
       {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px', fontSize: '13px', fontWeight: '700' }}>{error}</div>}
@@ -1120,6 +1130,7 @@ function AdminImportPage() {
                     <th style={{ padding: '12px', width: '250px' }}>CHỌN BIẾN THỂ (nếu có)</th>
                     <th style={{ padding: '12px', width: '110px', textAlign: 'center' }}>SỐ LƯỢNG</th>
                     <th style={{ padding: '12px', width: '170px' }}>GIÁ NHẬP (VNĐ)</th>
+                    <th style={{ padding: '12px', width: '180px' }}>GIÁ BÁN MỚI (TÙY CHỌN)</th>
                     <th style={{ padding: '12px', width: '90px', textAlign: 'center' }}>THAO TÁC</th>
                   </tr>
                 </thead>
@@ -1286,6 +1297,17 @@ function AdminImportPage() {
                             min="0"
                             value={item.importPrice}
                             onChange={(e) => updateItem(idx, { importPrice: e.target.value })}
+                            style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', fontWeight: '800', textAlign: 'right' }}
+                          />
+                        </td>
+
+                        <td style={{ padding: '10px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            value={item.sellingPrice}
+                            placeholder="Giữ nguyên giá hiện tại"
+                            onChange={(e) => updateItem(idx, { sellingPrice: e.target.value })}
                             style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', fontWeight: '800', textAlign: 'right' }}
                           />
                         </td>

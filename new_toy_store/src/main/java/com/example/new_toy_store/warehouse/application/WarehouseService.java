@@ -6,6 +6,7 @@ import com.example.new_toy_store.imports.domain.ImportStatus;
 import com.example.new_toy_store.imports.domain.exception.ImportCrossModuleException;
 import com.example.new_toy_store.imports.domain.exception.InvalidImportOperationException;
 import com.example.new_toy_store.product.application.dto.request.UpdateProductStatusRequest;
+import com.example.new_toy_store.product.application.dto.request.ImportedStockRequest;
 import com.example.new_toy_store.product.application.dto.response.ProductResponse;
 import com.example.new_toy_store.product.application.facade.ProductFacade;
 import org.springframework.data.domain.Page;
@@ -51,6 +52,27 @@ public class WarehouseService {
     @Transactional
     public ImportNoteResponse cancelBatch(Integer batchId) {
         return importFacade.cancelImportNote(batchId);
+    }
+
+    @Transactional
+    public ImportNoteResponse reconcileBatch(Integer batchId) {
+        ImportNoteResponse batch = importFacade.getImportNoteDetails(batchId);
+        if (batch.getStatus() != ImportStatus.COMPLETED) {
+            throw InvalidImportOperationException.invalidStatusTransition("đồng bộ kho và giá vốn");
+        }
+
+        String batchNumber = String.format("PN%06d", batchId);
+        productFacade.processImportedStock(batch.getItems().stream()
+                .map(item -> new ImportedStockRequest(
+                        item.getProductId(),
+                        item.getVariantId(),
+                        item.getQuantity(),
+                        item.getImportPrice(),
+                        item.getSellingPrice(),
+                        batchNumber
+                ))
+                .toList());
+        return importFacade.getImportNoteDetails(batchId);
     }
 
     @Transactional

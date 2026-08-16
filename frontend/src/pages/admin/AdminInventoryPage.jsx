@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import AdminImportPage from './AdminImportPage.jsx';
 import { getAdminProductDetails } from '../../services/adminProductService.js';
 import {
   cancelWarehouseBatch,
@@ -7,6 +8,7 @@ import {
   getWarehouseBatchDetails,
   getWarehouseBatches,
   publishWarehouseProduct,
+  reconcileWarehouseBatch,
 } from '../../services/warehouseService.js';
 import { formatDateTime, formatPrice } from '../../utils/formatters.js';
 
@@ -38,7 +40,7 @@ function stockOf(product) {
 
 const BatchStatusActionContext = createContext(() => {});
 
-function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, statusAction, navigate }) {
+function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, publishingId, reconciling, statusAction, navigate }) {
   const onStatusAction = useContext(BatchStatusActionContext);
   if (!note) return null;
   const badge = importStatus(note.status);
@@ -77,6 +79,16 @@ function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, s
         <div><strong>Ngày nhập:</strong> {note.createdAt ? formatDateTime(note.createdAt) : '—'}</div>
         <div><strong>Trạng thái:</strong> <span style={{ color: badge.color, background: badge.bg, padding: '3px 8px', borderRadius: 8, fontWeight: 800 }}>{badge.label}</span></div>
         <div><strong>Tổng tiền:</strong> {formatPrice(note.totalAmount || 0)}</div>
+        {statusCode(note.status) === 'COMPLETED' && (
+          <button
+            type="button"
+            disabled={reconciling}
+            onClick={onReconcile}
+            style={{ marginTop: 6, border: '1px solid #86efac', background: '#f0fdf4', color: '#15803d', borderRadius: 8, padding: '8px 10px', cursor: reconciling ? 'wait' : 'pointer', fontSize: 12, fontWeight: 800 }}
+          >
+            {reconciling ? 'Đang đồng bộ...' : 'Đồng bộ kho, MAC và giá bán'}
+          </button>
+        )}
       </div>
 
       <h3 style={{ fontSize: 15, margin: '22px 0 10px', color: '#0f172a' }}>Sản phẩm trong lô</h3>
@@ -116,6 +128,8 @@ function ImportBatchDetail({ note, products, onClose, onPublish, publishingId, s
 
 function AdminInventoryPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewMode = searchParams.get('view') === 'create' ? 'create' : 'batches';
   const [imports, setImports] = useState([]);
   const [products, setProducts] = useState(new Map());
   const [selected, setSelected] = useState(null);
@@ -124,6 +138,7 @@ function AdminInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+  const [reconciling, setReconciling] = useState(false);
   const [statusAction, setStatusAction] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -188,6 +203,24 @@ function AdminInventoryPage() {
     }
   }
 
+  async function reconcileBatch() {
+    if (!selected?.id) return;
+    setReconciling(true);
+    setError('');
+    setMessage('');
+    try {
+      const updated = await reconcileWarehouseBatch(selected.id);
+      setSelected(updated);
+      setProducts(new Map());
+      setMessage('Đã đồng bộ lô nhập với tồn kho, giá vốn MAC và giá bán. Thao tác này an toàn khi chạy lại.');
+      await loadWarehouse(pageInfo.number);
+    } catch (err) {
+      setError(err?.message || 'Không thể đồng bộ lô nhập với dữ liệu kho.');
+    } finally {
+      setReconciling(false);
+    }
+  }
+
   async function changeBatchStatus(action) {
     const isComplete = action === 'COMPLETE';
     const confirmation = isComplete
@@ -215,6 +248,25 @@ function AdminInventoryPage() {
     }
   }
 
+  if (viewMode === 'create') {
+    return (
+      <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+          <button type="button" onClick={() => setSearchParams({})} style={{ border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>Quản lý lô hàng</button>
+          <button type="button" style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', fontWeight: 800 }}>Tạo phiếu nhập</button>
+        </div>
+        <AdminImportPage
+          embedded
+          initialCreateMode
+          onCreated={() => {
+            setSearchParams({});
+            loadWarehouse(0);
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <BatchStatusActionContext.Provider value={changeBatchStatus}>
       <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
@@ -224,7 +276,7 @@ function AdminInventoryPage() {
             <h1 style={{ margin: '5px 0 0', color: '#0f172a', fontSize: 26 }}>Quản lý Kho & Lô hàng</h1>
             <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>Các lô hàng được tạo từ mục “Tạo phiếu nhập hàng”. Chọn một lô để xử lý sản phẩm đưa lên cửa hàng.</p>
           </div>
-          <button type="button" onClick={() => navigate('/admin/imports')} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
+          <button type="button" onClick={() => setSearchParams({ view: 'create' })} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
         </div>
 
         {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
@@ -264,7 +316,7 @@ function AdminInventoryPage() {
               </tbody>
             </table>
           </div>
-          {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} publishingId={publishingId} statusAction={statusAction} navigate={navigate} />}
+          {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} onReconcile={reconcileBatch} publishingId={publishingId} reconciling={reconciling} statusAction={statusAction} navigate={navigate} />}
         </div>
         {pageInfo.totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 18 }}>
