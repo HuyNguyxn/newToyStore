@@ -21,6 +21,16 @@ const emptyItem = {
   sellingPrice: '',
 };
 
+function resolveImportPrice(product, variantId = '') {
+  const variant = (product?.variants || []).find((candidate) => (
+    variantId ? String(candidate.id) === String(variantId) : true
+  )) || product?.variants?.[0];
+  const previousImportPrice = Number(variant?.costPrice || 0);
+  return previousImportPrice > 0
+    ? previousImportPrice
+    : Number(variant?.price ?? product?.basePrice ?? 0);
+}
+
 function buildCategoryTree(flatCategories = []) {
   const nodes = new Map();
   flatCategories.forEach((category) => {
@@ -371,7 +381,7 @@ function productMatchesCategory(product, targetCategoryIds, categoryNameMap = {}
   return false;
 }
 
-function AdminImportPage({ initialCreateMode = false, embedded = false, onCreated }) {
+function AdminImportPage({ initialCreateMode = false, embedded = false, onCreated, restockMode = false }) {
   const navigate = useNavigate();
   // Main Data States
   const [imports, setImports] = useState([]);
@@ -382,7 +392,7 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
   const [pageInfo, setPageInfo] = useState({ number: 0, totalPages: 1, totalElements: 0 });
 
   // View States
-  const [isCreatingView, setIsCreatingView] = useState(initialCreateMode);
+  const [isCreatingView, setIsCreatingView] = useState(initialCreateMode || restockMode);
   const [viewNote, setViewNote] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
@@ -433,10 +443,22 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
         variantId: '',
         productName: restockProductName || `SP #${restockProductId}`,
         quantity: 10,
-        importPrice: 100000,
+        importPrice: 0,
       }]);
     }
   }, [restockProductId, restockProductName, restockSupplierId]);
+
+  useEffect(() => {
+    if (!restockProductId || allProducts.length === 0) return;
+    const product = allProducts.find((candidate) => String(candidate.id) === String(restockProductId));
+    if (!product) return;
+    const variantId = product.defaultVariantId || product.variants?.[0]?.id || '';
+    setItems((current) => current.map((item) => (
+      String(item.productId) === String(restockProductId)
+        ? { ...item, productName: product.name, variantId, importPrice: resolveImportPrice(product, variantId) }
+        : item
+    )));
+  }, [allProducts, restockProductId]);
 
   useEffect(() => {
     if (operationSource === 'LOW_STOCK') {
@@ -602,13 +624,19 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
       defaultVarId = product.defaultVariantId;
     }
 
-    const selectedVariant = variants.find((variant) => Number(variant.id) === Number(defaultVarId));
     updateItem(index, {
       productId: prodId,
       productName: product.name,
       variantId: defaultVarId,
-      importPrice: selectedVariant?.costPrice || 0,
+      importPrice: resolveImportPrice(product, defaultVarId),
       sellingPrice: '',
+    });
+  }
+
+  function handleVariantSelect(index, product, variantId) {
+    updateItem(index, {
+      variantId,
+      importPrice: resolveImportPrice(product, variantId),
     });
   }
 
@@ -1180,7 +1208,7 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
                             </select>
 
                             {/* + Button to Add New Product On-The-Fly */}
-                            {form.supplierId && (
+                            {form.supplierId && !restockMode && (
                               <button
                                 type="button"
                                 title="Thêm sản phẩm mới khác trong kho cho NCC này"
@@ -1222,7 +1250,7 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
                               {variants.length > 1 ? (
                                 <select
                                   value={item.variantId}
-                                  onChange={(e) => updateItem(idx, { variantId: e.target.value })}
+                                  onChange={(e) => handleVariantSelect(idx, selectedProd, e.target.value)}
                                   style={{
                                     flex: 1,
                                     padding: '10px 12px',
@@ -1248,7 +1276,7 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
                               )}
 
                               {/* + Button to Add New Variant On-The-Fly */}
-                              <button
+                              {!restockMode && <button
                                 type="button"
                                 title="Thêm biến thể mới cho sản phẩm này"
                                 onClick={() => {
@@ -1274,7 +1302,7 @@ function AdminImportPage({ initialCreateMode = false, embedded = false, onCreate
                                 }}
                               >
                                 +
-                              </button>
+                              </button>}
                             </div>
                           )}
                         </td>

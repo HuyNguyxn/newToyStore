@@ -8,6 +8,7 @@ public class ProductVariantResponse {
     private Integer id;
     private String type;
     private double price;
+    private double costPrice;
     private double discountedPrice;
     private int stockQuantity;
     private Map<String, String> attributes;
@@ -15,7 +16,7 @@ public class ProductVariantResponse {
     private List<ProductEnumOptionResponse> allowedNextTypes;
     private List<String> allowedActions;
 
-    public ProductVariantResponse(Integer id, String type, double price, double discountedPrice,
+    public ProductVariantResponse(Integer id, String type, double price, double discountedPrice, double costPrice,
                                   int stockQuantity, Map<String, String> attributes,
                                   ProductEnumOptionResponse typeDetail, List<ProductEnumOptionResponse> allowedNextTypes,
                                   List<String> allowedActions) {
@@ -23,6 +24,7 @@ public class ProductVariantResponse {
         this.type = type;
         this.price = price;
         this.discountedPrice = discountedPrice;
+        this.costPrice = costPrice;
         this.stockQuantity = stockQuantity;
         this.attributes = attributes;
         this.typeDetail = typeDetail;
@@ -33,6 +35,7 @@ public class ProductVariantResponse {
     public Integer getId() { return id; }
     public String getType() { return type; }
     public double getPrice() { return price; }
+    public double getCostPrice() { return costPrice; }
     public double getDiscountedPrice() { return discountedPrice; }
     public int getStockQuantity() { return stockQuantity; }
     public Map<String, String> getAttributes() { return attributes; }

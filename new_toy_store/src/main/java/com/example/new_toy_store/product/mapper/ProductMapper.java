@@ -144,6 +144,7 @@ public final class ProductMapper {
                 type.getDisplayName(),
                 originalPrice,
                 discountedPrice,
+                variant.getCostPrice(),
                 variant.getInventory() != null ? variant.getInventory().getStockQuantity() : 0,
                 toAttributeMap(variant),
                 toVariantTypeOption(type),

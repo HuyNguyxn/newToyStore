@@ -6,6 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="84bde215-7df7-441f-a834-2e58da1f686e" name="Changes" comment="refactor(product): service, facade">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminImportPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminImportPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminInventoryPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminInventoryPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminProductPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminProductPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/new_toy_store/src/main/java/com/example/new_toy_store/product/application/dto/response/ProductVariantResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/new_toy_store/src/main/java/com/example/new_toy_store/product/application/dto/response/ProductVariantResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/new_toy_store/src/main/java/com/example/new_toy_store/product/mapper/ProductMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/new_toy_store/src/main/java/com/example/new_toy_store/product/mapper/ProductMapper.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

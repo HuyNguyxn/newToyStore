@@ -129,7 +129,8 @@ function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, pu
 function AdminInventoryPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const viewMode = searchParams.get('view') === 'create' ? 'create' : 'batches';
+  const requestedView = searchParams.get('view');
+  const viewMode = requestedView === 'create' || requestedView === 'restock' ? requestedView : 'batches';
   const [imports, setImports] = useState([]);
   const [products, setProducts] = useState(new Map());
   const [selected, setSelected] = useState(null);
@@ -248,16 +249,17 @@ function AdminInventoryPage() {
     }
   }
 
-  if (viewMode === 'create') {
+  if (viewMode === 'create' || viewMode === 'restock') {
     return (
       <section style={{ minHeight: '100vh', background: '#f8fafc', padding: 26, fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
           <button type="button" onClick={() => setSearchParams({})} style={{ border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>Quản lý lô hàng</button>
-          <button type="button" style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', fontWeight: 800 }}>Tạo phiếu nhập</button>
+          <button type="button" style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', fontWeight: 800 }}>{viewMode === 'restock' ? 'Nhập bổ sung vào kho' : 'Tạo phiếu nhập'}</button>
         </div>
         <AdminImportPage
           embedded
           initialCreateMode
+          restockMode={viewMode === 'restock'}
           onCreated={() => {
             setSearchParams({});
             loadWarehouse(0);

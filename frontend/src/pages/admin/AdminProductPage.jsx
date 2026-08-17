@@ -743,7 +743,7 @@ function AdminProductPage() {
                     <td style={{ padding: '10px', textAlign: 'center' }}>
                       <button
                         type="button"
-                        onClick={() => navigate(`/admin/imports?productId=${item.productId}&supplierId=${item.supplierId || ''}&productName=${encodeURIComponent(item.productName || '')}`)}
+                        onClick={() => navigate(`/admin/inventory?view=restock&productId=${item.productId}&supplierId=${item.supplierId || ''}&productName=${encodeURIComponent(item.productName || '')}`)}
                         style={{
                           fontSize: '11px',
                           background: '#f0fdf4',
