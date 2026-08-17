@@ -4,3 +4,7 @@ frontend/*.log
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
+
+# IntelliJ IDEA user-local metadata
+.idea/workspace.xml
+.idea/vcs.xml
