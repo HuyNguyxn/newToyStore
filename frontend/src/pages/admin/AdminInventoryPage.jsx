@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AdminImportPage from './AdminImportPage.jsx';
-import { getAdminProductDetails } from '../../services/adminProductService.js';
+import { getAdminProductDetails, updateVariantPrice } from '../../services/adminProductService.js';
 import {
   cancelWarehouseBatch,
   completeWarehouseBatch,
@@ -40,7 +40,49 @@ function stockOf(product) {
 
 const BatchStatusActionContext = createContext(() => {});
 
-function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, publishingId, reconciling, statusAction, navigate }) {
+function BatchPriceEditor({ item, product, onSave, saving }) {
+  const variants = product?.variants || [];
+  const initialVariantId = item.variantId || variants[0]?.id || '';
+  const [variantId, setVariantId] = useState(String(initialVariantId));
+  const selectedVariant = variants.find((variant) => String(variant.id) === String(variantId)) || variants[0];
+  const oldPrice = Number(selectedVariant?.price ?? product?.basePrice ?? 0);
+  const costPrice = Number(selectedVariant?.costPrice ?? item.importPrice ?? 0);
+  const [mode, setMode] = useState('direct');
+  const [value, setValue] = useState(String(oldPrice || ''));
+
+  useEffect(() => {
+    setVariantId(String(item.variantId || variants[0]?.id || ''));
+  }, [item.variantId, product?.id]);
+
+  useEffect(() => {
+    setValue(String(oldPrice || ''));
+  }, [variantId, oldPrice]);
+
+  if (!product || variants.length === 0) return null;
+  const calculatedPrice = mode === 'costPercent'
+    ? Math.round(costPrice * (1 + (Number(value) || 0) / 100))
+    : Number(value) || 0;
+
+  return (
+    <div style={{ marginTop: 12, borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+      <div style={{ color: '#0f766e', fontSize: 12, fontWeight: 900, marginBottom: 7 }}>Định giá sản phẩm / biến thể</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(130px, 1fr) 112px 100px auto', gap: 7, alignItems: 'center' }}>
+        <select value={variantId} onChange={(event) => setVariantId(event.target.value)} style={{ border: '1px solid #cbd5e1', borderRadius: 7, padding: '6px 7px', fontSize: 12, minWidth: 0 }}>
+          {variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.type || `Biến thể #${variant.id}`}</option>)}
+        </select>
+        <select value={mode} onChange={(event) => setMode(event.target.value)} style={{ border: '1px solid #cbd5e1', borderRadius: 7, padding: '6px 7px', fontSize: 12 }}>
+          <option value="direct">Giá bán trực tiếp</option>
+          <option value="costPercent">% trên giá nhập</option>
+        </select>
+        <input type="number" min="0" value={value} onChange={(event) => setValue(event.target.value)} placeholder={mode === 'costPercent' ? '%' : 'VND'} style={{ border: '1px solid #cbd5e1', borderRadius: 7, padding: '6px 7px', fontSize: 12, width: '100%' }} />
+        <button type="button" disabled={saving || calculatedPrice < 0} onClick={() => onSave(Number(product.id), Number(variantId), calculatedPrice)} style={{ border: 0, borderRadius: 7, padding: '7px 9px', background: '#2563eb', color: '#fff', fontWeight: 800, fontSize: 12, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Đang lưu...' : 'Lưu giá'}</button>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 11, marginTop: 6 }}>Giá bán cũ: <strong>{formatPrice(oldPrice)}</strong> · Giá nhập: <strong>{formatPrice(costPrice)}</strong> · Giá mới: <strong>{formatPrice(calculatedPrice)}</strong></div>
+    </div>
+  );
+}
+
+function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, onSetPrice, pricingKey, publishingId, reconciling, statusAction, navigate }) {
   const onStatusAction = useContext(BatchStatusActionContext);
   if (!note) return null;
   const badge = importStatus(note.status);
@@ -108,7 +150,7 @@ function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, pu
                 <span style={{ alignSelf: 'start', color: state.color, background: state.bg, borderRadius: 8, padding: '3px 7px', fontSize: 11, fontWeight: 800 }}>{state.label}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ color: '#475569', fontSize: 12 }}>Tồn khả dụng: <strong>{stock}</strong></span>
+                <span style={{ color: '#475569', fontSize: 12 }}>{statusCode(product?.status) === 'ACTIVE' ? 'Đang bán trên cửa hàng' : 'Tồn chưa đưa lên cửa hàng'}: <strong>{stock}</strong></span>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button type="button" onClick={() => navigate('/admin/products')} style={{ border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', borderRadius: 7, padding: '6px 9px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Quản lý sản phẩm</button>
                   {canPublish && (
@@ -118,6 +160,7 @@ function ImportBatchDetail({ note, products, onClose, onPublish, onReconcile, pu
                   )}
                 </div>
               </div>
+              {statusCode(note.status) === 'COMPLETED' && <BatchPriceEditor item={item} product={product} onSave={onSetPrice} saving={pricingKey === `${item.productId}:${item.variantId || ''}`} />}
             </div>
           );
         })}
@@ -139,6 +182,7 @@ function AdminInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+  const [pricingKey, setPricingKey] = useState(null);
   const [reconciling, setReconciling] = useState(false);
   const [statusAction, setStatusAction] = useState(null);
   const [message, setMessage] = useState('');
@@ -201,6 +245,23 @@ function AdminInventoryPage() {
       setError(err?.message || 'Không thể đưa sản phẩm lên cửa hàng.');
     } finally {
       setPublishingId(null);
+    }
+  }
+
+  async function setBatchProductPrice(productId, variantId, price) {
+    if (!productId || !variantId || !Number.isFinite(price)) return;
+    setPricingKey(`${productId}:${variantId}`);
+    setError('');
+    setMessage('');
+    try {
+      await updateVariantPrice(productId, variantId, price);
+      const updated = await getAdminProductDetails(productId);
+      setProducts((current) => new Map(current).set(Number(productId), updated));
+      setMessage('Đã cập nhật giá bán cho sản phẩm/biến thể.');
+    } catch (err) {
+      setError(err?.message || 'Không thể cập nhật giá bán sản phẩm.');
+    } finally {
+      setPricingKey(null);
     }
   }
 
@@ -278,7 +339,7 @@ function AdminInventoryPage() {
             <h1 style={{ margin: '5px 0 0', color: '#0f172a', fontSize: 26 }}>Quản lý Kho & Lô hàng</h1>
             <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: 13 }}>Các lô hàng được tạo từ mục “Tạo phiếu nhập hàng”. Chọn một lô để xử lý sản phẩm đưa lên cửa hàng.</p>
           </div>
-          <button type="button" onClick={() => setSearchParams({ view: 'create' })} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Tạo phiếu nhập</button>
+          <button type="button" onClick={() => setSearchParams({ view: 'create' })} style={{ border: 0, background: '#ea580c', color: '#ffffff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 800 }}>+ Nhập hàng vào kho</button>
         </div>
 
         {message && <div style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: 11, borderRadius: 9, marginBottom: 14, fontSize: 13, fontWeight: 700 }}>{message}</div>}
@@ -318,7 +379,7 @@ function AdminInventoryPage() {
               </tbody>
             </table>
           </div>
-          {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} onReconcile={reconcileBatch} publishingId={publishingId} reconciling={reconciling} statusAction={statusAction} navigate={navigate} />}
+          {detailLoading ? <aside style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 30, color: '#64748b', textAlign: 'center' }}>Đang tải chi tiết lô...</aside> : <ImportBatchDetail note={selected} products={products} onClose={() => setSelected(null)} onPublish={publishProduct} onReconcile={reconcileBatch} onSetPrice={setBatchProductPrice} pricingKey={pricingKey} publishingId={publishingId} reconciling={reconciling} statusAction={statusAction} navigate={navigate} />}
         </div>
         {pageInfo.totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 18 }}>
